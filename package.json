@@ -1,0 +1,24 @@
+{
+  "name": "nftcompany-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "gcloud app deploy -q --project nftc-web",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mavriklabs/nftcompany-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mavriklabs/nftcompany-backend/issues"
+  },
+  "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
