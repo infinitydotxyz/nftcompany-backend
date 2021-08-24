@@ -17,13 +17,13 @@ app.get('/', (req, res) => {
 app.get('/explore', (req, res) => {
     const items = []
     const item = {}
-    item.image = 'https://nftcompany.com/img/ex.png'
+    item.image = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
     item.title = 'Title'
     item.price = '1 ETH'
     item.numAvailable = '1 in stock'
-    item.collectionIcon = 'https://nftcompany.com/img/ex.png'
-    item.ownerIcon = 'https://nftcompany.com/img/ex.png'
-    item.creatorIcon = 'https://nftcompany.com/img/ex.png'
+    item.collectionIcon = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
+    item.ownerIcon = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
+    item.creatorIcon = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
     item.highestBid = '2 ETH'
     item.timeLeftToBid = '1 hr'
     items.push(item)
@@ -32,14 +32,14 @@ app.get('/explore', (req, res) => {
 
 app.get('/explore/item/:item', (req, res) => {
     const item = {}
-    item.image = 'https://nftcompany.com/img/ex.png'
+    item.image = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
     item.title = 'Title'
     item.desc = 'Description'
     item.price = '1 ETH'
     item.numAvailable = '1 in stock'
     item.highestBid = '2 ETH'
     item.highestBidBy = 'abc'
-    item.highestProfileIcon = 'https://nftcompany.com/img/ex.png'
+    item.highestProfileIcon = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
     item.timeLeftToBid = '1 hr'
 
     const info = {
@@ -51,11 +51,11 @@ app.get('/explore/item/:item', (req, res) => {
     const owners = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png'
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png'
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
         }
     ]
     item.owners = owners
@@ -63,13 +63,13 @@ app.get('/explore/item/:item', (req, res) => {
     const history = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             timestamp: 123,
             desc: 'Placed a bid for 1 ETH'
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             timestamp: 123,
             desc: 'Put Awesome work on sale'
         }
@@ -79,12 +79,12 @@ app.get('/explore/item/:item', (req, res) => {
     const bids = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             bid: '1.5 ETH'
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             bid: '1 ETH'
         }
     ]
@@ -96,7 +96,7 @@ app.get('/explore/item/:item', (req, res) => {
 app.get('/u/:user', (req, res) => {
     const data = {
         name: 'abc',
-        profileIcon: 'https://nftcompany.com/img/ex.png',
+        profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
         location: 'Paris',
         bio: 'I am an artist',
         url: 'https://mavrik.me',
@@ -113,20 +113,20 @@ app.get('/u/:user/follows', (req, res) => {
     const following = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             numFollowers: 20,
             images: [
-                'https://nftcompany.com/img/ex.png',
-                'https://nftcompany.com/img/ex.png'
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
             ]
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             numFollowers: 20,
             images: [
-                'https://nftcompany.com/img/ex.png',
-                'https://nftcompany.com/img/ex.png'
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
             ]
         }
     ]
@@ -134,20 +134,20 @@ app.get('/u/:user/follows', (req, res) => {
     const followers = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             numFollowers: 20,
             images: [
-                'https://nftcompany.com/img/ex.png',
-                'https://nftcompany.com/img/ex.png'
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
             ]
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             numFollowers: 20,
             images: [
-                'https://nftcompany.com/img/ex.png',
-                'https://nftcompany.com/img/ex.png'
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+                'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
             ]
         }
     ]
@@ -165,24 +165,24 @@ app.get('/u/:user/items', (req, res) => {
 
     const onSale = [
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             highestBid: '1 ETH',
             timeLeftToBid: '2 hrs'
         },
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             highestBid: '1 ETH',
             timeLeftToBid: '2 hrs'
         }
@@ -191,66 +191,66 @@ app.get('/u/:user/items', (req, res) => {
 
     const collected = [
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
         },
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
         }
     ]
     data.collected = collected
 
     const created = [
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
         },
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
         }
     ]
     data.created = created
 
     const likes = [
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             highestBid: '1 ETH',
             timeLeftToBid: '2 hrs'
         },
         {
-            image: 'https://nftcompany.com/img/ex.png',
+            image: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             title: 'abc',
             price: '1 ETH',
             numAvailable: '1/10 in stock',
-            collectionIcon: 'https://nftcompany.com/img/ex.png',
-            ownerIcon: 'https://nftcompany.com/img/ex.png',
-            creatorIcon: 'https://nftcompany.com/img/ex.png',
+            collectionIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            ownerIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
+            creatorIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             highestBid: '1 ETH',
             timeLeftToBid: '2 hrs'
         }
@@ -262,7 +262,7 @@ app.get('/u/:user/items', (req, res) => {
 
 app.get('/u/:user/item/:item', (req, res) => {
     const item = {}
-    item.image = 'https://nftcompany.com/img/ex.png'
+    item.image = 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg'
     item.title = 'Title'
     item.desc = 'Description'
 
@@ -275,13 +275,13 @@ app.get('/u/:user/item/:item', (req, res) => {
     const history = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             timestamp: 123,
             desc: 'Placed a bid for 1 ETH'
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             timestamp: 123,
             desc: 'Put Awesome work on sale'
         }
@@ -291,12 +291,12 @@ app.get('/u/:user/item/:item', (req, res) => {
     const bids = [
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             bid: '1.5 ETH'
         },
         {
             name: 'abc',
-            profileIcon: 'https://nftcompany.com/img/ex.png',
+            profileIcon: 'https://ui8-crypter-nft-html.herokuapp.com/img/content/card-pic-1.jpg',
             bid: '1 ETH'
         }
     ]
