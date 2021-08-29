@@ -1,14 +1,28 @@
 const express = require('express')
-const app = express();
+const firebaseAdmin = require('firebase-admin')
+firebaseAdmin.initializeApp()
+const db = admin.firestore()
+const app = express()
 app.use(express.json())
 
 const utils = require("./utils")
+const constants = require("./constants")
 
 // Listen to the App Engine-specified port, or 9090 otherwise
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
     utils.log(`Server listening on port ${PORT}...`)
 })
+
+//todo: uncomment auth requirement in this and all other imported files
+// app.all('/users/*', async (req, res, next) => {
+//     let authorized = await utils.authorizeUser(req.path, req.header(constants.firebaseAuth.authTokenHeader))
+//     if (authorized) {
+//       next()
+//     } else {
+//       res.status(401).send('Unauthorized')
+//     }
+// })
 
 app.get('/', (req, res) => {
     res.send('Hello from server!')
@@ -304,3 +318,50 @@ app.get('/u/:user/item/:item', (req, res) => {
 
     res.send(item)
 })
+
+// fetch asset
+app.get('/api/v1/asset/:tokenAddress/:tokenId', (req, res) => {
+
+})
+
+// fetch assets
+app.get('/api/v1/assets', (req, res) => {
+
+})
+
+// fetch orders
+app.get('/wyvern/v1/orders', (req, res) => {
+
+})
+
+// post order - make offer and list either single or bundle or factory sell
+app.post('/wyvern/v1/orders/post', (req, res) => {
+    const payload = req.body
+    db.collection(constants.firestore.ORDERS_COLLECTION).add(payload).then(resp => {
+        res.sendStatus(200)
+    }).catch(err => {
+        utils.error('Failed to post order', err)
+        res.sendStatus(500)
+    })
+})
+
+// fetch payment tokens
+app.get('/api/v1/tokens', (req, res) => {
+
+})
+
+// fetch asset bundle
+app.get('/api/v1/bundle/:slug', (req, res) => {
+
+})
+
+// fetch asset bundles
+app.get('/api/v1/bundles', (req, res) => {
+
+})
+
+// order fulfilled
+app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
+
+})
+

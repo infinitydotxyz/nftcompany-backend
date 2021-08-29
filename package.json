@@ -20,6 +20,6 @@
   "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "firebase-admin": "^9.11.0"
+    "firebase-admin": "^9.11.1"
   }
 }
