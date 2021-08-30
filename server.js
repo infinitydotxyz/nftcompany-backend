@@ -1,12 +1,14 @@
 const express = require('express')
-const firebaseAdmin = require('firebase-admin')
-firebaseAdmin.initializeApp()
-const db = admin.firestore()
 const app = express()
+const cors = require('cors')
 app.use(express.json())
+app.use(cors())
 
 const utils = require("./utils")
 const constants = require("./constants")
+
+const firebaseAdmin = utils.getFirebaseAdmin()
+const db = firebaseAdmin.firestore()
 
 // Listen to the App Engine-specified port, or 9090 otherwise
 const PORT = process.env.PORT || 9090;
@@ -330,15 +332,34 @@ app.get('/api/v1/assets', (req, res) => {
 })
 
 // fetch orders
-app.get('/wyvern/v1/orders', (req, res) => {
+app.get('/wyvern/v1/orders', async (req, res) => {
+    const tokenAddress = req.query.asset_contract_address
+    const tokenId = req.query.token_id
+    const side = req.query.side
 
+    const docs = await getOrders(tokenAddress, tokenId, side)
+    if (docs) {
+        let orders = []
+        for (const doc of docs) {
+            const order = doc.data()
+            order.id = doc.id
+            orders.push(order)
+        }
+        const resp = {
+            count: orders.length,
+            orders: orders
+        }
+        res.send(resp)
+    } else {
+        res.sendStatus(404)
+    }
 })
 
 // post order - make offer and list either single or bundle or factory sell
 app.post('/wyvern/v1/orders/post', (req, res) => {
     const payload = req.body
     db.collection(constants.firestore.ORDERS_COLLECTION).add(payload).then(resp => {
-        res.sendStatus(200)
+        res.send(payload)
     }).catch(err => {
         utils.error('Failed to post order', err)
         res.sendStatus(500)
@@ -362,6 +383,27 @@ app.get('/api/v1/bundles', (req, res) => {
 
 // order fulfilled
 app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
-
+    const docId = req.query.docId
+    db.collection(constants.firestore.ORDERS_COLLECTION).doc(docId).delete().then(resp => {
+        res.sendStatus(200)
+    }).catch(err => {
+        utils.error('Deleting order from orderbook failed after fulfilling it', err)
+        res.sendStatus(500)
+    })
 })
+
+async function getOrders(tokenAddress, tokenId, side) {
+    console.log('Fetching order for ', tokenAddress, tokenId, side)
+    const results = await db.collection(constants.firestore.ORDERS_COLLECTION)
+        .where('metadata.asset.address', '==', tokenAddress)
+        .where('metadata.asset.id', '==', tokenId)
+        .where('side', '==', parseInt(side))
+        .get()
+    
+    if (results.empty) {
+        console.log('No matching orders')
+        return
+    }
+    return results.docs
+}
 
