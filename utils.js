@@ -1,14 +1,14 @@
 const firebaseAdmin = require('firebase-admin')
 
 //todo: change this
-var serviceAccount = require("/Users/adi/Downloads/nftc-web-firebase-adminsdk-p2ja6-9872190029.json")
-firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(serviceAccount)
-})
-
+// var serviceAccount = require("/Users/adi/Downloads/nftc-web-firebase-adminsdk-p2ja6-9872190029.json")
 // firebaseAdmin.initializeApp({
-//   credential: firebaseAdmin.credential.applicationDefault()
+//   credential: firebaseAdmin.credential.cert(serviceAccount)
 // })
+
+firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.applicationDefault()
+})
 
 let DEBUG_LOG = true //todo: change this
 if (process.env.DEBUG_LOG == 'false') {
