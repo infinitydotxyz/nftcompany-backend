@@ -34,6 +34,7 @@ app.get('/', (req, res) => {
     res.send('Hello from server!')
 })
 
+// fetch all listings
 app.get('/listings', async (req, res) => {
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .get()
@@ -43,11 +44,6 @@ app.get('/listings', async (req, res) => {
             utils.error('Failed to get listings', err)
             res.sendStatus(500)
         })
-})
-
-// fetch asset
-app.get('/api/v1/asset/:tokenAddress/:tokenId', (req, res) => {
-
 })
 
 // fetch assets of user
@@ -84,7 +80,7 @@ app.get('/u/:user/listings', async (req, res) => {
         })
 })
 
-// fetch orders
+// fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
     const tokenAddress = req.query.asset_contract_address
     const tokenId = req.query.token_id
@@ -108,6 +104,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
     }
 })
 
+// post a listing or make offer
 app.post('/wyvern/v1/orders/post', (req, res) => {
     const payload = req.body
     const id = getDocId(payload.metadata.asset.address, payload.metadata.asset.id)
@@ -139,7 +136,7 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
             .doc(fstrCnstnts.ALL_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
-            .collection(OFFERS_MADE_COLL)
+            .collection(fstrCnstnts.OFFERS_MADE_COLL)
             .doc(id)
         batch.set(offersMadeRef, payload)
 
@@ -150,7 +147,7 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
             .doc(taker)
             .collection(fstrCnstnts.OFFERS_RECVD_COLL)
             .doc(id)
-            .collection(fstrCnstnts.OFFERS_MADE_COLL)
+            .collection(fstrCnstnts.OFFERS_RECVD_COLL)
             .doc()
 
         batch.set(offersRecdRef, payload)
@@ -167,31 +164,57 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
 
 })
 
-// fetch payment tokens
-app.get('/api/v1/tokens', (req, res) => {
+// cancel listing
+app.delete('/u/:user/listings/:listing', (req, res) => {
+    // delete listing and any offers recvd
+    const user = req.params.user
+    const listing = req.params.listing
 
-})
+    const batch = db.batch()
 
-// fetch asset bundle
-app.get('/api/v1/bundle/:slug', (req, res) => {
+    const listingRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+        .doc(fstrCnstnts.ALL_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .collection(fstrCnstnts.LISTINGS_COLL)
+        .doc(listing)
 
-})
+    batch.delete(listingRef)
 
-// fetch asset bundles
-app.get('/api/v1/bundles', (req, res) => {
+    // multiple offers can be received on the same nft
+    const offersRecdRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+        .doc(fstrCnstnts.ALL_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+        .doc(listing)
 
+    batch.delete(offersRecdRef)
+
+    // deleting a doc doesn't delete a sub collection, we have to do it separately
+    const subCollPath = fstrCnstnts.USERS_ROOT_COLL + '/' + fstrCnstnts.ALL_DOC + '/' + fstrCnstnts.USERS_COLL + '/' + user
+                         + '/' + fstrCnstnts.OFFERS_RECVD_COLL + '/' + listing + '/' + fstrCnstnts.OFFERS_RECVD_COLL;
+    
+    try {
+        // delete in a batch size of 1000
+        deleteCollection(subCollPath, 1000)
+    } catch (error) {
+        utils.error('Error deleting offers received sub collection for listing ' + listing, error)
+    }
+    
+    // Commit the batch
+    utils.log('Deleting a listing with id ' + listing)
+    batch.commit().then(resp => {
+        res.sendStatus(200)
+    }).catch(err => {
+        utils.error('Failed to delete listing ' + listing, err)
+        res.sendStatus(500)
+    })
 })
 
 // order fulfilled
 app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
     // write to bought and sold and delete from listing, offer made, offer recvd
-    const docId = req.query.docId
-    db.collection(constants.firestore.LISTINGS_COLLECTION).doc(docId).delete().then(resp => {
-        res.sendStatus(200)
-    }).catch(err => {
-        utils.error('Deleting order from orderbook failed after fulfilling it', err)
-        res.sendStatus(500)
-    })
 })
 
 async function getAssets(address) {
@@ -255,4 +278,33 @@ function getDocId(tokenAddress, tokenId) {
     const id = crypto.createHash('sha256').update(data).digest('base64')
     utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id)
     return id
+}
+
+async function deleteCollection(collectionPath, batchSize) {
+    utils.log('Deleting collection at', collectionPath)
+    const collectionRef = db.collection(collectionPath)
+    const query = collectionRef.orderBy('__name__').limit(batchSize)
+    return new Promise((resolve, reject) => {
+        deleteQueryBatch(query, resolve).catch(reject)
+    })
+}
+
+async function deleteQueryBatch(query, resolve) {
+    const snapshot = await query.get()
+    const batchSize = snapshot.size
+    if (batchSize === 0) {
+        // When there are no documents left, we are done
+        resolve()
+        return
+    }
+    // Delete documents in a batch
+    const batch = db.batch()
+    snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref)
+    })
+    await batch.commit()
+    // Recurse on the next process tick, to avoid exploding the stack
+    process.nextTick(() => {
+        deleteQueryBatch(query, resolve)
+    })
 }
