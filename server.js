@@ -1,4 +1,7 @@
+require('dotenv').config()
 const express = require('express')
+const axios = require('axios').default
+const crypto = require('crypto')
 const app = express()
 const cors = require('cors')
 app.use(express.json())
@@ -6,6 +9,7 @@ app.use(cors())
 
 const utils = require("./utils")
 const constants = require("./constants")
+const fstrCnstnts = constants.firestore
 
 const firebaseAdmin = utils.getFirebaseAdmin()
 const db = firebaseAdmin.firestore()
@@ -16,7 +20,7 @@ app.listen(PORT, () => {
     utils.log(`Server listening on port ${PORT}...`)
 })
 
-//todo: uncomment auth requirement in this and all other imported files
+//todo: uncomment auth requirement in this and all other imported files that serve end points
 // app.all('/users/*', async (req, res, next) => {
 //     let authorized = await utils.authorizeUser(req.path, req.header(constants.firebaseAuth.authTokenHeader))
 //     if (authorized) {
@@ -321,14 +325,54 @@ app.get('/u/:user/item/:item', (req, res) => {
     res.send(item)
 })
 
+app.get('/listings', async (req, res) => {
+    db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .get()
+        .then(querySnapshot => {
+            res.send(querySnapshot.docs[1].data())
+        }).catch(err => {
+            utils.error('Failed to get listings', err)
+            res.sendStatus(500)
+        })
+})
+
 // fetch asset
 app.get('/api/v1/asset/:tokenAddress/:tokenId', (req, res) => {
 
 })
 
-// fetch assets
-app.get('/api/v1/assets', (req, res) => {
+// fetch assets of user
+app.get('/u/:user/assets', async (req, res) => {
+    const user = req.params.user
+    const assets = await getAssets(user)
+    res.send(assets)
+})
 
+//fetch listings of user
+app.get('/u/:user/listings', async (req, res) => {
+    const user = req.params.user
+    db.collection(fstrCnstnts.USERS_ROOT_COLL)
+        .doc(fstrCnstnts.ALL_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .collection(fstrCnstnts.LISTINGS_COLL)
+        .get()
+        .then(data => {
+            let listings = []
+            for (const doc of data.docs) {
+                const listing = doc.data()
+                listing.id = doc.id
+                listings.push(listing)
+            }
+            const resp = {
+                count: listings.length,
+                listings: listings
+            }
+            res.send(resp)
+        }).catch(err => {
+            utils.error('Failed to get user listings for user ' + user, err)
+            res.sendStatus(500)
+        })
 })
 
 // fetch orders
@@ -355,15 +399,63 @@ app.get('/wyvern/v1/orders', async (req, res) => {
     }
 })
 
-// post order - make offer and list either single or bundle or factory sell
 app.post('/wyvern/v1/orders/post', (req, res) => {
     const payload = req.body
-    db.collection(constants.firestore.ORDERS_COLLECTION).add(payload).then(resp => {
-        res.send(payload)
-    }).catch(err => {
-        utils.error('Failed to post order', err)
-        res.sendStatus(500)
-    })
+    const id = getDocId(payload.metadata.asset.address, payload.metadata.asset.id)
+    const maker = payload.maker
+    const taker = payload.taker
+    // 0 is buy/offer, 1 is sell
+    const subColl = payload.side == 0 ? fstrCnstnts.OFFERS_MADE_COLL : fstrCnstnts.LISTINGS_COLL
+
+    if (subColl == fstrCnstnts.LISTINGS_COLL) {
+        utils.log('Posting a listing with id ' + id)
+        db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+            .collection(fstrCnstnts.LISTINGS_COLL)
+            .doc(id)
+            .set(payload)
+            .then(resp => {
+                res.send(payload)
+            }).catch(err => {
+                utils.error('Failed to post listing', err)
+                res.sendStatus(500)
+            })
+    } else {
+        // store data in offersMade of maker and offersRecd of taker
+        const batch = db.batch()
+
+        const offersMadeRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+            .collection(OFFERS_MADE_COLL)
+            .doc(id)
+        batch.set(offersMadeRef, payload)
+
+        // multiple offers can be received on the same nft
+        const offersRecdRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(taker)
+            .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+            .doc(id)
+            .collection(fstrCnstnts.OFFERS_MADE_COLL)
+            .doc()
+
+        batch.set(offersRecdRef, payload)
+
+        // Commit the batch
+        utils.log('Posting an offer with id ' + id)
+        batch.commit().then(resp => {
+            res.send(payload)
+        }).catch(err => {
+            utils.error('Failed to post offer', err)
+            res.sendStatus(500)
+        })
+    }
+
 })
 
 // fetch payment tokens
@@ -383,8 +475,9 @@ app.get('/api/v1/bundles', (req, res) => {
 
 // order fulfilled
 app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
+    // write to bought and sold and delete from listing, offer made, offer recvd
     const docId = req.query.docId
-    db.collection(constants.firestore.ORDERS_COLLECTION).doc(docId).delete().then(resp => {
+    db.collection(constants.firestore.LISTINGS_COLLECTION).doc(docId).delete().then(resp => {
         res.sendStatus(200)
     }).catch(err => {
         utils.error('Deleting order from orderbook failed after fulfilling it', err)
@@ -392,18 +485,65 @@ app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
     })
 })
 
+async function getAssets(address) {
+    utils.log('Fetching assets for ', address)
+    const results = await getAssetsFromChain(address)
+    return results
+}
+
+async function getAssetsFromChain(address) {
+    // call covalent or alchemy or unmarshall or opensea api
+
+    //unmarshal
+    const data = await getAssetsFromUnmarshal(address)
+    return data
+
+    // covalent
+
+    // alchemy
+
+    // opensea
+}
+
+async function getAssetsFromUnmarshal(address) {
+    const apiBase = 'https://api.unmarshal.com/v1/'
+    const chain = 'ethereum'
+    const authKey = process.env.unmarshalKey
+    const url = apiBase + chain + '/address/' + address + '/nft-assets?auth_key=' + authKey
+    try {
+        const { data } = await axios.get(url)
+        return data
+    } catch (error) {
+        utils.error('Error occured while fetching assets from unmarshal', error)
+        return
+    }
+}
+
+async function getAssetsFromCovalent(address) {
+
+}
+
 async function getOrders(tokenAddress, tokenId, side) {
-    console.log('Fetching order for ', tokenAddress, tokenId, side)
-    const results = await db.collection(constants.firestore.ORDERS_COLLECTION)
+    utils.log('Fetching order for ', tokenAddress, tokenId, side)
+    const results = await db.collection(constants.firestore.LISTINGS_COLLECTION)
         .where('metadata.asset.address', '==', tokenAddress)
         .where('metadata.asset.id', '==', tokenId)
         .where('side', '==', parseInt(side))
         .get()
-    
+
     if (results.empty) {
-        console.log('No matching orders')
+        utils.log('No matching orders')
         return
     }
     return results.docs
 }
 
+
+function getDocId(tokenAddress, tokenId) {
+    tokenAddress = tokenAddress.trim()
+    tokenId = tokenId.trim()
+    const data = tokenAddress + tokenId
+    const id = crypto.createHash('sha256').update(data).digest('base64')
+    utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id)
+    return id
+}

@@ -1,6 +1,6 @@
 const firebaseAdmin = require('firebase-admin')
 
-//todo: change this
+//todo: change this before push
 // var serviceAccount = require("/Users/adi/Downloads/nftc-web-firebase-adminsdk-p2ja6-9872190029.json")
 // firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.cert(serviceAccount)
