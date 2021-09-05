@@ -48,14 +48,15 @@ app.get('/listings', async (req, res) => {
 
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
-    const user = req.params.user
+    const user = req.params.user.toLowerCase()
     const assets = await getAssets(user)
     res.send(assets)
 })
 
 //fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
-    const user = req.params.user
+    const user = req.params.user.toLowerCase()
+
     db.collection(fstrCnstnts.USERS_ROOT_COLL)
         .doc(fstrCnstnts.ALL_DOC)
         .collection(fstrCnstnts.USERS_COLL)
@@ -82,7 +83,7 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-    const tokenAddress = req.query.asset_contract_address
+    const tokenAddress = req.query.asset_contract_address.toLowerCase()
     const tokenId = req.query.token_id
     const side = req.query.side
 
@@ -108,8 +109,8 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 app.post('/wyvern/v1/orders/post', (req, res) => {
     const payload = req.body
     const id = getDocId(payload.metadata.asset.address, payload.metadata.asset.id)
-    const maker = payload.maker
-    const taker = payload.taker
+    const maker = payload.maker.toLowerCase()
+    const taker = payload.taker.toLowerCase()
     // 0 is buy/offer, 1 is sell
     const subColl = payload.side == 0 ? fstrCnstnts.OFFERS_MADE_COLL : fstrCnstnts.LISTINGS_COLL
 
@@ -167,7 +168,7 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
 // cancel listing
 app.delete('/u/:user/listings/:listing', (req, res) => {
     // delete listing and any offers recvd
-    const user = req.params.user
+    const user = req.params.user.toLowerCase()
     const listing = req.params.listing
 
     const batch = db.batch()
@@ -272,7 +273,7 @@ async function getOrders(tokenAddress, tokenId, side) {
 
 
 function getDocId(tokenAddress, tokenId) {
-    tokenAddress = tokenAddress.trim()
+    tokenAddress = tokenAddress.trim().toLowerCase()
     tokenId = tokenId.trim()
     const data = tokenAddress + tokenId
     const id = crypto.createHash('sha256').update(data).digest('base64')
