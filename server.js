@@ -105,10 +105,14 @@ app.get('/wyvern/v1/orders', async (req, res) => {
     }
 })
 
+//=============================================== WRITES =====================================================================
+
 // post a listing or make offer
 app.post('/wyvern/v1/orders/post', (req, res) => {
     const payload = req.body
-    const id = getDocId(payload.metadata.asset.address, payload.metadata.asset.id)
+    const tokenAddress = payload.metadata.asset.address
+    const tokenId = payload.metadata.asset.id
+    const id = getDocId(tokenAddress, tokenId)
     const maker = payload.maker.toLowerCase()
     const taker = payload.taker.toLowerCase()
     // 0 is buy/offer, 1 is sell
@@ -116,19 +120,54 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
 
     if (subColl == fstrCnstnts.LISTINGS_COLL) {
         utils.log('Posting a listing with id ' + id)
-        db.collection(fstrCnstnts.USERS_ROOT_COLL)
+
+        const batch = db.batch()
+        // write listing
+        const listingRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
             .doc(fstrCnstnts.ALL_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
             .collection(fstrCnstnts.LISTINGS_COLL)
             .doc(id)
-            .set(payload)
-            .then(resp => {
-                res.send(payload)
-            }).catch(err => {
-                utils.error('Failed to post listing', err)
-                res.sendStatus(500)
-            })
+        batch.set(listingRef, payload)
+
+        // update num user listings
+        const userNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+        batch.update(userNumListingsRef, { 'numListings': firebaseAdmin.FieldValue.increment() })
+
+        // update total listings
+        const totalNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+        batch.update(totalNumListingsRef, { 'totalListings': firebaseAdmin.FieldValue.increment() })
+
+        // check if token has bonus
+        const hasBonus = await hasBonusReward(tokenAddress)
+        if (hasBonus) {
+            utils.log('Token has bonus reward for listing')
+            // update num bonus user listings
+            const userNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+                .doc(fstrCnstnts.ALL_DOC)
+                .collection(fstrCnstnts.USERS_COLL)
+                .doc(maker)
+            batch.update(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.FieldValue.increment() })
+
+            // update total bonus listings
+            const totalNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+                .doc(fstrCnstnts.ALL_DOC)
+            batch.update(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.FieldValue.increment() })
+        }
+
+        // commit batch
+        batch.commit().then(resp => {
+            updateListingReward(maker, hasBonus)
+            res.send(payload)
+        }).catch(err => {
+            utils.error('Failed to post listing', err)
+            res.sendStatus(500)
+        })
     } else {
         // store data in offersMade of maker and offersRecd of taker
         const batch = db.batch()
@@ -150,19 +189,47 @@ app.post('/wyvern/v1/orders/post', (req, res) => {
             .doc(id)
             .collection(fstrCnstnts.OFFERS_RECVD_COLL)
             .doc()
-
         batch.set(offersRecdRef, payload)
+
+        // update num user offers
+        const userNumOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+        batch.update(userNumOffersRef, { 'numOffers': firebaseAdmin.FieldValue.increment() })
+
+        // update total offers
+        const totalNumOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+        batch.update(totalNumOffersRef, { 'totalOffers': firebaseAdmin.FieldValue.increment() })
+
+        // check if token has bonus
+        const hasBonus = await hasBonusReward(tokenAddress)
+        if (hasBonus) {
+            utils.log('Token has bonus reward for offers made')
+            // update num bonus user listings
+            const userNumBonusOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+                .doc(fstrCnstnts.ALL_DOC)
+                .collection(fstrCnstnts.USERS_COLL)
+                .doc(maker)
+            batch.update(userNumBonusOffersRef, { 'numBonusOffers': firebaseAdmin.FieldValue.increment() })
+
+            // update total bonus listings
+            const totalNumBonusOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+                .doc(fstrCnstnts.ALL_DOC)
+            batch.update(totalNumBonusOffersRef, { 'totalBonusOffers': firebaseAdmin.FieldValue.increment() })
+        }
 
         // Commit the batch
         utils.log('Posting an offer with id ' + id)
         batch.commit().then(resp => {
+            updateOfferReward(maker, hasBonus)
             res.send(payload)
         }).catch(err => {
             utils.error('Failed to post offer', err)
             res.sendStatus(500)
         })
     }
-
 })
 
 // cancel listing
@@ -170,6 +237,7 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
     // delete listing and any offers recvd
     const user = req.params.user.toLowerCase()
     const listing = req.params.listing
+    const tokenAddress = req.query.tokenAddress
 
     const batch = db.batch()
 
@@ -179,7 +247,6 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
         .doc(listing)
-
     batch.delete(listingRef)
 
     // multiple offers can be received on the same nft
@@ -189,23 +256,50 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
         .doc(user)
         .collection(fstrCnstnts.OFFERS_RECVD_COLL)
         .doc(listing)
-
     batch.delete(offersRecdRef)
 
     // deleting a doc doesn't delete a sub collection, we have to do it separately
     const subCollPath = fstrCnstnts.USERS_ROOT_COLL + '/' + fstrCnstnts.ALL_DOC + '/' + fstrCnstnts.USERS_COLL + '/' + user
-                         + '/' + fstrCnstnts.OFFERS_RECVD_COLL + '/' + listing + '/' + fstrCnstnts.OFFERS_RECVD_COLL;
-    
+        + '/' + fstrCnstnts.OFFERS_RECVD_COLL + '/' + listing + '/' + fstrCnstnts.OFFERS_RECVD_COLL
     try {
         // delete in a batch size of 1000
         deleteCollection(subCollPath, 1000)
     } catch (error) {
         utils.error('Error deleting offers received sub collection for listing ' + listing, error)
     }
-    
+
+    // update num user listings
+    const userNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+        .doc(fstrCnstnts.ALL_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+    batch.update(userNumListingsRef, { 'numListings': firebaseAdmin.FieldValue.decrement() })
+
+    // update total listings
+    const totalNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+        .doc(fstrCnstnts.ALL_DOC)
+    batch.update(totalNumListingsRef, { 'totalListings': firebaseAdmin.FieldValue.decrement() })
+
+    // check if token has bonus
+    const hasBonus = await hasBonusReward(tokenAddress)
+    if (hasBonus) {
+        utils.log('Token has bonus reward for listing')
+        // update num bonus user listings
+        const userNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(user)
+        batch.update(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.FieldValue.decrement() })
+
+        // update total bonus listings
+        const totalNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
+            .doc(fstrCnstnts.ALL_DOC)
+        batch.update(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.FieldValue.decrement() })
+    }
     // Commit the batch
     utils.log('Deleting a listing with id ' + listing)
     batch.commit().then(resp => {
+        updateListingReward(user, hasBonus)
         res.sendStatus(200)
     }).catch(err => {
         utils.error('Failed to delete listing ' + listing, err)
@@ -217,6 +311,24 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
 app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
     // write to bought and sold and delete from listing, offer made, offer recvd
 })
+
+// ====================================================== HELPERS ==========================================================
+
+async function updateListingReward(user, hasBonus) {
+    utils.log('Uodating listing reward for user', user)
+    user = user.trim().toLowerCase()
+    
+}
+
+async function updateOfferReward(user, hasBonus) {
+    
+}
+
+async function hasBonusReward(address) {
+    address = address.trim().toLowerCase()
+    const doc = await db.collection(fstrCnstnts.BONUS_TOKENS_ROOT_COLL).doc(address).get()
+    return doc.exists
+}
 
 async function getAssets(address) {
     utils.log('Fetching assets for ', address)
