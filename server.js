@@ -144,21 +144,25 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
 
     const batch = db.batch()
 
-    // update global rewards data
-    const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-    batch.set(globalRewardsRef,
-        { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
-        { merge: true })
+    if (updatedRewards) {
+        // update global rewards data
+        const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+        batch.set(globalRewardsRef,
+            { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
+            { merge: true })
 
-    // update user rewards data
-    const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(maker)
-    batch.set(userRewardsRef,
-        { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
-        { merge: true })
+        // update user rewards data
+        const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+        batch.set(userRewardsRef,
+            { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
+            { merge: true })
+    } else {
+        utils.log('Not updating rewards data as there are no updates')
+    }
 
     if (subColl == fstrCnstnts.LISTINGS_COLL) {
         // write listing
@@ -271,21 +275,25 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
 
     const batch = db.batch()
 
-    // update global rewards data
-    const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-    batch.set(globalRewardsRef,
-        { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
-        { merge: true })
+    if (updatedRewards) {
+        // update global rewards data
+        const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+        batch.set(globalRewardsRef,
+            { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
+            { merge: true })
 
-    // update user rewards data
-    const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(maker)
-    batch.set(userRewardsRef,
-        { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
-        { merge: true })
+        // update user rewards data
+        const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(maker)
+        batch.set(userRewardsRef,
+            { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
+            { merge: true })
+    } else {
+        utils.log('Not updating rewards data as there are no updates')
+    }
 
     const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
@@ -501,14 +509,18 @@ async function hasBonusReward(address) {
 async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
     utils.log('Getting updated reward for user', user)
 
-    const userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+    let userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
-    userInfo = userInfo.data()
+    if (userInfo.exists) {
+        userInfo = userInfo.data()
+    } else {
+        userInfo = getEmptyUserInfo()
+    }
 
-    const globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+    let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
     globalInfo = globalInfo.data()
@@ -522,16 +534,48 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
     return updatedRewards
 }
 
+function getEmptyUserInfo() {
+    return {
+        rnumListings: 0,
+        numBonusListings: 0,
+        numOffers: 0,
+        numBonusOffers: 0,
+        numSales: 0,
+        feesPaid: 0,
+        ens: '',
+        rewardsInfo: getEmptyUserRewardInfo()
+    }
+}
+
+function getEmptyUserRewardInfo() {
+    return {
+        rewardDebt: 0,
+        bonusRewardDebt: 0,
+        feeeRewardDebt: 0,
+        pending: 0,
+        bonusPending: 0,
+        feePending: 0
+    }
+}
+
 // This function increase user's share and updates the global share
 // the user's actual share percentage is calculated by userShare / globalShare
 async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     utils.log('Increasing share')
 
-    let userShare = userInfo.numListings + userInfo.numOffers
+    let userShare = (userInfo.numListings || 0) + (userInfo.numOffers || 0)
+    // for new users
+    if (!userInfo.rewardsInfo) {
+        userInfo.rewardsInfo = getEmptyUserRewardInfo()
+    }
     let rewardDebt = userInfo.rewardsInfo.rewardDebt
     let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
 
     const updatedGlobalRewardsData = await updateGlobalRewards(globalInfo, hasBonus)
+    if (!updatedGlobalRewardsData) {
+        utils.log('Not increasing share as updatedGlobalRewardsData is empty')
+        return
+    }
     const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare
 
     let pending = 0
@@ -548,7 +592,7 @@ async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     userInfo.rewardsInfo.pending = pending
 
     if (hasBonus) {
-        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
+        let userBonusShare = (userInfo.numBonusListings || 0) + (userInfo.numBonusOffers || 0)
         let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
         let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid
         const accBonusRewardPerShare = updatedGlobalRewardsData.accBonusRewardPerShare
@@ -577,16 +621,24 @@ async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
 async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     utils.log('Decreasing share')
 
-    let userShare = userInfo.numListings + userInfo.numOffers
+    let userShare = (userInfo.numListings || 0) + (userInfo.numOffers || 0)
     if (userShare < numOrders) {
         utils.error('cannot decrease share')
         return
+    }
+    // for new users
+    if (!userInfo.rewardsInfo) {
+        userInfo.rewardsInfo = getEmptyUserRewardInfo()
     }
 
     let rewardDebt = userInfo.rewardsInfo.rewardDebt
     let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
 
-    const updatedGlobalRewardsData = updateGlobalRewards(globalInfo, hasBonus)
+    const updatedGlobalRewardsData = await updateGlobalRewards(globalInfo, hasBonus)
+    if (!updatedGlobalRewardsData) {
+        utils.log('Not decreasing share as updatedGlobalRewardsData is empty')
+        return
+    }
     const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare
 
     let pending = (userShare * accRewardPerShare) - rewardDebt
@@ -600,7 +652,7 @@ async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     userInfo.rewardsInfo.pending = pending
 
     if (hasBonus) {
-        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
+        let userBonusShare = (userInfo.numBonusListings || 0) + (userInfo.numBonusOffers || 0)
         if (userBonusShare < numOrders) {
             utils.error('cannot decrease bonus share')
             return
@@ -639,9 +691,11 @@ async function updateGlobalRewards(globalInfo, hasBonus) {
     const currentBlock = await getCurrentBlock()
 
     if (currentBlock <= lastRewardBlock) {
+        utils.log('Not updating global rewards since current block <= lastRewardBlock')
         return
     }
     if (totalListings == 0) {
+        utils.log('Not updating global rewards since totallistings are 0')
         lastRewardBlock = currentBlock
         return
     }
@@ -662,7 +716,6 @@ async function updateGlobalRewards(globalInfo, hasBonus) {
         accBonusRewardPerShare = accBonusRewardPerShare + (bonusReward / totalBonusListings)
         updatedRewardsData.accBonusRewardPerShare = accBonusRewardPerShare
     }
-
     return updatedRewardsData
 }
 
