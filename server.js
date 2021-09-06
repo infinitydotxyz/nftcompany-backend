@@ -1,4 +1,5 @@
 require('dotenv').config()
+const { ethers } = require("ethers")
 const express = require('express')
 const axios = require('axios').default
 const crypto = require('crypto')
@@ -30,9 +31,7 @@ app.listen(PORT, () => {
 //     }
 // })
 
-app.get('/', (req, res) => {
-    res.send('Hello from server!')
-})
+// ================================================ READ ===================================================================
 
 // fetch all listings
 app.get('/listings', async (req, res) => {
@@ -48,17 +47,17 @@ app.get('/listings', async (req, res) => {
 
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
-    const user = req.params.user.toLowerCase()
+    const user = req.params.user.trim().toLowerCase()
     const assets = await getAssets(user)
     res.send(assets)
 })
 
 //fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
-    const user = req.params.user.toLowerCase()
+    const user = req.params.user.trim().toLowerCase()
 
-    db.collection(fstrCnstnts.USERS_ROOT_COLL)
-        .doc(fstrCnstnts.ALL_DOC)
+    db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
@@ -83,11 +82,12 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-    const tokenAddress = req.query.asset_contract_address.toLowerCase()
+    const maker = req.query.maker.trim().toLowerCase()
+    const tokenAddress = req.query.asset_contract_address.trim().toLowerCase()
     const tokenId = req.query.token_id
     const side = req.query.side
 
-    const docs = await getOrders(tokenAddress, tokenId, side)
+    const docs = await getOrders(maker, tokenAddress, tokenId, side)
     if (docs) {
         let orders = []
         for (const doc of docs) {
@@ -108,141 +108,169 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 //=============================================== WRITES =====================================================================
 
 // post a listing or make offer
-app.post('/wyvern/v1/orders/post', (req, res) => {
+app.post('/wyvern/v1/orders/post', async (req, res) => {
     const payload = req.body
-    const tokenAddress = payload.metadata.asset.address
+    const tokenAddress = payload.metadata.asset.address.trim().toLowerCase()
     const tokenId = payload.metadata.asset.id
     const id = getDocId(tokenAddress, tokenId)
-    const maker = payload.maker.toLowerCase()
-    const taker = payload.taker.toLowerCase()
+    const maker = payload.maker.trim().toLowerCase()
+    const taker = payload.taker.trim().toLowerCase()
+    // default one order per post call
+    const numOrders = 1
     // 0 is buy/offer, 1 is sell
     const subColl = payload.side == 0 ? fstrCnstnts.OFFERS_MADE_COLL : fstrCnstnts.LISTINGS_COLL
 
-    if (subColl == fstrCnstnts.LISTINGS_COLL) {
-        utils.log('Posting a listing with id ' + id)
+    // check if token has bonus
+    const hasBonus = await hasBonusReward(tokenAddress)
+    const updatedRewards = await getUpdatedRewards(maker, hasBonus, numOrders, true)
 
-        const batch = db.batch()
+    const batch = db.batch()
+
+    // update global rewards data
+    const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+    batch.set(globalRewardsRef,
+        { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
+        { merge: true })
+
+    // update user rewards data
+    const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(maker)
+    batch.set(userRewardsRef,
+        { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
+        { merge: true })
+
+    if (subColl == fstrCnstnts.LISTINGS_COLL) {
         // write listing
-        const listingRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
             .collection(fstrCnstnts.LISTINGS_COLL)
             .doc(id)
-        batch.set(listingRef, payload)
+        batch.set(listingRef, payload, { merge: true })
 
         // update num user listings
-        const userNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        const userNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
-        batch.update(userNumListingsRef, { 'numListings': firebaseAdmin.FieldValue.increment() })
+        batch.set(userNumListingsRef, { 'numListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
         // update total listings
-        const totalNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
-        batch.update(totalNumListingsRef, { 'totalListings': firebaseAdmin.FieldValue.increment() })
+        const totalNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+        batch.set(totalNumListingsRef, { 'totalListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
-        // check if token has bonus
-        const hasBonus = await hasBonusReward(tokenAddress)
+        // update bonus items
         if (hasBonus) {
             utils.log('Token has bonus reward for listing')
             // update num bonus user listings
-            const userNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-                .doc(fstrCnstnts.ALL_DOC)
+            const userNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+                .doc(fstrCnstnts.INFO_DOC)
                 .collection(fstrCnstnts.USERS_COLL)
                 .doc(maker)
-            batch.update(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.FieldValue.increment() })
+            batch.set(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
             // update total bonus listings
-            const totalNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-                .doc(fstrCnstnts.ALL_DOC)
-            batch.update(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.FieldValue.increment() })
+            const totalNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+                .doc(fstrCnstnts.INFO_DOC)
+            batch.set(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
         }
 
-        // commit batch
-        batch.commit().then(resp => {
-            updateListingReward(maker, hasBonus)
-            res.send(payload)
-        }).catch(err => {
-            utils.error('Failed to post listing', err)
-            res.sendStatus(500)
-        })
     } else {
         // store data in offersMade of maker and offersRecd of taker
-        const batch = db.batch()
-
-        const offersMadeRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        const offersMadeRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
             .collection(fstrCnstnts.OFFERS_MADE_COLL)
             .doc(id)
-        batch.set(offersMadeRef, payload)
+        batch.set(offersMadeRef, payload, { merge: true })
 
         // multiple offers can be received on the same nft
-        const offersRecdRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        const offersRecdRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(taker)
             .collection(fstrCnstnts.OFFERS_RECVD_COLL)
             .doc(id)
             .collection(fstrCnstnts.OFFERS_RECVD_COLL)
             .doc()
-        batch.set(offersRecdRef, payload)
+        batch.set(offersRecdRef, payload, { merge: true })
 
-        // update num user offers
-        const userNumOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        // update num user offers made
+        const userNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(maker)
-        batch.update(userNumOffersRef, { 'numOffers': firebaseAdmin.FieldValue.increment() })
+        batch.set(userNumOffersRef, { 'numOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
-        // update total offers
-        const totalNumOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
-        batch.update(totalNumOffersRef, { 'totalOffers': firebaseAdmin.FieldValue.increment() })
+        // update total offers made
+        const totalNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+        batch.set(totalNumOffersRef, { 'totalOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
-        // check if token has bonus
-        const hasBonus = await hasBonusReward(tokenAddress)
         if (hasBonus) {
             utils.log('Token has bonus reward for offers made')
             // update num bonus user listings
-            const userNumBonusOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-                .doc(fstrCnstnts.ALL_DOC)
+            const userNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+                .doc(fstrCnstnts.INFO_DOC)
                 .collection(fstrCnstnts.USERS_COLL)
                 .doc(maker)
-            batch.update(userNumBonusOffersRef, { 'numBonusOffers': firebaseAdmin.FieldValue.increment() })
+            batch.set(userNumBonusOffersRef, { 'numBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
             // update total bonus listings
-            const totalNumBonusOffersRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-                .doc(fstrCnstnts.ALL_DOC)
-            batch.update(totalNumBonusOffersRef, { 'totalBonusOffers': firebaseAdmin.FieldValue.increment() })
+            const totalNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+                .doc(fstrCnstnts.INFO_DOC)
+            batch.set(totalNumBonusOffersRef, { 'totalBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
         }
-
-        // Commit the batch
-        utils.log('Posting an offer with id ' + id)
-        batch.commit().then(resp => {
-            updateOfferReward(maker, hasBonus)
-            res.send(payload)
-        }).catch(err => {
-            utils.error('Failed to post offer', err)
-            res.sendStatus(500)
-        })
     }
+
+    // commit batch
+    utils.log('Posting an order with id ' + id)
+    batch.commit().then(resp => {
+        res.send(payload)
+    }).catch(err => {
+        utils.error('Failed to post order', err)
+        res.sendStatus(500)
+    })
 })
 
 // cancel listing
-app.delete('/u/:user/listings/:listing', (req, res) => {
+app.delete('/u/:user/listings/:listing', async (req, res) => {
     // delete listing and any offers recvd
-    const user = req.params.user.toLowerCase()
+    const user = req.params.user.trim().toLowerCase()
     const listing = req.params.listing
-    const tokenAddress = req.query.tokenAddress
+    const tokenAddress = req.query.tokenAddress.trim().toLowerCase()
+    const numOrders = 1
+
+    // check if token has bonus
+    const hasBonus = await hasBonusReward(tokenAddress)
+    const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
 
     const batch = db.batch()
 
-    const listingRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-        .doc(fstrCnstnts.ALL_DOC)
+    // update global rewards data
+    const globalRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+    batch.set(globalRewardsRef,
+        { 'rewardsInfo': updatedRewards.updatedGlobalRewardsData },
+        { merge: true })
+
+    // update user rewards data
+    const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(maker)
+    batch.set(userRewardsRef,
+        { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
+        { merge: true })
+
+    const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
@@ -250,8 +278,8 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
     batch.delete(listingRef)
 
     // multiple offers can be received on the same nft
-    const offersRecdRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-        .doc(fstrCnstnts.ALL_DOC)
+    const offersRecdRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.OFFERS_RECVD_COLL)
@@ -259,7 +287,7 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
     batch.delete(offersRecdRef)
 
     // deleting a doc doesn't delete a sub collection, we have to do it separately
-    const subCollPath = fstrCnstnts.USERS_ROOT_COLL + '/' + fstrCnstnts.ALL_DOC + '/' + fstrCnstnts.USERS_COLL + '/' + user
+    const subCollPath = fstrCnstnts.ROOT_COLL + '/' + fstrCnstnts.INFO_DOC + '/' + fstrCnstnts.USERS_COLL + '/' + user
         + '/' + fstrCnstnts.OFFERS_RECVD_COLL + '/' + listing + '/' + fstrCnstnts.OFFERS_RECVD_COLL
     try {
         // delete in a batch size of 1000
@@ -269,37 +297,36 @@ app.delete('/u/:user/listings/:listing', (req, res) => {
     }
 
     // update num user listings
-    const userNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-        .doc(fstrCnstnts.ALL_DOC)
+    const userNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
-    batch.update(userNumListingsRef, { 'numListings': firebaseAdmin.FieldValue.decrement() })
+    batch.set(userNumListingsRef, { 'numListings': firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true })
 
     // update total listings
-    const totalNumListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-        .doc(fstrCnstnts.ALL_DOC)
-    batch.update(totalNumListingsRef, { 'totalListings': firebaseAdmin.FieldValue.decrement() })
+    const totalNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+    batch.set(totalNumListingsRef, { 'totalListings': firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true })
 
-    // check if token has bonus
-    const hasBonus = await hasBonusReward(tokenAddress)
+    // update bonus data
     if (hasBonus) {
         utils.log('Token has bonus reward for listing')
         // update num bonus user listings
-        const userNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
+        const userNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
             .doc(user)
-        batch.update(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.FieldValue.decrement() })
+        batch.set(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true })
 
         // update total bonus listings
-        const totalNumBonusListingsRef = db.collection(fstrCnstnts.USERS_ROOT_COLL)
-            .doc(fstrCnstnts.ALL_DOC)
-        batch.update(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.FieldValue.decrement() })
+        const totalNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+        batch.set(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true })
     }
+
     // Commit the batch
     utils.log('Deleting a listing with id ' + listing)
     batch.commit().then(resp => {
-        updateListingReward(user, hasBonus)
         res.sendStatus(200)
     }).catch(err => {
         utils.error('Failed to delete listing ' + listing, err)
@@ -314,24 +341,8 @@ app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
 
 // ====================================================== HELPERS ==========================================================
 
-async function updateListingReward(user, hasBonus) {
-    utils.log('Uodating listing reward for user', user)
-    user = user.trim().toLowerCase()
-    
-}
-
-async function updateOfferReward(user, hasBonus) {
-    
-}
-
-async function hasBonusReward(address) {
-    address = address.trim().toLowerCase()
-    const doc = await db.collection(fstrCnstnts.BONUS_TOKENS_ROOT_COLL).doc(address).get()
-    return doc.exists
-}
-
 async function getAssets(address) {
-    utils.log('Fetching assets for ', address)
+    utils.log('Fetching assets for', address)
     const results = await getAssetsFromChain(address)
     return results
 }
@@ -364,13 +375,13 @@ async function getAssetsFromUnmarshal(address) {
     }
 }
 
-async function getAssetsFromCovalent(address) {
-
-}
-
-async function getOrders(tokenAddress, tokenId, side) {
-    utils.log('Fetching order for ', tokenAddress, tokenId, side)
-    const results = await db.collection(constants.firestore.LISTINGS_COLLECTION)
+async function getOrders(maker, tokenAddress, tokenId, side) {
+    utils.log('Fetching order for', maker, tokenAddress, tokenId, side)
+    const results = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(maker)
+        .collection(fstrCnstnts.LISTINGS_COLL)
         .where('metadata.asset.address', '==', tokenAddress)
         .where('metadata.asset.id', '==', tokenId)
         .where('side', '==', parseInt(side))
@@ -385,8 +396,6 @@ async function getOrders(tokenAddress, tokenId, side) {
 
 
 function getDocId(tokenAddress, tokenId) {
-    tokenAddress = tokenAddress.trim().toLowerCase()
-    tokenId = tokenId.trim()
     const data = tokenAddress + tokenId
     const id = crypto.createHash('sha256').update(data).digest('base64')
     utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id)
@@ -420,4 +429,254 @@ async function deleteQueryBatch(query, resolve) {
     process.nextTick(() => {
         deleteQueryBatch(query, resolve)
     })
+}
+
+
+// =============================================== Rewards calc logic ========================================================
+
+async function hasBonusReward(address) {
+    const doc = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.BONUS_REWARD_TOKENS_COLL)
+        .doc(address)
+        .get()
+    return doc.exists
+}
+
+async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
+    utils.log('Getting updated reward for user', user)
+
+    const userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .get()
+
+    const globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .get()
+
+    let updatedRewards
+    if (isIncrease) {
+        updatedRewards = await increaseShare(hasBonus, numOrders, userInfo, globalInfo)
+    } else {
+        updatedRewards = await decreaseShare(hasBonus, numOrders, userInfo, globalInfo)
+    }
+    return updatedRewards
+}
+
+// This function increase user's share and updates the global share
+// the user's actual share percentage is calculated by userShare / globalShare
+async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
+    let userShare = userInfo.numListings + userInfo.numOffers
+    let rewardDebt = userInfo.rewardsInfo.rewardDebt
+    let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
+
+    const updatedGlobalRewardsData = await updateGlobalRewards(globalInfo, hasBonus)
+    const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare
+
+    let pending = 0
+    if (userShare > 0) {
+        pending = (userShare * accRewardPerShare) - rewardDebt
+        totalRewardPaid = totalRewardPaid + pending
+    }
+    // add current value before reward debt calc
+    userShare += numOrders
+    rewardDebt = userShare * accRewardPerShare
+
+    updatedGlobalRewardsData.totalRewardPaid = totalRewardPaid
+    userInfo.rewardsInfo.rewardDebt = rewardDebt
+    userInfo.rewardsInfo.pending = pending
+
+    if (hasBonus) {
+        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
+        let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
+        let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid
+        const accBonusRewardPerShare = updatedGlobalRewardsData.accBonusRewardPerShare
+        let bonusPending = 0
+        if (userBonusShare > 0) {
+            bonusPending = (userBonusShare * accBonusRewardPerShare) - bonusRewardDebt
+            totalBonusRewardPaid = totalBonusRewardPaid + bonusPending
+        }
+        // add current value before reward debt calc
+        userBonusShare += numOrders
+        bonusRewardDebt = userBonusShare * accBonusRewardPerShare
+
+        updatedGlobalRewardsData.totalBonusRewardPaid = totalBonusRewardPaid
+        userInfo.rewardsInfo.bonusRewardDebt = bonusRewardDebt
+        userInfo.rewardsInfo.bonusPending = bonusPending
+    }
+
+    return {
+        updatedGlobalRewardsData: updatedGlobalRewardsData,
+        updatedUserRewardsData: userInfo.rewardsInfo
+    }
+}
+
+// This function will decreases user's share by value, and updates the global share
+// it will record which block this is happening and accumulates the area of (share * time)
+async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
+    let userShare = userInfo.numListings + userInfo.numOffers
+    if (userShare < numOrders) {
+        utils.error('cannot decrease share')
+        return
+    }
+
+    let rewardDebt = userInfo.rewardsInfo.rewardDebt
+    let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
+
+    const updatedGlobalRewardsData = updateGlobalRewards(globalInfo, hasBonus)
+    const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare
+
+    let pending = (userShare * accRewardPerShare) - rewardDebt
+    totalRewardPaid = totalRewardPaid + pending
+    // decrease userShare before rewardDebt calc
+    userShare -= numOrders
+    rewardDebt = userShare * accRewardPerShare
+
+    updatedGlobalRewardsData.totalRewardPaid = totalRewardPaid
+    userInfo.rewardsInfo.rewardDebt = rewardDebt
+    userInfo.rewardsInfo.pending = pending
+
+    if (hasBonus) {
+        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
+        if (userBonusShare < numOrders) {
+            utils.error('cannot decrease bonus share')
+            return
+        }
+
+        let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
+        let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid
+
+        const accBonusRewardPerShare = updatedGlobalRewardsData.accBonusRewardPerShare
+
+        let bonusPending = (userBonusShare * accBonusRewardPerShare) - bonusRewardDebt
+        totalBonusRewardPaid = totalBonusRewardPaid + bonusPending
+        // decrease userShare before rewardDebt calc
+        userBonusShare -= numOrders
+        bonusRewardDebt = userBonusShare * accBonusRewardPerShare
+
+        updatedGlobalRewardsData.totalBonusRewardPaid = totalBonusRewardPaid
+        userInfo.rewardsInfo.bonusRewardDebt = bonusRewardDebt
+        userInfo.rewardsInfo.bonusPending = bonusPending
+    }
+
+    return {
+        updatedGlobalRewardsData: updatedGlobalRewardsData,
+        updatedUserRewardsData: userInfo.rewardsInfo
+    }
+}
+
+// Update reward variables of the given pool to be up-to-date
+async function updateGlobalRewards(globalInfo, hasBonus) {
+    const totalListings = globalInfo.totalListings
+    const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock
+    let lastRewardBlock = globalInfo.rewardsInfo.lastRewardBlock
+    let accRewardPerShare = globalInfo.rewardsInfo.accRewardPerShare
+    const currentBlock = await getCurrentBlock()
+
+    if (currentBlock <= lastRewardBlock) {
+        return
+    }
+    if (totalListings == 0) {
+        lastRewardBlock = currentBlock
+        return
+    }
+    const multiplier = currentBlock - lastRewardBlock
+    const reward = multiplier * rewardPerBlock
+    accRewardPerShare = accRewardPerShare + (reward / totalListings)
+    lastRewardBlock = currentBlock
+
+    const updatedRewardsData = globalInfo.rewardsInfo
+    updatedRewardsData.accRewardPerShare = accRewardPerShare
+    updatedRewardsData.lastRewardBlock = lastRewardBlock
+
+    if (hasBonus) {
+        const totalBonusListings = globalInfo.totalBonusListings
+        const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock
+        let accBonusRewardPerShare = globalInfo.rewardsInfo.accBonusRewardPerShare
+        const bonusReward = multiplier * bonusRewardPerBlock
+        accBonusRewardPerShare = accBonusRewardPerShare + (bonusReward / totalBonusListings)
+        updatedRewardsData.accBonusRewardPerShare = accBonusRewardPerShare
+    }
+
+    return updatedRewardsData
+}
+
+async function getCurrentBlock() {
+    const provider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet)
+    const currentBlock = await provider.getBlockNumber()
+    return currentBlock
+}
+
+async function getReward(user) {
+    utils.log('Getting reward for user', user)
+
+    const userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .get()
+
+    const globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .get()
+
+    const currentBlock = await getCurrentBlock()
+
+    const totalListings = globalInfo.totalListings
+    const totalBonusListings = globalInfo.totalBonusListings
+    const totalFees = globalInfo.totalFees
+
+    const lastRewardBlock = globalInfo.rewardsInfo.lastRewardBlock
+    const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated
+    const penaltyRatio = globalInfo.rewardsInfo.penaltyRatio
+    const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock
+    const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock
+    const feeRewardPerBlock = globalInfo.rewardsInfo.feeRewardPerBlock
+    let _accRewardPerShare = globalInfo.rewardsInfo.accRewardPerShare
+    let _accBonusRewardPerShare = globalInfo.rewardsInfo.accBonusRewardPerShare
+    let _accFeeRewardPerShare = globalInfo.rewardsInfo.accFeeRewardPerShare
+
+    const numSales = userInfo.numSales
+    const numOrders = userInfo.numListings + userInfo.numOffers
+    const numBonusOrders = userInfo.numBonusListings + userInfo.numBonusOffers
+    const feesPaid = userInfo.feesPaid
+    const rewardDebt = userInfo.rewardsInfo.rewardDebt
+    const bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
+    const feeRewardDebt = userInfo.rewardsInfo.feeRewardDebt
+
+    if (currentBlock > lastRewardBlock && totalListings != 0) {
+        const multiplier = currentBlock - lastRewardBlock
+        const reward = multiplier * rewardPerBlock
+        _accRewardPerShare = _accRewardPerShare + (reward / totalListings)
+    }
+    if (currentBlock > lastRewardBlock && totalBonusListings != 0) {
+        const multiplier = currentBlock - lastRewardBlock
+        const reward = multiplier * bonusRewardPerBlock
+        _accBonusRewardPerShare = _accBonusRewardPerShare + (reward / totalBonusListings)
+    }
+    if (currentBlock > lastRewardBlock && totalFees != 0) {
+        const multiplier = currentBlock - lastRewardBlock
+        const reward = multiplier * feeRewardPerBlock
+        _accFeeRewardPerShare = _accFeeRewardPerShare + (reward / totalFees)
+    }
+
+    const reward = (numOrders * _accRewardPerShare) - rewardDebt
+    const bonusReward = (numBonusOrders * _accBonusRewardPerShare) - bonusRewardDebt
+    const feeReward = (feesPaid * _accFeeRewardPerShare) - feeRewardDebt
+
+    const grossReward = reward + bonusReward + feeReward
+    if (penaltyActivated) {
+        const salesRatio = numSales / (numOrders + numBonusOrders)
+        const penalty = (penaltyRatio - salesRatio) * grossReward
+        // the edge case where all orders are fulfilled
+        if (penalty < 0) {
+            penalty = 0
+        }
+        const netReward = grossReward - penalty
+        return netReward
+    } else {
+        return grossReward
+    }
 }
