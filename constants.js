@@ -18,7 +18,7 @@ Data structure in firestore
                 - feeRewardPerBlock
 				- totalRewardPaid
 				- totalBonusRewardPaid
-                - totalSaleRewardPaid
+                - totalFeeRewardPaid
 				- lastRewardBlock
 				- penaltyActivated
                 - penaltyRatio

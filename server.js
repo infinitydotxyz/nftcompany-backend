@@ -15,6 +15,13 @@ const fstrCnstnts = constants.firestore
 const firebaseAdmin = utils.getFirebaseAdmin()
 const db = firebaseAdmin.firestore()
 
+const nftDataSources = {
+    '0': 'nftc',
+    '1': 'opensea',
+    '2': 'unmarshal',
+    '3': 'alchemy'
+}
+
 // Listen to the App Engine-specified port, or 9090 otherwise
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
@@ -48,7 +55,11 @@ app.get('/listings', async (req, res) => {
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
     const user = req.params.user.trim().toLowerCase()
-    const assets = await getAssets(user)
+    const limit = req.query.limit
+    const offset = req.query.offset
+    const source = req.query.source
+    const sourceName = nftDataSources[source]
+    const assets = await getAssets(user, limit, offset, sourceName)
     res.send(assets)
 })
 
@@ -103,6 +114,13 @@ app.get('/wyvern/v1/orders', async (req, res) => {
     } else {
         res.sendStatus(404)
     }
+})
+
+// fetch user reward
+app.get('/u/:user/reward', async (req, res) => {
+    const user = req.params.user.trim().toLowerCase()
+    const reward = await getReward(user)
+    res.send(reward)
 })
 
 //=============================================== WRITES =====================================================================
@@ -341,27 +359,44 @@ app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
 
 // ====================================================== HELPERS ==========================================================
 
-async function getAssets(address) {
+async function getAssets(address, limit, offset, sourceName) {
     utils.log('Fetching assets for', address)
-    const results = await getAssetsFromChain(address)
+    const results = await getAssetsFromChain(address, limit, offset, sourceName)
     return results
 }
 
-async function getAssetsFromChain(address) {
-    // call covalent or alchemy or unmarshall or opensea api
-
-    //unmarshal
-    const data = await getAssetsFromUnmarshal(address)
+async function getAssetsFromChain(address, limit, offset, sourceName) {
+    let data
+    switch (sourceName) {
+        case 'nftc':
+            data = await getAssetsFromNftc(address, limit, offset)
+            break
+        case 'alchemy':
+            data = await getAssetsFromAlchemy(address, limit, offset)
+            break
+        case 'unmarshal':
+            data = await getAssetsFromUnmarshal(address, limit, offset)
+            break
+        case 'opensea':
+            data = await getAssetsFromOpensea(address, limit, offset)
+            break
+        default:
+            utils.log('Invalid data source for fetching nft data of wallet')
+    }
     return data
-
-    // covalent
-
-    // alchemy
-
-    // opensea
+}
+async function getAssetsFromNftc(address, limit, offset) {
+    utils.log('Fetching assets from nftc')
+    return
 }
 
-async function getAssetsFromUnmarshal(address) {
+async function getAssetsFromAlchemy(address, limit, offset) {
+    utils.log('Fetching assets from alchemy')
+    return
+}
+
+async function getAssetsFromUnmarshal(address, limit, offset) {
+    utils.log('Fetching assets from unmarshal')
     const apiBase = 'https://api.unmarshal.com/v1/'
     const chain = 'ethereum'
     const authKey = process.env.unmarshalKey
@@ -371,6 +406,26 @@ async function getAssetsFromUnmarshal(address) {
         return data
     } catch (error) {
         utils.error('Error occured while fetching assets from unmarshal', error)
+        return
+    }
+}
+
+async function getAssetsFromOpensea(address, limit, offset) {
+    utils.log('Fetching assets from opensea')
+    const apiBase = 'https://api.opensea.io/api/v1/assets/'
+    const authKey = process.env.openseaKey
+    const url = apiBase + '?limit=' + limit + '&offset=' + offset + '&owner=' + address
+    const options = {
+        headers: {
+            'X-API-KEY': authKey
+        }
+    }
+    try {
+        utils.log(url)
+        const { data } = await axios.get(url, options)
+        return data
+    } catch (error) {
+        utils.error('Error occured while fetching assets from opensea', error)
         return
     }
 }
@@ -451,10 +506,12 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
+    userInfo = userInfo.data()
 
     const globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
+    globalInfo = globalInfo.data()
 
     let updatedRewards
     if (isIncrease) {
@@ -468,6 +525,8 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
 // This function increase user's share and updates the global share
 // the user's actual share percentage is calculated by userShare / globalShare
 async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
+    utils.log('Increasing share')
+
     let userShare = userInfo.numListings + userInfo.numOffers
     let rewardDebt = userInfo.rewardsInfo.rewardDebt
     let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
@@ -516,6 +575,8 @@ async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
 // This function will decreases user's share by value, and updates the global share
 // it will record which block this is happening and accumulates the area of (share * time)
 async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
+    utils.log('Decreasing share')
+
     let userShare = userInfo.numListings + userInfo.numOffers
     if (userShare < numOrders) {
         utils.error('cannot decrease share')
@@ -569,6 +630,8 @@ async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
 
 // Update reward variables of the given pool to be up-to-date
 async function updateGlobalRewards(globalInfo, hasBonus) {
+    utils.log('Updating global rewards')
+
     const totalListings = globalInfo.totalListings
     const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock
     let lastRewardBlock = globalInfo.rewardsInfo.lastRewardBlock
@@ -606,21 +669,24 @@ async function updateGlobalRewards(globalInfo, hasBonus) {
 async function getCurrentBlock() {
     const provider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet)
     const currentBlock = await provider.getBlockNumber()
+    utils.log('Current eth block: ' + currentBlock)
     return currentBlock
 }
 
 async function getReward(user) {
     utils.log('Getting reward for user', user)
 
-    const userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+    let userInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
+    userInfo = userInfo.data()
 
-    const globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
+    let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
+    globalInfo = globalInfo.data()
 
     const currentBlock = await getCurrentBlock()
 
@@ -662,11 +728,17 @@ async function getReward(user) {
         _accFeeRewardPerShare = _accFeeRewardPerShare + (reward / totalFees)
     }
 
-    const reward = (numOrders * _accRewardPerShare) - rewardDebt
+    const ordersReward = (numOrders * _accRewardPerShare) - rewardDebt
     const bonusReward = (numBonusOrders * _accBonusRewardPerShare) - bonusRewardDebt
     const feeReward = (feesPaid * _accFeeRewardPerShare) - feeRewardDebt
-
     const grossReward = reward + bonusReward + feeReward
+
+    const resp = {
+        ordersReward: ordersReward,
+        bonusReward: bonusReward,
+        feeReward: feeReward,
+        grossReward: grossReward
+    }
     if (penaltyActivated) {
         const salesRatio = numSales / (numOrders + numBonusOrders)
         const penalty = (penaltyRatio - salesRatio) * grossReward
@@ -675,8 +747,11 @@ async function getReward(user) {
             penalty = 0
         }
         const netReward = grossReward - penalty
-        return netReward
+        resp.penalty = penalty
+        resp.netReward = netReward
     } else {
-        return grossReward
+        resp.penalty = 0
+        resp.netReward = grossReward
     }
+    return resp
 }
