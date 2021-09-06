@@ -552,7 +552,7 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
 
 function getEmptyUserInfo() {
     return {
-        rnumListings: 0,
+        numListings: 0,
         numBonusListings: 0,
         numOffers: 0,
         numBonusOffers: 0,
@@ -567,7 +567,7 @@ function getEmptyUserRewardInfo() {
     return {
         rewardDebt: 0,
         bonusRewardDebt: 0,
-        feeeRewardDebt: 0,
+        feeRewardDebt: 0,
         pending: 0,
         bonusPending: 0,
         feePending: 0
@@ -750,7 +750,11 @@ async function getReward(user) {
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
-    userInfo = userInfo.data()
+    if (userInfo.exists) {
+        userInfo = userInfo.data()
+    } else {
+        userInfo = getEmptyUserInfo()
+    }
 
     let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
@@ -800,7 +804,7 @@ async function getReward(user) {
     const ordersReward = (numOrders * _accRewardPerShare) - rewardDebt
     const bonusReward = (numBonusOrders * _accBonusRewardPerShare) - bonusRewardDebt
     const feeReward = (feesPaid * _accFeeRewardPerShare) - feeRewardDebt
-    const grossReward = reward + bonusReward + feeReward
+    const grossReward = ordersReward + bonusReward + feeReward
 
     const resp = {
         ordersReward: ordersReward,

@@ -34,7 +34,7 @@ Data structure in firestore
 					- rewardsInfo
 						- rewardDebt
 						- bonusRewardDebt
-                        - feeeRewardDebt
+                        - feeRewardDebt
                         - pending
                         - bonusPending
                         - feePending
