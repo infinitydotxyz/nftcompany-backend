@@ -174,32 +174,40 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
             .doc(id)
         batch.set(listingRef, payload, { merge: true })
 
-        // update num user listings
-        const userNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-            .collection(fstrCnstnts.USERS_COLL)
-            .doc(maker)
-        batch.set(userNumListingsRef, { 'numListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
-
-        // update total listings
-        const totalNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-        batch.set(totalNumListingsRef, { 'totalListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
-
-        // update bonus items
-        if (hasBonus) {
-            utils.log('Token has bonus reward for listing')
-            // update num bonus user listings
-            const userNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+        // check if doc already exists (in case of edit listing) - only update numlistings if it isn't
+        const listing = await listingRef.get()
+        if (!listing.exists) {
+            utils.log('updating num listings since listing does not exist')
+            // update num user listings
+            const userNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
                 .doc(fstrCnstnts.INFO_DOC)
                 .collection(fstrCnstnts.USERS_COLL)
                 .doc(maker)
-            batch.set(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            batch.set(userNumListingsRef, { 'numListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
-            // update total bonus listings
-            const totalNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+            // update total listings
+            const totalNumListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
                 .doc(fstrCnstnts.INFO_DOC)
-            batch.set(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            batch.set(totalNumListingsRef, { 'totalListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+        }
+        // update bonus items
+        if (hasBonus) {
+            utils.log('Token has bonus reward for listing')
+            // check if doc already exists (in case of edit listing) - only update numBonuslistings if it isn't
+            if (!listing.exists) {
+                utils.log('updating num bonus listings since listing does not exist')
+                // update num bonus user listings
+                const userNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+                    .doc(fstrCnstnts.INFO_DOC)
+                    .collection(fstrCnstnts.USERS_COLL)
+                    .doc(maker)
+                batch.set(userNumBonusListingsRef, { 'numBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+
+                // update total bonus listings
+                const totalNumBonusListingsRef = db.collection(fstrCnstnts.ROOT_COLL)
+                    .doc(fstrCnstnts.INFO_DOC)
+                batch.set(totalNumBonusListingsRef, { 'totalBonusListings': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            }
         }
 
     } else {
@@ -223,31 +231,39 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
             .doc()
         batch.set(offersRecdRef, payload, { merge: true })
 
-        // update num user offers made
-        const userNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-            .collection(fstrCnstnts.USERS_COLL)
-            .doc(maker)
-        batch.set(userNumOffersRef, { 'numOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
-
-        // update total offers made
-        const totalNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-        batch.set(totalNumOffersRef, { 'totalOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
-
-        if (hasBonus) {
-            utils.log('Token has bonus reward for offers made')
-            // update num bonus user listings
-            const userNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+        // check if doc already exists (in case of edit offer) - only update numOffers if it isn't
+        const offer = await offersMadeRef.get()
+        if (!offer.exists) {
+            utils.log('updating num offers since offer does not exist')
+            // update num user offers made
+            const userNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
                 .doc(fstrCnstnts.INFO_DOC)
                 .collection(fstrCnstnts.USERS_COLL)
                 .doc(maker)
-            batch.set(userNumBonusOffersRef, { 'numBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            batch.set(userNumOffersRef, { 'numOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
 
-            // update total bonus listings
-            const totalNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+            // update total offers made
+            const totalNumOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
                 .doc(fstrCnstnts.INFO_DOC)
-            batch.set(totalNumBonusOffersRef, { 'totalBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            batch.set(totalNumOffersRef, { 'totalOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+        }
+        if (hasBonus) {
+            utils.log('Token has bonus reward for offers made')
+            // check if doc already exists (in case of edit offer) - only update numBonusOffers if it isn't
+            if (!offer.exists) {
+                utils.log('updating num bonus offers since bonus does not exist')
+                // update num bonus user offers
+                const userNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+                    .doc(fstrCnstnts.INFO_DOC)
+                    .collection(fstrCnstnts.USERS_COLL)
+                    .doc(maker)
+                batch.set(userNumBonusOffersRef, { 'numBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+
+                // update total bonus offers
+                const totalNumBonusOffersRef = db.collection(fstrCnstnts.ROOT_COLL)
+                    .doc(fstrCnstnts.INFO_DOC)
+                batch.set(totalNumBonusOffersRef, { 'totalBonusOffers': firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true })
+            }
         }
     }
 
