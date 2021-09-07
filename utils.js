@@ -82,7 +82,6 @@ module.exports = {
     strlength = searchTerm.length;
     strFrontCode = searchTerm.slice(0, strlength-1);
     strEndCode = searchTerm.slice(strlength-1, searchTerm.length);
-    // This is an important bit..
     endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
     return endCode
   }
