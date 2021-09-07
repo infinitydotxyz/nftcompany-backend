@@ -59,8 +59,8 @@ Data structure in firestore
 module.exports = {
 
     firestore: {
-        //ROOT_COLL: 'adi-test-root', //todo-adi: change this before push
-		ROOT_COLL: 'root',
+        ROOT_COLL: 'testRoot', //todo: change this before push
+		//ROOT_COLL: 'root',
         INFO_DOC: 'info',
         TOTAL_LISTINGS: 'totalListings',
         TOTAL_BONUS_LISTINGS: 'totalBonusListings',
