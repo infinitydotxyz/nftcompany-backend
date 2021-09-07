@@ -79,9 +79,9 @@ module.exports = {
   },
   getEndCode: function (searchTerm) {
   // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
-    strlength = searchTerm.length;
-    strFrontCode = searchTerm.slice(0, strlength-1);
-    strEndCode = searchTerm.slice(strlength-1, searchTerm.length);
+    const strLength = searchTerm.length;
+    const strFrontCode = searchTerm.slice(0, strLength-1);
+    const strEndCode = searchTerm.slice(strLength-1, searchTerm.length);
     endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
     return endCode
   }
