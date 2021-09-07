@@ -106,7 +106,9 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-    const maker = req.query.maker.trim().toLowerCase()
+    //todo: adi 
+    //const maker = req.query.maker.trim().toLowerCase()
+    const maker = '0xe9af62eb3dc36f4a39b52d2b3e06f09295bb1680'
     const tokenAddress = req.query.asset_contract_address.trim().toLowerCase()
     const tokenId = req.query.token_id
     const side = req.query.side
@@ -181,6 +183,8 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
     if (payload.checkBonusReward) {
         hasBonus = await hasBonusReward(tokenAddress)
     }
+    //todo: adi 
+    payload.hasBonusReward = hasBonus || false
     // update rewards
     const updatedRewards = await getUpdatedRewards(maker, hasBonus, numOrders, true)
 
@@ -212,7 +216,8 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
         if (payload.checkBlueCheck) {
             blueCheck = await isTokenVerified(tokenAddress)
         }
-        payload.blueCheck = blueCheck
+        //todo: adi 
+        payload.blueCheck = blueCheck || false
 
         // write listing
         const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
@@ -329,20 +334,28 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
 // cancel listing
 app.delete('/u/:user/listings/:listing', async (req, res) => {
     // delete listing and any offers recvd
+    //todo: adi 
+    //const maker = req.query.maker.trim().toLowerCase()
+    const maker = '0xe9af62eb3dc36f4a39b52d2b3e06f09295bb1680'
     const user = req.params.user.trim().toLowerCase()
-    const listing = req.params.listing
-    const tokenAddress = req.query.tokenAddress.trim().toLowerCase()
+    const listing = req.params.listing.trim().toLowerCase()
+    const hasBonus = req.query.hasBonusReward
     const numOrders = 1
 
-    // check if token has bonus if payload instructs so
-    let hasBonus = payload.hasBonusReward
-    if (payload.checkBonusReward) {
-        hasBonus = await hasBonusReward(tokenAddress)
+    // check if listing exists first
+    const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .collection(fstrCnstnts.LISTINGS_COLL)
+        .doc(listing)
+    if (!( await listingRef.get() ).exists) {
+        utils.log('No listing ' + listing + ' to delete')
+        return
     }
 
-    const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
-
     const batch = db.batch()
+    const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
 
     if (updatedRewards) {
         // update global rewards data
@@ -364,12 +377,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
         utils.log('Not updating rewards data as there are no updates')
     }
 
-    const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(user)
-        .collection(fstrCnstnts.LISTINGS_COLL)
-        .doc(listing)
+    // delete listing
     batch.delete(listingRef)
 
     // multiple offers can be received on the same nft
@@ -435,6 +443,7 @@ app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
 })
 
 // ====================================================== HELPERS ==========================================================
+
 async function isTokenVerified(address) {
     const doc = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
@@ -537,7 +546,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 
 function getDocId(tokenAddress, tokenId) {
     const data = tokenAddress + tokenId
-    const id = crypto.createHash('sha256').update(data).digest('base64')
+    const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase()
     utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id)
     return id
 }
@@ -591,16 +600,12 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
-    if (userInfo.exists) {
-        userInfo = userInfo.data()
-    } else {
-        userInfo = getEmptyUserInfo()
-    }
+    userInfo = { ...getEmptyUserInfo(), ...userInfo.data() }
 
     let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
-    globalInfo = globalInfo.data()
+    globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() }
 
     let updatedRewards
     if (isIncrease) {
@@ -609,6 +614,31 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
         updatedRewards = await decreaseShare(hasBonus, numOrders, userInfo, globalInfo)
     }
     return updatedRewards
+}
+
+function getEmptyGlobalInfo() {
+    return {
+        totalListings: 0,
+        totalBonusListings: 0,
+        totalOffers: 0,
+        totalBonusOffers: 0,
+        totalSales: 0,
+        totalFees: 0,
+        rewardsInfo: {
+            accRewardPerShare: 0,
+            accBonusRewardPerShare: 0,
+            accFeeRewardPerShare: 0,
+            rewardPerBlock: 0,
+            bonusRewardPerBlock: 0,
+            feeRewardPerBlock: 0,
+            totalRewardPaid: 0,
+            totalBonusRewardPaid: 0,
+            totalFeeRewardPaid: 0,
+            lastRewardBlock: 0,
+            penaltyActivated: 0,
+            penaltyRatio: 0,
+        }
+    }
 }
 
 function getEmptyUserInfo() {
@@ -640,11 +670,7 @@ function getEmptyUserRewardInfo() {
 async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     utils.log('Increasing share')
 
-    let userShare = (userInfo.numListings || 0) + (userInfo.numOffers || 0)
-    // for new users
-    if (!userInfo.rewardsInfo) {
-        userInfo.rewardsInfo = getEmptyUserRewardInfo()
-    }
+    let userShare = userInfo.numListings + userInfo.numOffers
     let rewardDebt = userInfo.rewardsInfo.rewardDebt
     let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid
 
@@ -669,7 +695,7 @@ async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     userInfo.rewardsInfo.pending = pending
 
     if (hasBonus) {
-        let userBonusShare = (userInfo.numBonusListings || 0) + (userInfo.numBonusOffers || 0)
+        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
         let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
         let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid
         const accBonusRewardPerShare = updatedGlobalRewardsData.accBonusRewardPerShare
@@ -698,14 +724,10 @@ async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
 async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     utils.log('Decreasing share')
 
-    let userShare = (userInfo.numListings || 0) + (userInfo.numOffers || 0)
+    let userShare = userInfo.numListings + userInfo.numOffers
     if (userShare < numOrders) {
         utils.error('cannot decrease share')
         return
-    }
-    // for new users
-    if (!userInfo.rewardsInfo) {
-        userInfo.rewardsInfo = getEmptyUserRewardInfo()
     }
 
     let rewardDebt = userInfo.rewardsInfo.rewardDebt
@@ -729,7 +751,7 @@ async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
     userInfo.rewardsInfo.pending = pending
 
     if (hasBonus) {
-        let userBonusShare = (userInfo.numBonusListings || 0) + (userInfo.numBonusOffers || 0)
+        let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers
         if (userBonusShare < numOrders) {
             utils.error('cannot decrease bonus share')
             return
@@ -811,16 +833,12 @@ async function getReward(user) {
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .get()
-    if (userInfo.exists) {
-        userInfo = userInfo.data()
-    } else {
-        userInfo = getEmptyUserInfo()
-    }
+    userInfo = { ...getEmptyUserInfo(), ...userInfo.data() }
 
     let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
-    globalInfo = globalInfo.data()
+    globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() }
 
     const currentBlock = await getCurrentBlock()
 
