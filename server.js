@@ -889,11 +889,27 @@ async function getReward(user) {
     const grossReward = ordersReward + bonusReward + feeReward + pending + bonusPending + feePending
 
     const resp = {
-        ordersReward: ordersReward,
-        bonusReward: bonusReward,
-        feeReward: feeReward,
-        grossReward: grossReward
+        currentBlock,
+        totalListings,
+        totalBonusListings,
+        totalFees,
+        ordersReward,
+        bonusReward,
+        feeReward,
+        grossReward,
+        penaltyActivated,
+        penaltyRatio,
+        rewardPerBlock,
+        bonusRewardPerBlock,
+        feeRewardPerBlock,
+        numSales,
+        feesPaid,
+        numListings: userInfo.numListings,
+        numBonusListings: userInfo.numBonusListings,
+        numOffers: userInfo.numOffers,
+        numBonusOffers: userInfo.numBonusOffers
     }
+
     let netReward = 0
     if (penaltyActivated) {
         const salesRatio = numSales / (numOrders + numBonusOrders)
