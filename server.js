@@ -22,54 +22,6 @@ const nftDataSources = {
     '3': 'alchemy'
 }
 
-// fetch these on server startup and listen for changes in firestore and update
-const verifiedTokens = {}
-const bonusRewardTokens = {}
-
-// verified tokens
-const verifiedTokensColl = db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-            const docId = change.doc.id.trim().toLowerCase()
-            if (change.type === 'added') {
-                verifiedTokens[docId] = true
-            }
-            if (change.type === 'modified') {
-                utils.log('Modified verified token', change.doc.data())
-            }
-            if (change.type === 'removed') {
-                utils.log('Removed verified token', docId)
-                delete verifiedTokens[docId]
-            }
-        })
-    }, (error) => {
-        utils.error('Error occured in listening to verified tokens collection', error)
-    })
-
-// bonus tokens
-const bonusRewardTokensColl = db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.BONUS_REWARD_TOKENS_COLL)
-    .onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-            const docId = change.doc.id.trim().toLowerCase()
-            if (change.type === 'added') {
-                bonusRewardTokens[docId] = true
-            }
-            if (change.type === 'modified') {
-                utils.log('Modified bonus reward token', change.doc.data())
-            }
-            if (change.type === 'removed') {
-                utils.log('Removed bonus reward token', docId)
-                delete bonusRewardTokens[docId]
-            }
-        })
-    }, (error) => {
-        utils.error('Error occured in listening to bonus reward tokens collection', error)
-    })
-
 // Listen to the App Engine-specified port, or 9090 otherwise
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
@@ -197,8 +149,11 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
     // 0 is buy/offer, 1 is sell
     const subColl = payload.side == 0 ? fstrCnstnts.OFFERS_MADE_COLL : fstrCnstnts.LISTINGS_COLL
 
-    // check if token has bonus
-    const hasBonus = await hasBonusReward(tokenAddress)
+    // check if token has bonus if payload instructs so
+    let hasBonus = payload.hasBonusReward
+    if (payload.checkBonusReward) {
+        hasBonus = await hasBonusReward(tokenAddress)
+    }
     // update rewards
     const updatedRewards = await getUpdatedRewards(maker, hasBonus, numOrders, true)
 
@@ -225,9 +180,12 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
     }
 
     if (subColl == fstrCnstnts.LISTINGS_COLL) {
-        // check if token is verified
-        const verified = await isTokenVerified(tokenAddress)
-        payload.verified = verified
+        // check if token is verified if payload instructs so
+        let blueCheck = payload.hasBlueCheck
+        if (payload.checkBlueCheck) {
+            blueCheck = await isTokenVerified(tokenAddress)
+        }
+        payload.blueCheck = blueCheck
 
         // write listing
         const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
@@ -349,8 +307,12 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
     const tokenAddress = req.query.tokenAddress.trim().toLowerCase()
     const numOrders = 1
 
-    // check if token has bonus
-    const hasBonus = await hasBonusReward(tokenAddress)
+    // check if token has bonus if payload instructs so
+    let hasBonus = payload.hasBonusReward
+    if (payload.checkBonusReward) {
+        hasBonus = await hasBonusReward(tokenAddress)
+    }
+    
     const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
 
     const batch = db.batch()
@@ -447,7 +409,12 @@ app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
 
 // ====================================================== HELPERS ==========================================================
 async function isTokenVerified(address) {
-    return verifiedTokens[address]
+    const doc = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+        .doc(address)
+        .get()
+    return doc.exists
 }
 
 async function getAssets(address, limit, offset, sourceName) {
@@ -581,7 +548,12 @@ async function deleteQueryBatch(query, resolve) {
 // =============================================== Rewards calc logic ========================================================
 
 async function hasBonusReward(address) {
-    return bonusRewardTokens[address]
+    const doc = await db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.BONUS_REWARD_TOKENS_COLL)
+        .doc(address)
+        .get()
+    return doc.exists
 }
 
 async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
