@@ -48,6 +48,10 @@ Data structure in firestore
 				- tokenDoc
 					- name
 					- address
+			- verifiedTokensColl
+				- tokenDoc
+					- name
+					- address
 */
 
 module.exports = {
@@ -62,6 +66,7 @@ module.exports = {
         TOTAL_SALES: 'totalSales',
         TOTAL_FEES: 'totalFees',
 
+		VERIFIED_TOKENS_COLL: 'verifiedTokens',
         BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
 
         USERS_COLL: 'users',
