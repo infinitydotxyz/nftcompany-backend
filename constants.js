@@ -38,6 +38,8 @@ Data structure in firestore
                         - pending
                         - bonusPending
                         - feePending
+						- netReward
+						- netRewardCalculatedAt
 					- assetsColl
 					- listingsColl
 					- offersMadeColl

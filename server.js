@@ -57,7 +57,8 @@ app.get('/listings', async (req, res) => {
         .get()
         .then(querySnapshot => {
             res.send(querySnapshot.docs[1].data())
-        }).catch(err => {
+        })
+        .catch(err => {
             utils.error('Failed to get listings', err)
             res.sendStatus(500)
         })
@@ -96,7 +97,8 @@ app.get('/u/:user/listings', async (req, res) => {
                 listings: listings
             }
             res.send(resp)
-        }).catch(err => {
+        })
+        .catch(err => {
             utils.error('Failed to get user listings for user ' + user, err)
             res.sendStatus(500)
         })
@@ -132,6 +134,31 @@ app.get('/u/:user/reward', async (req, res) => {
     const user = req.params.user.trim().toLowerCase()
     const reward = await getReward(user)
     res.send(reward)
+})
+
+//fetch rewards leaderboard
+app.get('/rewards/leaderboard', async (req, res) => {
+    db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .orderBy('rewardsInfo.netReward', 'desc')
+        .limit(10)
+        .get()
+        .then(data => {
+            let results = []
+            for (const doc of data.docs) {
+                results.push(doc.data())
+            }
+            const resp = {
+                count: results.length,
+                results: results
+            }
+            res.send(resp)
+        })
+        .catch(err => {
+            utils.error('Failed to get leaderboard', err)
+            res.sendStatus(500)
+        })
 })
 
 //=============================================== WRITES =====================================================================
@@ -312,7 +339,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
     if (payload.checkBonusReward) {
         hasBonus = await hasBonusReward(tokenAddress)
     }
-    
+
     const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
 
     const batch = db.batch()
@@ -818,6 +845,9 @@ async function getReward(user) {
     const rewardDebt = userInfo.rewardsInfo.rewardDebt
     const bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt
     const feeRewardDebt = userInfo.rewardsInfo.feeRewardDebt
+    const pending = userInfo.rewardsInfo.pending
+    const bonusPending = userInfo.rewardsInfo.bonusPending
+    const feePending = userInfo.rewardsInfo.feePending
 
     if (currentBlock > lastRewardBlock && totalListings != 0) {
         const multiplier = currentBlock - lastRewardBlock
@@ -838,7 +868,7 @@ async function getReward(user) {
     const ordersReward = (numOrders * _accRewardPerShare) - rewardDebt
     const bonusReward = (numBonusOrders * _accBonusRewardPerShare) - bonusRewardDebt
     const feeReward = (feesPaid * _accFeeRewardPerShare) - feeRewardDebt
-    const grossReward = ordersReward + bonusReward + feeReward
+    const grossReward = ordersReward + bonusReward + feeReward + pending + bonusPending + feePending
 
     const resp = {
         ordersReward: ordersReward,
@@ -860,5 +890,22 @@ async function getReward(user) {
         resp.penalty = 0
         resp.netReward = grossReward
     }
+
+    // write net reward to firestore async for leader board purpose
+    db.collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .update({
+            'rewardsInfo.netReward': netReward,
+            'rewardsInfo.netRewardCalculatedAt': firebaseAdmin.firestore.FieldValue.serverTimestamp()
+        })
+        .then(resp => {
+            // nothing to do
+        })
+        .catch(error => {
+            utils.error('Error updating net reward for user ' + user)
+        })
+
     return resp
 }
