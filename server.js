@@ -53,10 +53,16 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch all listings
 app.get('/listings', async (req, res) => {
+    const price = req.query.price || '1000000' // add a default max of 1 mil eth
+    const priceInWei = ethers.utils.parseEther(price).toString();
+    const title = req.query.title
+    console.log(priceInWei)
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-        .get()
+        .where("basePrice", "<=", priceInWei)
+        .orderBy("basePrice", "asc")
+        .get() 
         .then(querySnapshot => {
-            res.send(querySnapshot.docs[1].data())
+            res.send(querySnapshot.docs)
         })
         .catch(err => {
             utils.error('Failed to get listings', err)
@@ -163,6 +169,21 @@ app.get('/rewards/leaderboard', async (req, res) => {
         })
 })
 
+app.get('/titles', async(req,res) => {
+  const startsWith = req.query.startsWith
+  if(typeof startsWith === 'string') {
+      const endCode = utils.getEndCode(startsWith)
+      db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .where('metadata.asset.title', '>=', startsWith)
+        .where('metadata.asset.title', '<', endCode).limit(10)
+        .get()
+        .then(data =>{
+          res.send(data.docs)
+      });
+  } else {
+      res.send([])
+  }
+})
 //=============================================== WRITES =====================================================================
 
 // post a listing or make offer
