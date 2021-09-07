@@ -876,6 +876,7 @@ async function getReward(user) {
         feeReward: feeReward,
         grossReward: grossReward
     }
+    let netReward = 0
     if (penaltyActivated) {
         const salesRatio = numSales / (numOrders + numBonusOrders)
         const penalty = (penaltyRatio - salesRatio) * grossReward
@@ -883,7 +884,7 @@ async function getReward(user) {
         if (penalty < 0) {
             penalty = 0
         }
-        const netReward = grossReward - penalty
+        netReward = grossReward - penalty
         resp.penalty = penalty
         resp.netReward = netReward
     } else {
@@ -904,7 +905,7 @@ async function getReward(user) {
             // nothing to do
         })
         .catch(error => {
-            utils.error('Error updating net reward for user ' + user)
+            utils.error('Error updating net reward for user ' + user, error)
         })
 
     return resp
