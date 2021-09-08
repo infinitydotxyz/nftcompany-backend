@@ -56,7 +56,6 @@ app.get('/listings', async (req, res) => {
     const price = req.query.price || '1000000' // add a default max of 1 mil eth
     const priceInWei = ethers.utils.parseEther(price).toString();
     const title = req.query.title
-    console.log(priceInWei)
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where("basePrice", "<=", priceInWei)
         .orderBy("basePrice", "asc")
