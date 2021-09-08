@@ -59,7 +59,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch all listings
 app.get('/listings', async (req, res) => {
-    const price = req.query.price || '5000' // add a default max of 1 mil eth
+    const price = req.query.price || '5000' // add a default max of 5000 eth
     const priceInWei = ethers.utils.parseEther(price).toString();
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where("basePrice", "<=", priceInWei)
