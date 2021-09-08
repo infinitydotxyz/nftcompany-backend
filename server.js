@@ -123,9 +123,7 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-    //todo: adi 
-    //const maker = req.query.maker.trim().toLowerCase()
-    const maker = '0xe9af62eb3dc36f4a39b52d2b3e06f09295bb1680'
+    const maker = req.query.maker.trim().toLowerCase()
     const tokenAddress = req.query.asset_contract_address.trim().toLowerCase()
     const tokenId = req.query.token_id
     const side = req.query.side
@@ -223,12 +221,11 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
     const subColl = payload.side == 0 ? fstrCnstnts.OFFERS_MADE_COLL : fstrCnstnts.LISTINGS_COLL
 
     // check if token has bonus if payload instructs so
-    let hasBonus = payload.hasBonusReward
-    if (payload.checkBonusReward) {
+    let hasBonus = payload.metadata.hasBonusReward
+    if (payload.metadata.checkBonusReward) {
         hasBonus = await hasBonusReward(tokenAddress)
     }
-    //todo: adi 
-    payload.hasBonusReward = hasBonus || false
+    payload.metadata.hasBonusReward = hasBonus
     // update rewards
     const updatedRewards = await getUpdatedRewards(maker, hasBonus, numOrders, true)
 
@@ -256,12 +253,11 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
 
     if (subColl == fstrCnstnts.LISTINGS_COLL) {
         // check if token is verified if payload instructs so
-        let blueCheck = payload.hasBlueCheck
-        if (payload.checkBlueCheck) {
+        let blueCheck = payload.metadata.hasBlueCheck
+        if (payload.metadata.checkBlueCheck) {
             blueCheck = await isTokenVerified(tokenAddress)
         }
-        //todo: adi 
-        payload.blueCheck = blueCheck || false
+        payload.metadata.hasBlueCheck = blueCheck
 
         // write listing
         const listingRef = db.collection(fstrCnstnts.ROOT_COLL)
@@ -378,9 +374,7 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
 // cancel listing
 app.delete('/u/:user/listings/:listing', async (req, res) => {
     // delete listing and any offers recvd
-    //todo: adi 
-    //const maker = req.query.maker.trim().toLowerCase()
-    const maker = '0xe9af62eb3dc36f4a39b52d2b3e06f09295bb1680'
+    const maker = req.query.maker.trim().toLowerCase()
     const user = req.params.user.trim().toLowerCase()
     const listing = req.params.listing.trim().toLowerCase()
     const hasBonus = req.query.hasBonusReward
@@ -645,11 +639,13 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
         .doc(user)
         .get()
     userInfo = { ...getEmptyUserInfo(), ...userInfo.data() }
+    userInfo.rewardsInfo = { ...getEmptyUserRewardInfo(), ...userInfo.rewardsInfo }
 
     let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
     globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() }
+    globalInfo.rewardsInfo = { ...getEmptyGlobalInfo().rewardsInfo, ...globalInfo.rewardsInfo }
 
     let updatedRewards
     if (isIncrease) {
@@ -705,7 +701,9 @@ function getEmptyUserRewardInfo() {
         feeRewardDebt: 0,
         pending: 0,
         bonusPending: 0,
-        feePending: 0
+        feePending: 0,
+        netReward: 0,
+        netRewardCalculatedAt: 0
     }
 }
 
@@ -878,11 +876,13 @@ async function getReward(user) {
         .doc(user)
         .get()
     userInfo = { ...getEmptyUserInfo(), ...userInfo.data() }
+    userInfo.rewardsInfo = { ...getEmptyUserRewardInfo(), ...userInfo.rewardsInfo }
 
     let globalInfo = await db.collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .get()
     globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() }
+    globalInfo.rewardsInfo = { ...getEmptyGlobalInfo().rewardsInfo, ...globalInfo.rewardsInfo }
 
     const currentBlock = await getCurrentBlock()
 
