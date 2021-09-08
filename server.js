@@ -59,15 +59,15 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch all listings
 app.get('/listings', async (req, res) => {
-    const price = req.query.price || '1000000' // add a default max of 1 mil eth
+    const price = req.query.price || '5000' // add a default max of 1 mil eth
     const priceInWei = ethers.utils.parseEther(price).toString();
-    const title = req.query.title
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where("basePrice", "<=", priceInWei)
-        .orderBy("basePrice", "asc")
-        .get() 
+        .orderBy("basePrice", "asc").get()
+        
         .then(querySnapshot => {
-            res.send(querySnapshot.docs)
+            const data = querySnapshot.docs.map(doc => doc.data())
+            res.send(data)
         })
         .catch(err => {
             utils.error('Failed to get listings', err)
