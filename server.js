@@ -45,9 +45,15 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
     const tokenAddress = req.params.tokenAddress.trim().toLowerCase()
     const verified = await isTokenVerified(tokenAddress)
     const bonusReward = await hasBonusReward(tokenAddress)
-    const resp = {
+    let resp = {
         verified, bonusReward
     }
+    resp = utils.jsonString(resp)
+    // to enable cdn cache
+    res.set({
+        'Cache-Control': 'must-revalidate, max-age=3600',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+    })
     res.send(resp)
 })
 
@@ -71,8 +77,14 @@ app.get('/u/:user/assets', async (req, res) => {
     const offset = req.query.offset
     const source = req.query.source
     const sourceName = nftDataSources[source]
-    const assets = await getAssets(user, limit, offset, sourceName)
-    res.send(assets)
+    let resp = await getAssets(user, limit, offset, sourceName)
+    resp = utils.jsonString(resp)
+    // to enable cdn cache
+    res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+    })
+    res.send(resp)
 })
 
 //fetch listings of user
@@ -134,8 +146,14 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 // fetch user reward
 app.get('/u/:user/reward', async (req, res) => {
     const user = req.params.user.trim().toLowerCase()
-    const reward = await getReward(user)
-    res.send(reward)
+    let resp = await getReward(user)
+    resp = utils.jsonString(resp)
+    // to enable cdn cache
+    res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+    })
+    res.send(resp)
 })
 
 //fetch rewards leaderboard
@@ -151,10 +169,16 @@ app.get('/rewards/leaderboard', async (req, res) => {
             for (const doc of data.docs) {
                 results.push(doc.data())
             }
-            const resp = {
+            let resp = {
                 count: results.length,
                 results: results
             }
+            resp = utils.jsonString(resp)
+            // to enable cdn cache
+            res.set({
+                'Cache-Control': 'must-revalidate, max-age=600',
+                'Content-Length': Buffer.byteLength(resp, 'utf8')
+            })
             res.send(resp)
         })
         .catch(err => {
@@ -349,7 +373,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
         .doc(listing)
-    if (!( await listingRef.get() ).exists) {
+    if (!(await listingRef.get()).exists) {
         utils.log('No listing ' + listing + ' to delete')
         return
     }
