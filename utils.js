@@ -2,6 +2,7 @@ const firebaseAdmin = require('firebase-admin')
 
 //todo: change this before push
 var serviceAccount = require("/tmp/nftc-web-firebase-creds.json")
+// var serviceAccount = require("C:\\Users\\Tyler\\Documents\\nftcompany-backend\\firebase-ty.json")
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount)
 })
@@ -75,5 +76,13 @@ module.exports = {
 
   roundToDecimals: function (num, precision) {
     return Number(Math.round(num + "e+" + precision) + "e-" + precision)
+  },
+  getEndCode: function (searchTerm) {
+  // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
+    const strLength = searchTerm.length;
+    const strFrontCode = searchTerm.slice(0, strLength-1);
+    const strEndCode = searchTerm.slice(strLength-1, searchTerm.length);
+    endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
+    return endCode
   }
 }
