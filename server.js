@@ -126,13 +126,13 @@ app.get("/u/:user/listings", async (req, res) => {
 });
 
 // fetch order to fulfill
-app.get("/u/:user/wyvern/v1/orders", async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
-  const tokenAddress = req.query.asset_contract_address.trim().toLowerCase();
-  const tokenId = req.query.token_id;
+app.get("/wyvern/v1/orders", async (req, res) => {
+  const maker = req.query.maker.trim().toLowerCase();
+  const tokenAddress = req.query.assetContractAddress.trim().toLowerCase();
+  const tokenId = req.query.tokenId;
   const side = req.query.side;
 
-  const docs = await getOrders(user, tokenAddress, tokenId, side);
+  const docs = await getOrders(maker, tokenAddress, tokenId, side);
   if (docs) {
     let orders = [];
     for (const doc of docs) {
