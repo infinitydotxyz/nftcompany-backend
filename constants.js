@@ -85,5 +85,10 @@ module.exports = {
         ASSETS_COLL: 'assets',
         BOUGHT_COLL: 'bought',
         SOLD_COLL: 'sold'
-    }
+    },
+
+	auth: {
+		signature: 'X-AUTH-SIGNATURE',
+		message: 'X-AUTH-MESSAGE'
+	}
 }

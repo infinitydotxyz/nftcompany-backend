@@ -1,4 +1,5 @@
 const firebaseAdmin = require('firebase-admin')
+const { ethers } = require('ethers')
 
 //todo: change this before push
 var serviceAccount = require("/tmp/nftc-web-firebase-creds.json")
@@ -51,27 +52,21 @@ module.exports = {
     return JSON.stringify(obj, null, 2)
   },
 
-  authorizeUser: async function (path, token) {
-    // path is in the form /users/userId/*
-    let userId = path.split("/")[2]
-    let checkRevoked = false //todo: see if this needs to be set to true
-    let authenticated = false
+  authorizeUser: async function (path, signature, message) {
+    // path is in the form /u/user/*
+    let userId = path.split("/")[2].trim().toLowerCase()
     try {
-      //this.log("Authorizing " + userId + " for " + path)
-      let result = await firebaseAdmin.auth().verifyIdToken(token, checkRevoked)
-      if (result.uid == userId) {
-        authenticated = true
+      this.log("Authorizing " + userId + " for " + path)
+      // verify signature
+      signature = JSON.parse(signature)
+      const actualAddress = ethers.utils.verifyMessage(message, signature).toLowerCase()
+      if (actualAddress == userId) {
+        return true
       }
     } catch (error) {
-      if (error.code == 'auth/id-token-revoked') {
-        // Token has been revoked. Inform the user to reauthenticate or signOut() the user.
-        this.error("Token is revoked. Please ask user to sign out.", error)
-      } else {
-        // Token is invalid.
-        this.error("Token is invalid. Please ask user to sign in again.", error)
-      }
+        this.error("Cannot authorize user " + userId, error)
     }
-    return authenticated
+    return false
   },
 
   roundToDecimals: function (num, precision) {

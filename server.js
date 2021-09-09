@@ -29,14 +29,18 @@ app.listen(PORT, () => {
 })
 
 //todo: uncomment auth requirement in this and all other imported files that serve end points
-// app.all('/users/*', async (req, res, next) => {
-//     let authorized = await utils.authorizeUser(req.path, req.header(constants.firebaseAuth.authTokenHeader))
-//     if (authorized) {
-//       next()
-//     } else {
-//       res.status(401).send('Unauthorized')
-//     }
-// })
+app.all('/u/*', async (req, res, next) => {
+    let authorized = await utils.authorizeUser(
+        req.path,
+        req.header(constants.auth.signature),
+        req.header(constants.auth.message)
+    )
+    if (authorized) {
+        next()
+    } else {
+        res.status(401).send('Unauthorized')
+    }
+})
 
 // ================================================ READ ===================================================================
 
@@ -122,13 +126,13 @@ app.get('/u/:user/listings', async (req, res) => {
 })
 
 // fetch order to fulfill
-app.get('/wyvern/v1/orders', async (req, res) => {
-    const maker = req.query.maker.trim().toLowerCase()
+app.get('/u/:user/wyvern/v1/orders', async (req, res) => {
+    const user = req.params.user.trim().toLowerCase()
     const tokenAddress = req.query.asset_contract_address.trim().toLowerCase()
     const tokenId = req.query.token_id
     const side = req.query.side
 
-    const docs = await getOrders(maker, tokenAddress, tokenId, side)
+    const docs = await getOrders(user, tokenAddress, tokenId, side)
     if (docs) {
         let orders = []
         for (const doc of docs) {
@@ -190,30 +194,30 @@ app.get('/rewards/leaderboard', async (req, res) => {
         })
 })
 
-app.get('/titles', async(req,res) => {
-  const startsWith = req.query.startsWith
-  if(typeof startsWith === 'string') {
-      const endCode = utils.getEndCode(startsWith)
-      db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-        .where('metadata.asset.title', '>=', startsWith)
-        .where('metadata.asset.title', '<', endCode).limit(10)
-        .get()
-        .then(data =>{
-          res.send(data.docs)
-      });
-  } else {
-      res.send([])
-  }
+app.get('/titles', async (req, res) => {
+    const startsWith = req.query.startsWith
+    if (typeof startsWith === 'string') {
+        const endCode = utils.getEndCode(startsWith)
+        db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+            .where('metadata.asset.title', '>=', startsWith)
+            .where('metadata.asset.title', '<', endCode).limit(10)
+            .get()
+            .then(data => {
+                res.send(data.docs)
+            });
+    } else {
+        res.send([])
+    }
 })
 //=============================================== WRITES =====================================================================
 
 // post a listing or make offer
-app.post('/wyvern/v1/orders/post', async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     const payload = req.body
     const tokenAddress = payload.metadata.asset.address.trim().toLowerCase()
     const tokenId = payload.metadata.asset.id
     const id = getDocId(tokenAddress, tokenId)
-    const maker = payload.maker.trim().toLowerCase()
+    const maker = req.params.user.trim().toLowerCase()
     const taker = payload.taker.trim().toLowerCase()
     // default one order per post call
     const numOrders = 1
@@ -374,7 +378,6 @@ app.post('/wyvern/v1/orders/post', async (req, res) => {
 // cancel listing
 app.delete('/u/:user/listings/:listing', async (req, res) => {
     // delete listing and any offers recvd
-    const maker = req.query.maker.trim().toLowerCase()
     const user = req.params.user.trim().toLowerCase()
     const listing = req.params.listing.trim().toLowerCase()
     const hasBonus = req.query.hasBonusReward
@@ -393,6 +396,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
     }
 
     const batch = db.batch()
+
     const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, false)
 
     if (updatedRewards) {
@@ -407,7 +411,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
         const userRewardsRef = db.collection(fstrCnstnts.ROOT_COLL)
             .doc(fstrCnstnts.INFO_DOC)
             .collection(fstrCnstnts.USERS_COLL)
-            .doc(maker)
+            .doc(user)
         batch.set(userRewardsRef,
             { 'rewardsInfo': updatedRewards.updatedUserRewardsData },
             { merge: true })
@@ -476,7 +480,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
 })
 
 // order fulfilled
-app.post('/wyvern/v1/orders/fulfilled', (req, res) => {
+app.post('/u/:user/wyvern/v1/orders/fulfilled', (req, res) => {
     // write to bought and sold and delete from listing, offer made, offer recvd
 })
 
