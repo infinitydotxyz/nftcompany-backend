@@ -58,8 +58,8 @@ module.exports = {
     try {
       this.log("Authorizing " + userId + " for " + path)
       // verify signature
-      signature = JSON.parse(signature)
-      const actualAddress = ethers.utils.verifyMessage(message, signature).toLowerCase()
+      const sign = JSON.parse(signature)
+      const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase()
       if (actualAddress == userId) {
         return true
       }
