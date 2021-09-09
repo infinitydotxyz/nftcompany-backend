@@ -12,7 +12,7 @@ firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.applicationDefault()
 // })
 
-let DEBUG_LOG = true //todo: change this
+let DEBUG_LOG = true //todo: adi change this
 if (process.env.DEBUG_LOG == 'false') {
   DEBUG_LOG = false
 }
@@ -53,6 +53,9 @@ module.exports = {
   },
 
   authorizeUser: async function (path, signature, message) {
+    // todo: adi for testing only
+    //return true
+
     // path is in the form /u/user/*
     let userId = path.split("/")[2].trim().toLowerCase()
     try {

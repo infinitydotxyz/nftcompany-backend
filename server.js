@@ -28,7 +28,6 @@ app.listen(PORT, () => {
     utils.log(`Server listening on port ${PORT}...`)
 })
 
-//todo: uncomment auth requirement in this and all other imported files that serve end points
 app.all('/u/*', async (req, res, next) => {
     let authorized = await utils.authorizeUser(
         req.path,
