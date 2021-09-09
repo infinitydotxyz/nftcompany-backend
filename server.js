@@ -66,8 +66,8 @@ app.get("/listings", async (req, res) => {
   const price = req.query.price || "5000"; // add a default max of 5000 eth
   const sortByPrice = req.query.sortByPrice || "asc"; // ascending default
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where("basePriceInEth", "<=", +price)
-    .orderBy("basePriceInEth", sortByPrice)
+    .where("metadata.basePriceInEth", "<=", +price)
+    .orderBy("metadata.basePriceInEth", sortByPrice)
     .get()
     .then((querySnapshot) => {
       const data = querySnapshot.docs.map((doc) => doc.data());
