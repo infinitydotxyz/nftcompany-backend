@@ -465,7 +465,6 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
   // delete listing and any offers recvd
   const user = req.params.user.trim().toLowerCase();
   const listing = req.params.listing.trim().toLowerCase();
-  const hasBonus = req.query.hasBonusReward;
   const numOrders = 1;
 
   // check if listing exists first
@@ -476,11 +475,12 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
     .doc(listing);
-  if (!(await listingRef.get()).exists) {
+  const listingDoc = await listingRef.get();
+  if (!listingDoc.exists) {
     utils.log("No listing " + listing + " to delete");
     return;
   }
-
+  const hasBonus = listingDoc.data().metadata.hasBonusReward
   const batch = db.batch();
 
   const updatedRewards = await getUpdatedRewards(
