@@ -13,13 +13,13 @@ Data structure in firestore
 				- accRewardPerShare
 				- accBonusRewardPerShare
                 - accFeeRewardPerShare
-				- rewardPerBlock
-				- bonusRewardPerBlock
-                - feeRewardPerBlock
 				- totalRewardPaid
 				- totalBonusRewardPaid
                 - totalFeeRewardPaid
 				- lastRewardBlock
+				- rewardPerBlock
+				- bonusRewardPerBlock
+                - feeRewardPerBlock
 				- penaltyActivated
                 - penaltyRatio
 			- usersColl
