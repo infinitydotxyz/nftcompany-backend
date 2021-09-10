@@ -76,6 +76,7 @@ module.exports = {
   roundToDecimals: function (num, precision) {
     return Number(Math.round(num + "e+" + precision) + "e-" + precision);
   },
+  
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
     const strLength = searchTerm.length;

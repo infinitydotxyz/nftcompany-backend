@@ -216,6 +216,30 @@ app.get("/titles", async (req, res) => {
     res.send([]);
   }
 });
+
+app.get("/collections", async (req, res) => {
+  const startsWith = req.query.startsWith;
+  if (typeof startsWith === "string") {
+    const endCode = utils.getEndCode(startsWith);
+    db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where("metadata.asset.collectionName", ">=", startsWith)
+      .where("metadata.asset.collectionName", "<", endCode)
+      .limit(10)
+      .get()
+      .then((data) => {
+        // to enable cdn cache
+        const resp = utils.jsonString(data.docs);
+        res.set({
+          "Cache-Control": "must-revalidate, max-age=600",
+          "Content-Length": Buffer.byteLength(resp, "utf8"),
+        });
+        res.send(resp);
+      });
+  } else {
+    res.send([]);
+  }
+});
+
 //=============================================== WRITES =====================================================================
 
 // post a listing or make offer
