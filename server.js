@@ -153,9 +153,9 @@ app.get("/listings", async (req, res) => {
     .where("metadata.basePriceInEth", "<=", +price)
     .orderBy("metadata.basePriceInEth", sortByPrice)
     .get()
-    .then((querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => doc.data());
-      res.send(data);
+    .then((data) => {
+      const resp = getListingsResponse(data);
+      res.send(resp);
     })
     .catch((err) => {
       utils.error("Failed to get listings", err);
