@@ -9,6 +9,7 @@ Data structure in firestore
 			- totalBonusOffers
 			- totalSales
 			- totalFees
+			- totalVolume
 			- rewardsInfo
 				- accRewardPerShare
 				- accBonusRewardPerShare
@@ -33,8 +34,8 @@ Data structure in firestore
 					- numBonusOffers
 					- numBought
 					- numSold
-					- soldFees
-					- boughtFees
+					- saleFees
+					- buyFees
 					- ens
 					- rewardsInfo
 						- rewardDebt
