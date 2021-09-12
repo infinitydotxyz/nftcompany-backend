@@ -12,14 +12,17 @@ Data structure in firestore
 			- rewardsInfo
 				- accRewardPerShare
 				- accBonusRewardPerShare
-                - accFeeRewardPerShare
+                - accSaleRewardPerShare
+				- accBuyRewardPerShare
 				- totalRewardPaid
 				- totalBonusRewardPaid
-                - totalFeeRewardPaid
+                - totalSaleRewardPaid
+				- totalBuyRewardPaid
 				- lastRewardBlock
 				- rewardPerBlock
 				- bonusRewardPerBlock
-                - feeRewardPerBlock
+                - saleRewardPerBlock
+				- buyRewardPerBlock
 				- penaltyActivated
                 - penaltyRatio
 			- usersColl
@@ -28,16 +31,20 @@ Data structure in firestore
 					- numOffers
 					- numBonusListings
 					- numBonusOffers
-					- numSales
-					- feesPaid
+					- numBought
+					- numSold
+					- soldFees
+					- boughtFees
 					- ens
 					- rewardsInfo
 						- rewardDebt
 						- bonusRewardDebt
-                        - feeRewardDebt
+                        - saleRewardDebt
+						- buyRewardDebt
                         - pending
                         - bonusPending
-                        - feePending
+                        - salePending
+						- buyPending
 						- netReward
 						- netRewardCalculatedAt
 					- assetsColl

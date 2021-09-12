@@ -72,10 +72,12 @@ function reconcileGlobalInfo(globalData, updateData) {
 
   globalInfo.rewardsInfo.accRewardPerShare += updateData.rewardsInfo.accRewardPerShare;
   globalInfo.rewardsInfo.accBonusRewardPerShare += updateData.rewardsInfo.accBonusRewardPerShare;
-  globalInfo.rewardsInfo.accFeeRewardPerShare += updateData.rewardsInfo.accFeeRewardPerShare;
+  globalInfo.rewardsInfo.accSaleRewardPerShare += updateData.rewardsInfo.accSaleRewardPerShare;
+  globalInfo.rewardsInfo.accBuyRewardPerShare += updateData.rewardsInfo.accBuyRewardPerShare;
   globalInfo.rewardsInfo.totalRewardPaid += updateData.rewardsInfo.totalRewardPaid;
   globalInfo.rewardsInfo.totalBonusRewardPaid += updateData.rewardsInfo.totalBonusRewardPaid;
-  globalInfo.rewardsInfo.totalFeeRewardPaid += updateData.rewardsInfo.totalFeeRewardPaid;
+  globalInfo.rewardsInfo.totalSaleRewardPaid += updateData.rewardsInfo.totalSaleRewardPaid;
+  globalInfo.rewardsInfo.totalBuyRewardPaid += updateData.rewardsInfo.totalBuyRewardPaid;
 
   if (globalInfo.rewardsInfo.lastRewardBlock < updateData.rewardsInfo.lastRewardBlock) {
     globalInfo.rewardsInfo.lastRewardBlock = updateData.rewardsInfo.lastRewardBlock;
@@ -92,10 +94,12 @@ function reconcileLocalInfo(updateData) {
 
   localInfo.rewardsInfo.accRewardPerShare -= updateData.rewardsInfo.accRewardPerShare;
   localInfo.rewardsInfo.accBonusRewardPerShare -= updateData.rewardsInfo.accBonusRewardPerShare;
-  localInfo.rewardsInfo.accFeeRewardPerShare -= updateData.rewardsInfo.accFeeRewardPerShare;
+  localInfo.rewardsInfo.accSaleRewardPerShare -= updateData.rewardsInfo.accSaleRewardPerShare;
+  localInfo.rewardsInfo.accBuyRewardPerShare -= updateData.rewardsInfo.accBuyRewardPerShare;
   localInfo.rewardsInfo.totalRewardPaid -= updateData.rewardsInfo.totalRewardPaid;
   localInfo.rewardsInfo.totalBonusRewardPaid -= updateData.rewardsInfo.totalBonusRewardPaid;
-  localInfo.rewardsInfo.totalFeeRewardPaid -= updateData.rewardsInfo.totalFeeRewardPaid;
+  localInfo.rewardsInfo.totalSaleRewardPaid -= updateData.rewardsInfo.totalSaleRewardPaid;
+  localInfo.rewardsInfo.totalBuyRewardPaid -= updateData.rewardsInfo.totalBuyRewardPaid;
 }
 
 // =========================================== Server ===========================================================
@@ -185,16 +189,7 @@ app.get("/u/:user/listings", async (req, res) => {
     .collection(fstrCnstnts.LISTINGS_COLL)
     .get()
     .then((data) => {
-      let listings = [];
-      for (const doc of data.docs) {
-        const listing = doc.data();
-        listing.id = doc.id;
-        listings.push(listing);
-      }
-      const resp = {
-        count: listings.length,
-        listings: listings,
-      };
+      const resp = getListingsResponse(data);
       res.send(resp);
     })
     .catch((err) => {
@@ -354,9 +349,9 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
   }
 
   if (payload.side == 1) { // listing
-    postListing(id, maker, payload, batch, hasBonus);
+    postListing(id, maker, payload, batch, numOrders, hasBonus);
   } else if (payload.side == 0) { // offer
-    postOffer(id, maker, payload, batch, hasBonus);
+    postOffer(id, maker, payload, batch, numOrders, hasBonus);
   } else {
     utils.error('Unknown order type');
     return
@@ -380,7 +375,6 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
   // delete listing and any offers recvd
   const user = req.params.user.trim().toLowerCase();
   const listing = req.params.listing.trim().toLowerCase();
-  const numOrders = 1;
 
   // check if listing exists first
   const listingRef = db
@@ -390,41 +384,149 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
     .doc(listing);
-  const listingDoc = await listingRef.get();
-  if (!listingDoc.exists) {
+  const doc = await listingRef.get();
+  if (!doc.exists) {
     utils.log("No listing " + listing + " to delete");
     return;
   }
 
-  const hasBonus = listingDoc.data().metadata.hasBonusReward
-  const batch = db.batch();
+  deleteListing(doc);
+  res.sendStatus(200);
+});
 
-  const updatedRewards = await getUpdatedRewards(
-    user,
-    hasBonus,
-    numOrders,
-    false
-  );
+// cancel offer
+app.delete("/u/:user/offers/:offer", async (req, res) => {
+  // delete offer
+  const user = req.params.user.trim().toLowerCase();
+  const offer = req.params.offer.trim().toLowerCase();
 
-  if (updatedRewards) {
-    // update user rewards data
-    storeUpdatedUserRewards(batch, user, updatedRewards);
-  } else {
-    utils.log("Not updating rewards data as there are no updates");
+  // check if offer exists first
+  const offerRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .doc(offer);
+  const doc = await offerRef.get();
+  if (!doc.exists) {
+    utils.log("No offer " + offer + " to delete");
+    return;
   }
 
-  // delete listing
-  batch.delete(listingRef);
+  deleteOffer(doc);
+  res.sendStatus(200);
+});
 
-  // multiple offers can be received on the same nft
-  const offersRecdRef = db
+// order fulfilled
+app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
+  // user is the taker of the order - either bought now or accepted offer
+  // write to bought and sold and delete from listing, offer made, offer recvd
+  /* cases in which order is fulfilled:
+    1) listed an item and a buy now is made on it; order is the listing
+    2) listed an item, offer received on it, offer is accepted; order is the offerReceived
+    3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
+  */
+  const order = req.body;
+  const taker = req.params.user.trim().toLowerCase();
+  const maker = order.maker.trim().toLowerCase();
+  const side = +order.side;
+  const offerMadeOnListing = order.metadata.offerMadeOnListing;
+  const tokenAddress = order.metadata.asset.address.trim().toLowerCase();
+  const tokenId = order.metadata.asset.id;
+  const docId = getDocId(tokenAddress, tokenId);
+  const batch = db.batch();
+
+  order.taker = taker;
+
+  if (side == 0) {
+    // taker accepted offerReceived, maker is the buyer
+    utils.log("Item bought by " + maker + " sold by " + taker);
+
+    // write to bought by maker; multiple items possible
+    saveBoughtOrder(batch, maker, docId, order);
+
+    // write to sold by taker; multiple items possible
+    saveSoldOrder(batch, taker, docId, order);
+
+    // delete offerMade by maker
+    deleteOfferMadeWithId(docId, maker);
+
+    // delete offersReceived from taker; multiple possible
+    deleteOfferReceivedWithId(batch, docId, taker);
+
+    // delete listing by taker if it exists
+    if (offerMadeOnListing) {
+      deleteListingWithId(docId, taker);
+    }
+  } else if (side == 1) {
+    // taker bought a listing, maker is the seller
+    utils.log("Item bought by " + taker + " sold by " + maker);
+    // write to bought by taker; multiple items possible
+    saveBoughtOrder(batch, taker, docId, order);
+
+    // write to sold by maker; multiple items possible
+    saveSoldOrder(batch, maker, docId, order);
+
+    // delete offersReceived from maker; multiple possible
+    deleteOfferReceivedWithId(batch, docId, maker);
+
+    // delete listing from maker
+    deleteListingWithId(docId, maker);
+  } else {
+    utils.error('Unknown order type, not fulfilling it');
+    return;
+  }
+
+  // commit batch
+  batch
+    .commit()
+    .then((resp) => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      utils.error("Failed to post order", err);
+      res.sendStatus(500);
+    });
+});
+
+// ====================================================== HELPERS ==========================================================
+
+async function saveBoughtOrder(batch, user, docId, order) {
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.BOUGHT_COLL)
+    .doc(docId)
+    .collection(fstrCnstnts.BOUGHT_COLL)
+    .doc();
+  batch.set(ref, order, { merge: true });
+}
+
+async function saveSoldOrder(batch, user, docId, order) {
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.SOLD_COLL)
+    .doc(docId)
+    .collection(fstrCnstnts.SOLD_COLL)
+    .doc();
+  batch.set(ref, order, { merge: true });
+}
+
+function deleteOfferReceivedWithId(batch, docId, user) {
+  const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc(listing);
-  batch.delete(offersRecdRef);
+    .doc(docId);
+  batch.delete(ref);
 
   // deleting a doc doesn't delete a sub collection, we have to do it separately
   const subCollPath =
@@ -438,46 +540,21 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
     "/" +
     fstrCnstnts.OFFERS_RECVD_COLL +
     "/" +
-    listing +
+    docId +
     "/" +
     fstrCnstnts.OFFERS_RECVD_COLL;
   try {
     // delete in a batch size of 1000
-    deleteCollection(subCollPath, 1000);
+    deleteOffersReceivedCollection(subCollPath, 1000);
   } catch (error) {
     utils.error(
-      "Error deleting offers received sub collection for listing " + listing,
+      "Error deleting offers received sub collection for doc " + docId,
       error
     );
   }
+}
 
-  // update num user listings
-  updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
-
-  // update total listings
-  updateNumTotalOrders(-1 * numOrders, hasBonus, 1);
-
-  // Commit the batch
-  utils.log("Deleting a listing with id " + listing);
-  batch
-    .commit()
-    .then((resp) => {
-      res.sendStatus(200);
-    })
-    .catch((err) => {
-      utils.error("Failed to delete listing " + listing, err);
-      res.sendStatus(500);
-    });
-});
-
-// order fulfilled
-app.post("/u/:user/wyvern/v1/orders/fulfilled", (req, res) => {
-  // write to bought and sold and delete from listing, offer made, offer recvd
-});
-
-// ====================================================== HELPERS ==========================================================
-
-async function postListing(id, maker, payload, batch, hasBonus) {
+async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
   // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
   if (payload.metadata.checkBlueCheck) {
@@ -506,7 +583,7 @@ async function postListing(id, maker, payload, batch, hasBonus) {
   }
 }
 
-async function postOffer(payload, maker, batch, hasBonus) {
+async function postOffer(payload, maker, batch, numOrders, hasBonus) {
   const taker = payload.taker.trim().toLowerCase();
   // store data in offersMade of maker and offersRecd of taker
   const offersMadeRef = db
@@ -539,6 +616,26 @@ async function postOffer(payload, maker, batch, hasBonus) {
     // update total offers made
     updateNumTotalOrders(numOrders, hasBonus, 0);
   }
+}
+
+// ================================================= Response helpers =================================================
+
+function getListingsResponse(data) {
+  for (const doc of data.docs) {
+    const listing = doc.data();
+    const isExpired = isOrderExpired(doc);
+    if (!isExpired) {
+      listing.id = doc.id;
+      listings.push(listing);
+    } else {
+      deleteExpiredOrder(doc);
+    }
+  }
+  const resp = {
+    count: listings.length,
+    listings: listings,
+  };
+  return resp;
 }
 
 // ==================================================== Update num orders ===============================================
@@ -578,7 +675,6 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
   }
 }
 
-// todo: now write
 function updateNumTotalOrders(num, hasBonus, side) {
   let totalOffers = 0,
     totalBonusOffers = 0,
@@ -757,16 +853,16 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
   return results.docs;
 }
 
-async function deleteCollection(collectionPath, batchSize) {
+async function deleteOffersReceivedCollection(collectionPath, batchSize) {
   utils.log("Deleting collection at", collectionPath);
   const collectionRef = db.collection(collectionPath);
   const query = collectionRef.orderBy("__name__").limit(batchSize);
   return new Promise((resolve, reject) => {
-    deleteQueryBatch(query, resolve).catch(reject);
+    deleteOffersReceivedQueryBatch(query, resolve).catch(reject);
   });
 }
 
-async function deleteQueryBatch(query, resolve) {
+async function deleteOffersReceivedQueryBatch(query, resolve) {
   const snapshot = await query.get();
   const batchSize = snapshot.size;
   if (batchSize === 0) {
@@ -777,13 +873,152 @@ async function deleteQueryBatch(query, resolve) {
   // Delete documents in a batch
   const batch = db.batch();
   snapshot.docs.forEach((doc) => {
+    // delete offersMade from maker
+    deleteOfferMadeWithId(doc.id, doc.data().maker);
+    // delete offersRecd from taker
     batch.delete(doc.ref);
   });
   await batch.commit();
   // Recurse on the next process tick, to avoid exploding the stack
   process.nextTick(() => {
-    deleteQueryBatch(query, resolve);
+    deleteOffersReceivedQueryBatch(query, resolve);
   });
+}
+
+function isOrderExpired(doc) {
+  const order = doc.data();
+  const utcSecondsSinceEpoch = Math.round(Date.now() / 1000); 
+  const orderExpirationTime = +order.expirationTime;
+  return orderExpirationTime <= utcSecondsSinceEpoch;
+}
+
+function deleteExpiredOrder(doc) {
+  utils.log('Deleting expired order', doc.id);
+  const order = doc.data();
+  const side = +order.side;
+  if (side == 1) { // listing
+    deleteListing(doc);
+  } else if (side == 0) { // offer
+    deleteOffer(doc);
+  } else {
+    utils.error('Unknown order type', doc.id);
+  }
+}
+
+function deleteListingWithId(id, user) {
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.LISTINGS_COLL)
+    .doc(id)
+    .get()
+    .then((listingDoc) => {
+      deleteListing(listingDoc);
+    })
+    .catch((err) => {
+      utils.error("cannot delete listing", err);
+    });
+}
+
+async function deleteListing(doc) {
+  const listing = doc.id;
+  utils.log("Deleting listing", listing);
+  const user = doc.data().maker;
+  const hasBonus = doc.data().metadata.hasBonusReward;
+  const numOrders = 1;
+  const batch = db.batch();
+
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    hasBonus,
+    numOrders,
+    false
+  );
+
+  if (updatedRewards) {
+    // update user rewards data
+    storeUpdatedUserRewards(batch, user, updatedRewards);
+  } else {
+    utils.log("Not updating rewards data as there are no updates");
+  }
+
+  // delete listing
+  batch.delete(doc.ref);
+
+  // delete offers received on this listing, multiple offers can be received on the same nft
+  deleteOfferReceivedWithId(batch, listing, user);
+
+  // update num user listings
+  updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
+
+  // update total listings
+  updateNumTotalOrders(-1 * numOrders, hasBonus, 1);
+
+  // Commit the batch
+  batch
+    .commit()
+    .then((resp) => {
+    })
+    .catch((err) => {
+      utils.error("Failed to delete listing " + listing, err);
+    });
+}
+
+function deleteOfferMadeWithId(id, user) {
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .doc(id)
+    .get()
+    .then((offerMadeDoc) => {
+      deleteOffer(offerMadeDoc);
+    })
+    .catch((err) => {
+      utils.error("cannot delete offer", err);
+    });
+}
+
+async function deleteOffer(doc) {
+  const offer = doc.id;
+  utils.log("Deleting offer", offer);
+  const user = doc.data().maker;
+  const hasBonus = doc.data().metadata.hasBonusReward;
+  const numOrders = 1;
+  const batch = db.batch();
+
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    hasBonus,
+    numOrders,
+    false
+  );
+
+  if (updatedRewards) {
+    // update user rewards data
+    storeUpdatedUserRewards(batch, user, updatedRewards);
+  } else {
+    utils.log("Not updating rewards data as there are no updates");
+  }
+
+  // delete offer
+  batch.delete(doc.ref);
+
+  // update num user offers
+  updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
+
+  // update total offers
+  updateNumTotalOrders(-1 * numOrders, hasBonus, 0);
+
+  // Commit the batch
+  batch
+    .commit()
+    .then((resp) => {})
+    .catch((err) => {
+      utils.error("Failed to delete offer " + offer, err);
+    });
 }
 
 // =============================================== Rewards calc logic ========================================================
@@ -828,13 +1063,16 @@ function getEmptyGlobalInfo() {
     rewardsInfo: {
       accRewardPerShare: 0,
       accBonusRewardPerShare: 0,
-      accFeeRewardPerShare: 0,
+      accSaleRewardPerShare: 0,
+      accBuyRewardPerShare: 0,
       rewardPerBlock: 0,
       bonusRewardPerBlock: 0,
-      feeRewardPerBlock: 0,
+      saleRewardPerBlock: 0,
+      buyRewardPerBlock: 0,
       totalRewardPaid: 0,
       totalBonusRewardPaid: 0,
-      totalFeeRewardPaid: 0,
+      totalSaleRewardPaid: 0,
+      totalBuyRewardPaid: 0,
       lastRewardBlock: 0,
       penaltyActivated: 0,
       penaltyRatio: 0,
@@ -848,9 +1086,11 @@ function getEmptyUserInfo() {
     numBonusListings: 0,
     numOffers: 0,
     numBonusOffers: 0,
+    numBought: 0,
     numSales: 0,
-    feesPaid: 0,
-    ens: "",
+    soldFees: 0,
+    boughtFees: 0,
+    ens: '',
     rewardsInfo: getEmptyUserRewardInfo(),
   };
 }
@@ -859,10 +1099,12 @@ function getEmptyUserRewardInfo() {
   return {
     rewardDebt: 0,
     bonusRewardDebt: 0,
-    feeRewardDebt: 0,
+    saleRewardDebt: 0,
+    buyRewardDebt: 0,
     pending: 0,
     bonusPending: 0,
-    feePending: 0,
+    salePending: 0,
+    buyPending: 0,
     netReward: 0,
     netRewardCalculatedAt: 0,
   };
@@ -945,17 +1187,21 @@ async function updateRewards(hasBonus, numOrders, userInfo, isIncrease) {
 function incrementLocalRewards({
   totalRewardPaid,
   totalBonusRewardPaid,
-  totalFeeRewardPaid,
+  totalSaleRewardPaid,
+  totalBuyRewardPaid,
   accRewardPerShare,
   accBonusRewardPerShare,
-  accFeeRewardPerShare
+  accSaleRewardPerShare,
+  accBuyRewardPerShare,
 }) {
   localInfo.rewardsInfo.totalRewardPaid += totalRewardPaid || 0;
   localInfo.rewardsInfo.totalBonusRewardPaid += totalBonusRewardPaid || 0;
-  localInfo.rewardsInfo.totalFeeRewardPaid += totalFeeRewardPaid || 0;
+  localInfo.rewardsInfo.totalSaleRewardPaid += totalSaleRewardPaid || 0;
+  localInfo.rewardsInfo.totalBuyRewardPaid += totalBuyRewardPaid || 0;
   localInfo.rewardsInfo.accRewardPerShare += accRewardPerShare || 0;
   localInfo.rewardsInfo.accBonusRewardPerShare += accBonusRewardPerShare || 0;
-  localInfo.rewardsInfo.accFeeRewardPerShare += accFeeRewardPerShare || 0;
+  localInfo.rewardsInfo.accSaleRewardPerShare += accSaleRewardPerShare || 0;
+  localInfo.rewardsInfo.accBuyRewardPerShare += accBuyRewardPerShare || 0;
 }
 
 // updates lastRewardBlock, accRewardPerShare, accBonusRewardPerShare
@@ -1021,23 +1267,29 @@ async function getReward(user) {
   const penaltyRatio = globalInfo.rewardsInfo.penaltyRatio;
   const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
   const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
-  const feeRewardPerBlock = globalInfo.rewardsInfo.feeRewardPerBlock;
+  const saleRewardPerBlock = globalInfo.rewardsInfo.saleRewardPerBlock;
+  const buyRewardPerBlock = globalInfo.rewardsInfo.buyRewardPerBlock;
 
   const lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
   let _accRewardPerShare = localInfo.rewardsInfo.accRewardPerShare;
   let _accBonusRewardPerShare = localInfo.rewardsInfo.accBonusRewardPerShare;
-  let _accFeeRewardPerShare = localInfo.rewardsInfo.accFeeRewardPerShare;
+  let _accSaleRewardPerShare = localInfo.rewardsInfo.accSaleRewardPerShare;
+  let _accBuyRewardPerShare = localInfo.rewardsInfo.accBuyRewardPerShare;
 
-  const numSales = userInfo.numSales;
+  const numBought = userInfo.numBought;
+  const numSold = userInfo.numSold;
   const numOrders = userInfo.numListings + userInfo.numOffers;
   const numBonusOrders = userInfo.numBonusListings + userInfo.numBonusOffers;
-  const feesPaid = userInfo.feesPaid;
+  const soldFees = userInfo.soldFees;
+  const boughtFees = userInfo.boughtFees;
   const rewardDebt = userInfo.rewardsInfo.rewardDebt;
   const bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-  const feeRewardDebt = userInfo.rewardsInfo.feeRewardDebt;
+  const saleRewardDebt = userInfo.rewardsInfo.saleRewardDebt;
+  const buyRewardDebt = userInfo.rewardsInfo.buyRewardDebt;
   const pending = userInfo.rewardsInfo.pending;
   const bonusPending = userInfo.rewardsInfo.bonusPending;
-  const feePending = userInfo.rewardsInfo.feePending;
+  const salePending = userInfo.rewardsInfo.salePending;
+  const buyPending = userInfo.rewardsInfo.buyPending;
 
   if (currentBlock > lastRewardBlock && totalListings != 0) {
     const multiplier = currentBlock - lastRewardBlock;
@@ -1051,20 +1303,26 @@ async function getReward(user) {
   }
   if (currentBlock > lastRewardBlock && totalFees != 0) {
     const multiplier = currentBlock - lastRewardBlock;
-    const reward = multiplier * feeRewardPerBlock;
-    _accFeeRewardPerShare += reward / totalFees;
+    const saleReward = multiplier * saleRewardPerBlock;
+    const buyReward = multiplier * buyRewardPerBlock;
+    _accSaleRewardPerShare += saleReward / totalFees;
+    _accBuyRewardPerShare += buyReward / totalFees;
   }
 
   const ordersReward = numOrders * _accRewardPerShare - rewardDebt;
   const bonusReward = numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
-  const feeReward = feesPaid * _accFeeRewardPerShare - feeRewardDebt;
+  const saleReward = soldFees * _accSaleRewardPerShare - saleRewardDebt;
+  const buyReward = boughtFees * _accBuyRewardPerShare - buyRewardDebt;
+
   const grossReward =
     ordersReward +
     bonusReward +
-    feeReward +
+    saleReward +
+    buyReward +
     pending +
     bonusPending +
-    feePending;
+    salePending +
+    buyPending;
 
   const resp = {
     currentBlock,
@@ -1073,15 +1331,19 @@ async function getReward(user) {
     totalFees,
     ordersReward,
     bonusReward,
-    feeReward,
+    saleReward,
+    buyReward,
     grossReward,
     penaltyActivated,
     penaltyRatio,
     rewardPerBlock,
     bonusRewardPerBlock,
-    feeRewardPerBlock,
-    numSales,
-    feesPaid,
+    saleRewardPerBlock,
+    buyRewardPerBlock,
+    numSold,
+    numBought,
+    soldFees,
+    boughtFees,
     numListings: userInfo.numListings,
     numBonusListings: userInfo.numBonusListings,
     numOffers: userInfo.numOffers,
