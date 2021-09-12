@@ -22,6 +22,90 @@ const nftDataSources = {
   3: "alchemy",
 };
 
+// ============================================== Global data handling ======================================================
+let globalInfo;
+let localInfo = getEmptyGlobalInfo();
+db.collection(fstrCnstnts.ROOT_COLL)
+  .doc(fstrCnstnts.INFO_DOC)
+  .get(doc => {
+    globalInfo = { ...getEmptyGlobalInfo(), ...doc.data() };
+    globalInfo.rewardsInfo = { ...getEmptyGlobalInfo().rewardsInfo, ...doc.data().rewardsInfo };
+  },
+  (err) => {
+    utils.error('Encountered error while getting global info. Exiting process', err);
+    process.exit();
+  }
+);
+
+// write to firestore every interval
+setInterval(() => {
+  // make a copy of localinfo
+  const updateData = JSON.parse(JSON.stringify(localInfo));
+  const ref = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
+  db.runTransaction(async (txn) => {
+    const globalDoc = await txn.get(ref);
+    // reconcile globalinfo
+    reconcileGlobalInfo(globalDoc.data(), updateData);
+    txn.update(ref, globalInfo);
+  }).then(res => {
+    utils.log("Updated global info in firestore");
+    // reconcile localinfo
+    reconcileLocalInfo(updateData);
+  }).catch(error => {
+    utils.error("Failed updating global info in firestore", error);
+  });
+}, 1000 * 10); // every 10 seconds
+
+function reconcileGlobalInfo(globalData, updateData) {
+  globalInfo = { ...getEmptyGlobalInfo(), ...globalData };
+  globalInfo.rewardsInfo = {
+    ...getEmptyGlobalInfo().rewardsInfo,
+    ...globalData.rewardsInfo,
+  };
+
+  globalInfo.totalSales += updateData.totalSales;
+  globalInfo.totalFees += updateData.totalFees;
+  globalInfo.totalVolume += updateData.totalVolume;
+  globalInfo.totalListings += updateData.totalListings;
+  globalInfo.totalBonusListings += updateData.totalBonusListings;
+  globalInfo.totalOffers += updateData.totalOffers;
+  globalInfo.totalBonusOffers += updateData.totalBonusOffers;
+
+  globalInfo.rewardsInfo.accRewardPerShare += updateData.rewardsInfo.accRewardPerShare;
+  globalInfo.rewardsInfo.accBonusRewardPerShare += updateData.rewardsInfo.accBonusRewardPerShare;
+  globalInfo.rewardsInfo.accSaleRewardPerShare += updateData.rewardsInfo.accSaleRewardPerShare;
+  globalInfo.rewardsInfo.accBuyRewardPerShare += updateData.rewardsInfo.accBuyRewardPerShare;
+  globalInfo.rewardsInfo.totalRewardPaid += updateData.rewardsInfo.totalRewardPaid;
+  globalInfo.rewardsInfo.totalBonusRewardPaid += updateData.rewardsInfo.totalBonusRewardPaid;
+  globalInfo.rewardsInfo.totalSaleRewardPaid += updateData.rewardsInfo.totalSaleRewardPaid;
+  globalInfo.rewardsInfo.totalBuyRewardPaid += updateData.rewardsInfo.totalBuyRewardPaid;
+
+  if (globalInfo.rewardsInfo.lastRewardBlock < updateData.rewardsInfo.lastRewardBlock) {
+    globalInfo.rewardsInfo.lastRewardBlock = updateData.rewardsInfo.lastRewardBlock;
+  }
+}
+
+function reconcileLocalInfo(updateData) {
+  localInfo.totalSales -= updateData.totalSales;
+  localInfo.totalFees -= updateData.totalFees;
+  localInfo.totalVolume -= updateData.totalVolume;
+  localInfo.totalListings -= updateData.totalListings;
+  localInfo.totalBonusListings -= updateData.totalBonusListings;
+  localInfo.totalOffers -= updateData.totalOffers;
+  localInfo.totalBonusOffers -= updateData.totalBonusOffers;
+
+  localInfo.rewardsInfo.accRewardPerShare -= updateData.rewardsInfo.accRewardPerShare;
+  localInfo.rewardsInfo.accBonusRewardPerShare -= updateData.rewardsInfo.accBonusRewardPerShare;
+  localInfo.rewardsInfo.accSaleRewardPerShare -= updateData.rewardsInfo.accSaleRewardPerShare;
+  localInfo.rewardsInfo.accBuyRewardPerShare -= updateData.rewardsInfo.accBuyRewardPerShare;
+  localInfo.rewardsInfo.totalRewardPaid -= updateData.rewardsInfo.totalRewardPaid;
+  localInfo.rewardsInfo.totalBonusRewardPaid -= updateData.rewardsInfo.totalBonusRewardPaid;
+  localInfo.rewardsInfo.totalSaleRewardPaid -= updateData.rewardsInfo.totalSaleRewardPaid;
+  localInfo.rewardsInfo.totalBuyRewardPaid -= updateData.rewardsInfo.totalBuyRewardPaid;
+}
+
+// =========================================== Server ===========================================================
+
 // Listen to the App Engine-specified port, or 9090 otherwise
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
@@ -69,9 +153,9 @@ app.get("/listings", async (req, res) => {
     .where("metadata.basePriceInEth", "<=", +price)
     .orderBy("metadata.basePriceInEth", sortByPrice)
     .get()
-    .then((querySnapshot) => {
-      const data = querySnapshot.docs.map((doc) => doc.data());
-      res.send(data);
+    .then((data) => {
+      const resp = getListingsResponse(data);
+      res.send(resp);
     })
     .catch((err) => {
       utils.error("Failed to get listings", err);
@@ -107,16 +191,7 @@ app.get("/u/:user/listings", async (req, res) => {
     .collection(fstrCnstnts.LISTINGS_COLL)
     .get()
     .then((data) => {
-      let listings = [];
-      for (const doc of data.docs) {
-        const listing = doc.data();
-        listing.id = doc.id;
-        listings.push(listing);
-      }
-      const resp = {
-        count: listings.length,
-        listings: listings,
-      };
+      const resp = getListingsResponse(data);
       res.send(resp);
     })
     .catch((err) => {
@@ -249,14 +324,9 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
   const tokenId = payload.metadata.asset.id;
   const id = getDocId(tokenAddress, tokenId);
   const maker = req.params.user.trim().toLowerCase();
-  const taker = payload.taker.trim().toLowerCase();
   // default one order per post call
   const numOrders = 1;
-  // 0 is buy/offer, 1 is sell
-  const subColl =
-    payload.side == 0
-      ? fstrCnstnts.OFFERS_MADE_COLL
-      : fstrCnstnts.LISTINGS_COLL;
+  const batch = db.batch();
 
   // check if token has bonus if payload instructs so
   let hasBonus = payload.metadata.hasBonusReward;
@@ -264,211 +334,30 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
     hasBonus = await hasBonusReward(tokenAddress);
   }
   payload.metadata.hasBonusReward = hasBonus;
+
   // update rewards
   const updatedRewards = await getUpdatedRewards(
     maker,
     hasBonus,
     numOrders,
+    0,
     true
   );
 
-  const batch = db.batch();
-
   if (updatedRewards) {
-    // update global rewards data
-    const globalRewardsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC);
-    batch.set(
-      globalRewardsRef,
-      { rewardsInfo: updatedRewards.updatedGlobalRewardsData },
-      { merge: true }
-    );
-
     // update user rewards data
-    const userRewardsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker);
-    batch.set(
-      userRewardsRef,
-      { rewardsInfo: updatedRewards.updatedUserRewardsData },
-      { merge: true }
-    );
+    storeUpdatedUserRewards(batch, maker, updatedRewards);
   } else {
     utils.log("Not updating rewards data as there are no updates");
   }
 
-  if (subColl == fstrCnstnts.LISTINGS_COLL) {
-    // check if token is verified if payload instructs so
-    let blueCheck = payload.metadata.hasBlueCheck;
-    if (payload.metadata.checkBlueCheck) {
-      blueCheck = await isTokenVerified(tokenAddress);
-    }
-    payload.metadata.hasBlueCheck = blueCheck;
-
-    // write listing
-    const listingRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
-      .collection(fstrCnstnts.LISTINGS_COLL)
-      .doc(id);
-    batch.set(listingRef, payload, { merge: true });
-
-    // check if doc already exists (in case of edit listing) - only update numlistings if it isn't
-    const listing = await listingRef.get();
-    if (!listing.exists) {
-      utils.log("updating num listings since listing does not exist");
-      // update num user listings
-      const userNumListingsRef = db
-        .collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(maker);
-      batch.set(
-        userNumListingsRef,
-        {
-          numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders),
-        },
-        { merge: true }
-      );
-
-      // update total listings
-      const totalNumListingsRef = db
-        .collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC);
-      batch.set(
-        totalNumListingsRef,
-        {
-          totalListings:
-            firebaseAdmin.firestore.FieldValue.increment(numOrders),
-        },
-        { merge: true }
-      );
-    }
-    // update bonus items
-    if (hasBonus) {
-      utils.log("Token has bonus reward for listing");
-      // check if doc already exists (in case of edit listing) - only update numBonuslistings if it isn't
-      if (!listing.exists) {
-        utils.log("updating num bonus listings since listing does not exist");
-        // update num bonus user listings
-        const userNumBonusListingsRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(maker);
-        batch.set(
-          userNumBonusListingsRef,
-          {
-            numBonusListings:
-              firebaseAdmin.firestore.FieldValue.increment(numOrders),
-          },
-          { merge: true }
-        );
-
-        // update total bonus listings
-        const totalNumBonusListingsRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC);
-        batch.set(
-          totalNumBonusListingsRef,
-          {
-            totalBonusListings:
-              firebaseAdmin.firestore.FieldValue.increment(numOrders),
-          },
-          { merge: true }
-        );
-      }
-    }
+  if (payload.side == 1) { // listing
+    postListing(id, maker, payload, batch, numOrders, hasBonus);
+  } else if (payload.side == 0) { // offer
+    postOffer(id, maker, payload, batch, numOrders, hasBonus);
   } else {
-    // store data in offersMade of maker and offersRecd of taker
-    const offersMadeRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
-      .collection(fstrCnstnts.OFFERS_MADE_COLL)
-      .doc(id);
-    batch.set(offersMadeRef, payload, { merge: true });
-
-    // multiple offers can be received on the same nft
-    const offersRecdRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(taker)
-      .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-      .doc(id)
-      .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-      .doc();
-    batch.set(offersRecdRef, payload, { merge: true });
-
-    // check if doc already exists (in case of edit offer) - only update numOffers if it isn't
-    const offer = await offersMadeRef.get();
-    if (!offer.exists) {
-      utils.log("updating num offers since offer does not exist");
-      // update num user offers made
-      const userNumOffersRef = db
-        .collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(maker);
-      batch.set(
-        userNumOffersRef,
-        { numOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) },
-        { merge: true }
-      );
-
-      // update total offers made
-      const totalNumOffersRef = db
-        .collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC);
-      batch.set(
-        totalNumOffersRef,
-        {
-          totalOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders),
-        },
-        { merge: true }
-      );
-    }
-    if (hasBonus) {
-      utils.log("Token has bonus reward for offers made");
-      // check if doc already exists (in case of edit offer) - only update numBonusOffers if it isn't
-      if (!offer.exists) {
-        utils.log("updating num bonus offers since bonus does not exist");
-        // update num bonus user offers
-        const userNumBonusOffersRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(maker);
-        batch.set(
-          userNumBonusOffersRef,
-          {
-            numBonusOffers:
-              firebaseAdmin.firestore.FieldValue.increment(numOrders),
-          },
-          { merge: true }
-        );
-
-        // update total bonus offers
-        const totalNumBonusOffersRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC);
-        batch.set(
-          totalNumBonusOffersRef,
-          {
-            totalBonusOffers:
-              firebaseAdmin.firestore.FieldValue.increment(numOrders),
-          },
-          { merge: true }
-        );
-      }
-    }
+    utils.error('Unknown order type');
+    return
   }
 
   // commit batch
@@ -484,12 +373,131 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
     });
 });
 
+// order fulfilled
+app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
+  // user is the taker of the order - either bought now or accepted offer
+  // write to bought and sold and delete from listing, offer made, offer recvd
+  /* cases in which order is fulfilled:
+    1) listed an item and a buy now is made on it; order is the listing
+    2) listed an item, offer received on it, offer is accepted; order is the offerReceived
+    3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
+  */
+  const order = req.body;
+  const taker = req.params.user.trim().toLowerCase();
+  const maker = order.maker.trim().toLowerCase();
+  const side = +order.side;
+  const offerMadeOnListing = order.metadata.offerMadeOnListing;
+  const tokenAddress = order.metadata.asset.address.trim().toLowerCase();
+  const tokenId = order.metadata.asset.id;
+  const docId = getDocId(tokenAddress, tokenId);
+  const numOrders = 1;
+  const feesInEth = +order.metadata.feesInEth;
+  const salePriceInEth = +order.metadata.salePriceInEth;
+  const batch = db.batch();
+  order.taker = taker;
+
+  if (side != 0 || side != 1) {
+    utils.error("Unknown order type, not fulfilling it");
+    res.sendStatus(500);
+    return;
+  }
+
+  if (side == 0) {
+    // taker accepted offerReceived, maker is the buyer
+
+    // check if order exists
+    const doc = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(fstrCnstnts.OFFERS_MADE_COLL)
+      .doc(docId)
+      .get();
+    if (!doc.exists) {
+      utils.log("No order " + docId + " to fulfill");
+      res.sendStatus(404);
+      return;
+    }
+
+    utils.log("Item bought by " + maker + " sold by " + taker);
+
+    // write to bought by maker; multiple items possible
+    saveBoughtOrder(docId, maker, order, batch, numOrders);
+
+    // write to sold by taker; multiple items possible
+    saveSoldOrder(docId, taker, order, batch, numOrders);
+
+    // delete offerMade by maker
+    deleteOfferMadeWithId(docId, maker);
+
+    // delete offersReceived from taker; multiple possible
+    deleteOfferReceivedWithId(batch, docId, taker);
+
+    // delete listing by taker if it exists
+    if (offerMadeOnListing) {
+      deleteListingWithId(docId, taker);
+    }
+  } else if (side == 1) {
+    // check if order exists
+    const doc = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(fstrCnstnts.LISTINGS_COLL)
+      .doc(docId)
+      .get();
+    if (!doc.exists) {
+      utils.log("No order " + docId + " to fulfill");
+      res.sendStatus(404);
+      return;
+    }
+
+    // taker bought a listing, maker is the seller
+    utils.log("Item bought by " + taker + " sold by " + maker);
+
+    // write to bought by taker; multiple items possible
+    saveBoughtOrder(docId, taker, order, batch, numOrders);
+
+    // write to sold by maker; multiple items possible
+    saveSoldOrder(docId, maker, order, batch, numOrders);
+
+    // delete offersReceived from maker; multiple possible
+    deleteOfferReceivedWithId(batch, docId, maker);
+
+    // delete listing from maker
+    deleteListingWithId(docId, maker);
+  }
+
+  // update total sales
+  incrementLocalStats({ totalSales: numOrders });
+
+  //update total fees
+  incrementLocalStats({ totalFees: feesInEth });
+
+  //update total volume
+  incrementLocalStats({ totalVolume: salePriceInEth });
+
+  // commit batch
+  batch
+    .commit()
+    .then((resp) => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      utils.error("Failed to fulfill order", err);
+      res.sendStatus(500);
+    });
+});
+
+// ====================================================== DELETES ======================================================
+
 // cancel listing
 app.delete("/u/:user/listings/:listing", async (req, res) => {
   // delete listing and any offers recvd
   const user = req.params.user.trim().toLowerCase();
   const listing = req.params.listing.trim().toLowerCase();
-  const numOrders = 1;
 
   // check if listing exists first
   const listingRef = db
@@ -499,59 +507,127 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
     .doc(listing);
-  const listingDoc = await listingRef.get();
-  if (!listingDoc.exists) {
+  const doc = await listingRef.get();
+  if (!doc.exists) {
     utils.log("No listing " + listing + " to delete");
+    res.sendStatus(404);
     return;
   }
-  const hasBonus = listingDoc.data().metadata.hasBonusReward
-  const batch = db.batch();
 
-  const updatedRewards = await getUpdatedRewards(
-    user,
-    hasBonus,
-    numOrders,
-    false
-  );
+  deleteListing(doc);
+  res.sendStatus(200);
+});
+
+// cancel offer
+app.delete("/u/:user/offers/:offer", async (req, res) => {
+  // delete offer
+  const user = req.params.user.trim().toLowerCase();
+  const offer = req.params.offer.trim().toLowerCase();
+
+  // check if offer exists first
+  const offerRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .doc(offer);
+  const doc = await offerRef.get();
+  if (!doc.exists) {
+    utils.log("No offer " + offer + " to delete");
+    res.sendStatus(404);
+    return;
+  }
+
+  deleteOffer(doc);
+  res.sendStatus(200);
+});
+
+// ====================================================== HELPERS ==========================================================
+
+async function saveBoughtOrder(docId, user, order, batch, numOrders) {
+  // save order
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.BOUGHT_COLL)
+    .doc(docId)
+    .collection(fstrCnstnts.BOUGHT_COLL)
+    .doc();
+  batch.set(ref, order, { merge: true });
+
+  const fees = order.metadata.feesInEth;
+  const buyFees = Math.round(fees / 5);
+  // update rewards first; before stats
+  const updatedRewards = await getUpdatedRewards(user, false, numOrders, buyFees, true);
 
   if (updatedRewards) {
-    // update global rewards data
-    const globalRewardsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC);
-    batch.set(
-      globalRewardsRef,
-      { rewardsInfo: updatedRewards.updatedGlobalRewardsData },
-      { merge: true }
-    );
-
     // update user rewards data
-    const userRewardsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(user);
-    batch.set(
-      userRewardsRef,
-      { rewardsInfo: updatedRewards.updatedUserRewardsData },
-      { merge: true }
-    );
+    storeUpdatedUserRewards(batch, user, updatedRewards);
   } else {
     utils.log("Not updating rewards data as there are no updates");
   }
 
-  // delete listing
-  batch.delete(listingRef);
+  // update num user bought
+  const numBoughtRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user);
+  batch.set(
+    numBoughtRef,
+    { numBought: firebaseAdmin.firestore.FieldValue.increment(numOrders) },
+    { merge: true }
+  );
+}
 
-  // multiple offers can be received on the same nft
-  const offersRecdRef = db
+async function saveSoldOrder(docId, user, order, batch, numOrders) {
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.SOLD_COLL)
+    .doc(docId)
+    .collection(fstrCnstnts.SOLD_COLL)
+    .doc();
+  batch.set(ref, order, { merge: true });
+
+  const fees = order.metadata.feesInEth;
+  // update rewards first; before stats
+  const updatedRewards = await getUpdatedRewards(user, false, numOrders, fees, true);
+
+  if (updatedRewards) {
+    // update user rewards data
+    storeUpdatedUserRewards(batch, user, updatedRewards);
+  } else {
+    utils.log("Not updating rewards data as there are no updates");
+  }
+
+  // update num user sold
+  const numSoldRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user);
+  batch.set(
+    numSoldRef,
+    { numSold: firebaseAdmin.firestore.FieldValue.increment(numOrders) },
+    { merge: true }
+  );
+}
+
+function deleteOfferReceivedWithId(batch, docId, user) {
+  const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc(listing);
-  batch.delete(offersRecdRef);
+    .doc(docId);
+  batch.delete(ref);
 
   // deleting a doc doesn't delete a sub collection, we have to do it separately
   const subCollPath =
@@ -565,110 +641,196 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
     "/" +
     fstrCnstnts.OFFERS_RECVD_COLL +
     "/" +
-    listing +
+    docId +
     "/" +
     fstrCnstnts.OFFERS_RECVD_COLL;
   try {
     // delete in a batch size of 1000
-    deleteCollection(subCollPath, 1000);
+    deleteOffersReceivedCollection(subCollPath, 1000);
   } catch (error) {
     utils.error(
-      "Error deleting offers received sub collection for listing " + listing,
+      "Error deleting offers received sub collection for doc " + docId,
       error
     );
   }
+}
 
-  // update num user listings
-  const userNumListingsRef = db
+async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
+  // check if token is verified if payload instructs so
+  let blueCheck = payload.metadata.hasBlueCheck;
+  if (payload.metadata.checkBlueCheck) {
+    blueCheck = await isTokenVerified(tokenAddress);
+  }
+  payload.metadata.hasBlueCheck = blueCheck;
+
+  // write listing
+  const listingRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(maker)
+    .collection(fstrCnstnts.LISTINGS_COLL)
+    .doc(id);
+  batch.set(listingRef, payload, { merge: true });
+
+  // check if doc already exists (in case of edit listing) - only update numlistings if it isn't
+  const listing = await listingRef.get();
+  if (!listing.exists) {
+    utils.log("updating num listings since listing does not exist");
+    // update num user listings
+    updateNumOrders(batch, maker, numOrders, hasBonus, 1);
+    // update total listings
+    updateNumTotalOrders(numOrders, hasBonus, 1);
+  }
+}
+
+async function postOffer(payload, maker, batch, numOrders, hasBonus) {
+  const taker = payload.taker.trim().toLowerCase();
+  // store data in offersMade of maker and offersRecd of taker
+  const offersMadeRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(maker)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .doc(id);
+  batch.set(offersMadeRef, payload, { merge: true });
+
+  // multiple offers can be received on the same nft
+  const offersRecdRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(taker)
+    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+    .doc(id)
+    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+    .doc();
+  batch.set(offersRecdRef, payload, { merge: true });
+
+  // check if doc already exists (in case of edit offer) - only update numOffers if it isn't
+  const offer = await offersMadeRef.get();
+  if (!offer.exists) {
+    utils.log("updating num offers since offer does not exist");
+    // update num user offers made
+    updateNumOrders(batch, maker, numOrders, hasBonus, 0);
+    // update total offers made
+    updateNumTotalOrders(numOrders, hasBonus, 0);
+  }
+}
+
+// ================================================= Response helpers =================================================
+
+function getListingsResponse(data) {
+  for (const doc of data.docs) {
+    const listing = doc.data();
+    const isExpired = isOrderExpired(doc);
+    if (!isExpired) {
+      listing.id = doc.id;
+      listings.push(listing);
+    } else {
+      deleteExpiredOrder(doc);
+    }
+  }
+  const resp = {
+    count: listings.length,
+    listings: listings,
+  };
+  return resp;
+}
+
+// ==================================================== Update num orders ===============================================
+
+function updateNumOrders(batch, user, num, hasBonus, side) {
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user);
+  if (side == 0) { //offers
+    batch.set(
+      ref,
+      { numOffers: firebaseAdmin.firestore.FieldValue.increment(num) },
+      { merge: true }
+    );
+    if (hasBonus) {
+      batch.set(
+        ref,
+        { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(num) },
+        { merge: true }
+      );
+    }
+  } else if (side == 1) { // listings
+    batch.set(
+      ref,
+      { numListings: firebaseAdmin.firestore.FieldValue.increment(num) },
+      { merge: true }
+    );
+    if (hasBonus) {
+      batch.set(
+        ref,
+        { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(num) },
+        { merge: true }
+      );
+    }
+  }
+}
+
+function updateNumTotalOrders(num, hasBonus, side) {
+  let totalOffers = 0,
+    totalBonusOffers = 0,
+    totalListings = 0,
+    totalBonusListings = 0;
+
+  if (side == 0) {
+    totalOffers = num;
+    if (hasBonus) {
+      totalBonusOffers = num;
+    }
+  } else if (side == 1) {
+    totalListings = num;
+    if (hasBonus) {
+      totalBonusListings = num;
+    }
+  }
+  // apply to memory
+  incrementLocalStats({totalOffers, totalBonusOffers, totalListings, totalBonusListings});
+}
+
+function incrementLocalStats({
+  totalOffers,
+  totalBonusOffers,
+  totalListings,
+  totalBonusListings,
+  totalFees,
+  totalVolume,
+  totalSales,
+}) {
+  localInfo.totalOffers += totalOffers || 0;
+  localInfo.totalBonusOffers += totalBonusOffers || 0;
+  localInfo.totalListings += totalListings || 0;
+  localInfo.totalBonusListings += totalBonusListings || 0;
+  localInfo.totalFees += totalFees || 0;
+  localInfo.totalVolume += totalVolume || 0;
+  localInfo.totalSales += totalSales || 0;
+}
+
+// ================================================== Update rewards =========================================================
+
+function storeUpdatedUserRewards(batch, user, data) {
+  const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
   batch.set(
-    userNumListingsRef,
-    {
-      numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders),
-    },
+    ref,
+    { rewardsInfo: data },
     { merge: true }
   );
-
-  // update total listings
-  const totalNumListingsRef = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC);
-  batch.set(
-    totalNumListingsRef,
-    {
-      totalListings: firebaseAdmin.firestore.FieldValue.increment(
-        -1 * numOrders
-      ),
-    },
-    { merge: true }
-  );
-
-  // update bonus data
-  if (hasBonus) {
-    utils.log("Token has bonus reward for listing");
-    // update num bonus user listings
-    const userNumBonusListingsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(user);
-    batch.set(
-      userNumBonusListingsRef,
-      {
-        numBonusListings: firebaseAdmin.firestore.FieldValue.increment(
-          -1 * numOrders
-        ),
-      },
-      { merge: true }
-    );
-
-    // update total bonus listings
-    const totalNumBonusListingsRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC);
-    batch.set(
-      totalNumBonusListingsRef,
-      {
-        totalBonusListings: firebaseAdmin.firestore.FieldValue.increment(
-          -1 * numOrders
-        ),
-      },
-      { merge: true }
-    );
-  }
-
-  // Commit the batch
-  utils.log("Deleting a listing with id " + listing);
-  batch
-    .commit()
-    .then((resp) => {
-      res.sendStatus(200);
-    })
-    .catch((err) => {
-      utils.error("Failed to delete listing " + listing, err);
-      res.sendStatus(500);
-    });
-});
-
-// order fulfilled
-app.post("/u/:user/wyvern/v1/orders/fulfilled", (req, res) => {
-  // write to bought and sold and delete from listing, offer made, offer recvd
-});
-
-// ====================================================== HELPERS ==========================================================
-
-async function isTokenVerified(address) {
-  const doc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .doc(address)
-    .get();
-  return doc.exists;
 }
+
+// ==================================================== Get assets ==========================================================
 
 async function getAssets(address, limit, offset, sourceName) {
   utils.log("Fetching assets for", address);
@@ -743,24 +905,16 @@ async function getAssetsFromOpensea(address, limit, offset) {
   }
 }
 
-async function getOrders(maker, tokenAddress, tokenId, side) {
-  utils.log("Fetching order for", maker, tokenAddress, tokenId, side);
-  const results = await db
+// ============================================================ Misc ======================================================
+
+async function isTokenVerified(address) {
+  const doc = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(maker)
-    .collection(fstrCnstnts.LISTINGS_COLL)
-    .where("metadata.asset.address", "==", tokenAddress)
-    .where("metadata.asset.id", "==", tokenId)
-    .where("side", "==", parseInt(side))
+    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+    .doc(address)
     .get();
-
-  if (results.empty) {
-    utils.log("No matching orders");
-    return;
-  }
-  return results.docs;
+  return doc.exists;
 }
 
 function getDocId(tokenAddress, tokenId) {
@@ -782,16 +936,36 @@ function getDocId(tokenAddress, tokenId) {
   return id;
 }
 
-async function deleteCollection(collectionPath, batchSize) {
+async function getOrders(maker, tokenAddress, tokenId, side) {
+  utils.log("Fetching order for", maker, tokenAddress, tokenId, side);
+  const results = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(maker)
+    .collection(fstrCnstnts.LISTINGS_COLL)
+    .where("metadata.asset.address", "==", tokenAddress)
+    .where("metadata.asset.id", "==", tokenId)
+    .where("side", "==", parseInt(side))
+    .get();
+
+  if (results.empty) {
+    utils.log("No matching orders");
+    return;
+  }
+  return results.docs;
+}
+
+async function deleteOffersReceivedCollection(collectionPath, batchSize) {
   utils.log("Deleting collection at", collectionPath);
   const collectionRef = db.collection(collectionPath);
   const query = collectionRef.orderBy("__name__").limit(batchSize);
   return new Promise((resolve, reject) => {
-    deleteQueryBatch(query, resolve).catch(reject);
+    deleteOffersReceivedQueryBatch(query, resolve).catch(reject);
   });
 }
 
-async function deleteQueryBatch(query, resolve) {
+async function deleteOffersReceivedQueryBatch(query, resolve) {
   const snapshot = await query.get();
   const batchSize = snapshot.size;
   if (batchSize === 0) {
@@ -802,13 +976,154 @@ async function deleteQueryBatch(query, resolve) {
   // Delete documents in a batch
   const batch = db.batch();
   snapshot.docs.forEach((doc) => {
+    // delete offersMade from maker
+    deleteOfferMadeWithId(doc.id, doc.data().maker);
+    // delete offersRecd from taker
     batch.delete(doc.ref);
   });
   await batch.commit();
   // Recurse on the next process tick, to avoid exploding the stack
   process.nextTick(() => {
-    deleteQueryBatch(query, resolve);
+    deleteOffersReceivedQueryBatch(query, resolve);
   });
+}
+
+function isOrderExpired(doc) {
+  const order = doc.data();
+  const utcSecondsSinceEpoch = Math.round(Date.now() / 1000); 
+  const orderExpirationTime = +order.expirationTime;
+  return orderExpirationTime <= utcSecondsSinceEpoch;
+}
+
+function deleteExpiredOrder(doc) {
+  utils.log('Deleting expired order', doc.id);
+  const order = doc.data();
+  const side = +order.side;
+  if (side == 1) { // listing
+    deleteListing(doc);
+  } else if (side == 0) { // offer
+    deleteOffer(doc);
+  } else {
+    utils.error('Unknown order type', doc.id);
+  }
+}
+
+function deleteListingWithId(id, user) {
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.LISTINGS_COLL)
+    .doc(id)
+    .get()
+    .then((listingDoc) => {
+      deleteListing(listingDoc);
+    })
+    .catch((err) => {
+      utils.error("cannot delete listing", err);
+    });
+}
+
+async function deleteListing(doc) {
+  const listing = doc.id;
+  utils.log("Deleting listing", listing);
+  const user = doc.data().maker;
+  const hasBonus = doc.data().metadata.hasBonusReward;
+  const numOrders = 1;
+  const batch = db.batch();
+
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    hasBonus,
+    numOrders,
+    0,
+    false
+  );
+
+  if (updatedRewards) {
+    // update user rewards data
+    storeUpdatedUserRewards(batch, user, updatedRewards);
+  } else {
+    utils.log("Not updating rewards data as there are no updates");
+  }
+
+  // delete listing
+  batch.delete(doc.ref);
+
+  // delete offers received on this listing, multiple offers can be received on the same nft
+  deleteOfferReceivedWithId(batch, listing, user);
+
+  // update num user listings
+  updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
+
+  // update total listings
+  updateNumTotalOrders(-1 * numOrders, hasBonus, 1);
+
+  // Commit the batch
+  batch
+    .commit()
+    .then((resp) => {
+    })
+    .catch((err) => {
+      utils.error("Failed to delete listing " + listing, err);
+    });
+}
+
+function deleteOfferMadeWithId(id, user) {
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .doc(id)
+    .get()
+    .then((offerMadeDoc) => {
+      deleteOffer(offerMadeDoc);
+    })
+    .catch((err) => {
+      utils.error("cannot delete offer", err);
+    });
+}
+
+async function deleteOffer(doc) {
+  const offer = doc.id;
+  utils.log("Deleting offer", offer);
+  const user = doc.data().maker;
+  const hasBonus = doc.data().metadata.hasBonusReward;
+  const numOrders = 1;
+  const batch = db.batch();
+
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    hasBonus,
+    numOrders,
+    0,
+    false
+  );
+
+  if (updatedRewards) {
+    // update user rewards data
+    storeUpdatedUserRewards(batch, user, updatedRewards);
+  } else {
+    utils.log("Not updating rewards data as there are no updates");
+  }
+
+  // delete offer
+  batch.delete(doc.ref);
+
+  // update num user offers
+  updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
+
+  // update total offers
+  updateNumTotalOrders(-1 * numOrders, hasBonus, 0);
+
+  // Commit the batch
+  batch
+    .commit()
+    .then((resp) => {})
+    .catch((err) => {
+      utils.error("Failed to delete offer " + offer, err);
+    });
 }
 
 // =============================================== Rewards calc logic ========================================================
@@ -823,7 +1138,7 @@ async function hasBonusReward(address) {
   return doc.exists;
 }
 
-async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
+async function getUpdatedRewards(user, hasBonus, numOrders, fees, isIncrease) {
   utils.log("Getting updated reward for user", user);
 
   let userInfo = await db
@@ -838,32 +1153,7 @@ async function getUpdatedRewards(user, hasBonus, numOrders, isIncrease) {
     ...userInfo.rewardsInfo,
   };
 
-  let globalInfo = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .get();
-  globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() };
-  globalInfo.rewardsInfo = {
-    ...getEmptyGlobalInfo().rewardsInfo,
-    ...globalInfo.rewardsInfo,
-  };
-
-  let updatedRewards;
-  if (isIncrease) {
-    updatedRewards = await increaseShare(
-      hasBonus,
-      numOrders,
-      userInfo,
-      globalInfo
-    );
-  } else {
-    updatedRewards = await decreaseShare(
-      hasBonus,
-      numOrders,
-      userInfo,
-      globalInfo
-    );
-  }
+  let updatedRewards = updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease);
   return updatedRewards;
 }
 
@@ -875,16 +1165,20 @@ function getEmptyGlobalInfo() {
     totalBonusOffers: 0,
     totalSales: 0,
     totalFees: 0,
+    totalVolume: 0,
     rewardsInfo: {
       accRewardPerShare: 0,
       accBonusRewardPerShare: 0,
-      accFeeRewardPerShare: 0,
+      accSaleRewardPerShare: 0,
+      accBuyRewardPerShare: 0,
       rewardPerBlock: 0,
       bonusRewardPerBlock: 0,
-      feeRewardPerBlock: 0,
+      saleRewardPerBlock: 0,
+      buyRewardPerBlock: 0,
       totalRewardPaid: 0,
       totalBonusRewardPaid: 0,
-      totalFeeRewardPaid: 0,
+      totalSaleRewardPaid: 0,
+      totalBuyRewardPaid: 0,
       lastRewardBlock: 0,
       penaltyActivated: 0,
       penaltyRatio: 0,
@@ -898,9 +1192,11 @@ function getEmptyUserInfo() {
     numBonusListings: 0,
     numOffers: 0,
     numBonusOffers: 0,
+    numBought: 0,
     numSales: 0,
-    feesPaid: 0,
-    ens: "",
+    saleFees: 0,
+    buyFees: 0,
+    ens: '',
     rewardsInfo: getEmptyUserRewardInfo(),
   };
 }
@@ -909,178 +1205,150 @@ function getEmptyUserRewardInfo() {
   return {
     rewardDebt: 0,
     bonusRewardDebt: 0,
-    feeRewardDebt: 0,
+    saleRewardDebt: 0,
+    buyRewardDebt: 0,
     pending: 0,
     bonusPending: 0,
-    feePending: 0,
+    salePending: 0,
+    buyPending: 0,
     netReward: 0,
     netRewardCalculatedAt: 0,
   };
 }
 
-// This function increase user's share and updates the global share
-// the user's actual share percentage is calculated by userShare / globalShare
-async function increaseShare(hasBonus, numOrders, userInfo, globalInfo) {
-  utils.log("Increasing share");
+// updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalBuyRewardPaid and returns user share
+async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
+  utils.log("Updating rewards in increasing mode = ", isIncrease);
 
   let userShare = userInfo.numListings + userInfo.numOffers;
+  let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers;
+  let saleFees = userInfo.saleFees;
+  let buyFees = userInfo.buyFees;
   let rewardDebt = userInfo.rewardsInfo.rewardDebt;
-  let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid;
-
-  const updatedGlobalRewardsData = await updateGlobalRewards(
-    globalInfo,
-    hasBonus
-  );
-  if (!updatedGlobalRewardsData) {
-    utils.log("Not increasing share as updatedGlobalRewardsData is empty");
-    return;
-  }
-  const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare;
-
+  let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
+  let saleRewardDebt = userInfo.rewardsInfo.saleRewardDebt;
+  let buyRewardDebt = userInfo.rewardsInfo.buyRewardDebt;
   let pending = 0;
-  if (userShare > 0) {
-    pending = userShare * accRewardPerShare - rewardDebt;
-    totalRewardPaid = totalRewardPaid + pending;
-  }
-  // add current value before reward debt calc
-  userShare += numOrders;
-  rewardDebt = userShare * accRewardPerShare;
+  let bonusPending = 0;
+  let salePending = 0;
+  let buyPending = 0;
 
-  updatedGlobalRewardsData.totalRewardPaid = totalRewardPaid;
-  userInfo.rewardsInfo.rewardDebt = rewardDebt;
-  userInfo.rewardsInfo.pending = pending;
-
-  if (hasBonus) {
-    let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers;
-    let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-    let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid;
-    const accBonusRewardPerShare =
-      updatedGlobalRewardsData.accBonusRewardPerShare;
-    let bonusPending = 0;
-    if (userBonusShare > 0) {
-      bonusPending = userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
-      totalBonusRewardPaid = totalBonusRewardPaid + bonusPending;
-    }
-    // add current value before reward debt calc
-    userBonusShare += numOrders;
-    bonusRewardDebt = userBonusShare * accBonusRewardPerShare;
-
-    updatedGlobalRewardsData.totalBonusRewardPaid = totalBonusRewardPaid;
-    userInfo.rewardsInfo.bonusRewardDebt = bonusRewardDebt;
-    userInfo.rewardsInfo.bonusPending = bonusPending;
-  }
-
-  return {
-    updatedGlobalRewardsData: updatedGlobalRewardsData,
-    updatedUserRewardsData: userInfo.rewardsInfo,
-  };
-}
-
-// This function will decreases user's share by value, and updates the global share
-// it will record which block this is happening and accumulates the area of (share * time)
-async function decreaseShare(hasBonus, numOrders, userInfo, globalInfo) {
-  utils.log("Decreasing share");
-
-  let userShare = userInfo.numListings + userInfo.numOffers;
-  if (userShare < numOrders) {
-    utils.error("cannot decrease share");
+  const result = await updateLocalRewards();
+  if (!result) {
+    utils.log("Not updating rewards");
     return;
   }
 
-  let rewardDebt = userInfo.rewardsInfo.rewardDebt;
-  let totalRewardPaid = globalInfo.rewardsInfo.totalRewardPaid;
+  const accRewardPerShare = localInfo.rewardsInfo.accRewardPerShare;
+  const accSaleRewardPerShare = localInfo.rewardsInfo.accSaleRewardPerShare;
+  const accBuyRewardPerShare = localInfo.rewardsInfo.accBuyRewardPerShare;
+  const accBonusRewardPerShare = localInfo.rewardsInfo.accBonusRewardPerShare;
 
-  const updatedGlobalRewardsData = await updateGlobalRewards(
-    globalInfo,
-    hasBonus
-  );
-  if (!updatedGlobalRewardsData) {
-    utils.log("Not decreasing share as updatedGlobalRewardsData is empty");
-    return;
+  if (!isIncrease) {
+    if (userShare >= numOrders) {
+      pending = userShare * accRewardPerShare - rewardDebt;
+      // decrease before reward debt calc
+      userShare -= numOrders;
+    }
+    if (saleFees >= fees) {
+      salePending = saleFees * accSaleRewardPerShare - saleRewardDebt;
+      saleFees -= fees;
+    }
+    if (buyFees >= fees) {
+      buyPending = buyFees * accBuyRewardPerShare - buyRewardDebt;
+      buyFees -= fees;
+    }
+  } else {
+    if (userShare > 0) {
+      pending = userShare * accRewardPerShare - rewardDebt;
+    }
+    if (saleFees > 0) {
+      salePending = saleFees * accSaleRewardPerShare - saleRewardDebt;
+    }
+    if (buyFees > 0) {
+      buyPending = buyFees * accBuyRewardPerShare - buyRewardDebt;
+    }
+    // increase before reward debt calc
+    userShare += numOrders;
+    saleFees += fees;
+    buyFees += fees;
   }
-  const accRewardPerShare = updatedGlobalRewardsData.accRewardPerShare;
-
-  let pending = userShare * accRewardPerShare - rewardDebt;
-  totalRewardPaid = totalRewardPaid + pending;
-  // decrease userShare before rewardDebt calc
-  userShare -= numOrders;
-  rewardDebt = userShare * accRewardPerShare;
-
-  updatedGlobalRewardsData.totalRewardPaid = totalRewardPaid;
-  userInfo.rewardsInfo.rewardDebt = rewardDebt;
+  userInfo.rewardsInfo.rewardDebt = userShare * accRewardPerShare;
   userInfo.rewardsInfo.pending = pending;
+  userInfo.rewardsInfo.saleRewardDebt = saleFees * accSaleRewardPerShare;
+  userInfo.rewardsInfo.salePending = salePending;
+  userInfo.rewardsInfo.buyRewardDebt = buyFees * accBuyRewardPerShare;
+  userInfo.rewardsInfo.buyPending = buyPending;
 
   if (hasBonus) {
-    let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers;
-    if (userBonusShare < numOrders) {
-      utils.error("cannot decrease bonus share");
-      return;
+    if (!isIncrease) {
+      if (userBonusShare >= numOrders) {
+        bonusPending =
+          userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
+        // decrease userShare before rewardDebt calc
+        userBonusShare -= numOrders;
+      }
+    } else {
+      if (userBonusShare > 0) {
+        bonusPending =
+          userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
+      }
+      // add current value before reward debt calc
+      userBonusShare += numOrders;
     }
-
-    let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-    let totalBonusRewardPaid = globalInfo.rewardsInfo.totalBonusRewardPaid;
-
-    const accBonusRewardPerShare =
-      updatedGlobalRewardsData.accBonusRewardPerShare;
-
-    let bonusPending =
-      userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
-    totalBonusRewardPaid = totalBonusRewardPaid + bonusPending;
-    // decrease userShare before rewardDebt calc
-    userBonusShare -= numOrders;
-    bonusRewardDebt = userBonusShare * accBonusRewardPerShare;
-
-    updatedGlobalRewardsData.totalBonusRewardPaid = totalBonusRewardPaid;
-    userInfo.rewardsInfo.bonusRewardDebt = bonusRewardDebt;
+    userInfo.rewardsInfo.bonusRewardDebt =
+      userBonusShare * accBonusRewardPerShare;
     userInfo.rewardsInfo.bonusPending = bonusPending;
   }
 
-  return {
-    updatedGlobalRewardsData: updatedGlobalRewardsData,
-    updatedUserRewardsData: userInfo.rewardsInfo,
-  };
+  // update local info
+  localInfo.rewardsInfo.totalRewardPaid += pending;
+  localInfo.rewardsInfo.totalBonusRewardPaid += bonusPending;
+  localInfo.rewardsInfo.totalSaleRewardPaid += salePending;
+  localInfo.rewardsInfo.totalBuyRewardPaid += buyPending;
+
+  return userInfo.rewardsInfo;
 }
 
-// Update reward variables of the given pool to be up-to-date
-async function updateGlobalRewards(globalInfo, hasBonus) {
-  utils.log("Updating global rewards");
-
-  const totalListings = globalInfo.totalListings;
-  const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
-  let lastRewardBlock = globalInfo.rewardsInfo.lastRewardBlock;
-  let accRewardPerShare = globalInfo.rewardsInfo.accRewardPerShare;
+// updates lastRewardBlock, accRewardPerShare, accBonusRewardPerShare
+async function updateLocalRewards() {
+  utils.log("Updating local rewards");
   const currentBlock = await getCurrentBlock();
+  const totalOrders = globalInfo.totalListings + globalInfo.totalOffers;
+  const totalBonusOrders = globalInfo.totalBonusListings + globalInfo.totalBonusOrders;
+  const totalFees = globalInfo.totalFees;
+  const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
+  const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
+  const saleRewardPerBlock = globalInfo.rewardsInfo.saleRewardPerBlock;
+  const buyRewardPerBlock = globalInfo.rewardsInfo.buyRewardPerBlock;
+
+  let lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
 
   if (currentBlock <= lastRewardBlock) {
-    utils.log(
-      "Not updating global rewards since current block <= lastRewardBlock"
-    );
-    return;
+    utils.log("Not updating global rewards since current block <= lastRewardBlock");
+    return false;
   }
-  if (totalListings == 0) {
-    utils.log("Not updating global rewards since totallistings are 0");
-    lastRewardBlock = currentBlock;
-    return;
+  if (totalOrders == 0) {
+    utils.log("Not updating global rewards since total liquidity is 0");
+    return false;
   }
   const multiplier = currentBlock - lastRewardBlock;
   const reward = multiplier * rewardPerBlock;
-  accRewardPerShare = accRewardPerShare + reward / totalListings;
-  lastRewardBlock = currentBlock;
-
-  const updatedRewardsData = globalInfo.rewardsInfo;
-  updatedRewardsData.accRewardPerShare = accRewardPerShare;
-  updatedRewardsData.lastRewardBlock = lastRewardBlock;
-
-  if (hasBonus) {
-    const totalBonusListings = globalInfo.totalBonusListings;
-    const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
-    let accBonusRewardPerShare = globalInfo.rewardsInfo.accBonusRewardPerShare;
+  localInfo.rewardsInfo.accRewardPerShare += reward / totalOrders;
+  if (totalBonusOrders > 0) {
     const bonusReward = multiplier * bonusRewardPerBlock;
-    accBonusRewardPerShare =
-      accBonusRewardPerShare + bonusReward / totalBonusListings;
-    updatedRewardsData.accBonusRewardPerShare = accBonusRewardPerShare;
+    localInfo.rewardsInfo.accBonusRewardPerShare += bonusReward / totalBonusOrders;
   }
-  return updatedRewardsData;
+  if (totalFees > 0) {
+    const saleReward = multiplier * saleRewardPerBlock;
+    localInfo.rewardsInfo.accSaleRewardPerShare += saleReward / totalFees;
+    const buyReward = multiplier * buyRewardPerBlock;
+    localInfo.rewardsInfo.accBuyRewardPerShare += buyReward / totalFees;
+  }
+
+  localInfo.rewardsInfo.lastRewardBlock = currentBlock;
+
+  return true;
 }
 
 async function getCurrentBlock() {
@@ -1106,89 +1374,94 @@ async function getReward(user) {
     ...getEmptyUserRewardInfo(),
     ...userInfo.rewardsInfo,
   };
-
-  let globalInfo = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .get();
-  globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo.data() };
-  globalInfo.rewardsInfo = {
-    ...getEmptyGlobalInfo().rewardsInfo,
-    ...globalInfo.rewardsInfo,
-  };
-
   const currentBlock = await getCurrentBlock();
-
   const totalListings = globalInfo.totalListings;
   const totalBonusListings = globalInfo.totalBonusListings;
   const totalFees = globalInfo.totalFees;
+  const totalVolume = globalInfo.totalVolume;
 
-  const lastRewardBlock = globalInfo.rewardsInfo.lastRewardBlock;
   const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated;
   const penaltyRatio = globalInfo.rewardsInfo.penaltyRatio;
   const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
   const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
-  const feeRewardPerBlock = globalInfo.rewardsInfo.feeRewardPerBlock;
-  let _accRewardPerShare = globalInfo.rewardsInfo.accRewardPerShare;
-  let _accBonusRewardPerShare = globalInfo.rewardsInfo.accBonusRewardPerShare;
-  let _accFeeRewardPerShare = globalInfo.rewardsInfo.accFeeRewardPerShare;
+  const saleRewardPerBlock = globalInfo.rewardsInfo.saleRewardPerBlock;
+  const buyRewardPerBlock = globalInfo.rewardsInfo.buyRewardPerBlock;
 
-  const numSales = userInfo.numSales;
+  const lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
+  let _accRewardPerShare = localInfo.rewardsInfo.accRewardPerShare;
+  let _accBonusRewardPerShare = localInfo.rewardsInfo.accBonusRewardPerShare;
+  let _accSaleRewardPerShare = localInfo.rewardsInfo.accSaleRewardPerShare;
+  let _accBuyRewardPerShare = localInfo.rewardsInfo.accBuyRewardPerShare;
+
+  const numBought = userInfo.numBought;
+  const numSold = userInfo.numSold;
   const numOrders = userInfo.numListings + userInfo.numOffers;
   const numBonusOrders = userInfo.numBonusListings + userInfo.numBonusOffers;
-  const feesPaid = userInfo.feesPaid;
+  const saleFees = userInfo.saleFees;
+  const buyFees = userInfo.buyFees;
   const rewardDebt = userInfo.rewardsInfo.rewardDebt;
   const bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-  const feeRewardDebt = userInfo.rewardsInfo.feeRewardDebt;
+  const saleRewardDebt = userInfo.rewardsInfo.saleRewardDebt;
+  const buyRewardDebt = userInfo.rewardsInfo.buyRewardDebt;
   const pending = userInfo.rewardsInfo.pending;
   const bonusPending = userInfo.rewardsInfo.bonusPending;
-  const feePending = userInfo.rewardsInfo.feePending;
+  const salePending = userInfo.rewardsInfo.salePending;
+  const buyPending = userInfo.rewardsInfo.buyPending;
 
   if (currentBlock > lastRewardBlock && totalListings != 0) {
     const multiplier = currentBlock - lastRewardBlock;
     const reward = multiplier * rewardPerBlock;
-    _accRewardPerShare = _accRewardPerShare + reward / totalListings;
+    _accRewardPerShare += reward / totalListings;
   }
   if (currentBlock > lastRewardBlock && totalBonusListings != 0) {
     const multiplier = currentBlock - lastRewardBlock;
     const reward = multiplier * bonusRewardPerBlock;
-    _accBonusRewardPerShare =
-      _accBonusRewardPerShare + reward / totalBonusListings;
+    _accBonusRewardPerShare += reward / totalBonusListings;
   }
   if (currentBlock > lastRewardBlock && totalFees != 0) {
     const multiplier = currentBlock - lastRewardBlock;
-    const reward = multiplier * feeRewardPerBlock;
-    _accFeeRewardPerShare = _accFeeRewardPerShare + reward / totalFees;
+    const saleReward = multiplier * saleRewardPerBlock;
+    const buyReward = multiplier * buyRewardPerBlock;
+    _accSaleRewardPerShare += saleReward / totalFees;
+    _accBuyRewardPerShare += buyReward / totalFees;
   }
 
   const ordersReward = numOrders * _accRewardPerShare - rewardDebt;
-  const bonusReward =
-    numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
-  const feeReward = feesPaid * _accFeeRewardPerShare - feeRewardDebt;
+  const bonusReward = numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
+  const saleReward = saleFees * _accSaleRewardPerShare - saleRewardDebt;
+  const buyReward = buyFees * _accBuyRewardPerShare - buyRewardDebt;
+
   const grossReward =
     ordersReward +
     bonusReward +
-    feeReward +
+    saleReward +
+    buyReward +
     pending +
     bonusPending +
-    feePending;
+    salePending +
+    buyPending;
 
   const resp = {
     currentBlock,
     totalListings,
     totalBonusListings,
     totalFees,
+    totalVolume,
     ordersReward,
     bonusReward,
-    feeReward,
+    saleReward,
+    buyReward,
     grossReward,
     penaltyActivated,
     penaltyRatio,
     rewardPerBlock,
     bonusRewardPerBlock,
-    feeRewardPerBlock,
-    numSales,
-    feesPaid,
+    saleRewardPerBlock,
+    buyRewardPerBlock,
+    numSold,
+    numBought,
+    saleFees,
+    buyFees,
     numListings: userInfo.numListings,
     numBonusListings: userInfo.numBonusListings,
     numOffers: userInfo.numOffers,
