@@ -1,7 +1,7 @@
 const firebaseAdmin = require("firebase-admin");
 const { ethers } = require("ethers");
 
-//todo: change this before push
+//todo: adi change this before push
 var serviceAccount = require("/tmp/nftc-web-firebase-creds.json");
 // var serviceAccount = require("C:\\Users\\Tyler\\Documents\\nftcompany-backend\\firebase-ty.json")
 firebaseAdmin.initializeApp({
