@@ -36,7 +36,13 @@ Data structure in firestore
 					- numSold
 					- saleFees
 					- buyFees
-					- ens
+					- profileInfo
+						- ens
+						- email
+							- address
+							- verified
+							- subscribed
+							- verificationGuid
 					- rewardsInfo
 						- rewardDebt
 						- bonusRewardDebt
