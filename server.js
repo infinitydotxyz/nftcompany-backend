@@ -56,7 +56,6 @@ setInterval(() => {
     txn.update(ref, globalInfo);
   })
     .then((res) => {
-      utils.log("Updated global info in firestore");
       // reconcile localinfo
       reconcileLocalInfo(updateData);
     })
@@ -159,19 +158,24 @@ app.all("/u/*", async (req, res, next) => {
 // check if token is verified or has bonus reward
 app.get("/token/:tokenAddress/verfiedBonusReward", async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
-  const verified = await isTokenVerified(tokenAddress);
-  const bonusReward = await hasBonusReward(tokenAddress);
-  let resp = {
-    verified,
-    bonusReward,
-  };
-  resp = utils.jsonString(resp);
-  // to enable cdn cache
-  res.set({
-    "Cache-Control": "must-revalidate, max-age=3600",
-    "Content-Length": Buffer.byteLength(resp, "utf8"),
-  });
-  res.send(resp);
+  try {
+    const verified = await isTokenVerified(tokenAddress);
+    const bonusReward = await hasBonusReward(tokenAddress);
+    let resp = {
+      verified,
+      bonusReward,
+    };
+    resp = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      "Cache-Control": "must-revalidate, max-age=3600",
+      "Content-Length": Buffer.byteLength(resp, "utf8"),
+    });
+    res.send(resp);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
+  }
 });
 
 // fetch all listings
@@ -199,14 +203,19 @@ app.get("/u/:user/assets", async (req, res) => {
   const offset = req.query.offset;
   const source = req.query.source;
   const sourceName = nftDataSources[source];
-  let resp = await getAssets(user, limit, offset, sourceName);
-  resp = utils.jsonString(resp);
-  // to enable cdn cache
-  res.set({
-    "Cache-Control": "must-revalidate, max-age=300",
-    "Content-Length": Buffer.byteLength(resp, "utf8"),
-  });
-  res.send(resp);
+  try {
+    let resp = await getAssets(user, limit, offset, sourceName);
+    resp = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      "Cache-Control": "must-revalidate, max-age=300",
+      "Content-Length": Buffer.byteLength(resp, "utf8"),
+    });
+    res.send(resp);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
+  }
 });
 
 //fetch listings of user
@@ -235,36 +244,45 @@ app.get("/wyvern/v1/orders", async (req, res) => {
   const tokenAddress = req.query.assetContractAddress.trim().toLowerCase();
   const tokenId = req.query.tokenId;
   const side = req.query.side;
-
-  const docs = await getOrders(maker, tokenAddress, tokenId, side);
-  if (docs) {
-    let orders = [];
-    for (const doc of docs) {
-      const order = doc.data();
-      order.id = doc.id;
-      orders.push(order);
+  try {
+    const docs = await getOrders(maker, tokenAddress, tokenId, side);
+    if (docs) {
+      let orders = [];
+      for (const doc of docs) {
+        const order = doc.data();
+        order.id = doc.id;
+        orders.push(order);
+      }
+      const resp = {
+        count: orders.length,
+        orders: orders,
+      };
+      res.send(resp);
+    } else {
+      res.sendStatus(404);
     }
-    const resp = {
-      count: orders.length,
-      orders: orders,
-    };
-    res.send(resp);
-  } else {
-    res.sendStatus(404);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
   }
 });
 
 // fetch user reward
 app.get("/u/:user/reward", async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  let resp = await getReward(user);
-  resp = utils.jsonString(resp);
-  // to enable cdn cache
-  res.set({
-    "Cache-Control": "must-revalidate, max-age=300",
-    "Content-Length": Buffer.byteLength(resp, "utf8"),
-  });
-  res.send(resp);
+  try {
+    let resp = await getReward(user);
+    resp = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      "Cache-Control": "must-revalidate, max-age=300",
+      "Content-Length": Buffer.byteLength(resp, "utf8"),
+    });
+    res.send(resp);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
+  }
 });
 
 //fetch rewards leaderboard
@@ -356,52 +374,56 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
   // default one order per post call
   const numOrders = 1;
   const batch = db.batch();
+  try {
+    // check if token has bonus if payload instructs so
+    let hasBonus = payload.metadata.hasBonusReward;
+    if (payload.metadata.checkBonusReward) {
+      hasBonus = await hasBonusReward(tokenAddress);
+    }
+    payload.metadata.hasBonusReward = hasBonus;
 
-  // check if token has bonus if payload instructs so
-  let hasBonus = payload.metadata.hasBonusReward;
-  if (payload.metadata.checkBonusReward) {
-    hasBonus = await hasBonusReward(tokenAddress);
+    // update rewards
+    const updatedRewards = await getUpdatedRewards(
+      maker,
+      hasBonus,
+      numOrders,
+      0,
+      true
+    );
+
+    if (updatedRewards) {
+      // update user rewards data
+      storeUpdatedUserRewards(batch, maker, updatedRewards);
+    } else {
+      utils.log("Not updating rewards data as there are no updates");
+    }
+
+    if (payload.side == 1) {
+      // listing
+      await postListing(id, maker, payload, batch, numOrders, hasBonus);
+    } else if (payload.side == 0) {
+      // offer
+      await postOffer(id, maker, payload, batch, numOrders, hasBonus);
+    } else {
+      utils.error("Unknown order type");
+      return;
+    }
+
+    // commit batch
+    utils.log("Posting an order with id " + id);
+    batch
+      .commit()
+      .then((resp) => {
+        res.send(payload);
+      })
+      .catch((err) => {
+        utils.error("Failed to post order", err);
+        res.sendStatus(500);
+      });
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
   }
-  payload.metadata.hasBonusReward = hasBonus;
-
-  // update rewards
-  const updatedRewards = await getUpdatedRewards(
-    maker,
-    hasBonus,
-    numOrders,
-    0,
-    true
-  );
-
-  if (updatedRewards) {
-    // update user rewards data
-    storeUpdatedUserRewards(batch, maker, updatedRewards);
-  } else {
-    utils.log("Not updating rewards data as there are no updates");
-  }
-
-  if (payload.side == 1) {
-    // listing
-    postListing(id, maker, payload, batch, numOrders, hasBonus);
-  } else if (payload.side == 0) {
-    // offer
-    postOffer(id, maker, payload, batch, numOrders, hasBonus);
-  } else {
-    utils.error("Unknown order type");
-    return;
-  }
-
-  // commit batch
-  utils.log("Posting an order with id " + id);
-  batch
-    .commit()
-    .then((resp) => {
-      res.send(payload);
-    })
-    .catch((err) => {
-      utils.error("Failed to post order", err);
-      res.sendStatus(500);
-    });
 });
 
 // order fulfilled
@@ -413,120 +435,125 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
     2) listed an item, offer received on it, offer is accepted; order is the offerReceived
     3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
   */
-  const order = req.body;
-  const taker = req.params.user.trim().toLowerCase();
-  const maker = order.maker.trim().toLowerCase();
-  const side = +order.side;
-  const offerMadeOnListing = order.metadata.offerMadeOnListing;
-  const tokenAddress = order.metadata.asset.address.trim().toLowerCase();
-  const tokenId = order.metadata.asset.id;
-  const docId = getDocId(tokenAddress, tokenId);
-  const numOrders = 1;
-  const feesInEth = +order.metadata.feesInEth;
-  const salePriceInEth = +order.metadata.salePriceInEth;
-  const batch = db.batch();
-  order.taker = taker;
+  try {
+    const order = req.body;
+    const taker = req.params.user.trim().toLowerCase();
+    const maker = order.maker.trim().toLowerCase();
+    const side = +order.side;
+    const offerMadeOnListing = order.metadata.offerMadeOnListing;
+    const tokenAddress = order.metadata.asset.address.trim().toLowerCase();
+    const tokenId = order.metadata.asset.id;
+    const docId = getDocId(tokenAddress, tokenId);
+    const numOrders = 1;
+    const feesInEth = +order.metadata.feesInEth;
+    const salePriceInEth = +order.metadata.salePriceInEth;
+    const batch = db.batch();
+    order.taker = taker;
 
-  if (side != 0 || side != 1) {
-    utils.error("Unknown order type, not fulfilling it");
-    res.sendStatus(500);
-    return;
-  }
-
-  if (side == 0) {
-    // taker accepted offerReceived, maker is the buyer
-
-    // check if order exists
-    const doc = await db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
-      .collection(fstrCnstnts.OFFERS_MADE_COLL)
-      .doc(docId)
-      .get();
-    if (!doc.exists) {
-      utils.log("No order " + docId + " to fulfill");
-      res.sendStatus(404);
-      return;
-    }
-
-    utils.log("Item bought by " + maker + " sold by " + taker);
-
-    // write to bought by maker; multiple items possible
-    saveBoughtOrder(docId, maker, order, batch, numOrders);
-
-    // write to sold by taker; multiple items possible
-    saveSoldOrder(docId, taker, order, batch, numOrders);
-
-    // delete offerMade by maker
-    deleteOfferMadeWithId(docId, maker);
-
-    // delete offersReceived from taker; multiple possible
-    deleteOfferReceivedWithId(batch, docId, taker);
-
-    // delete listing by taker if it exists
-    if (offerMadeOnListing) {
-      deleteListingWithId(docId, taker);
-    }
-
-    // send email to maker that the offer is accepted
-    prepareEmail(maker, order, "offerAccepted");
-  } else if (side == 1) {
-    // taker bought a listing, maker is the seller
-
-    // check if order exists
-    const doc = await db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
-      .collection(fstrCnstnts.LISTINGS_COLL)
-      .doc(docId)
-      .get();
-    if (!doc.exists) {
-      utils.log("No order " + docId + " to fulfill");
-      res.sendStatus(404);
-      return;
-    }
-
-    utils.log("Item bought by " + taker + " sold by " + maker);
-
-    // write to bought by taker; multiple items possible
-    saveBoughtOrder(docId, taker, order, batch, numOrders);
-
-    // write to sold by maker; multiple items possible
-    saveSoldOrder(docId, maker, order, batch, numOrders);
-
-    // delete offersReceived from maker; multiple possible
-    deleteOfferReceivedWithId(batch, docId, maker);
-
-    // delete listing from maker
-    deleteListingWithId(docId, maker);
-
-    // send email to maker that the listing is bought
-    prepareEmail(maker, order, "listingBought");
-  }
-
-  // update total sales
-  incrementLocalStats({ totalSales: numOrders });
-
-  //update total fees
-  incrementLocalStats({ totalFees: feesInEth });
-
-  //update total volume
-  incrementLocalStats({ totalVolume: salePriceInEth });
-
-  // commit batch
-  batch
-    .commit()
-    .then((resp) => {
-      res.sendStatus(200);
-    })
-    .catch((err) => {
-      utils.error("Failed to fulfill order", err);
+    if (side != 0 || side != 1) {
+      utils.error("Unknown order type, not fulfilling it");
       res.sendStatus(500);
-    });
+      return;
+    }
+
+    if (side == 0) {
+      // taker accepted offerReceived, maker is the buyer
+
+      // check if order exists
+      const doc = await db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(maker)
+        .collection(fstrCnstnts.OFFERS_MADE_COLL)
+        .doc(docId)
+        .get();
+      if (!doc.exists) {
+        utils.log("No order " + docId + " to fulfill");
+        res.sendStatus(404);
+        return;
+      }
+
+      utils.log("Item bought by " + maker + " sold by " + taker);
+
+      // write to bought by maker; multiple items possible
+      await saveBoughtOrder(docId, maker, order, batch, numOrders);
+
+      // write to sold by taker; multiple items possible
+      await saveSoldOrder(docId, taker, order, batch, numOrders);
+
+      // delete offerMade by maker
+      deleteOfferMadeWithId(docId, maker);
+
+      // delete offersReceived from taker; multiple possible
+      await deleteOfferReceivedWithId(batch, docId, taker);
+
+      // delete listing by taker if it exists
+      if (offerMadeOnListing) {
+        deleteListingWithId(docId, taker);
+      }
+
+      // send email to maker that the offer is accepted
+      prepareEmail(maker, order, "offerAccepted");
+    } else if (side == 1) {
+      // taker bought a listing, maker is the seller
+
+      // check if order exists
+      const doc = await db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(maker)
+        .collection(fstrCnstnts.LISTINGS_COLL)
+        .doc(docId)
+        .get();
+      if (!doc.exists) {
+        utils.log("No order " + docId + " to fulfill");
+        res.sendStatus(404);
+        return;
+      }
+
+      utils.log("Item bought by " + taker + " sold by " + maker);
+
+      // write to bought by taker; multiple items possible
+      await saveBoughtOrder(docId, taker, order, batch, numOrders);
+
+      // write to sold by maker; multiple items possible
+      await saveSoldOrder(docId, maker, order, batch, numOrders);
+
+      // delete offersReceived from maker; multiple possible
+      await deleteOfferReceivedWithId(batch, docId, maker);
+
+      // delete listing from maker
+      deleteListingWithId(docId, maker);
+
+      // send email to maker that the listing is bought
+      prepareEmail(maker, order, "listingBought");
+    }
+
+    // update total sales
+    incrementLocalStats({ totalSales: numOrders });
+
+    //update total fees
+    incrementLocalStats({ totalFees: feesInEth });
+
+    //update total volume
+    incrementLocalStats({ totalVolume: salePriceInEth });
+
+    // commit batch
+    batch
+      .commit()
+      .then((resp) => {
+        res.sendStatus(200);
+      })
+      .catch((err) => {
+        utils.error("Failed to fulfill order", err);
+        res.sendStatus(500);
+      });
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
+  }
 });
 
 // ====================================================== DELETES ======================================================
@@ -534,54 +561,64 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
 // cancel listing
 app.delete("/u/:user/listings/:listing", async (req, res) => {
   // delete listing and any offers recvd
-  const user = req.params.user.trim().toLowerCase();
-  const listing = req.params.listing.trim().toLowerCase();
+  try {
+    const user = req.params.user.trim().toLowerCase();
+    const listing = req.params.listing.trim().toLowerCase();
 
-  // check if listing exists first
-  const listingRef = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(listing);
-  const doc = await listingRef.get();
-  if (!doc.exists) {
-    utils.log("No listing " + listing + " to delete");
-    res.sendStatus(404);
-    return;
+    // check if listing exists first
+    const listingRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.LISTINGS_COLL)
+      .doc(listing);
+    const doc = await listingRef.get();
+    if (!doc.exists) {
+      utils.log("No listing " + listing + " to delete");
+      res.sendStatus(404);
+      return;
+    }
+
+    deleteListing(doc);
+    res.sendStatus(200);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
   }
-
-  deleteListing(doc);
-  res.sendStatus(200);
 });
 
 // cancel offer
 app.delete("/u/:user/offers/:offer", async (req, res) => {
-  // delete offer
-  const user = req.params.user.trim().toLowerCase();
-  const offer = req.params.offer.trim().toLowerCase();
+  try {
+    // delete offer
+    const user = req.params.user.trim().toLowerCase();
+    const offer = req.params.offer.trim().toLowerCase();
 
-  // check if offer exists first
-  const offerRef = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.OFFERS_MADE_COLL)
-    .doc(offer);
-  const doc = await offerRef.get();
-  if (!doc.exists) {
-    utils.log("No offer " + offer + " to delete");
-    res.sendStatus(404);
-    return;
+    // check if offer exists first
+    const offerRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.OFFERS_MADE_COLL)
+      .doc(offer);
+    const doc = await offerRef.get();
+    if (!doc.exists) {
+      utils.log("No offer " + offer + " to delete");
+      res.sendStatus(404);
+      return;
+    }
+
+    deleteOffer(doc);
+    res.sendStatus(200);
+  } catch (error) {
+    utils.error(error);
+    res.sendStatus(500);
   }
-
-  deleteOffer(doc);
-  res.sendStatus(200);
 });
 
-// ====================================================== HELPERS ==========================================================
+// ====================================================== Write helpers ==========================================================
 
 async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   // save order
@@ -669,42 +706,6 @@ async function saveSoldOrder(docId, user, order, batch, numOrders) {
   );
 }
 
-function deleteOfferReceivedWithId(batch, docId, user) {
-  const ref = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc(docId);
-  batch.delete(ref);
-
-  // deleting a doc doesn't delete a sub collection, we have to do it separately
-  const subCollPath =
-    fstrCnstnts.ROOT_COLL +
-    "/" +
-    fstrCnstnts.INFO_DOC +
-    "/" +
-    fstrCnstnts.USERS_COLL +
-    "/" +
-    user +
-    "/" +
-    fstrCnstnts.OFFERS_RECVD_COLL +
-    "/" +
-    docId +
-    "/" +
-    fstrCnstnts.OFFERS_RECVD_COLL;
-  try {
-    // delete in a batch size of 1000
-    deleteOffersReceivedCollection(subCollPath, 1000);
-  } catch (error) {
-    utils.error(
-      "Error deleting offers received sub collection for doc " + docId,
-      error
-    );
-  }
-}
-
 async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
   // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -772,7 +773,7 @@ async function postOffer(payload, maker, batch, numOrders, hasBonus) {
   prepareEmail(taker, payload, "offerMade");
 }
 
-// ================================================= Response helpers =================================================
+// ================================================= Read helpers =================================================
 
 function getListingsResponse(data) {
   const listings = [];
@@ -791,6 +792,26 @@ function getListingsResponse(data) {
     listings,
   };
   return resp;
+}
+
+async function getOrders(maker, tokenAddress, tokenId, side) {
+  utils.log("Fetching order for", maker, tokenAddress, tokenId, side);
+  const results = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(maker)
+    .collection(fstrCnstnts.LISTINGS_COLL)
+    .where("metadata.asset.address", "==", tokenAddress)
+    .where("metadata.asset.id", "==", tokenId)
+    .where("side", "==", parseInt(side))
+    .get();
+
+  if (results.empty) {
+    utils.log("No matching orders");
+    return;
+  }
+  return results.docs;
 }
 
 // ==================================================== Update num orders ===============================================
@@ -858,6 +879,8 @@ function updateNumTotalOrders(num, hasBonus, side) {
   });
 }
 
+// ================================================== Update rewards =========================================================
+
 function incrementLocalStats({
   totalOffers,
   totalBonusOffers,
@@ -875,8 +898,6 @@ function incrementLocalStats({
   localInfo.totalVolume += totalVolume || 0;
   localInfo.totalSales += totalSales || 0;
 }
-
-// ================================================== Update rewards =========================================================
 
 function storeUpdatedUserRewards(batch, user, data) {
   const ref = db
@@ -982,35 +1003,45 @@ function getDocId(tokenAddress, tokenId) {
     .digest("hex")
     .trim()
     .toLowerCase();
-  utils.log(
-    "Doc id for token address " +
-      tokenAddress +
-      " and token id " +
-      tokenId +
-      " is " +
-      id
-  );
   return id;
 }
 
-async function getOrders(maker, tokenAddress, tokenId, side) {
-  utils.log("Fetching order for", maker, tokenAddress, tokenId, side);
-  const results = await db
+// ============================================= Delete helpers ==========================================================
+
+function deleteOfferReceivedWithId(batch, docId, user) {
+  const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .doc(maker)
-    .collection(fstrCnstnts.LISTINGS_COLL)
-    .where("metadata.asset.address", "==", tokenAddress)
-    .where("metadata.asset.id", "==", tokenId)
-    .where("side", "==", parseInt(side))
-    .get();
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+    .doc(docId);
+  batch.delete(ref);
 
-  if (results.empty) {
-    utils.log("No matching orders");
-    return;
+  // deleting a doc doesn't delete a sub collection, we have to do it separately
+  const subCollPath =
+    fstrCnstnts.ROOT_COLL +
+    "/" +
+    fstrCnstnts.INFO_DOC +
+    "/" +
+    fstrCnstnts.USERS_COLL +
+    "/" +
+    user +
+    "/" +
+    fstrCnstnts.OFFERS_RECVD_COLL +
+    "/" +
+    docId +
+    "/" +
+    fstrCnstnts.OFFERS_RECVD_COLL;
+  try {
+    // delete in a batch size of 1000
+    deleteOffersReceivedCollection(subCollPath, 1000);
+  } catch (error) {
+    utils.error(
+      "Error deleting offers received sub collection for doc " + docId,
+      error
+    );
   }
-  return results.docs;
 }
 
 async function deleteOffersReceivedCollection(collectionPath, batchSize) {
@@ -1049,6 +1080,10 @@ function isOrderExpired(doc) {
   const order = doc.data();
   const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
   const orderExpirationTime = +order.expirationTime;
+  if (orderExpirationTime == 0) {
+    //special case of never expire
+    return false;
+  }
   return orderExpirationTime <= utcSecondsSinceEpoch;
 }
 
