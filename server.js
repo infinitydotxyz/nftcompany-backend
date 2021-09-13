@@ -775,10 +775,10 @@ async function postOffer(payload, maker, batch, numOrders, hasBonus) {
 // ================================================= Response helpers =================================================
 
 function getListingsResponse(data) {
+  const listings = [];
   for (const doc of data.docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
-    const listings = [];
     if (!isExpired) {
       listing.id = doc.id;
       listings.push(listing);
