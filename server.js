@@ -778,6 +778,7 @@ function getListingsResponse(data) {
   for (const doc of data.docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
+    const listings = [];
     if (!isExpired) {
       listing.id = doc.id;
       listings.push(listing);
@@ -787,7 +788,7 @@ function getListingsResponse(data) {
   }
   const resp = {
     count: listings.length,
-    listings: listings,
+    listings,
   };
   return resp;
 }
