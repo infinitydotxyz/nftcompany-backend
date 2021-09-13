@@ -27,15 +27,22 @@ let globalInfo;
 let localInfo = getEmptyGlobalInfo();
 db.collection(fstrCnstnts.ROOT_COLL)
   .doc(fstrCnstnts.INFO_DOC)
-  .get(doc => {
-    globalInfo = { ...getEmptyGlobalInfo(), ...doc.data() };
-    globalInfo.rewardsInfo = { ...getEmptyGlobalInfo().rewardsInfo, ...doc.data().rewardsInfo };
-  },
-  (err) => {
-    utils.error('Encountered error while getting global info. Exiting process', err);
-    process.exit();
-  }
-);
+  .get(
+    (doc) => {
+      globalInfo = { ...getEmptyGlobalInfo(), ...doc.data() };
+      globalInfo.rewardsInfo = {
+        ...getEmptyGlobalInfo().rewardsInfo,
+        ...doc.data().rewardsInfo,
+      };
+    },
+    (err) => {
+      utils.error(
+        "Encountered error while getting global info. Exiting process",
+        err
+      );
+      process.exit();
+    }
+  );
 
 // write to firestore every interval
 setInterval(() => {
@@ -47,13 +54,15 @@ setInterval(() => {
     // reconcile globalinfo
     reconcileGlobalInfo(globalDoc.data(), updateData);
     txn.update(ref, globalInfo);
-  }).then(res => {
-    utils.log("Updated global info in firestore");
-    // reconcile localinfo
-    reconcileLocalInfo(updateData);
-  }).catch(error => {
-    utils.error("Failed updating global info in firestore", error);
-  });
+  })
+    .then((res) => {
+      utils.log("Updated global info in firestore");
+      // reconcile localinfo
+      reconcileLocalInfo(updateData);
+    })
+    .catch((error) => {
+      utils.error("Failed updating global info in firestore", error);
+    });
 }, 1000 * 10); // every 10 seconds
 
 function reconcileGlobalInfo(globalData, updateData) {
@@ -71,17 +80,29 @@ function reconcileGlobalInfo(globalData, updateData) {
   globalInfo.totalOffers += updateData.totalOffers;
   globalInfo.totalBonusOffers += updateData.totalBonusOffers;
 
-  globalInfo.rewardsInfo.accRewardPerShare += updateData.rewardsInfo.accRewardPerShare;
-  globalInfo.rewardsInfo.accBonusRewardPerShare += updateData.rewardsInfo.accBonusRewardPerShare;
-  globalInfo.rewardsInfo.accSaleRewardPerShare += updateData.rewardsInfo.accSaleRewardPerShare;
-  globalInfo.rewardsInfo.accBuyRewardPerShare += updateData.rewardsInfo.accBuyRewardPerShare;
-  globalInfo.rewardsInfo.totalRewardPaid += updateData.rewardsInfo.totalRewardPaid;
-  globalInfo.rewardsInfo.totalBonusRewardPaid += updateData.rewardsInfo.totalBonusRewardPaid;
-  globalInfo.rewardsInfo.totalSaleRewardPaid += updateData.rewardsInfo.totalSaleRewardPaid;
-  globalInfo.rewardsInfo.totalBuyRewardPaid += updateData.rewardsInfo.totalBuyRewardPaid;
+  globalInfo.rewardsInfo.accRewardPerShare +=
+    updateData.rewardsInfo.accRewardPerShare;
+  globalInfo.rewardsInfo.accBonusRewardPerShare +=
+    updateData.rewardsInfo.accBonusRewardPerShare;
+  globalInfo.rewardsInfo.accSaleRewardPerShare +=
+    updateData.rewardsInfo.accSaleRewardPerShare;
+  globalInfo.rewardsInfo.accBuyRewardPerShare +=
+    updateData.rewardsInfo.accBuyRewardPerShare;
+  globalInfo.rewardsInfo.totalRewardPaid +=
+    updateData.rewardsInfo.totalRewardPaid;
+  globalInfo.rewardsInfo.totalBonusRewardPaid +=
+    updateData.rewardsInfo.totalBonusRewardPaid;
+  globalInfo.rewardsInfo.totalSaleRewardPaid +=
+    updateData.rewardsInfo.totalSaleRewardPaid;
+  globalInfo.rewardsInfo.totalBuyRewardPaid +=
+    updateData.rewardsInfo.totalBuyRewardPaid;
 
-  if (globalInfo.rewardsInfo.lastRewardBlock < updateData.rewardsInfo.lastRewardBlock) {
-    globalInfo.rewardsInfo.lastRewardBlock = updateData.rewardsInfo.lastRewardBlock;
+  if (
+    globalInfo.rewardsInfo.lastRewardBlock <
+    updateData.rewardsInfo.lastRewardBlock
+  ) {
+    globalInfo.rewardsInfo.lastRewardBlock =
+      updateData.rewardsInfo.lastRewardBlock;
   }
 }
 
@@ -94,14 +115,22 @@ function reconcileLocalInfo(updateData) {
   localInfo.totalOffers -= updateData.totalOffers;
   localInfo.totalBonusOffers -= updateData.totalBonusOffers;
 
-  localInfo.rewardsInfo.accRewardPerShare -= updateData.rewardsInfo.accRewardPerShare;
-  localInfo.rewardsInfo.accBonusRewardPerShare -= updateData.rewardsInfo.accBonusRewardPerShare;
-  localInfo.rewardsInfo.accSaleRewardPerShare -= updateData.rewardsInfo.accSaleRewardPerShare;
-  localInfo.rewardsInfo.accBuyRewardPerShare -= updateData.rewardsInfo.accBuyRewardPerShare;
-  localInfo.rewardsInfo.totalRewardPaid -= updateData.rewardsInfo.totalRewardPaid;
-  localInfo.rewardsInfo.totalBonusRewardPaid -= updateData.rewardsInfo.totalBonusRewardPaid;
-  localInfo.rewardsInfo.totalSaleRewardPaid -= updateData.rewardsInfo.totalSaleRewardPaid;
-  localInfo.rewardsInfo.totalBuyRewardPaid -= updateData.rewardsInfo.totalBuyRewardPaid;
+  localInfo.rewardsInfo.accRewardPerShare -=
+    updateData.rewardsInfo.accRewardPerShare;
+  localInfo.rewardsInfo.accBonusRewardPerShare -=
+    updateData.rewardsInfo.accBonusRewardPerShare;
+  localInfo.rewardsInfo.accSaleRewardPerShare -=
+    updateData.rewardsInfo.accSaleRewardPerShare;
+  localInfo.rewardsInfo.accBuyRewardPerShare -=
+    updateData.rewardsInfo.accBuyRewardPerShare;
+  localInfo.rewardsInfo.totalRewardPaid -=
+    updateData.rewardsInfo.totalRewardPaid;
+  localInfo.rewardsInfo.totalBonusRewardPaid -=
+    updateData.rewardsInfo.totalBonusRewardPaid;
+  localInfo.rewardsInfo.totalSaleRewardPaid -=
+    updateData.rewardsInfo.totalSaleRewardPaid;
+  localInfo.rewardsInfo.totalBuyRewardPaid -=
+    updateData.rewardsInfo.totalBuyRewardPaid;
 }
 
 // =========================================== Server ===========================================================
@@ -351,13 +380,15 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
     utils.log("Not updating rewards data as there are no updates");
   }
 
-  if (payload.side == 1) { // listing
+  if (payload.side == 1) {
+    // listing
     postListing(id, maker, payload, batch, numOrders, hasBonus);
-  } else if (payload.side == 0) { // offer
+  } else if (payload.side == 0) {
+    // offer
     postOffer(id, maker, payload, batch, numOrders, hasBonus);
   } else {
-    utils.error('Unknown order type');
-    return
+    utils.error("Unknown order type");
+    return;
   }
 
   // commit batch
@@ -438,7 +469,12 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
     if (offerMadeOnListing) {
       deleteListingWithId(docId, taker);
     }
+
+    // send email to maker that the offer is accepted
+    prepareEmail(maker, order, "offerAccepted");
   } else if (side == 1) {
+    // taker bought a listing, maker is the seller
+
     // check if order exists
     const doc = await db
       .collection(fstrCnstnts.ROOT_COLL)
@@ -454,7 +490,6 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
       return;
     }
 
-    // taker bought a listing, maker is the seller
     utils.log("Item bought by " + taker + " sold by " + maker);
 
     // write to bought by taker; multiple items possible
@@ -468,6 +503,9 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
 
     // delete listing from maker
     deleteListingWithId(docId, maker);
+
+    // send email to maker that the listing is bought
+    prepareEmail(maker, order, "listingBought");
   }
 
   // update total sales
@@ -561,7 +599,13 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   const fees = order.metadata.feesInEth;
   const buyFees = Math.round(fees / 5);
   // update rewards first; before stats
-  const updatedRewards = await getUpdatedRewards(user, false, numOrders, buyFees, true);
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    false,
+    numOrders,
+    buyFees,
+    true
+  );
 
   if (updatedRewards) {
     // update user rewards data
@@ -597,7 +641,13 @@ async function saveSoldOrder(docId, user, order, batch, numOrders) {
 
   const fees = order.metadata.feesInEth;
   // update rewards first; before stats
-  const updatedRewards = await getUpdatedRewards(user, false, numOrders, fees, true);
+  const updatedRewards = await getUpdatedRewards(
+    user,
+    false,
+    numOrders,
+    fees,
+    true
+  );
 
   if (updatedRewards) {
     // update user rewards data
@@ -717,6 +767,9 @@ async function postOffer(payload, maker, batch, numOrders, hasBonus) {
     // update total offers made
     updateNumTotalOrders(numOrders, hasBonus, 0);
   }
+
+  // send email to taker that an offer is made
+  prepareEmail(taker, payload, "offerMade");
 }
 
 // ================================================= Response helpers =================================================
@@ -747,7 +800,8 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  if (side == 0) { //offers
+  if (side == 0) {
+    //offers
     batch.set(
       ref,
       { numOffers: firebaseAdmin.firestore.FieldValue.increment(num) },
@@ -760,7 +814,8 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
         { merge: true }
       );
     }
-  } else if (side == 1) { // listings
+  } else if (side == 1) {
+    // listings
     batch.set(
       ref,
       { numListings: firebaseAdmin.firestore.FieldValue.increment(num) },
@@ -794,7 +849,12 @@ function updateNumTotalOrders(num, hasBonus, side) {
     }
   }
   // apply to memory
-  incrementLocalStats({totalOffers, totalBonusOffers, totalListings, totalBonusListings});
+  incrementLocalStats({
+    totalOffers,
+    totalBonusOffers,
+    totalListings,
+    totalBonusListings,
+  });
 }
 
 function incrementLocalStats({
@@ -823,11 +883,7 @@ function storeUpdatedUserRewards(batch, user, data) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(
-    ref,
-    { rewardsInfo: data },
-    { merge: true }
-  );
+  batch.set(ref, { rewardsInfo: data }, { merge: true });
 }
 
 // ==================================================== Get assets ==========================================================
@@ -990,21 +1046,23 @@ async function deleteOffersReceivedQueryBatch(query, resolve) {
 
 function isOrderExpired(doc) {
   const order = doc.data();
-  const utcSecondsSinceEpoch = Math.round(Date.now() / 1000); 
+  const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
   const orderExpirationTime = +order.expirationTime;
   return orderExpirationTime <= utcSecondsSinceEpoch;
 }
 
 function deleteExpiredOrder(doc) {
-  utils.log('Deleting expired order', doc.id);
+  utils.log("Deleting expired order", doc.id);
   const order = doc.data();
   const side = +order.side;
-  if (side == 1) { // listing
+  if (side == 1) {
+    // listing
     deleteListing(doc);
-  } else if (side == 0) { // offer
+  } else if (side == 0) {
+    // offer
     deleteOffer(doc);
   } else {
-    utils.error('Unknown order type', doc.id);
+    utils.error("Unknown order type", doc.id);
   }
 }
 
@@ -1062,8 +1120,7 @@ async function deleteListing(doc) {
   // Commit the batch
   batch
     .commit()
-    .then((resp) => {
-    })
+    .then((resp) => {})
     .catch((err) => {
       utils.error("Failed to delete listing " + listing, err);
     });
@@ -1153,7 +1210,13 @@ async function getUpdatedRewards(user, hasBonus, numOrders, fees, isIncrease) {
     ...userInfo.rewardsInfo,
   };
 
-  let updatedRewards = updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease);
+  let updatedRewards = updateRewards(
+    userInfo,
+    hasBonus,
+    numOrders,
+    fees,
+    isIncrease
+  );
   return updatedRewards;
 }
 
@@ -1196,7 +1259,6 @@ function getEmptyUserInfo() {
     numSales: 0,
     saleFees: 0,
     buyFees: 0,
-    ens: '',
     rewardsInfo: getEmptyUserRewardInfo(),
   };
 }
@@ -1315,7 +1377,8 @@ async function updateLocalRewards() {
   utils.log("Updating local rewards");
   const currentBlock = await getCurrentBlock();
   const totalOrders = globalInfo.totalListings + globalInfo.totalOffers;
-  const totalBonusOrders = globalInfo.totalBonusListings + globalInfo.totalBonusOrders;
+  const totalBonusOrders =
+    globalInfo.totalBonusListings + globalInfo.totalBonusOrders;
   const totalFees = globalInfo.totalFees;
   const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
   const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
@@ -1325,7 +1388,9 @@ async function updateLocalRewards() {
   let lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
 
   if (currentBlock <= lastRewardBlock) {
-    utils.log("Not updating global rewards since current block <= lastRewardBlock");
+    utils.log(
+      "Not updating global rewards since current block <= lastRewardBlock"
+    );
     return false;
   }
   if (totalOrders == 0) {
@@ -1337,7 +1402,8 @@ async function updateLocalRewards() {
   localInfo.rewardsInfo.accRewardPerShare += reward / totalOrders;
   if (totalBonusOrders > 0) {
     const bonusReward = multiplier * bonusRewardPerBlock;
-    localInfo.rewardsInfo.accBonusRewardPerShare += bonusReward / totalBonusOrders;
+    localInfo.rewardsInfo.accBonusRewardPerShare +=
+      bonusReward / totalBonusOrders;
   }
   if (totalFees > 0) {
     const saleReward = multiplier * saleRewardPerBlock;
@@ -1427,7 +1493,8 @@ async function getReward(user) {
   }
 
   const ordersReward = numOrders * _accRewardPerShare - rewardDebt;
-  const bonusReward = numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
+  const bonusReward =
+    numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
   const saleReward = saleFees * _accSaleRewardPerShare - saleRewardDebt;
   const buyReward = buyFees * _accBuyRewardPerShare - buyRewardDebt;
 
@@ -1502,4 +1569,186 @@ async function getReward(user) {
     });
 
   return resp;
+}
+
+// ==================================================== Email ==============================================================
+
+const nodemailer = require("nodemailer");
+const mailCreds = require("./creds/nftc-web-nodemailer-creds.json");
+
+const senderEmailAddress = "hi@nftcompany.com";
+const testReceiverEmailAddress = "findadit@gmail.com";
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
+  auth: {
+    type: "OAuth2",
+    user: senderEmailAddress,
+    serviceClient: mailCreds.client_id,
+    privateKey: mailCreds.private_key,
+  },
+});
+
+app.post("/u/:user/setEmail", async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+  const email = req.body.email.trim().toLowerCase();
+  // generate guid
+  const guid = crypto.randomBytes(30).toString("hex");
+
+  // store
+  const userDoc = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .set(
+      {
+        profileInfo: {
+          email: {
+            address: email,
+            verificationGuid: guid,
+          },
+        },
+      },
+      { merge: true }
+    );
+
+  // send email
+  const subject = "Verify your email for NFT Company";
+  const link =
+    "http://localhost:9090/verifyEmail?email=" +
+    email +
+    "&user=" +
+    user +
+    "&guid=" +
+    guid;
+  const html =
+    "<p>Click the below link to verify your email</p> <br>" +
+    "<a href=" +
+    link +
+    ' target="_blank">' +
+    link +
+    "</a>";
+  sendEmail(email, subject, html);
+  res.sendStatus(200);
+});
+
+app.get("/verifyEmail", async (req, res) => {
+  const user = req.query.user.trim().toLowerCase();
+  const email = req.query.email.trim().toLowerCase();
+  const guid = req.query.guid.trim().toLowerCase();
+  const userDocRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user);
+  const userDoc = await userDocRef.get();
+  // check email
+  const storedEmail = userDoc.data().profileInfo.email.address;
+  if (storedEmail != email) {
+    res.status(401).send("Wrong email");
+    return;
+  }
+  // check guid
+  const storedGuid = userDoc.data().profileInfo.email.verificationGuid;
+  if (storedGuid != guid) {
+    res.status(401).send("Wrong verification code");
+    return;
+  }
+  // all good
+  userDocRef
+    .set(
+      {
+        profileInfo: {
+          email: {
+            verified: true,
+          },
+        },
+      },
+      { merge: true }
+    )
+    .then((data) => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      utils.error("Verifying email failed", err);
+      res.sendStatus(500);
+    });
+});
+
+app.post("/u/:user/subscribeEmail", async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+  const data = req.body;
+  const isSubscribed = data.subscribe;
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .set(
+      {
+        profileInfo: {
+          email: {
+            subscribed: isSubscribed,
+          },
+        },
+      },
+      { merge: true }
+    )
+    .then((data) => {
+      res.sendStatus(200);
+    })
+    .catch((err) => {
+      utils.error("Subscribing email failed", error);
+      res.sendStatus(500);
+    });
+});
+
+// right now emails are sent when a listing is bought, offer is made or an offer is accepted
+async function prepareEmail(user, order, type) {
+  const userDoc = await db
+    .collection(ROOT_COLL)
+    .doc(INFO_DOC)
+    .collection(USERS_COLL)
+    .doc(user)
+    .get();
+  const email = userDoc.data().profileInfo.email.address;
+  const verified = userDoc.data().profileInfo.email.verified;
+  const subscribed = userDoc.data().profileInfo.email.subscribed;
+  if (!verified || !subscribed) {
+    utils.log("Not sending email as it is not verfied or subscribed");
+    return;
+  }
+  let subject = "";
+  let html = ""; //todo: adi
+  if (type == "offerMade") {
+    subject = "You received an offer on your listing.";
+    html = "";
+  } else if (type == "offerAccepted") {
+    subject = "Your offer has been accepted.";
+    html = "";
+  } else if (type == "listingBought") {
+    subject = "Your listing has been purchased.";
+    html = "";
+  } else {
+    utils.error("Cannot prepare email for unknown action type");
+    return;
+  }
+  // send email
+  sendEmail(email, subject, html);
+}
+
+function sendEmail(to, subject, html) {
+  utils.log("Sending email to", to);
+
+  const mailOptions = {
+    from: senderEmailAddress,
+    to,
+    subject,
+    html,
+  };
+
+  transporter.sendMail(mailOptions).catch((err) => {
+    utils.error("Error sending email", err);
+  });
 }
