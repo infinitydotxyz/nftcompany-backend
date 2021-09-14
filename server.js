@@ -332,7 +332,7 @@ app.get("/titles", async (req, res) => {
           "Cache-Control": "must-revalidate, max-age=600",
           "Content-Length": Buffer.byteLength(resp, "utf8"),
         });
-        res.send(resp);
+        res.send(data.docs.map(doc => doc.data()));
       });
   } else {
     res.send([]);
