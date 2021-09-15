@@ -188,7 +188,7 @@ app.get("/listings", async (req, res) => {
     .orderBy("metadata.basePriceInEth", sortByPrice)
     .get()
     .then((data) => {
-      const resp = getListingsResponse(data);
+      const resp = getOrdersResponse(data);
       res.send(resp);
     })
     .catch((err) => {
@@ -231,11 +231,53 @@ app.get("/u/:user/listings", async (req, res) => {
     .collection(fstrCnstnts.LISTINGS_COLL)
     .get()
     .then((data) => {
-      const resp = getListingsResponse(data);
+      const resp = getOrdersResponse(data);
       res.send(resp);
     })
     .catch((err) => {
       utils.error("Failed to get user listings for user " + user);
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
+
+//fetch offer made by user
+app.get("/u/:user/offersmade", async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .get()
+    .then((data) => {
+      const resp = getOrdersResponse(data);
+      res.send(resp);
+    })
+    .catch((err) => {
+      utils.error("Failed to get offers made by user " + user);
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
+
+//fetch offer received by user
+app.get("/u/:user/offersreceived", async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+    .get()
+    .then((data) => {
+      const resp = getOrdersResponse(data);
+      res.send(resp);
+    })
+    .catch((err) => {
+      utils.error("Failed to get offers made by user " + user);
       utils.error(err);
       res.sendStatus(500);
     });
@@ -783,7 +825,7 @@ async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
 
 // ================================================= Read helpers =================================================
 
-function getListingsResponse(data) {
+function getOrdersResponse(data) {
   const listings = [];
   for (const doc of data.docs) {
     const listing = doc.data();
