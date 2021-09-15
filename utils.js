@@ -48,7 +48,7 @@ module.exports = {
           console.log("\nMessage: " + err.message);
         }
         if (err.lineNumber) {
-          console.log('Error line number ' + err.lineNumber);
+          console.log("Error line number " + err.lineNumber);
         }
         if (err.stack) {
           console.log("\nStacktrace:");

@@ -741,7 +741,7 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
 }
 
 async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
-  const taker = payload.maker.trim().toLowerCase();
+  const taker = payload.metadata.asset.owner.trim().toLowerCase();
   // store data in offersMade of maker and offersRecd of taker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
