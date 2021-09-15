@@ -735,8 +735,8 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
   }
 }
 
-async function postOffer(payload, maker, batch, numOrders, hasBonus) {
-  const taker = payload.taker.trim().toLowerCase();
+async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
+  const taker = payload.maker.trim().toLowerCase();
   // store data in offersMade of maker and offersRecd of taker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1285,6 +1285,16 @@ function getEmptyGlobalInfo() {
   };
 }
 
+function getEmptyUserProfileInfo() {
+  return {
+    email: {
+      address: "",
+      verified: false,
+      subscribed: false,
+    },
+  };
+}
+
 function getEmptyUserInfo() {
   return {
     numListings: 0,
@@ -1743,18 +1753,26 @@ app.post("/u/:user/subscribeEmail", async (req, res) => {
 // right now emails are sent when a listing is bought, offer is made or an offer is accepted
 async function prepareEmail(user, order, type) {
   const userDoc = await db
-    .collection(ROOT_COLL)
-    .doc(INFO_DOC)
-    .collection(USERS_COLL)
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .get();
-  const email = userDoc.data().profileInfo.email.address;
-  const verified = userDoc.data().profileInfo.email.verified;
-  const subscribed = userDoc.data().profileInfo.email.subscribed;
-  if (!verified || !subscribed) {
-    utils.log("Not sending email as it is not verfied or subscribed");
+
+  const profileInfo = {
+    ...getEmptyUserProfileInfo(),
+    ...userDoc.data().profileInfo,
+  };
+  const email = profileInfo.email.address;
+  const verified = profileInfo.email.verified;
+  const subscribed = profileInfo.email.subscribed;
+  if (!email || !verified || !subscribed) {
+    utils.log(
+      "Not sending email as it is not verfied or subscribed or not found"
+    );
     return;
   }
+
   let subject = "";
   let html = ""; //todo: adi
   if (type == "offerMade") {
