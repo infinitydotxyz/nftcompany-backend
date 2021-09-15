@@ -55,6 +55,8 @@ module.exports = {
           console.log("====================");
           console.log(err.stack);
         }
+      } else {
+        console.log("error not object");
       }
     }
   },
@@ -65,7 +67,7 @@ module.exports = {
 
   authorizeUser: async function (path, signature, message) {
     // todo: adi for testing only
-    //return true
+    //return true;
 
     // path is in the form /u/user/*
     let userId = path.split("/")[2].trim().toLowerCase();

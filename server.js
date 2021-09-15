@@ -265,19 +265,18 @@ app.get("/u/:user/offersmade", async (req, res) => {
 //fetch offer received by user
 app.get("/u/:user/offersreceived", async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
+  const sortByPrice = req.query.sortByPrice || "desc"; // descending default
 
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
+  db.collectionGroup(fstrCnstnts.OFFERS_MADE_COLL)
+    .where("metadata.asset.owner", "==", user)
+    .orderBy("metadata.basePriceInEth", sortByPrice)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
       res.send(resp);
     })
     .catch((err) => {
-      utils.error("Failed to get offers made by user " + user);
+      utils.error("Failed to get offers received by user " + user);
       utils.error(err);
       res.sendStatus(500);
     });
@@ -535,9 +534,6 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
       // delete offerMade by maker
       deleteOfferMadeWithId(docId, maker);
 
-      // delete offersReceived from taker; multiple possible
-      await deleteOfferReceivedWithId(batch, docId, taker);
-
       // delete listing by taker if it exists
       if (offerMadeOnListing) {
         deleteListingWithId(docId, taker);
@@ -570,9 +566,6 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
 
       // write to sold by maker; multiple items possible
       await saveSoldOrder(docId, maker, order, batch, numOrders);
-
-      // delete offersReceived from maker; multiple possible
-      await deleteOfferReceivedWithId(batch, docId, maker);
 
       // delete listing from maker
       deleteListingWithId(docId, maker);
@@ -787,7 +780,7 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
 
 async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
-  // store data in offersMade of maker and offersRecd of taker
+  // store data in offersMade of maker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -796,18 +789,6 @@ async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.OFFERS_MADE_COLL)
     .doc(id);
   batch.set(offersMadeRef, payload, { merge: true });
-
-  // multiple offers can be received on the same nft
-  const offersRecdRef = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(taker)
-    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc(id)
-    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc();
-  batch.set(offersRecdRef, payload, { merge: true });
 
   // check if doc already exists (in case of edit offer) - only update numOffers if it isn't
   const offer = await offersMadeRef.get();
@@ -1060,74 +1041,6 @@ function getDocId(tokenAddress, tokenId) {
 
 // ============================================= Delete helpers ==========================================================
 
-function deleteOfferReceivedWithId(batch, docId, user) {
-  const ref = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.OFFERS_RECVD_COLL)
-    .doc(docId);
-  batch.delete(ref);
-
-  // deleting a doc doesn't delete a sub collection, we have to do it separately
-  const subCollPath =
-    fstrCnstnts.ROOT_COLL +
-    "/" +
-    fstrCnstnts.INFO_DOC +
-    "/" +
-    fstrCnstnts.USERS_COLL +
-    "/" +
-    user +
-    "/" +
-    fstrCnstnts.OFFERS_RECVD_COLL +
-    "/" +
-    docId +
-    "/" +
-    fstrCnstnts.OFFERS_RECVD_COLL;
-  try {
-    // delete in a batch size of 1000
-    deleteOffersReceivedCollection(subCollPath, 1000);
-  } catch (err) {
-    utils.error(
-      "Error deleting offers received sub collection for doc " + docId
-    );
-    utils.error(err);
-  }
-}
-
-async function deleteOffersReceivedCollection(collectionPath, batchSize) {
-  utils.log("Deleting collection at", collectionPath);
-  const collectionRef = db.collection(collectionPath);
-  const query = collectionRef.orderBy("__name__").limit(batchSize);
-  return new Promise((resolve, reject) => {
-    deleteOffersReceivedQueryBatch(query, resolve).catch(reject);
-  });
-}
-
-async function deleteOffersReceivedQueryBatch(query, resolve) {
-  const snapshot = await query.get();
-  const batchSize = snapshot.size;
-  if (batchSize === 0) {
-    // When there are no documents left, we are done
-    resolve();
-    return;
-  }
-  // Delete documents in a batch
-  const batch = db.batch();
-  snapshot.docs.forEach((doc) => {
-    // delete offersMade from maker
-    deleteOfferMadeWithId(doc.id, doc.data().maker);
-    // delete offersRecd from taker
-    batch.delete(doc.ref);
-  });
-  await batch.commit();
-  // Recurse on the next process tick, to avoid exploding the stack
-  process.nextTick(() => {
-    deleteOffersReceivedQueryBatch(query, resolve);
-  });
-}
-
 function isOrderExpired(doc) {
   const order = doc.data();
   const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
@@ -1196,9 +1109,6 @@ async function deleteListing(doc) {
 
   // delete listing
   batch.delete(doc.ref);
-
-  // delete offers received on this listing, multiple offers can be received on the same nft
-  deleteOfferReceivedWithId(batch, listing, user);
 
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
