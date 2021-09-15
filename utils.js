@@ -43,6 +43,19 @@ module.exports = {
         msg += " " + s;
       }
       console.error("[ERROR]: " + obj + msg);
+      if (typeof err === "object") {
+        if (err.message) {
+          console.log("\nMessage: " + err.message);
+        }
+        if (err.lineNumber) {
+          console.log('Error line number ' + err.lineNumber);
+        }
+        if (err.stack) {
+          console.log("\nStacktrace:");
+          console.log("====================");
+          console.log(err.stack);
+        }
+      }
     }
   },
 

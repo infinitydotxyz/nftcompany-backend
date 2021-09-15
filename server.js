@@ -37,9 +37,9 @@ db.collection(fstrCnstnts.ROOT_COLL)
     },
     (err) => {
       utils.error(
-        "Encountered error while getting global info. Exiting process",
-        err
+        "Encountered error while getting global info. Exiting process"
       );
+      utils.error(err);
       process.exit();
     }
   );
@@ -59,8 +59,9 @@ setInterval(() => {
       // reconcile localinfo
       reconcileLocalInfo(updateData);
     })
-    .catch((error) => {
-      utils.error("Failed updating global info in firestore", error);
+    .catch((err) => {
+      utils.error("Failed updating global info in firestore", err);
+      utils.error(err);
     });
 }, 1000 * 10); // every 10 seconds
 
@@ -172,8 +173,8 @@ app.get("/token/:tokenAddress/verfiedBonusReward", async (req, res) => {
       "Content-Length": Buffer.byteLength(resp, "utf8"),
     });
     res.send(resp);
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -191,7 +192,8 @@ app.get("/listings", async (req, res) => {
       res.send(resp);
     })
     .catch((err) => {
-      utils.error("Failed to get listings", err);
+      utils.error("Failed to get listings");
+      utils.error(err);
       res.sendStatus(500);
     });
 });
@@ -212,8 +214,8 @@ app.get("/u/:user/assets", async (req, res) => {
       "Content-Length": Buffer.byteLength(resp, "utf8"),
     });
     res.send(resp);
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -233,7 +235,8 @@ app.get("/u/:user/listings", async (req, res) => {
       res.send(resp);
     })
     .catch((err) => {
-      utils.error("Failed to get user listings for user " + user, err);
+      utils.error("Failed to get user listings for user " + user);
+      utils.error(err);
       res.sendStatus(500);
     });
 });
@@ -261,8 +264,8 @@ app.get("/wyvern/v1/orders", async (req, res) => {
     } else {
       res.sendStatus(404);
     }
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -279,8 +282,8 @@ app.get("/u/:user/reward", async (req, res) => {
       "Content-Length": Buffer.byteLength(resp, "utf8"),
     });
     res.send(resp);
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -311,7 +314,8 @@ app.get("/rewards/leaderboard", async (req, res) => {
       res.send(resp);
     })
     .catch((err) => {
-      utils.error("Failed to get leaderboard", err);
+      utils.error("Failed to get leaderboard");
+      utils.error(err);
       res.sendStatus(500);
     });
 });
@@ -417,11 +421,12 @@ app.post("/u/:user/wyvern/v1/orders", async (req, res) => {
         res.send(payload);
       })
       .catch((err) => {
-        utils.error("Failed to post order", err);
+        utils.error("Failed to post order");
+        utils.error(err);
         res.sendStatus(500);
       });
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -550,8 +555,8 @@ app.post("/u/:user/wyvern/v1/orders/fulfilled", async (req, res) => {
         utils.error("Failed to fulfill order", err);
         res.sendStatus(500);
       });
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -582,8 +587,8 @@ app.delete("/u/:user/listings/:listing", async (req, res) => {
 
     deleteListing(doc);
     res.sendStatus(200);
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -612,8 +617,8 @@ app.delete("/u/:user/offers/:offer", async (req, res) => {
 
     deleteOffer(doc);
     res.sendStatus(200);
-  } catch (error) {
-    utils.error(error);
+  } catch (err) {
+    utils.error(err);
     res.sendStatus(500);
   }
 });
@@ -956,8 +961,9 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
   try {
     const { data } = await axios.get(url);
     return data;
-  } catch (error) {
-    utils.error("Error occured while fetching assets from unmarshal", error);
+  } catch (err) {
+    utils.error("Error occured while fetching assets from unmarshal");
+    utils.error(err);
     return;
   }
 }
@@ -977,8 +983,9 @@ async function getAssetsFromOpensea(address, limit, offset) {
     utils.log(url);
     const { data } = await axios.get(url, options);
     return data;
-  } catch (error) {
-    utils.error("Error occured while fetching assets from opensea", error);
+  } catch (err) {
+    utils.error("Error occured while fetching assets from opensea");
+    utils.error(err);
     return;
   }
 }
@@ -1036,11 +1043,11 @@ function deleteOfferReceivedWithId(batch, docId, user) {
   try {
     // delete in a batch size of 1000
     deleteOffersReceivedCollection(subCollPath, 1000);
-  } catch (error) {
+  } catch (err) {
     utils.error(
-      "Error deleting offers received sub collection for doc " + docId,
-      error
+      "Error deleting offers received sub collection for doc " + docId
     );
+    utils.error(err);
   }
 }
 
@@ -1114,7 +1121,8 @@ function deleteListingWithId(id, user) {
       deleteListing(listingDoc);
     })
     .catch((err) => {
-      utils.error("cannot delete listing", err);
+      utils.error("cannot delete listing");
+      utils.error(err);
     });
 }
 
@@ -1158,7 +1166,8 @@ async function deleteListing(doc) {
     .commit()
     .then((resp) => {})
     .catch((err) => {
-      utils.error("Failed to delete listing " + listing, err);
+      utils.error("Failed to delete listing " + listing);
+      utils.error(err);
     });
 }
 
@@ -1174,7 +1183,8 @@ function deleteOfferMadeWithId(id, user) {
       deleteOffer(offerMadeDoc);
     })
     .catch((err) => {
-      utils.error("cannot delete offer", err);
+      utils.error("cannot delete offer");
+      utils.error(err);
     });
 }
 
@@ -1215,7 +1225,8 @@ async function deleteOffer(doc) {
     .commit()
     .then((resp) => {})
     .catch((err) => {
-      utils.error("Failed to delete offer " + offer, err);
+      utils.error("Failed to delete offer " + offer);
+      utils.error(err);
     });
 }
 
@@ -1610,8 +1621,9 @@ async function getReward(user) {
     .then((resp) => {
       // nothing to do
     })
-    .catch((error) => {
-      utils.error("Error updating net reward for user " + user, error);
+    .catch((err) => {
+      utils.error("Error updating net reward for user " + user);
+      utils.error(err);
     });
 
   return resp;
@@ -1718,7 +1730,8 @@ app.get("/verifyEmail", async (req, res) => {
       res.sendStatus(200);
     })
     .catch((err) => {
-      utils.error("Verifying email failed", err);
+      utils.error("Verifying email failed");
+      utils.error(err);
       res.sendStatus(500);
     });
 });
@@ -1745,7 +1758,8 @@ app.post("/u/:user/subscribeEmail", async (req, res) => {
       res.sendStatus(200);
     })
     .catch((err) => {
-      utils.error("Subscribing email failed", error);
+      utils.error("Subscribing email failed");
+      utils.error(err);
       res.sendStatus(500);
     });
 });
@@ -1759,10 +1773,15 @@ async function prepareEmail(user, order, type) {
     .doc(user)
     .get();
 
-  const profileInfo = {
-    ...getEmptyUserProfileInfo(),
-    ...userDoc.data().profileInfo,
-  };
+  let profileInfo = getEmptyUserProfileInfo();
+
+  if (userDoc.data()) {
+    profileInfo = {
+      ...profileInfo,
+      ...userDoc.data().profileInfo,
+    };
+  }
+
   const email = profileInfo.email.address;
   const verified = profileInfo.email.verified;
   const subscribed = profileInfo.email.subscribed;
@@ -1803,6 +1822,7 @@ function sendEmail(to, subject, html) {
   };
 
   transporter.sendMail(mailOptions).catch((err) => {
-    utils.error("Error sending email", err);
+    utils.error("Error sending email");
+    utils.error(err);
   });
 }
