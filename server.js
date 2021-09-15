@@ -331,15 +331,17 @@ app.get("/titles", async (req, res) => {
       .get()
       .then((data) => {
         // to enable cdn cache
-        const resp = utils.jsonString(data.docs);
+        let resp = data.docs.map(doc => doc.data())
+        resp = utils.jsonString(resp)
         res.set({
           "Cache-Control": "must-revalidate, max-age=600",
           "Content-Length": Buffer.byteLength(resp, "utf8"),
         });
+
         res.send(resp);
       });
   } else {
-    res.send([]);
+    res.send(utils.jsonString([]));
   }
 });
 
