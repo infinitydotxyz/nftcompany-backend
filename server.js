@@ -219,6 +219,78 @@ app.get('/u/:user/listings', async (req, res) => {
     });
 });
 
+//fetch items bought by user
+app.get('/u/:user/purchases', async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.BOUGHT_COLL)
+    .get()
+    .then((data) => {
+      const purchases = [];
+      for (const doc of data.docs) {
+        const purchase = doc.data();
+        purchase.id = doc.id;
+        purchases.push(purchase);
+      }
+      let resp = {
+        count: purchases.length,
+        purchases: purchases
+      };
+      resp = utils.jsonString(resp);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=30',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+      res.send(resp);
+    })
+    .catch((err) => {
+      utils.error('Failed to get items bought by user ' + user);
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
+
+//fetch items sold by user
+app.get('/u/:user/sales', async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.SOLD_COLL)
+    .get()
+    .then((data) => {
+      const sales = [];
+      for (const doc of data.docs) {
+        const sale = doc.data();
+        sale.id = doc.id;
+        sales.push(sale);
+      }
+      let resp = {
+        count: sales.length,
+        sales: sales
+      };
+      resp = utils.jsonString(resp);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=30',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+      res.send(resp);
+    })
+    .catch((err) => {
+      utils.error('Failed to get items sold by user ' + user);
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
+
 //fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
