@@ -227,7 +227,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .collection(fstrCnstnts.OFFERS_COLL)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -245,7 +245,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
 
-  db.collectionGroup(fstrCnstnts.OFFERS_MADE_COLL)
+  db.collectionGroup(fstrCnstnts.OFFERS_COLL)
     .where('metadata.asset.owner', '==', user)
     .orderBy('metadata.basePriceInEth', sortByPrice)
     .get()
@@ -553,7 +553,7 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
         .doc(maker)
-        .collection(fstrCnstnts.OFFERS_MADE_COLL)
+        .collection(fstrCnstnts.OFFERS_COLL)
         .doc(docId)
         .get();
       if (!doc.exists) {
@@ -683,7 +683,7 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
-      .collection(fstrCnstnts.OFFERS_MADE_COLL)
+      .collection(fstrCnstnts.OFFERS_COLL)
       .doc(offer);
     const doc = await offerRef.get();
     if (!doc.exists) {
@@ -805,7 +805,7 @@ async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
-    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .collection(fstrCnstnts.OFFERS_COLL)
     .doc(id);
   batch.set(offersMadeRef, payload, { merge: true });
 
@@ -848,7 +848,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
   utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
   let collection = fstrCnstnts.LISTINGS_COLL;
   if (0 == parseInt(side)) {
-    collection = fstrCnstnts.OFFERS_MADE_COLL;
+    collection = fstrCnstnts.OFFERS_COLL;
   }
   const results = await db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1125,7 +1125,7 @@ function deleteOfferMadeWithId(id, user) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.OFFERS_MADE_COLL)
+    .collection(fstrCnstnts.OFFERS_COLL)
     .doc(id)
     .get()
     .then((offerMadeDoc) => {

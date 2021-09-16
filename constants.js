@@ -56,8 +56,7 @@ Data structure in firestore
 						- netRewardCalculatedAt
 					- assetsColl
 					- listingsColl
-					- offersMadeColl
-					- offersRecdColl
+					- offersColl
 					- boughtColl
 					- soldColl
 			- bonusRewardTokensColl
@@ -93,7 +92,7 @@ module.exports = {
     NUM_SALES: 'numSales',
     FEES_PAID: 'feesPaid',
     LISTINGS_COLL: 'listings',
-    OFFERS_MADE_COLL: 'offersMade',
+    OFFERS_COLL: 'offers',
     ASSETS_COLL: 'assets',
     BOUGHT_COLL: 'bought',
     SOLD_COLL: 'sold'
