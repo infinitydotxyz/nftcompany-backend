@@ -340,13 +340,15 @@ app.get('/rewards/leaderboard', async (req, res) => {
 });
 
 app.get('/titles', async (req, res) => {
-  const startsWith = req.query.startsWith;
+  const startsWithOrig = req.query.startsWith;
+  const startsWith = getSearchFriendlyString(startsWithOrig);
   if (typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('metadata.asset.title', '>=', startsWith)
-      .where('metadata.asset.title', '<', endCode)
-      .select('metadata.asset.title', 'metadata.asset.id')
+      .where('metadata.asset.searchTitle', '>=', startsWith)
+      .where('metadata.asset.searchTitle', '<', endCode)
+      .orderBy('metadata.asset.searchTitle')
+      .select('metadata.asset.title', 'metadata.asset.address', 'metadata.asset.id')
       .limit(10)
       .get()
       .then((data) => {
@@ -354,7 +356,8 @@ app.get('/titles', async (req, res) => {
         let resp = data.docs.map((doc) => {
           return {
             title: doc.data().metadata.asset.title,
-            id: doc.data().metadata.asset.id
+            id: doc.data().metadata.asset.id,
+            address: doc.data().metadata.asset.address
           };
         });
         resp = utils.jsonString(resp);
@@ -376,8 +379,10 @@ app.get('/titles', async (req, res) => {
 
 app.get('/listingById', async (req, res) => {
   const id = req.query.id;
+  const address = req.query.address;
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .where('metadata.asset.id', '==', id)
+    .where('metadata.asset.address', '==', address)
     .get()
     .then((data) => {
       const resp = utils.jsonString(
@@ -398,13 +403,14 @@ app.get('/listingById', async (req, res) => {
 });
 
 app.get('/collections', async (req, res) => {
-  const startsWith = req.query.startsWith;
+  const startsWithOrig = req.query.startsWith;
+  const startsWith = getSearchFriendlyString(startsWithOrig);
   if (typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('metadata.asset.collectionName', '>=', startsWith)
-      .where('metadata.asset.collectionName', '<', endCode)
-      .orderBy('metadata.asset.collectionName')
+      .where('metadata.asset.searchCollectionName', '>=', startsWith)
+      .where('metadata.asset.searchCollectionName', '<', endCode)
+      .orderBy('metadata.asset.searchCollectionName')
       .select('metadata.asset.collectionName', 'metadata.asset.address')
       .limit(10)
       .get()
@@ -434,7 +440,7 @@ app.get('/collections', async (req, res) => {
 app.get('/listingsByCollectionName', async (req, res) => {
   const collectionName = req.query.collectionName;
   const price = req.query.price || '5000'; // add a default max of 5000 eth
-  const sortByPrice = req.query.sortByPrice || 'asc'; // ascending default
+  const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .where('metadata.basePriceInEth', '<=', +price)
     .where('metadata.asset.collectionName', '==', collectionName)
@@ -1043,6 +1049,11 @@ function getDocId(tokenAddress, tokenId) {
   const data = tokenAddress + tokenId;
   const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   return id;
+}
+
+function getSearchFriendlyString(input) {
+  const noSpace = input.replace(/\s/g, '');
+  return noSpace.toLowerCase();
 }
 
 // ============================================= Delete helpers ==========================================================
