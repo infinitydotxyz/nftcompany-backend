@@ -178,12 +178,12 @@ app.get('/listings', async (req, res) => {
 
 // fetch assets of user as public
 app.get('/p/u/:user/assets', async (req, res) => {
-  fetchAssetsOfUser(user, req, res);
+  fetchAssetsOfUser(req, res);
 });
 
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
-  fetchAssetsOfUser(user, req, res);
+  fetchAssetsOfUser(req, res);
 });
 
 //fetch listings of user
@@ -1020,7 +1020,7 @@ function storeUpdatedUserRewards(batch, user, data) {
 
 // ==================================================== Get assets ==========================================================
 
-async function fetchAssetsOfUser(user, req, res) {
+async function fetchAssetsOfUser(req, res) {
   const user = req.params.user.trim().toLowerCase();
   const limit = req.query.limit;
   const offset = req.query.offset;
