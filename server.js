@@ -176,26 +176,14 @@ app.get('/listings', async (req, res) => {
     });
 });
 
+// fetch assets of user as public
+app.get('/p/u/:user/assets', async (req, res) => {
+  fetchAssetsOfUser(user, req, res);
+});
+
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
-  const limit = req.query.limit;
-  const offset = req.query.offset;
-  const source = req.query.source;
-  const sourceName = nftDataSources[source];
-  try {
-    let resp = await getAssets(user, limit, offset, sourceName);
-    resp = utils.jsonString(resp);
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
-    });
-    res.send(resp);
-  } catch (err) {
-    utils.error(err);
-    res.sendStatus(500);
-  }
+  fetchAssetsOfUser(user, req, res);
 });
 
 //fetch listings of user
@@ -1031,6 +1019,27 @@ function storeUpdatedUserRewards(batch, user, data) {
 }
 
 // ==================================================== Get assets ==========================================================
+
+async function fetchAssetsOfUser(user, req, res) {
+  const user = req.params.user.trim().toLowerCase();
+  const limit = req.query.limit;
+  const offset = req.query.offset;
+  const source = req.query.source;
+  const sourceName = nftDataSources[source];
+  try {
+    let resp = await getAssets(user, limit, offset, sourceName);
+    resp = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+}
 
 async function getAssets(address, limit, offset, sourceName) {
   utils.log('Fetching assets for', address);
