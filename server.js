@@ -411,7 +411,7 @@ app.get('/collections', async (req, res) => {
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.asset.address')
+      .select('metadata.asset.collectionName')
       .limit(10)
       .get()
       .then((data) => {
