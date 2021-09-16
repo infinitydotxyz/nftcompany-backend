@@ -361,54 +361,117 @@ app.get("/rewards/leaderboard", async (req, res) => {
     });
 });
 
-app.get("/titles", async (req, res) => {
-  const startsWith = req.query.startsWith;
-  if (typeof startsWith === "string") {
-    const endCode = utils.getEndCode(startsWith);
+app.get('/titles', async (req, res) => {
+  const startsWith = req.query.startsWith
+  if (typeof startsWith === 'string') {
+    const endCode = utils.getEndCode(startsWith)
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where("metadata.asset.title", ">=", startsWith)
-      .where("metadata.asset.title", "<", endCode)
+      .where('metadata.asset.title', '>=', startsWith)
+      .where('metadata.asset.title', '<', endCode)
+      .select('metadata.asset.title', 'metadata.asset.id')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
-        let resp = data.docs.map(doc => doc.data())
+        let resp = data.docs.map((doc) => {
+          return {
+            title: doc.data().metadata.asset.title,
+            id: doc.data().metadata.asset.id,
+          }
+        })
         resp = utils.jsonString(resp)
         res.set({
-          "Cache-Control": "must-revalidate, max-age=600",
-          "Content-Length": Buffer.byteLength(resp, "utf8"),
-        });
+          'Cache-Control': 'must-revalidate, max-age=600',
+          'Content-Length': Buffer.byteLength(resp, 'utf8'),
+        })
 
-        res.send(resp);
-      });
+        res.send(resp)
+      })
+    .catch((err) => {
+      utils.error('Failed to get titles', err)
+      res.sendStatus(500)
+    })
   } else {
-    res.send(utils.jsonString([]));
+    res.send(utils.jsonString([]))
   }
-});
-
-app.get("/collections", async (req, res) => {
-  const startsWith = req.query.startsWith;
-  if (typeof startsWith === "string") {
-    const endCode = utils.getEndCode(startsWith);
+})
+app.get('/listingById', async (req, res) => {
+  const address = req.query.id
+  db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .where('metadata.asset.id', '==', address)
+    .get()
+    .then((data) => {
+      const resp = utils.jsonString(data.docs.map(doc => {
+       return doc.data()
+      })[0])
+        res.set({
+          'Cache-Control': 'must-revalidate, max-age=600',
+          'Content-Length': Buffer.byteLength(resp, 'utf8'),
+        })
+      res.send(resp)
+    })
+    .catch((err) => {
+      utils.error('Failed to get listing by address', err)
+      res.sendStatus(500)
+    })
+})
+app.get('/collections', async (req, res) => {
+  const startsWith = req.query.startsWith
+  if (typeof startsWith === 'string') {
+    const endCode = utils.getEndCode(startsWith)
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where("metadata.asset.collectionName", ">=", startsWith)
-      .where("metadata.asset.collectionName", "<", endCode)
+      .where('metadata.asset.collectionName', '>=', startsWith)
+      .where('metadata.asset.collectionName', '<', endCode)
+      .orderBy('metadata.asset.collectionName')
+      .select('metadata.asset.collectionName', 'metadata.asset.address')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
-        let resp = data.docs.map((doc) => doc.data());
-        resp = utils.jsonString(resp);
+        let resp = data.docs.map((doc) => {
+          return doc.data().metadata.asset.collectionName
+        })
+        // remove duplicates and take only the first 10 results
+        resp = [...new Set(resp)].slice(0, 10)
+        resp = utils.jsonString(resp)
         res.set({
-          "Cache-Control": "must-revalidate, max-age=600",
-          "Content-Length": Buffer.byteLength(resp, "utf8"),
-        });
-        res.send(resp);
-      });
+          'Cache-Control': 'must-revalidate, max-age=600',
+          'Content-Length': Buffer.byteLength(resp, 'utf8'),
+        })
+        res.send(resp)
+      })
+    .catch((err) => {
+      utils.error('Failed to get collection names', err)
+      res.sendStatus(500)
+    })
   } else {
-    res.send([]);
+    res.send(utils.jsonString([]))
   }
-});
+})
+app.get('/listingsByCollectionName', async (req, res) => {
+  const collectionName = req.query.collectionName
+  const price = req.query.price || "5000"; // add a default max of 5000 eth
+  const sortByPrice = req.query.sortByPrice || "asc"; // ascending default
+  db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .where("metadata.basePriceInEth", "<=", +price)
+    .where('metadata.asset.collectionName', '==', collectionName)
+    .orderBy("metadata.basePriceInEth", sortByPrice)
+    .get()
+    .then((data) => {
+      const resp = utils.jsonString(data.docs.map(doc => {
+       return doc.data()
+      }))
+        res.set({
+          'Cache-Control': 'must-revalidate, max-age=600',
+          'Content-Length': Buffer.byteLength(resp, 'utf8'),
+        })
+      res.send(resp)
+    })
+    .catch((err) => {
+      utils.error('Failed to get listings by collection name', err)
+      res.sendStatus(500)
+    })
+})
 
 //=============================================== WRITES =====================================================================
 
