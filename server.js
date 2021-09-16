@@ -827,12 +827,16 @@ function getOrdersResponse(data) {
 
 async function getOrders(maker, tokenAddress, tokenId, side) {
   utils.log("Fetching order for", maker, tokenAddress, tokenId, side);
+  let collection = fstrCnstnts.LISTINGS_COLL;
+  if (0 == parseInt(side)) {
+    collection = fstrCnstnts.OFFERS_MADE_COLL;
+  }
   const results = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
-    .collection(fstrCnstnts.LISTINGS_COLL)
+    .collection(collection)
     .where("metadata.asset.address", "==", tokenAddress)
     .where("metadata.asset.id", "==", tokenId)
     .where("side", "==", parseInt(side))
