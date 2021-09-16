@@ -374,9 +374,9 @@ app.get('/titles', async (req, res) => {
   }
 });
 app.get('/listingById', async (req, res) => {
-  const address = req.query.id;
+  const id = req.query.id;
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.asset.id', '==', address)
+    .where('metadata.asset.id', '==', id)
     .get()
     .then((data) => {
       const resp = utils.jsonString(
@@ -391,7 +391,7 @@ app.get('/listingById', async (req, res) => {
       res.send(resp);
     })
     .catch((err) => {
-      utils.error('Failed to get listing by address', err);
+      utils.error('Failed to get listing by id', err);
       res.sendStatus(500);
     });
 });
