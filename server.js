@@ -373,6 +373,7 @@ app.get('/titles', async (req, res) => {
     res.send(utils.jsonString([]));
   }
 });
+
 app.get('/listingById', async (req, res) => {
   const id = req.query.id;
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -395,6 +396,7 @@ app.get('/listingById', async (req, res) => {
       res.sendStatus(500);
     });
 });
+
 app.get('/collections', async (req, res) => {
   const startsWith = req.query.startsWith;
   if (typeof startsWith === 'string') {
@@ -428,6 +430,7 @@ app.get('/collections', async (req, res) => {
     res.send(utils.jsonString([]));
   }
 });
+
 app.get('/listingsByCollectionName', async (req, res) => {
   const collectionName = req.query.collectionName;
   const price = req.query.price || '5000'; // add a default max of 5000 eth
@@ -571,10 +574,12 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
       await saveSoldOrder(docId, taker, order, batch, numOrders);
 
       // delete offerMade by maker
+      // ideally should use the same db write batch
       deleteOfferMadeWithId(docId, maker);
 
       // delete listing by taker if it exists
       if (offerMadeOnListing) {
+        // ideally should use the same db write batch
         deleteListingWithId(docId, taker);
       }
 
@@ -607,6 +612,7 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
       await saveSoldOrder(docId, maker, order, batch, numOrders);
 
       // delete listing from maker
+      // ideally should use the same db write batch
       deleteListingWithId(docId, maker);
 
       // send email to maker that the listing is bought
