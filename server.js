@@ -227,15 +227,20 @@ app.get('/u/:user/assets', async (req, res) => {
   fetchAssetsOfUser(req, res);
 });
 
-//fetch listings of user
+// fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
+  const { limit = 50, offset = 0   } = req.query;
+  console.log('- limit, offset:', limit, offset)
 
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('id')
+    .startAt(0)
+    .limit(parseInt(limit))
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -1064,9 +1069,7 @@ function storeUpdatedUserRewards(batch, user, data) {
 
 async function fetchAssetsOfUser(req, res) {
   const user = req.params.user.trim().toLowerCase();
-  const limit = req.query.limit;
-  const offset = req.query.offset;
-  const source = req.query.source;
+  const { limit, offset, source } = req.query;
   const sourceName = nftDataSources[source];
   try {
     let resp = await getAssets(user, limit, offset, sourceName);
