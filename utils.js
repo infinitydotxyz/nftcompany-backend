@@ -21,6 +21,31 @@ if (process.env.ERROR_LOG == 'false') {
   ERROR_LOG = false;
 }
 
+function error(obj, ...objs) {
+  if (ERROR_LOG) {
+    let msg = '';
+    for (const s of objs) {
+      msg += ' ' + s;
+    }
+    console.error('[ERROR]: ' + obj + msg);
+    if (typeof err === 'object') {
+      if (err.message) {
+        console.log('\nMessage: ' + err.message);
+      }
+      if (err.lineNumber) {
+        console.log('Error line number ' + err.lineNumber);
+      }
+      if (err.stack) {
+        console.log('\nStacktrace:');
+        console.log('====================');
+        console.log(err.stack);
+      }
+    } else {
+      console.log('error not object');
+    }
+  }
+}
+
 module.exports = {
   getFirebaseAdmin: function () {
     return firebaseAdmin;
@@ -36,30 +61,7 @@ module.exports = {
     }
   },
 
-  error: function (obj, ...objs) {
-    if (ERROR_LOG) {
-      let msg = '';
-      for (const s of objs) {
-        msg += ' ' + s;
-      }
-      console.error('[ERROR]: ' + obj + msg);
-      if (typeof err === 'object') {
-        if (err.message) {
-          console.log('\nMessage: ' + err.message);
-        }
-        if (err.lineNumber) {
-          console.log('Error line number ' + err.lineNumber);
-        }
-        if (err.stack) {
-          console.log('\nStacktrace:');
-          console.log('====================');
-          console.log(err.stack);
-        }
-      } else {
-        console.log('error not object');
-      }
-    }
-  },
+  error,
 
   jsonString: function (obj) {
     return JSON.stringify(obj, null, 2);
@@ -67,7 +69,7 @@ module.exports = {
 
   authorizeUser: async function (path, signature, message) {
     // todo: adi for testing only
-    //return true;
+    // return true;
 
     // path is in the form /u/user/*
     let userId = path.split('/')[2].trim().toLowerCase();
@@ -97,6 +99,26 @@ module.exports = {
     endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
     return endCode;
   },
+
+  // get and parse req.query fields, return a map of { fieldName: numberValue,... }
+  parseQueryFields: (res, req, fieldArr, defaultValues) => {
+    const numberFields = {};
+    try {
+      fieldArr.forEach((name, idx) => {
+        numberFields[name] = parseInt(req.query[name] || defaultValues[idx]);
+        if (isNaN(numberFields[name])) {
+          throw `Invalid query param: ${name} = ${req.query[name]}`
+        }
+      });
+    } catch (err) {
+      error('Invalid query params: ' + fieldArr.join(', '));
+      error(err);
+      res.sendStatus(500);
+      return { error: err };
+    }
+    return numberFields;
+  },
+    
   getUniqueItemsByProperties: function (items, propNames) {
     const propNamesArray = Array.from(propNames);
     const isPropValuesEqual = (subject, target, propNames) =>{

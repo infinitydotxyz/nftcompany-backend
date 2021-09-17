@@ -97,6 +97,7 @@ function reconcileGlobalInfo(globalData) {
 
   const localInfoDelta = getLocalInfoDelta();
 
+  globalInfo.updatedAt = Date.now();
   globalInfo.totalSales += localInfoDelta.totalSales;
   globalInfo.totalFees += localInfoDelta.totalFees;
   globalInfo.totalVolume += localInfoDelta.totalVolume;
@@ -227,17 +228,24 @@ app.get('/u/:user/assets', async (req, res) => {
   fetchAssetsOfUser(req, res);
 });
 
-//fetch listings of user
+// fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
+      utils.log(utils.jsonString(data));
       const resp = getOrdersResponse(data);
       res.send(resp);
     })
@@ -251,12 +259,18 @@ app.get('/u/:user/listings', async (req, res) => {
 //fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.PURCHASES_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const purchases = [];
@@ -287,12 +301,18 @@ app.get('/u/:user/purchases', async (req, res) => {
 //fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.SALES_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const sales = [];
@@ -323,12 +343,18 @@ app.get('/u/:user/sales', async (req, res) => {
 //fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.OFFERS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -345,10 +371,16 @@ app.get('/u/:user/offersmade', async (req, res) => {
 app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collectionGroup(fstrCnstnts.OFFERS_COLL)
     .where('metadata.asset.owner', '==', user)
     .orderBy('metadata.basePriceInEth', sortByPrice)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -818,6 +850,7 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
 
 async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   // save order
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -851,6 +884,7 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
 }
 
 async function saveSoldOrder(docId, user, order, batch, numOrders) {
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -890,6 +924,7 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
     blueCheck = await isTokenVerified(tokenAddress);
   }
   payload.metadata.hasBlueCheck = blueCheck;
+  payload.metadata.createdAt = Date.now();
 
   // write listing
   const listingRef = db
@@ -914,6 +949,8 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
 
 async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
+
+  payload.metadata.createdAt = Date.now();
   // store data in offersMade of maker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1058,16 +1095,14 @@ function storeUpdatedUserRewards(batch, user, data) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(ref, { rewardsInfo: data }, { merge: true });
+  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
 }
 
 // ==================================================== Get assets ==========================================================
 
 async function fetchAssetsOfUser(req, res) {
   const user = req.params.user.trim().toLowerCase();
-  const limit = req.query.limit;
-  const offset = req.query.offset;
-  const source = req.query.source;
+  const { limit, offset, source } = req.query;
   const sourceName = nftDataSources[source];
   try {
     let resp = await getAssets(user, limit, offset, sourceName);
@@ -1676,7 +1711,7 @@ async function getReward(user) {
     .doc(user)
     .update({
       'rewardsInfo.netReward': netReward,
-      'rewardsInfo.netRewardCalculatedAt': firebaseAdmin.firestore.FieldValue.serverTimestamp()
+      'rewardsInfo.netRewardCalculatedAt': Date.now()
     })
     .then((resp) => {
       // nothing to do
