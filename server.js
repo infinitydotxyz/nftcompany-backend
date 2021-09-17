@@ -238,8 +238,7 @@ app.get('/u/:user/listings', async (req, res) => {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('id')
-    .startAt(0)
+    .offset(parseInt(offset))
     .limit(parseInt(limit))
     .get()
     .then((data) => {
