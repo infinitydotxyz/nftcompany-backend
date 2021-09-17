@@ -22,102 +22,144 @@ const nftDataSources = {
   3: 'alchemy'
 };
 
+// init server
+init();
+
 // ============================================== Global data handling ======================================================
 let globalInfo;
-let localInfo = getEmptyGlobalInfo();
-db.collection(fstrCnstnts.ROOT_COLL)
-  .doc(fstrCnstnts.INFO_DOC)
-  .get(
-    (doc) => {
-      globalInfo = { ...getEmptyGlobalInfo(), ...doc.data() };
-      globalInfo.rewardsInfo = {
-        ...getEmptyGlobalInfo().rewardsInfo,
-        ...doc.data().rewardsInfo
-      };
-    },
-    (err) => {
-      utils.error('Encountered error while getting global info. Exiting process');
-      utils.error(err);
-      process.exit();
-    }
-  );
+let localInfo;
+let origLocalInfo;
 
-// write to firestore every interval
-setInterval(() => {
-  // make a copy of localinfo
-  const updateData = JSON.parse(JSON.stringify(localInfo));
-  const ref = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
-  db.runTransaction(async (txn) => {
-    const globalDoc = await txn.get(ref);
-    // reconcile globalinfo
-    reconcileGlobalInfo(globalDoc.data(), updateData);
-    txn.update(ref, globalInfo);
-  })
-    .then((res) => {
-      // reconcile localinfo
-      reconcileLocalInfo(updateData);
+async function init() {
+  // get global info doc
+  try {
+    const globalInfoDoc = await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get();
+
+    globalInfo = { ...getEmptyGlobalInfo(), ...globalInfoDoc.data() };
+    globalInfo.rewardsInfo = {
+      ...getEmptyGlobalInfo().rewardsInfo,
+      ...globalInfoDoc.data().rewardsInfo
+    };
+
+    // set local info
+    localInfo = JSON.parse(JSON.stringify(globalInfo));
+    origLocalInfo = JSON.parse(JSON.stringify(localInfo));
+  } catch (err) {
+    utils.error('Encountered error while getting global info. Exiting process');
+    utils.error(err);
+    process.exit();
+  }
+
+  // Start server and listen to the App Engine-specified port, or 9090 otherwise
+  const PORT = process.env.PORT || 9090;
+  app.listen(PORT, () => {
+    utils.log(`Server listening on port ${PORT}...`);
+  });
+
+  // listen to global info changes and update
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .onSnapshot(
+      (snapshot) => {
+        globalInfo = snapshot.data();
+      },
+      (err) => {
+        utils.error('Error in listening to global info doc changes');
+        utils.error(err);
+      }
+    );
+
+  // write localdata to firestore every interval
+  setInterval(() => {
+    const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
+    db.runTransaction(async (txn) => {
+      const globalDoc = await txn.get(globalDocRef);
+      // reconcile globalinfo
+      reconcileGlobalInfo(globalDoc.data());
+      txn.update(globalDocRef, globalInfo);
     })
-    .catch((err) => {
-      utils.error('Failed updating global info in firestore', err);
-      utils.error(err);
-    });
-}, 1000 * 10); // every 10 seconds
+      .then((res) => {
+        origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
+      })
+      .catch((err) => {
+        utils.error('Failed updating global info in firestore', err);
+        utils.error(err);
+      });
+  }, 1000 * 60); // every 60 seconds
+}
 
-function reconcileGlobalInfo(globalData, updateData) {
+function reconcileGlobalInfo(globalData) {
   globalInfo = { ...getEmptyGlobalInfo(), ...globalData };
   globalInfo.rewardsInfo = {
     ...getEmptyGlobalInfo().rewardsInfo,
     ...globalData.rewardsInfo
   };
 
-  globalInfo.totalSales += updateData.totalSales;
-  globalInfo.totalFees += updateData.totalFees;
-  globalInfo.totalVolume += updateData.totalVolume;
-  globalInfo.totalListings += updateData.totalListings;
-  globalInfo.totalBonusListings += updateData.totalBonusListings;
-  globalInfo.totalOffers += updateData.totalOffers;
-  globalInfo.totalBonusOffers += updateData.totalBonusOffers;
+  const localInfoDelta = getLocalInfoDelta();
 
-  globalInfo.rewardsInfo.accRewardPerShare += updateData.rewardsInfo.accRewardPerShare;
-  globalInfo.rewardsInfo.accBonusRewardPerShare += updateData.rewardsInfo.accBonusRewardPerShare;
-  globalInfo.rewardsInfo.accSaleRewardPerShare += updateData.rewardsInfo.accSaleRewardPerShare;
-  globalInfo.rewardsInfo.accBuyRewardPerShare += updateData.rewardsInfo.accBuyRewardPerShare;
-  globalInfo.rewardsInfo.totalRewardPaid += updateData.rewardsInfo.totalRewardPaid;
-  globalInfo.rewardsInfo.totalBonusRewardPaid += updateData.rewardsInfo.totalBonusRewardPaid;
-  globalInfo.rewardsInfo.totalSaleRewardPaid += updateData.rewardsInfo.totalSaleRewardPaid;
-  globalInfo.rewardsInfo.totalBuyRewardPaid += updateData.rewardsInfo.totalBuyRewardPaid;
+  globalInfo.updatedAt = Date.now();
+  globalInfo.totalSales += localInfoDelta.totalSales;
+  globalInfo.totalFees += localInfoDelta.totalFees;
+  globalInfo.totalVolume += localInfoDelta.totalVolume;
+  globalInfo.totalListings += localInfoDelta.totalListings;
+  globalInfo.totalBonusListings += localInfoDelta.totalBonusListings;
+  globalInfo.totalOffers += localInfoDelta.totalOffers;
+  globalInfo.totalBonusOffers += localInfoDelta.totalBonusOffers;
 
-  if (globalInfo.rewardsInfo.lastRewardBlock < updateData.rewardsInfo.lastRewardBlock) {
-    globalInfo.rewardsInfo.lastRewardBlock = updateData.rewardsInfo.lastRewardBlock;
+  globalInfo.rewardsInfo.accRewardPerShare += localInfoDelta.rewardsInfo.accRewardPerShare;
+  globalInfo.rewardsInfo.accBonusRewardPerShare += localInfoDelta.rewardsInfo.accBonusRewardPerShare;
+  globalInfo.rewardsInfo.accSaleRewardPerShare += localInfoDelta.rewardsInfo.accSaleRewardPerShare;
+  globalInfo.rewardsInfo.accBuyRewardPerShare += localInfoDelta.rewardsInfo.accBuyRewardPerShare;
+  globalInfo.rewardsInfo.totalRewardPaid += localInfoDelta.rewardsInfo.totalRewardPaid;
+  globalInfo.rewardsInfo.totalBonusRewardPaid += localInfoDelta.rewardsInfo.totalBonusRewardPaid;
+  globalInfo.rewardsInfo.totalSaleRewardPaid += localInfoDelta.rewardsInfo.totalSaleRewardPaid;
+  globalInfo.rewardsInfo.totalBuyRewardPaid += localInfoDelta.rewardsInfo.totalBuyRewardPaid;
+
+  if (globalInfo.rewardsInfo.lastRewardBlock < localInfo.rewardsInfo.lastRewardBlock) {
+    globalInfo.rewardsInfo.lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
   }
 }
 
-function reconcileLocalInfo(updateData) {
-  localInfo.totalSales -= updateData.totalSales;
-  localInfo.totalFees -= updateData.totalFees;
-  localInfo.totalVolume -= updateData.totalVolume;
-  localInfo.totalListings -= updateData.totalListings;
-  localInfo.totalBonusListings -= updateData.totalBonusListings;
-  localInfo.totalOffers -= updateData.totalOffers;
-  localInfo.totalBonusOffers -= updateData.totalBonusOffers;
+function getLocalInfoDelta() {
+  const localInfoDelta = getEmptyGlobalInfo();
+  localInfoDelta.rewardsInfo = getEmptyGlobalInfo().rewardsInfo;
 
-  localInfo.rewardsInfo.accRewardPerShare -= updateData.rewardsInfo.accRewardPerShare;
-  localInfo.rewardsInfo.accBonusRewardPerShare -= updateData.rewardsInfo.accBonusRewardPerShare;
-  localInfo.rewardsInfo.accSaleRewardPerShare -= updateData.rewardsInfo.accSaleRewardPerShare;
-  localInfo.rewardsInfo.accBuyRewardPerShare -= updateData.rewardsInfo.accBuyRewardPerShare;
-  localInfo.rewardsInfo.totalRewardPaid -= updateData.rewardsInfo.totalRewardPaid;
-  localInfo.rewardsInfo.totalBonusRewardPaid -= updateData.rewardsInfo.totalBonusRewardPaid;
-  localInfo.rewardsInfo.totalSaleRewardPaid -= updateData.rewardsInfo.totalSaleRewardPaid;
-  localInfo.rewardsInfo.totalBuyRewardPaid -= updateData.rewardsInfo.totalBuyRewardPaid;
+  localInfoDelta.totalSales = localInfo.totalSales - origLocalInfo.totalSales;
+  localInfoDelta.totalFees = localInfo.totalFees - origLocalInfo.totalFees;
+  localInfoDelta.totalVolume = localInfo.totalVolume - origLocalInfo.totalVolume;
+  localInfoDelta.totalListings = localInfo.totalListings - origLocalInfo.totalListings;
+  localInfoDelta.totalBonusListings = localInfo.totalBonusListings - origLocalInfo.totalBonusListings;
+  localInfoDelta.totalOffers = localInfo.totalOffers - origLocalInfo.totalOffers;
+  localInfoDelta.totalBonusOffers = localInfo.totalBonusOffers - origLocalInfo.totalBonusOffers;
+
+  localInfoDelta.rewardsInfo.accRewardPerShare =
+    localInfo.rewardsInfo.accRewardPerShare - origLocalInfo.rewardsInfo.accRewardPerShare;
+
+  localInfoDelta.rewardsInfo.accBonusRewardPerShare =
+    localInfo.rewardsInfo.accBonusRewardPerShare - origLocalInfo.rewardsInfo.accBonusRewardPerShare;
+
+  localInfoDelta.rewardsInfo.accSaleRewardPerShare =
+    localInfo.rewardsInfo.accSaleRewardPerShare - origLocalInfo.rewardsInfo.accSaleRewardPerShare;
+
+  localInfoDelta.rewardsInfo.accBuyRewardPerShare =
+    localInfo.rewardsInfo.accBuyRewardPerShare - origLocalInfo.rewardsInfo.accBuyRewardPerShare;
+
+  localInfoDelta.rewardsInfo.totalRewardPaid =
+    localInfo.rewardsInfo.totalRewardPaid - origLocalInfo.rewardsInfo.totalRewardPaid;
+
+  localInfoDelta.rewardsInfo.totalBonusRewardPaid =
+    localInfo.rewardsInfo.totalBonusRewardPaid - origLocalInfo.rewardsInfo.totalBonusRewardPaid;
+
+  localInfoDelta.rewardsInfo.totalSaleRewardPaid =
+    localInfo.rewardsInfo.totalSaleRewardPaid - origLocalInfo.rewardsInfo.totalSaleRewardPaid;
+
+  localInfoDelta.rewardsInfo.totalBuyRewardPaid =
+    localInfo.rewardsInfo.totalBuyRewardPaid - origLocalInfo.rewardsInfo.totalBuyRewardPaid;
+
+  return localInfoDelta;
 }
 
 // =========================================== Server ===========================================================
-
-// Listen to the App Engine-specified port, or 9090 otherwise
-const PORT = process.env.PORT || 9090;
-app.listen(PORT, () => {
-  utils.log(`Server listening on port ${PORT}...`);
-});
 
 app.all('/u/*', async (req, res, next) => {
   let authorized = await utils.authorizeUser(
@@ -189,18 +231,30 @@ app.get('/u/:user/assets', async (req, res) => {
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit = 50, offset = 0   } = req.query;
-  console.log('- limit, offset:', limit, offset)
+  const { limit = '50', startAfter = `${Date.now()}` } = req.query;
+  let limitNum;
+  let startAfterNum;
+  try {
+    limitNum = parseInt(limit);
+    startAfterNum = parseInt(startAfter);
+  } catch (err) {
+    utils.error('Invalid parameters: limit or startAfter.');
+    utils.error(err);
+    res.sendStatus(500);
+    return;
+  }
 
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .offset(parseInt(offset))
-    .limit(parseInt(limit))
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterNum)
+    .limit(limitNum)
     .get()
     .then((data) => {
+      utils.log(utils.jsonString(data));
       const resp = getOrdersResponse(data);
       res.send(resp);
     })
@@ -219,7 +273,7 @@ app.get('/u/:user/purchases', async (req, res) => {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.BOUGHT_COLL)
+    .collection(fstrCnstnts.PURCHASES_COLL)
     .get()
     .then((data) => {
       const purchases = [];
@@ -255,7 +309,7 @@ app.get('/u/:user/sales', async (req, res) => {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.SOLD_COLL)
+    .collection(fstrCnstnts.SALES_COLL)
     .get()
     .then((data) => {
       const sales = [];
@@ -780,14 +834,15 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
 
 async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   // save order
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.BOUGHT_COLL)
+    .collection(fstrCnstnts.PURCHASES_COLL)
     .doc(docId)
-    .collection(fstrCnstnts.BOUGHT_COLL)
+    .collection(fstrCnstnts.PURCHASES_COLL)
     .doc();
   batch.set(ref, order, { merge: true });
 
@@ -813,14 +868,15 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
 }
 
 async function saveSoldOrder(docId, user, order, batch, numOrders) {
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.SOLD_COLL)
+    .collection(fstrCnstnts.SALES_COLL)
     .doc(docId)
-    .collection(fstrCnstnts.SOLD_COLL)
+    .collection(fstrCnstnts.SALES_COLL)
     .doc();
   batch.set(ref, order, { merge: true });
 
@@ -846,11 +902,13 @@ async function saveSoldOrder(docId, user, order, batch, numOrders) {
 
 async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
   // check if token is verified if payload instructs so
+  const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   let blueCheck = payload.metadata.hasBlueCheck;
   if (payload.metadata.checkBlueCheck) {
     blueCheck = await isTokenVerified(tokenAddress);
   }
   payload.metadata.hasBlueCheck = blueCheck;
+  payload.metadata.createdAt = Date.now();
 
   // write listing
   const listingRef = db
@@ -875,6 +933,8 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
 
 async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
+
+  payload.metadata.createdAt = Date.now();
   // store data in offersMade of maker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1019,7 +1079,7 @@ function storeUpdatedUserRewards(batch, user, data) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(ref, { rewardsInfo: data }, { merge: true });
+  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
 }
 
 // ==================================================== Get assets ==========================================================
@@ -1327,8 +1387,8 @@ function getEmptyGlobalInfo() {
       totalSaleRewardPaid: 0,
       totalBuyRewardPaid: 0,
       lastRewardBlock: 0,
-      penaltyActivated: 0,
-      penaltyRatio: 0
+      penaltyActivated: true,
+      penaltyRatio: 0.99
     }
   };
 }
@@ -1350,7 +1410,7 @@ function getEmptyUserInfo() {
     numOffers: 0,
     numBonusOffers: 0,
     numBought: 0,
-    numSales: 0,
+    numSold: 0,
     saleFees: 0,
     buyFees: 0,
     rewardsInfo: getEmptyUserRewardInfo()
@@ -1468,7 +1528,7 @@ async function updateLocalRewards() {
   utils.log('Updating local rewards');
   const currentBlock = await getCurrentBlock();
   const totalOrders = globalInfo.totalListings + globalInfo.totalOffers;
-  const totalBonusOrders = globalInfo.totalBonusListings + globalInfo.totalBonusOrders;
+  const totalBonusOrders = globalInfo.totalBonusListings + globalInfo.totalBonusOffers;
   const totalFees = globalInfo.totalFees;
   const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
   const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
@@ -1614,7 +1674,7 @@ async function getReward(user) {
 
   let netReward = 0;
   if (penaltyActivated) {
-    const salesRatio = numSales / (numOrders + numBonusOrders);
+    const salesRatio = numSold / (numOrders + numBonusOrders);
     const penalty = (penaltyRatio - salesRatio) * grossReward;
     // the edge case where all orders are fulfilled
     if (penalty < 0) {
@@ -1635,7 +1695,7 @@ async function getReward(user) {
     .doc(user)
     .update({
       'rewardsInfo.netReward': netReward,
-      'rewardsInfo.netRewardCalculatedAt': firebaseAdmin.firestore.FieldValue.serverTimestamp()
+      'rewardsInfo.netRewardCalculatedAt': Date.now()
     })
     .then((resp) => {
       // nothing to do
