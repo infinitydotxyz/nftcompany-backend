@@ -411,16 +411,17 @@ app.get('/collections', async (req, res) => {
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.asset.address')
+      .select('metadata.asset.collectionName', 'metadata.hasBlueCheck')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
         let resp = data.docs.map((doc) => {
-          return doc.data().metadata.asset.collectionName;
+          return {collectionName: doc.data().metadata.asset.collectionName,
+          hasBlueCheck: doc.data().metadata.hasBlueCheck};
         });
         // remove duplicates and take only the first 10 results
-        resp = [...new Set(resp)].slice(0, 10);
+        resp = utils.getUniqueItemsByProperties(resp,'collectionName')
         resp = utils.jsonString(resp);
         res.set({
           'Cache-Control': 'must-revalidate, max-age=600',

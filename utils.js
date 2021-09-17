@@ -96,5 +96,13 @@ module.exports = {
     const strEndCode = searchTerm.slice(strLength - 1, searchTerm.length);
     endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
     return endCode;
-  }
+  },
+  getUniqueItemsByProperties: function (items, propNames) {
+    const propNamesArray = Array.from(propNames);
+    const isPropValuesEqual = (subject, target, propNames) =>{
+      return propNames.every(propName => subject[propName] === target[propName]);
+    }
+    return items.filter((item, index, array) =>
+    index === array.findIndex(foundItem => isPropValuesEqual(foundItem, item, propNamesArray))
+  );}
 };
