@@ -117,5 +117,14 @@ module.exports = {
       return { error: err };
     }
     return numberFields;
-  }
+  },
+    
+  getUniqueItemsByProperties: function (items, propNames) {
+    const propNamesArray = Array.from(propNames);
+    const isPropValuesEqual = (subject, target, propNames) =>{
+      return propNames.every(propName => subject[propName] === target[propName]);
+    }
+    return items.filter((item, index, array) =>
+    index === array.findIndex(foundItem => isPropValuesEqual(foundItem, item, propNamesArray))
+  );}
 };
