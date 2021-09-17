@@ -245,7 +245,6 @@ app.get('/u/:user/listings', async (req, res) => {
     .limit(limit)
     .get()
     .then((data) => {
-      utils.log(utils.jsonString(data));
       const resp = getOrdersResponse(data);
       res.send(resp);
     })
