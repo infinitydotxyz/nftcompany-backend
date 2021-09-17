@@ -231,27 +231,18 @@ app.get('/u/:user/assets', async (req, res) => {
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit = '50', startAfter = `${Date.now()}` } = req.query;
-  let limitNum;
-  let startAfterNum;
-  try {
-    limitNum = parseInt(limit);
-    startAfterNum = parseInt(startAfter);
-  } catch (err) {
-    utils.error('Invalid parameters: limit or startAfter.');
-    utils.error(err);
-    res.sendStatus(500);
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
     return;
   }
-
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterNum)
-    .limit(limitNum)
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       utils.log(utils.jsonString(data));
@@ -268,12 +259,18 @@ app.get('/u/:user/listings', async (req, res) => {
 //fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.PURCHASES_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const purchases = [];
@@ -304,12 +301,18 @@ app.get('/u/:user/purchases', async (req, res) => {
 //fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.SALES_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const sales = [];
@@ -340,12 +343,18 @@ app.get('/u/:user/sales', async (req, res) => {
 //fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.OFFERS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -362,10 +371,16 @@ app.get('/u/:user/offersmade', async (req, res) => {
 app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
-
+  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  if (error) {
+    return;
+  }
   db.collectionGroup(fstrCnstnts.OFFERS_COLL)
     .where('metadata.asset.owner', '==', user)
     .orderBy('metadata.basePriceInEth', sortByPrice)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
