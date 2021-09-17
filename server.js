@@ -97,6 +97,7 @@ function reconcileGlobalInfo(globalData) {
 
   const localInfoDelta = getLocalInfoDelta();
 
+  globalInfo.updatedAt = Date.now();
   globalInfo.totalSales += localInfoDelta.totalSales;
   globalInfo.totalFees += localInfoDelta.totalFees;
   globalInfo.totalVolume += localInfoDelta.totalVolume;
@@ -230,18 +231,30 @@ app.get('/u/:user/assets', async (req, res) => {
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit = 50, offset = 0   } = req.query;
-  console.log('- limit, offset:', limit, offset)
+  const { limit = '50', startAfter = `${Date.now()}` } = req.query;
+  let limitNum;
+  let startAfterNum;
+  try {
+    limitNum = parseInt(limit);
+    startAfterNum = parseInt(startAfter);
+  } catch (err) {
+    utils.error('Invalid parameters: limit or startAfter.');
+    utils.error(err);
+    res.sendStatus(500);
+    return;
+  }
 
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .offset(parseInt(offset))
-    .limit(parseInt(limit))
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterNum)
+    .limit(limitNum)
     .get()
     .then((data) => {
+      utils.log(utils.jsonString(data));
       const resp = getOrdersResponse(data);
       res.send(resp);
     })
@@ -821,6 +834,7 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
 
 async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   // save order
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -854,6 +868,7 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
 }
 
 async function saveSoldOrder(docId, user, order, batch, numOrders) {
+  order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -893,6 +908,7 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
     blueCheck = await isTokenVerified(tokenAddress);
   }
   payload.metadata.hasBlueCheck = blueCheck;
+  payload.metadata.createdAt = Date.now();
 
   // write listing
   const listingRef = db
@@ -917,6 +933,8 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
 
 async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
+
+  payload.metadata.createdAt = Date.now();
   // store data in offersMade of maker
   const offersMadeRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1061,7 +1079,7 @@ function storeUpdatedUserRewards(batch, user, data) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(ref, { rewardsInfo: data }, { merge: true });
+  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
 }
 
 // ==================================================== Get assets ==========================================================
@@ -1677,7 +1695,7 @@ async function getReward(user) {
     .doc(user)
     .update({
       'rewardsInfo.netReward': netReward,
-      'rewardsInfo.netRewardCalculatedAt': firebaseAdmin.firestore.FieldValue.serverTimestamp()
+      'rewardsInfo.netRewardCalculatedAt': Date.now()
     })
     .then((resp) => {
       // nothing to do
