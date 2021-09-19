@@ -21,7 +21,8 @@ const nftDataSources = {
   2: 'unmarshal',
   3: 'alchemy'
 };
-const DEFAULT_MAX_ETH = '5000'; // for listings
+const DEFAULT_ITEMS_PER_PAGE = 50;
+const DEFAULT_MAX_ETH = 5000; // for listings
 
 // init server
 init();
@@ -202,17 +203,18 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch listings (for Explore page)
 app.get('/listings', async (req, res) => {
-  const price = req.query.price || DEFAULT_MAX_ETH; // add a default max of 5000 eth
-  const sortByPrice = req.query.sortByPrice || 'asc'; // ascending default
+  const price = +req.query.price || DEFAULT_MAX_ETH; // add a default max of 5000 eth
+  const sortByPrice = `${req.query.sortByPrice || 'asc'}`.toLowerCase(); // ascending default
   const { limit, startAfterPrice, startAfter, error } = utils.parseQueryFields(
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfter'],
-    [DEFAULT_MAX_ETH, `0`, `${Date.now()}`]
+    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${price}`, `${Date.now()}`]
   );
   if (error) {
     return;
   }
+  // console.log('/listings params:', price, sortByPrice, limit, startAfter, startAfterPrice)
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .where('metadata.basePriceInEth', '<=', +price)
     .orderBy('metadata.basePriceInEth', sortByPrice) // asc (default) or desc
