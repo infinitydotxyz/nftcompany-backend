@@ -683,7 +683,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 });
 
 // order fulfill
-app.post('/u/:user/wyvern/v1/orders/fulfill', async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
   // user is the taker of the order - either bought now or accepted offer
   // write to bought and sold and delete from listing, offer made, offer recvd
   /* cases in which order is fulfilled:
@@ -692,18 +692,17 @@ app.post('/u/:user/wyvern/v1/orders/fulfill', async (req, res) => {
     3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
   */
   try {
-    const order = req.body;
+    const payload = req.body;
+    const salePriceInEth = +payload.salePriceInEth;
+    const side = +payload.side;
     const taker = req.params.user.trim().toLowerCase();
-    const maker = order.maker.trim().toLowerCase();
-    const side = +order.side;
-    const offerMadeOnListing = order.metadata.offerMadeOnListing;
-    const docId = order.id;
-    const numOrders = 1;
-    const feesInEth = +order.metadata.feesInEth;
-    const salePriceInEth = +order.metadata.salePriceInEth;
-    const batch = db.batch();
-    order.taker = taker;
+    const docId = req.params.id.trim();  // preserve case
+    const feesInEth = +payload.feesInEth;
+    const txnHash = payload.txnHash;
 
+    const numOrders = 1;
+    const batch = db.batch();
+    
     if (side != 0 || side != 1) {
       utils.error('Unknown order type, not fulfilling it');
       res.sendStatus(500);
@@ -728,24 +727,31 @@ app.post('/u/:user/wyvern/v1/orders/fulfill', async (req, res) => {
         return;
       }
 
+      const maker = doc.maker.trim().toLowerCase();
+      const isOfferMadeOnListing = doc.metadata.isOfferMadeOnListing;
+      doc.taker = taker;
+      doc.salePriceInEth = salePriceInEth;
+      doc.feesInEth = feesInEth;
+      doc.txnHash = txnHash;
+
       utils.log('Item bought by ' + maker + ' sold by ' + taker);
 
       // write to bought by maker; multiple items possible
-      await saveBoughtOrder(maker, order, batch, numOrders);
+      await saveBoughtOrder(maker, doc, batch, numOrders);
 
       // write to sold by taker; multiple items possible
-      await saveSoldOrder(taker, order, batch, numOrders);
+      await saveSoldOrder(taker, doc, batch, numOrders);
 
       // delete offerMade by maker
       await deleteOfferMadeWithId(docId, maker, batch);
 
       // delete listing by taker if it exists
-      if (offerMadeOnListing) {
+      if (isOfferMadeOnListing) {
         await deleteListingWithId(docId, taker, batch);
       }
 
       // send email to maker that the offer is accepted
-      prepareEmail(maker, order, 'offerAccepted');
+      prepareEmail(maker, doc, 'offerAccepted');
     } else if (side == 1) {
       // taker bought a listing, maker is the seller
 
@@ -764,19 +770,25 @@ app.post('/u/:user/wyvern/v1/orders/fulfill', async (req, res) => {
         return;
       }
 
+      const maker = doc.maker.trim().toLowerCase();
+      doc.taker = taker;
+      doc.salePriceInEth = salePriceInEth;
+      doc.feesInEth = feesInEth;
+      doc.txnHash = txnHash;
+
       utils.log('Item bought by ' + taker + ' sold by ' + maker);
 
       // write to bought by taker; multiple items possible
-      await saveBoughtOrder(taker, order, batch, numOrders);
+      await saveBoughtOrder(taker, doc, batch, numOrders);
 
       // write to sold by maker; multiple items possible
-      await saveSoldOrder(maker, order, batch, numOrders);
+      await saveSoldOrder(maker, doc, batch, numOrders);
 
       // delete listing from maker
       await deleteListingWithId(docId, maker, batch);
 
       // send email to maker that the listing is bought
-      prepareEmail(maker, order, 'listingBought');
+      prepareEmail(maker, doc, 'listingBought');
     }
 
     // update total sales
