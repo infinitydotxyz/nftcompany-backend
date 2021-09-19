@@ -209,7 +209,7 @@ app.get('/listings', async (req, res) => {
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfter'],
-    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${DEFAULT_MAX_ETH}`, `${Date.now()}`]
+    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${price}`, `${Date.now()}`]
   );
   if (error) {
     return;
