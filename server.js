@@ -1736,6 +1736,31 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+app.get('/u/:user/getEmail', async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  const userDoc = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .get();
+
+  let data = userDoc.data();
+
+  if (data?.profileInfo?.email?.address) {
+    let resp = utils.jsonString(data.profileInfo.email);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } else {
+    res.send('{}');
+  }
+});
+
 app.post('/u/:user/setEmail', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const email = req.body.email.trim().toLowerCase();
