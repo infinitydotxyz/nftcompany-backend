@@ -1809,7 +1809,8 @@ app.get('/verifyEmail', async (req, res) => {
       {
         profileInfo: {
           email: {
-            verified: true
+            verified: true,
+            subscribed: true
           }
         }
       },
