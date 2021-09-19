@@ -682,8 +682,8 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   }
 });
 
-// order fulfilled
-app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
+// order fulfill
+app.post('/u/:user/wyvern/v1/orders/fulfill', async (req, res) => {
   // user is the taker of the order - either bought now or accepted offer
   // write to bought and sold and delete from listing, offer made, offer recvd
   /* cases in which order is fulfilled:
@@ -697,9 +697,7 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
     const maker = order.maker.trim().toLowerCase();
     const side = +order.side;
     const offerMadeOnListing = order.metadata.offerMadeOnListing;
-    const tokenAddress = order.metadata.asset.address.trim().toLowerCase();
-    const tokenId = order.metadata.asset.id;
-    const docId = getDocId(tokenAddress, tokenId);
+    const docId = order.id;
     const numOrders = 1;
     const feesInEth = +order.metadata.feesInEth;
     const salePriceInEth = +order.metadata.salePriceInEth;
@@ -733,19 +731,17 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
       utils.log('Item bought by ' + maker + ' sold by ' + taker);
 
       // write to bought by maker; multiple items possible
-      await saveBoughtOrder(docId, maker, order, batch, numOrders);
+      await saveBoughtOrder(maker, order, batch, numOrders);
 
       // write to sold by taker; multiple items possible
-      await saveSoldOrder(docId, taker, order, batch, numOrders);
+      await saveSoldOrder(taker, order, batch, numOrders);
 
       // delete offerMade by maker
-      // ideally should use the same db write batch
-      deleteOfferMadeWithId(docId, maker);
+      await deleteOfferMadeWithId(docId, maker, batch);
 
       // delete listing by taker if it exists
       if (offerMadeOnListing) {
-        // ideally should use the same db write batch
-        deleteListingWithId(docId, taker);
+        await deleteListingWithId(docId, taker, batch);
       }
 
       // send email to maker that the offer is accepted
@@ -771,14 +767,13 @@ app.post('/u/:user/wyvern/v1/orders/fulfilled', async (req, res) => {
       utils.log('Item bought by ' + taker + ' sold by ' + maker);
 
       // write to bought by taker; multiple items possible
-      await saveBoughtOrder(docId, taker, order, batch, numOrders);
+      await saveBoughtOrder(taker, order, batch, numOrders);
 
       // write to sold by maker; multiple items possible
-      await saveSoldOrder(docId, maker, order, batch, numOrders);
+      await saveSoldOrder(maker, order, batch, numOrders);
 
       // delete listing from maker
-      // ideally should use the same db write batch
-      deleteListingWithId(docId, maker);
+      await deleteListingWithId(docId, maker, batch);
 
       // send email to maker that the listing is bought
       prepareEmail(maker, order, 'listingBought');
@@ -833,8 +828,18 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
       return;
     }
 
-    deleteListing(doc);
-    res.sendStatus(200);
+    const batch = db.batch();
+    await deleteListing(batch, listingRef);
+    // commit batch
+    batch
+      .commit()
+      .then((resp) => {
+        res.sendStatus(200);
+      })
+      .catch((err) => {
+        utils.error('Failed to delete listing', err);
+        res.sendStatus(500);
+      });
   } catch (err) {
     utils.error(err);
     res.sendStatus(500);
@@ -863,8 +868,18 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
       return;
     }
 
-    deleteOffer(doc);
-    res.sendStatus(200);
+    const batch = db.batch();
+    await deleteOffer(batch, offerRef);
+    // commit batch
+    batch
+      .commit()
+      .then((resp) => {
+        res.sendStatus(200);
+      })
+      .catch((err) => {
+        utils.error('Failed to delete offer', err);
+        res.sendStatus(500);
+      });
   } catch (err) {
     utils.error(err);
     res.sendStatus(500);
@@ -873,7 +888,7 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
 
 // ====================================================== Write helpers ==========================================================
 
-async function saveBoughtOrder(docId, user, order, batch, numOrders) {
+async function saveBoughtOrder(user, order, batch, numOrders) {
   // save order
   order.metadata.createdAt = Date.now();
   const ref = db
@@ -881,8 +896,6 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.PURCHASES_COLL)
-    .doc(docId)
     .collection(fstrCnstnts.PURCHASES_COLL)
     .doc();
   batch.set(ref, order, { merge: true });
@@ -908,15 +921,13 @@ async function saveBoughtOrder(docId, user, order, batch, numOrders) {
   batch.set(numBoughtRef, { numBought: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
 }
 
-async function saveSoldOrder(docId, user, order, batch, numOrders) {
+async function saveSoldOrder(user, order, batch, numOrders) {
   order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.SALES_COLL)
-    .doc(docId)
     .collection(fstrCnstnts.SALES_COLL)
     .doc();
   batch.set(ref, order, { merge: true });
@@ -1221,12 +1232,6 @@ async function isTokenVerified(address) {
   return doc.exists;
 }
 
-function getDocId(tokenAddress, tokenId) {
-  const data = tokenAddress + tokenId;
-  const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  return id;
-}
-
 function getSearchFriendlyString(input) {
   const noSpace = input.replace(/\s/g, '');
   return noSpace.toLowerCase();
@@ -1249,41 +1254,36 @@ function deleteExpiredOrder(doc) {
   utils.log('Deleting expired order', doc.id);
   const order = doc.data();
   const side = +order.side;
+  const batch = db.batch();
   if (side == 1) {
     // listing
-    deleteListing(doc);
+    deleteListing(batch, doc.ref);
   } else if (side == 0) {
     // offer
-    deleteOffer(doc);
+    deleteOffer(batch, doc.ref);
   } else {
     utils.error('Unknown order type', doc.id);
   }
 }
 
-function deleteListingWithId(id, user) {
-  db.collection(fstrCnstnts.ROOT_COLL)
+async function deleteListingWithId(id, user, batch) {
+  const docRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(id)
-    .get()
-    .then((listingDoc) => {
-      deleteListing(listingDoc);
-    })
-    .catch((err) => {
-      utils.error('cannot delete listing');
-      utils.error(err);
-    });
+    .doc(id);
+  await deleteListing(batch, docRef);
 }
 
-async function deleteListing(doc) {
+async function deleteListing(batch, docRef) {
+  const doc = await docRef.get();
   const listing = doc.id;
   utils.log('Deleting listing', listing);
   const user = doc.data().maker;
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
-  const batch = db.batch();
 
   const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, 0, false);
 
@@ -1302,41 +1302,26 @@ async function deleteListing(doc) {
 
   // update total listings
   updateNumTotalOrders(-1 * numOrders, hasBonus, 1);
-
-  // Commit the batch
-  batch
-    .commit()
-    .then((resp) => {})
-    .catch((err) => {
-      utils.error('Failed to delete listing ' + listing);
-      utils.error(err);
-    });
 }
 
-function deleteOfferMadeWithId(id, user) {
-  db.collection(fstrCnstnts.ROOT_COLL)
+async function deleteOfferMadeWithId(id, user, batch) {
+  const docRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(id)
-    .get()
-    .then((offerMadeDoc) => {
-      deleteOffer(offerMadeDoc);
-    })
-    .catch((err) => {
-      utils.error('cannot delete offer');
-      utils.error(err);
-    });
+    .doc(id);
+  await deleteOffer(batch, docRef);
 }
 
-async function deleteOffer(doc) {
+async function deleteOffer(batch, docRef) {
+  const doc = await docRef.get();
   const offer = doc.id;
   utils.log('Deleting offer', offer);
   const user = doc.data().maker;
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
-  const batch = db.batch();
 
   const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, 0, false);
 
@@ -1355,15 +1340,6 @@ async function deleteOffer(doc) {
 
   // update total offers
   updateNumTotalOrders(-1 * numOrders, hasBonus, 0);
-
-  // Commit the batch
-  batch
-    .commit()
-    .then((resp) => {})
-    .catch((err) => {
-      utils.error('Failed to delete offer ' + offer);
-      utils.error(err);
-    });
 }
 
 // =============================================== Rewards calc logic ========================================================
