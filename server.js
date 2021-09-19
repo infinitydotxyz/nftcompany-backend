@@ -21,6 +21,7 @@ const nftDataSources = {
   2: 'unmarshal',
   3: 'alchemy'
 };
+const DEFAULT_MAX_ETH = '5000'; // for listings
 
 // init server
 init();
@@ -199,13 +200,25 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
   }
 });
 
-// fetch all listings
+// fetch listings (for Explore page)
 app.get('/listings', async (req, res) => {
-  const price = req.query.price || '5000'; // add a default max of 5000 eth
+  const price = req.query.price || DEFAULT_MAX_ETH; // add a default max of 5000 eth
   const sortByPrice = req.query.sortByPrice || 'asc'; // ascending default
+  const { limit, startAfterPrice, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfterPrice', 'startAfter'],
+    [DEFAULT_MAX_ETH, `0`, `${Date.now()}`]
+  );
+  if (error) {
+    return;
+  }
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .where('metadata.basePriceInEth', '<=', +price)
-    .orderBy('metadata.basePriceInEth', sortByPrice)
+    .orderBy('metadata.basePriceInEth', sortByPrice) // asc (default) or desc
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterPrice, startAfter)
+    .limit(limit)
     .get()
     .then((data) => {
       const resp = getOrdersResponse(data);
@@ -696,13 +709,13 @@ app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
     const salePriceInEth = +payload.salePriceInEth;
     const side = +payload.side;
     const taker = req.params.user.trim().toLowerCase();
-    const docId = req.params.id.trim();  // preserve case
+    const docId = req.params.id.trim(); // preserve case
     const feesInEth = +payload.feesInEth;
     const txnHash = payload.txnHash;
 
     const numOrders = 1;
     const batch = db.batch();
-    
+
     if (side != 0 || side != 1) {
       utils.error('Unknown order type, not fulfilling it');
       res.sendStatus(500);
@@ -1142,7 +1155,11 @@ function storeUpdatedUserRewards(batch, user, data) {
 
 async function fetchAssetsOfUser(req, res) {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, offset, source } = req.query;
+  const { source } = req.query;
+  const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
+  if (error) {
+    return;
+  }
   const sourceName = nftDataSources[source];
   try {
     let resp = await getAssets(user, limit, offset, sourceName);
@@ -1745,6 +1762,31 @@ const transporter = nodemailer.createTransport({
     user: senderEmailAddress,
     serviceClient: mailCreds.client_id,
     privateKey: mailCreds.private_key
+  }
+});
+
+app.get('/u/:user/getEmail', async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+
+  const userDoc = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .get();
+
+  let data = userDoc.data();
+
+  if (data?.profileInfo?.email?.address) {
+    let resp = utils.jsonString(data.profileInfo.email);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } else {
+    res.send('{}');
   }
 });
 
