@@ -231,7 +231,12 @@ app.get('/u/:user/assets', async (req, res) => {
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
   if (error) {
     return;
   }
@@ -258,7 +263,12 @@ app.get('/u/:user/listings', async (req, res) => {
 //fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
   if (error) {
     return;
   }
@@ -300,7 +310,12 @@ app.get('/u/:user/purchases', async (req, res) => {
 //fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
   if (error) {
     return;
   }
@@ -342,7 +357,12 @@ app.get('/u/:user/sales', async (req, res) => {
 //fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
   if (error) {
     return;
   }
@@ -370,7 +390,12 @@ app.get('/u/:user/offersmade', async (req, res) => {
 app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
-  const { limit, startAfter, error } = utils.parseQueryFields(res, req, ['limit', 'startAfter'], ['50', `${Date.now()}`]);
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
   if (error) {
     return;
   }
@@ -393,6 +418,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 });
 
 // fetch order to fulfill
+// todo: adi who using it
 app.get('/wyvern/v1/orders', async (req, res) => {
   const maker = req.query.maker.trim().toLowerCase();
   const tokenAddress = req.query.assetContractAddress.trim().toLowerCase();
@@ -549,11 +575,13 @@ app.get('/collections', async (req, res) => {
       .then((data) => {
         // to enable cdn cache
         let resp = data.docs.map((doc) => {
-          return {collectionName: doc.data().metadata.asset.collectionName,
-          hasBlueCheck: doc.data().metadata.hasBlueCheck};
+          return {
+            collectionName: doc.data().metadata.asset.collectionName,
+            hasBlueCheck: doc.data().metadata.hasBlueCheck
+          };
         });
         // remove duplicates and take only the first 10 results
-        resp = utils.getUniqueItemsByProperties(resp,'collectionName')
+        resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
         resp = utils.jsonString(resp);
         res.set({
           'Cache-Control': 'must-revalidate, max-age=600',
@@ -603,8 +631,6 @@ app.get('/listingsByCollectionName', async (req, res) => {
 app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   const payload = req.body;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
-  const tokenId = payload.metadata.asset.id;
-  const id = getDocId(tokenAddress, tokenId);
   const maker = req.params.user.trim().toLowerCase();
   // default one order per post call
   const numOrders = 1;
@@ -629,17 +655,17 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
     if (payload.side == 1) {
       // listing
-      await postListing(id, maker, payload, batch, numOrders, hasBonus);
+      await postListing(maker, payload, batch, numOrders, hasBonus);
     } else if (payload.side == 0) {
       // offer
-      await postOffer(id, maker, payload, batch, numOrders, hasBonus);
+      await postOffer(maker, payload, batch, numOrders, hasBonus);
     } else {
       utils.error('Unknown order type');
       return;
     }
 
     // commit batch
-    utils.log('Posting an order with id ' + id);
+    utils.log('Posting an order');
     batch
       .commit()
       .then((resp) => {
@@ -790,7 +816,7 @@ app.delete('/u/:user/listings/:listing', async (req, res) => {
   // delete listing and any offers recvd
   try {
     const user = req.params.user.trim().toLowerCase();
-    const listing = req.params.listing.trim().toLowerCase();
+    const listing = req.params.listing.trim(); // preserve case
 
     // check if listing exists first
     const listingRef = db
@@ -820,7 +846,7 @@ app.delete('/u/:user/offers/:offer', async (req, res) => {
   try {
     // delete offer
     const user = req.params.user.trim().toLowerCase();
-    const offer = req.params.offer.trim().toLowerCase();
+    const offer = req.params.offer.trim(); // preserve case
 
     // check if offer exists first
     const offerRef = db
@@ -915,7 +941,7 @@ async function saveSoldOrder(docId, user, order, batch, numOrders) {
   batch.set(numSoldRef, { numSold: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
 }
 
-async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
+async function postListing(maker, payload, batch, numOrders, hasBonus) {
   // check if token is verified if payload instructs so
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -932,43 +958,35 @@ async function postListing(id, maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(id);
+    .doc();
+
   batch.set(listingRef, payload, { merge: true });
 
-  // check if doc already exists (in case of edit listing) - only update numlistings if it isn't
-  const listing = await listingRef.get();
-  if (!listing.exists) {
-    utils.log('updating num listings since listing does not exist');
-    // update num user listings
-    updateNumOrders(batch, maker, numOrders, hasBonus, 1);
-    // update total listings
-    updateNumTotalOrders(numOrders, hasBonus, 1);
-  }
+  // update num user listings
+  updateNumOrders(batch, maker, numOrders, hasBonus, 1);
+  // update total listings
+  updateNumTotalOrders(numOrders, hasBonus, 1);
 }
 
-async function postOffer(id, maker, payload, batch, numOrders, hasBonus) {
+async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
 
   payload.metadata.createdAt = Date.now();
-  // store data in offersMade of maker
-  const offersMadeRef = db
+  // store data in offers of maker
+  const offerRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(id);
-  batch.set(offersMadeRef, payload, { merge: true });
+    .doc();
+  batch.set(offerRef, payload, { merge: true });
 
-  // check if doc already exists (in case of edit offer) - only update numOffers if it isn't
-  const offer = await offersMadeRef.get();
-  if (!offer.exists) {
-    utils.log('updating num offers since offer does not exist');
-    // update num user offers made
-    updateNumOrders(batch, maker, numOrders, hasBonus, 0);
-    // update total offers made
-    updateNumTotalOrders(numOrders, hasBonus, 0);
-  }
+  utils.log('updating num offers since offer does not exist');
+  // update num user offers made
+  updateNumOrders(batch, maker, numOrders, hasBonus, 0);
+  // update total offers made
+  updateNumTotalOrders(numOrders, hasBonus, 0);
 
   // send email to taker that an offer is made
   prepareEmail(taker, payload, 'offerMade');
