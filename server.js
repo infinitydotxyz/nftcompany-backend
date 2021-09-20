@@ -803,11 +803,6 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
       if (!maker) {
         inputError += 'Payload does not have maker ';
       }
-
-      const isOfferMadeOnListing = payload.isOfferMadeOnListing;
-      if (typeof isOfferMadeOnListing !== 'boolean') {
-        inputError += 'Unknown isOfferMadeOnListing: ' + isOfferMadeOnListing + ' ';
-      }
     }
 
     if (inputError) {
@@ -942,7 +937,6 @@ async function fulfillOrder(user, batch, payload) {
     const feesInEth = +payload.feesInEth;
     const txnHash = payload.txnHash;
     const maker = payload.maker.trim().toLowerCase();
-    const isOfferMadeOnListing = payload.metadata.isOfferMadeOnListing;
 
     const numOrders = 1;
 
@@ -985,9 +979,7 @@ async function fulfillOrder(user, batch, payload) {
       await deleteOfferMadeWithId(docId, maker, batch);
 
       // delete listing by taker if it exists
-      if (isOfferMadeOnListing) {
-        await deleteListingWithId(docId, taker, batch);
-      }
+      await deleteListingWithId(docId, taker, batch);
 
       // send email to maker that the offer is accepted
       prepareEmail(maker, doc, 'offerAccepted');
@@ -1409,6 +1401,10 @@ async function deleteListingWithId(id, user, batch) {
 
 async function deleteListing(batch, docRef) {
   const doc = await docRef.get();
+  if (!doc.exists) {
+    utils.log('No listing to delete: ' + docRef);
+    return;
+  }
   const listing = doc.id;
   utils.log('Deleting listing', listing);
   const user = doc.data().maker;
