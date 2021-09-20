@@ -768,7 +768,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
     // input checking
     let inputError = '';
     const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
-    if (actionType != 'fulfill' || actionType != 'cancel') {
+    if (actionType != 'fulfill' && actionType != 'cancel') {
       inputError += 'Invalid actionType: ' + actionType + ' ';
     }
 
@@ -778,7 +778,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
     }
 
     const side = +payload.side;
-    if (side != 0 || side != 1) {
+    if (side != 0 && side != 1) {
       inputError += 'Unknown order side: ' + side + ' ';
     }
 
@@ -940,7 +940,7 @@ async function fulfillOrder(user, batch, payload) {
 
     const numOrders = 1;
 
-    if (side != 0 || side != 1) {
+    if (side != 0 && side != 1) {
       utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
