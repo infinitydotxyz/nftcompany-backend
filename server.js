@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+
 const express = require('express');
 const axios = require('axios').default;
 const crypto = require('crypto');
@@ -175,7 +177,7 @@ app.all('/u/*', async (req, res, next) => {
   }
 });
 
-// ================================================ READ ===================================================================
+// ================================================ GETS ===================================================================
 
 // check if token is verified or has bonus reward
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
@@ -638,7 +640,56 @@ app.get('/listingsByCollectionName', async (req, res) => {
     });
 });
 
-//=============================================== WRITES =====================================================================
+app.get('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
+  const user = req.params.user.trim().toLowerCase();
+  const { limit, startAfter, error } = utils.parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfter'],
+    ['50', `${Date.now()}`]
+  );
+  if (error) {
+    return;
+  }
+  try {
+    const snapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.PENDING_TXNS_COLL)
+      .where('status', '==', 'pending')
+      .orderBy('createdAt', 'desc')
+      .startAfter(startAfter)
+      .limit(limit)
+      .get();
+
+    const txns = [];
+    for (doc of snapshot.docs) {
+      const txn = doc.data();
+      txn.id = doc.id;
+      txns.push(txn);
+      // check status
+      waitForTxn(user, txn);
+    }
+    let resp = {
+      count: txns.length,
+      listings: txns
+    };
+    resp = utils.jsonString(resp);
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error('Failed to get pending txns of user ' + user);
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+// =============================================== POSTS =====================================================================
 
 // post a listing or make offer
 app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
@@ -695,8 +746,174 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   }
 });
 
+// save pending txn
+// called on buy now, accept offer, cancel offer, cancel listing
+app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
+  try {
+    const payload = req.body;
+    const user = req.params.user.trim().toLowerCase();
+
+    // input checking
+    let inputError = '';
+    const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
+    if (actionType != 'fulfill' || actionType != 'cancel') {
+      inputError += 'Invalid actionType: ' + actionType + ' ';
+    }
+
+    const txnHash = payload.txnHash.trim(); // preserve case
+    if (!txnHash) {
+      inputError += 'Payload does not have txnHash ';
+    }
+
+    const side = +payload.side;
+    if (side != 0 || side != 1) {
+      inputError += 'Unknown order side: ' + side + ' ';
+    }
+
+    const orderId = payload.orderId.trim(); // preserve case
+    if (!orderId) {
+      inputError += 'Payload does not have orderId ';
+    }
+
+    // input checking for fulfill action
+    if (actionType == 'fulfill') {
+      const salePriceInEth = +payload.salePriceInEth;
+      if (isNaN(salePriceInEth)) {
+        inputError += 'Invalid salePriceInEth: ' + salePriceInEth + ' ';
+      }
+
+      const feesInEth = +payload.feesInEth;
+      if (isNaN(feesInEth)) {
+        inputError += 'Invalid feesInEth: ' + feesInEth + ' ';
+      }
+
+      const maker = payload.maker.trim().toLowerCase();
+      if (!maker) {
+        inputError += 'Payload does not have maker ';
+      }
+
+      const isOfferMadeOnListing = payload.metadata.isOfferMadeOnListing;
+      if (typeof isOfferMadeOnListing !== 'boolean') {
+        inputError += 'Unknown isOfferMadeOnListing: ' + isOfferMadeOnListing + ' ';
+      }
+    }
+
+    if (inputError) {
+      res.status(500).send(inputError);
+      return;
+    }
+
+    payload.status = 'pending';
+    payload.txnType = 'original'; // possible values are original, cancellation and replacement
+    payload.createdAt = Date.now();
+
+    // listen for txn mined or not mined
+    waitForTxn(user, payload);
+
+    // save to firestore
+    db.collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.PENDING_TXNS_COLL)
+      .doc(txnHash)
+      .set(payload)
+      .then(() => {
+        res.sendStatus(200);
+      })
+      .catch((err) => {
+        utils.error('Error saving pending txn');
+        utils.error(err);
+        res.sendStatus(500);
+      });
+  } catch (err) {
+    utils.error('Error saving pending txn');
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+// ====================================================== Write helpers ==========================================================
+
+async function waitForTxn(user, payload) {
+  const user = user.trim().toLowerCase();
+  const actionType = payload.actionType.trim().toLowerCase();
+  const origTxnHash = payload.txnHash.trim();
+
+  const batch = db.batch();
+  const userPendingTxnCollRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.PENDING_TXNS_COLL);
+
+  const origTxnDocRef = userPendingTxnCollRef.doc(origTxnHash);
+  const confirms = 1;
+
+  try {
+    // orig txn confirmed
+    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
+    const txnData = JSON.parse(utils.jsonString(receipt));
+    batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
+    if (actionType == 'fulfill') {
+      await fulfillOrder(user, batch, payload);
+    } else if (actionType == 'cancel') {
+      const docId = payload.orderId.trim(); // preserve case
+      const side = +payload.side;
+      if (side == 0) {
+        await cancelOffer(user, batch, docId);
+      } else if (side == 1) {
+        await cancelListing(user, batch, docId);
+      }
+    }
+  } catch (err) {
+    // if the txn failed, err.receipt.status = 0
+    if (err.receipt && err.receipt.status == 0) {
+      utils.error('Txn with hash: ' + txnHash + ' rejected');
+      utils.error(err);
+
+      const txnData = JSON.parse(utils.jsonString(err.receipt));
+      batch.set(origTxnDocRef, { status: 'rejected', txnData }, { merge: true });
+    }
+    // if the txn failed due to replacement or cancellation or repricing
+    if (err && err.reason && err.replacement) {
+      utils.error('Txn with hash: ' + txnHash + ' rejected with reason ' + err.reason);
+      utils.error(err);
+
+      const replacementTxnHash = err.replacement.hash;
+      if (err.reason == 'cancelled') {
+        payload.txnType = 'cancellation';
+        batch.set(origTxnDocRef, { status: 'cancelled', cancelTxnHash: replacementTxnHash }, { merge: true });
+      } else {
+        payload.txnType = 'replacement';
+        batch.set(origTxnDocRef, { status: 'replaced', replaceTxnHash: replacementTxnHash }, { merge: true });
+      }
+      // write a new pending txn in firestore
+      const newTxnDocRef = userPendingTxnCollRef.doc(replacementTxnHash);
+      payload.createdAt = Date.now();
+      const newPayload = {
+        origTxnHash,
+        ...payload
+      };
+      batch.set(newTxnDocRef, newPayload);
+    }
+  }
+
+  // commit batch
+  batch
+    .commit()
+    .then((resp) => {
+      // no op
+    })
+    .catch((err) => {
+      utils.error('Failed to commit pending txn batch');
+      utils.error(err);
+    });
+}
+
 // order fulfill
-app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
+async function fulfillOrder(user, batch, payload) {
   // user is the taker of the order - either bought now or accepted offer
   // write to bought and sold and delete from listing, offer made, offer recvd
   /* cases in which order is fulfilled:
@@ -705,20 +922,20 @@ app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
     3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
   */
   try {
-    const payload = req.body;
+    const taker = user.trim().toLowerCase();
+
     const salePriceInEth = +payload.salePriceInEth;
     const side = +payload.side;
-    const taker = req.params.user.trim().toLowerCase();
-    const docId = req.params.id.trim(); // preserve case
+    const docId = payload.orderId.trim(); // preserve case
     const feesInEth = +payload.feesInEth;
     const txnHash = payload.txnHash;
+    const maker = payload.maker.trim().toLowerCase();
+    const isOfferMadeOnListing = payload.metadata.isOfferMadeOnListing;
 
     const numOrders = 1;
-    const batch = db.batch();
 
     if (side != 0 || side != 1) {
-      utils.error('Unknown order type, not fulfilling it');
-      res.sendStatus(500);
+      utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
 
@@ -736,12 +953,9 @@ app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
         .get();
       if (!doc.exists) {
         utils.log('No order ' + docId + ' to fulfill');
-        res.sendStatus(404);
         return;
       }
 
-      const maker = doc.maker.trim().toLowerCase();
-      const isOfferMadeOnListing = doc.metadata.isOfferMadeOnListing;
       doc.taker = taker;
       doc.salePriceInEth = salePriceInEth;
       doc.feesInEth = feesInEth;
@@ -779,11 +993,9 @@ app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
         .get();
       if (!doc.exists) {
         utils.log('No order ' + docId + ' to fulfill');
-        res.sendStatus(404);
         return;
       }
 
-      const maker = doc.maker.trim().toLowerCase();
       doc.taker = taker;
       doc.salePriceInEth = salePriceInEth;
       doc.feesInEth = feesInEth;
@@ -812,106 +1024,11 @@ app.post('/u/:user/wyvern/v1/orders/:id/fulfill', async (req, res) => {
 
     //update total volume
     incrementLocalStats({ totalVolume: salePriceInEth });
-
-    // commit batch
-    batch
-      .commit()
-      .then((resp) => {
-        res.sendStatus(200);
-      })
-      .catch((err) => {
-        utils.error('Failed to fulfill order', err);
-        res.sendStatus(500);
-      });
   } catch (err) {
+    utils.error('Error in fufilling order');
     utils.error(err);
-    res.sendStatus(500);
   }
-});
-
-// ====================================================== DELETES ======================================================
-
-// cancel listing
-app.delete('/u/:user/listings/:listing', async (req, res) => {
-  // delete listing and any offers recvd
-  try {
-    const user = req.params.user.trim().toLowerCase();
-    const listing = req.params.listing.trim(); // preserve case
-
-    // check if listing exists first
-    const listingRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(user)
-      .collection(fstrCnstnts.LISTINGS_COLL)
-      .doc(listing);
-    const doc = await listingRef.get();
-    if (!doc.exists) {
-      utils.log('No listing ' + listing + ' to delete');
-      res.sendStatus(404);
-      return;
-    }
-
-    const batch = db.batch();
-    await deleteListing(batch, listingRef);
-    // commit batch
-    batch
-      .commit()
-      .then((resp) => {
-        res.sendStatus(200);
-      })
-      .catch((err) => {
-        utils.error('Failed to delete listing', err);
-        res.sendStatus(500);
-      });
-  } catch (err) {
-    utils.error(err);
-    res.sendStatus(500);
-  }
-});
-
-// cancel offer
-app.delete('/u/:user/offers/:offer', async (req, res) => {
-  try {
-    // delete offer
-    const user = req.params.user.trim().toLowerCase();
-    const offer = req.params.offer.trim(); // preserve case
-
-    // check if offer exists first
-    const offerRef = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .doc(user)
-      .collection(fstrCnstnts.OFFERS_COLL)
-      .doc(offer);
-    const doc = await offerRef.get();
-    if (!doc.exists) {
-      utils.log('No offer ' + offer + ' to delete');
-      res.sendStatus(404);
-      return;
-    }
-
-    const batch = db.batch();
-    await deleteOffer(batch, offerRef);
-    // commit batch
-    batch
-      .commit()
-      .then((resp) => {
-        res.sendStatus(200);
-      })
-      .catch((err) => {
-        utils.error('Failed to delete offer', err);
-        res.sendStatus(500);
-      });
-  } catch (err) {
-    utils.error(err);
-    res.sendStatus(500);
-  }
-});
-
-// ====================================================== Write helpers ==========================================================
+}
 
 async function saveBoughtOrder(user, order, batch, numOrders) {
   // save order
@@ -1028,53 +1145,6 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   prepareEmail(taker, payload, 'offerMade');
 }
 
-// ================================================= Read helpers =================================================
-
-function getOrdersResponse(data) {
-  const listings = [];
-  for (const doc of data.docs) {
-    const listing = doc.data();
-    const isExpired = isOrderExpired(doc);
-    if (!isExpired) {
-      listing.id = doc.id;
-      listings.push(listing);
-    } else {
-      deleteExpiredOrder(doc);
-    }
-  }
-  const resp = {
-    count: listings.length,
-    listings
-  };
-  return resp;
-}
-
-async function getOrders(maker, tokenAddress, tokenId, side) {
-  utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
-  let collection = fstrCnstnts.LISTINGS_COLL;
-  if (0 == parseInt(side)) {
-    collection = fstrCnstnts.OFFERS_COLL;
-  }
-  const results = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(maker)
-    .collection(collection)
-    .where('metadata.asset.address', '==', tokenAddress)
-    .where('metadata.asset.id', '==', tokenId)
-    .where('side', '==', parseInt(side))
-    .get();
-
-  if (results.empty) {
-    utils.log('No matching orders');
-    return;
-  }
-  return results.docs;
-}
-
-// ==================================================== Update num orders ===============================================
-
 function updateNumOrders(batch, user, num, hasBonus, side) {
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1122,36 +1192,50 @@ function updateNumTotalOrders(num, hasBonus, side) {
   });
 }
 
-// ================================================== Update rewards =========================================================
+// ================================================= Read helpers =================================================
 
-function incrementLocalStats({
-  totalOffers,
-  totalBonusOffers,
-  totalListings,
-  totalBonusListings,
-  totalFees,
-  totalVolume,
-  totalSales
-}) {
-  localInfo.totalOffers += totalOffers || 0;
-  localInfo.totalBonusOffers += totalBonusOffers || 0;
-  localInfo.totalListings += totalListings || 0;
-  localInfo.totalBonusListings += totalBonusListings || 0;
-  localInfo.totalFees += totalFees || 0;
-  localInfo.totalVolume += totalVolume || 0;
-  localInfo.totalSales += totalSales || 0;
+function getOrdersResponse(data) {
+  const listings = [];
+  for (const doc of data.docs) {
+    const listing = doc.data();
+    const isExpired = isOrderExpired(doc);
+    if (!isExpired) {
+      listing.id = doc.id;
+      listings.push(listing);
+    } else {
+      deleteExpiredOrder(doc);
+    }
+  }
+  const resp = {
+    count: listings.length,
+    listings
+  };
+  return resp;
 }
 
-function storeUpdatedUserRewards(batch, user, data) {
-  const ref = db
+async function getOrders(maker, tokenAddress, tokenId, side) {
+  utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
+  let collection = fstrCnstnts.LISTINGS_COLL;
+  if (0 == parseInt(side)) {
+    collection = fstrCnstnts.OFFERS_COLL;
+  }
+  const results = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .doc(user);
-  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
-}
+    .doc(maker)
+    .collection(collection)
+    .where('metadata.asset.address', '==', tokenAddress)
+    .where('metadata.asset.id', '==', tokenId)
+    .where('side', '==', parseInt(side))
+    .get();
 
-// ==================================================== Get assets ==========================================================
+  if (results.empty) {
+    utils.log('No matching orders');
+    return;
+  }
+  return results.docs;
+}
 
 async function fetchAssetsOfUser(req, res) {
   const user = req.params.user.trim().toLowerCase();
@@ -1249,24 +1333,53 @@ async function getAssetsFromOpensea(address, limit, offset) {
   }
 }
 
-// ============================================================ Misc ======================================================
-
-async function isTokenVerified(address) {
-  const doc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .doc(address)
-    .get();
-  return doc.exists;
-}
-
-function getSearchFriendlyString(input) {
-  const noSpace = input.replace(/\s/g, '');
-  return noSpace.toLowerCase();
-}
-
 // ============================================= Delete helpers ==========================================================
+
+async function cancelListing(user, batch, docId) {
+  try {
+    // check if listing exists first
+    const listingRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.LISTINGS_COLL)
+      .doc(docId);
+    const doc = await listingRef.get();
+    if (!doc.exists) {
+      utils.log('No listing ' + docId + ' to delete');
+      return;
+    }
+    // delete
+    await deleteListing(batch, listingRef);
+  } catch (err) {
+    utils.error('Error cancelling listing');
+    utils.error(err);
+  }
+}
+
+async function cancelOffer(user, batch, docId) {
+  try {
+    // check if offer exists first
+    const offerRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.OFFERS_COLL)
+      .doc(docId);
+    const doc = await offerRef.get();
+    if (!doc.exists) {
+      utils.log('No offer ' + docId + ' to delete');
+      return;
+    }
+    // delete
+    await deleteOffer(batch, offerRef);
+  } catch (err) {
+    utils.error('Error cancelling offer');
+    utils.error(err);
+  }
+}
 
 function isOrderExpired(doc) {
   const order = doc.data();
@@ -1372,6 +1485,33 @@ async function deleteOffer(batch, docRef) {
 }
 
 // =============================================== Rewards calc logic ========================================================
+
+function incrementLocalStats({
+  totalOffers,
+  totalBonusOffers,
+  totalListings,
+  totalBonusListings,
+  totalFees,
+  totalVolume,
+  totalSales
+}) {
+  localInfo.totalOffers += totalOffers || 0;
+  localInfo.totalBonusOffers += totalBonusOffers || 0;
+  localInfo.totalListings += totalListings || 0;
+  localInfo.totalBonusListings += totalBonusListings || 0;
+  localInfo.totalFees += totalFees || 0;
+  localInfo.totalVolume += totalVolume || 0;
+  localInfo.totalSales += totalSales || 0;
+}
+
+function storeUpdatedUserRewards(batch, user, data) {
+  const ref = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user);
+  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
+}
 
 async function hasBonusReward(address) {
   const doc = await db
@@ -1955,4 +2095,21 @@ function sendEmail(to, subject, html) {
     utils.error('Error sending email');
     utils.error(err);
   });
+}
+
+// ============================================================ Misc ======================================================
+
+async function isTokenVerified(address) {
+  const doc = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+    .doc(address)
+    .get();
+  return doc.exists;
+}
+
+function getSearchFriendlyString(input) {
+  const noSpace = input.replace(/\s/g, '');
+  return noSpace.toLowerCase();
 }
