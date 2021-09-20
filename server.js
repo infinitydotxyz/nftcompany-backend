@@ -794,7 +794,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
         inputError += 'Payload does not have maker ';
       }
 
-      const isOfferMadeOnListing = payload.metadata.isOfferMadeOnListing;
+      const isOfferMadeOnListing = payload.isOfferMadeOnListing;
       if (typeof isOfferMadeOnListing !== 'boolean') {
         inputError += 'Unknown isOfferMadeOnListing: ' + isOfferMadeOnListing + ' ';
       }
