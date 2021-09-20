@@ -814,9 +814,6 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
     payload.txnType = 'original'; // possible values are original, cancellation and replacement
     payload.createdAt = Date.now();
 
-    // listen for txn mined or not mined
-    waitForTxn(user, payload);
-
     utils.log('Writing pending txn: ' + txnHash + ' to firestore');
     // save to firestore
     db.collection(fstrCnstnts.ROOT_COLL)
@@ -827,6 +824,8 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
       .doc(txnHash)
       .set(payload)
       .then(() => {
+        // listen for txn mined or not mined
+        waitForTxn(user, payload);
         res.sendStatus(200);
       })
       .catch((err) => {
@@ -861,9 +860,9 @@ async function waitForTxn(user, payload) {
   const confirms = 1;
 
   try {
+    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
     // orig txn confirmed
     utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
     const txnData = JSON.parse(utils.jsonString(receipt));
     batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
     if (actionType == 'fulfill') {
@@ -954,7 +953,7 @@ async function fulfillOrder(user, batch, payload) {
       // taker accepted offerReceived, maker is the buyer
 
       // check if order exists
-      const doc = await db
+      const docSnap = await db
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
@@ -962,15 +961,16 @@ async function fulfillOrder(user, batch, payload) {
         .collection(fstrCnstnts.OFFERS_COLL)
         .doc(docId)
         .get();
-      if (!doc.exists) {
+      if (!docSnap.exists) {
         utils.log('No order ' + docId + ' to fulfill');
         return;
       }
 
+      const doc = docSnap.data();
       doc.taker = taker;
-      doc.salePriceInEth = salePriceInEth;
-      doc.feesInEth = feesInEth;
-      doc.txnHash = txnHash;
+      doc.metadata.salePriceInEth = salePriceInEth;
+      doc.metadata.feesInEth = feesInEth;
+      doc.metadata.txnHash = txnHash;
 
       utils.log('Item bought by ' + maker + ' sold by ' + taker);
 
@@ -992,7 +992,7 @@ async function fulfillOrder(user, batch, payload) {
       // taker bought a listing, maker is the seller
 
       // check if order exists
-      const doc = await db
+      const docSnap = await db
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.USERS_COLL)
@@ -1000,15 +1000,16 @@ async function fulfillOrder(user, batch, payload) {
         .collection(fstrCnstnts.LISTINGS_COLL)
         .doc(docId)
         .get();
-      if (!doc.exists) {
+      if (!docSnap.exists) {
         utils.log('No order ' + docId + ' to fulfill');
         return;
       }
 
+      const doc = docSnap.data();
       doc.taker = taker;
-      doc.salePriceInEth = salePriceInEth;
-      doc.feesInEth = feesInEth;
-      doc.txnHash = txnHash;
+      doc.metadata.salePriceInEth = salePriceInEth;
+      doc.metadata.feesInEth = feesInEth;
+      doc.metadata.txnHash = txnHash;
 
       utils.log('Item bought by ' + taker + ' sold by ' + maker);
 
