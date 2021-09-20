@@ -817,6 +817,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
     // listen for txn mined or not mined
     waitForTxn(user, payload);
 
+    utils.log('Writing pending txn: ' + txnHash + ' to firestore');
     // save to firestore
     db.collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
@@ -846,6 +847,7 @@ async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
+  utils.log('Waiting for txn: ' + origTxnHash);
 
   const batch = db.batch();
   const userPendingTxnCollRef = db
@@ -860,6 +862,7 @@ async function waitForTxn(user, payload) {
 
   try {
     // orig txn confirmed
+    utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
     const txnData = JSON.parse(utils.jsonString(receipt));
     batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
@@ -875,6 +878,7 @@ async function waitForTxn(user, payload) {
       }
     }
   } catch (err) {
+    utils.error('Txn: ' + origTxnHash + ' was rejected');
     // if the txn failed, err.receipt.status = 0
     if (err.receipt && err.receipt.status == 0) {
       utils.error('Txn with hash: ' + txnHash + ' rejected');
@@ -897,6 +901,7 @@ async function waitForTxn(user, payload) {
         batch.set(origTxnDocRef, { status: 'replaced', replaceTxnHash: replacementTxnHash }, { merge: true });
       }
       // write a new pending txn in firestore
+      utils.log('Writing replacement txn: ' + replacementTxnHash + ' to firestore');
       const newTxnDocRef = userPendingTxnCollRef.doc(replacementTxnHash);
       payload.createdAt = Date.now();
       const newPayload = {
@@ -929,8 +934,8 @@ async function fulfillOrder(user, batch, payload) {
     3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
   */
   try {
+    utils.log('Fulfilling order');
     const taker = user.trim().toLowerCase();
-
     const salePriceInEth = +payload.salePriceInEth;
     const side = +payload.side;
     const docId = payload.orderId.trim(); // preserve case
@@ -1035,7 +1040,7 @@ async function fulfillOrder(user, batch, payload) {
 }
 
 async function saveBoughtOrder(user, order, batch, numOrders) {
-  // save order
+  utils.log('Writing purchase to firestore');
   order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1068,6 +1073,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
 }
 
 async function saveSoldOrder(user, order, batch, numOrders) {
+  utils.log('Writing sale to firestore');
   order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1099,6 +1105,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 }
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
+  utils.log('Writing listing to firestore');
   // check if token is verified if payload instructs so
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -1126,8 +1133,8 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 }
 
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
+  utils.log('Writing offer to firestore');
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
-
   payload.metadata.createdAt = Date.now();
   // store data in offers of maker
   const offerRef = db
@@ -1150,6 +1157,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
 }
 
 function updateNumOrders(batch, user, num, hasBonus, side) {
+  utils.log('Updating num orders');
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1171,6 +1179,7 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 }
 
 function updateNumTotalOrders(num, hasBonus, side) {
+  utils.log('Updating num total orders');
   let totalOffers = 0,
     totalBonusOffers = 0,
     totalListings = 0,
