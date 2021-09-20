@@ -838,7 +838,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
 // ====================================================== Write helpers ==========================================================
 
 async function waitForTxn(user, payload) {
-  const user = user.trim().toLowerCase();
+  user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
 
