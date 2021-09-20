@@ -438,18 +438,27 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 // todo: adi who using it
 app.get('/wyvern/v1/orders', async (req, res) => {
   const maker = req.query.maker.trim().toLowerCase();
-  const tokenAddress = req.query.assetContractAddress.trim().toLowerCase();
-  const tokenId = req.query.tokenId;
-  const side = req.query.side;
+  const docId = req.query.id.trim(); // preserve case
+  const side = +req.query.side;
   try {
-    const docs = await getOrders(maker, tokenAddress, tokenId, side);
-    if (docs) {
+    let collection = fstrCnstnts.LISTINGS_COLL;
+    if (side == 0) {
+      collection = fstrCnstnts.OFFERS_COLL;
+    }
+    const doc = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(collection)
+      .doc(docId)
+      .get();
+
+    if (doc.exists) {
       let orders = [];
-      for (const doc of docs) {
-        const order = doc.data();
-        order.id = doc.id;
-        orders.push(order);
-      }
+      const order = doc.data();
+      order.id = doc.id;
+      orders.push(order);
       const resp = {
         count: orders.length,
         orders: orders
@@ -459,6 +468,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
       res.sendStatus(404);
     }
   } catch (err) {
+    utils.error('Error fetching order: ' + docId + ' for user ' + maker + ' from collection ' + collection);
     utils.error(err);
     res.sendStatus(500);
   }
@@ -1213,30 +1223,6 @@ function getOrdersResponse(data) {
     listings
   };
   return resp;
-}
-
-async function getOrders(maker, tokenAddress, tokenId, side) {
-  utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
-  let collection = fstrCnstnts.LISTINGS_COLL;
-  if (0 == parseInt(side)) {
-    collection = fstrCnstnts.OFFERS_COLL;
-  }
-  const results = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(maker)
-    .collection(collection)
-    .where('metadata.asset.address', '==', tokenAddress)
-    .where('metadata.asset.id', '==', tokenId)
-    .where('side', '==', parseInt(side))
-    .get();
-
-  if (results.empty) {
-    utils.log('No matching orders');
-    return;
-  }
-  return results.docs;
 }
 
 async function fetchAssetsOfUser(req, res) {
