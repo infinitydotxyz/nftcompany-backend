@@ -232,20 +232,23 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch listings (for Explore page)
 app.get('/listings', async (req, res) => {
-  const price = +req.query.price || DEFAULT_MAX_ETH; // add a default max of 5000 eth
+
+  const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
+  const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH; // add a default max of 5000 eth
   const sortByPrice = `${req.query.sortByPrice || 'asc'}`.toLowerCase(); // ascending default
   const { limit, startAfterPrice, startAfter, error } = utils.parseQueryFields(
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfter'],
-    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${price}`, `${Date.now()}`]
+    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${priceMax}`, `${Date.now()}`]
   );
   if (error) {
     return;
   }
   // console.log('/listings params:', price, sortByPrice, limit, startAfter, startAfterPrice)
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.basePriceInEth', '<=', +price)
+    .where('metadata.basePriceInEth', '>=', +priceMin)
+    .where('metadata.basePriceInEth', '<=', +priceMax)
     .orderBy('metadata.basePriceInEth', sortByPrice) // asc (default) or desc
     .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterPrice, startAfter)
@@ -654,10 +657,13 @@ app.get('/collections', async (req, res) => {
 
 app.get('/listingsByCollectionName', async (req, res) => {
   const collectionName = req.query.collectionName;
-  const price = req.query.price || '5000'; // add a default max of 5000 eth
+
+  const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
+  const priceMax = req.query.priceMax || '5000'; // add a default max of 5000 eth
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.basePriceInEth', '<=', +price)
+    .where('metadata.basePriceInEth', '>=', +priceMin)
+    .where('metadata.basePriceInEth', '<=', +priceMax)
     .where('metadata.asset.collectionName', '==', collectionName)
     .orderBy('metadata.basePriceInEth', sortByPrice)
     .get()
