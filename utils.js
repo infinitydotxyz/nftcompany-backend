@@ -4,6 +4,7 @@ const { ethers } = require('ethers');
 // todo: adi change this before push
 const serviceAccount = require('./creds/nftc-web-firebase-creds.json');
 firebaseAdmin.initializeApp({
+  // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
 
@@ -91,10 +92,6 @@ module.exports = {
       this.error('Cannot authorize user ' + userId, error);
     }
     return false;
-  },
-
-  roundToDecimals: function (num, precision) {
-    return Number(Math.round(num + 'e+' + precision) + 'e-' + precision);
   },
 
   getEndCode: function (searchTerm) {

@@ -213,15 +213,15 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
   try {
     const verified = await isTokenVerified(tokenAddress);
     const bonusReward = await hasBonusReward(tokenAddress);
-    let resp = {
+    const resp = {
       verified,
       bonusReward
     };
-    resp = utils.jsonString(resp);
+    const respStr = utils.jsonString(resp);
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=3600',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
   } catch (err) {
@@ -248,6 +248,7 @@ app.get('/listings', async (req, res) => {
   db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .where('metadata.basePriceInEth', '>=', +priceMin)
     .where('metadata.basePriceInEth', '<=', +priceMax)
+    // @ts-ignore
     .orderBy('metadata.basePriceInEth', sortByPrice) // asc (default) or desc
     .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterPrice, startAfter)
@@ -334,15 +335,15 @@ app.get('/u/:user/purchases', async (req, res) => {
         purchase.id = doc.id;
         purchases.push(purchase);
       }
-      let resp = {
+      const resp = {
         count: purchases.length,
         purchases: purchases
       };
-      resp = utils.jsonString(resp);
+      const respStr = utils.jsonString(resp);
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=30',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
       res.send(resp);
     })
@@ -381,15 +382,15 @@ app.get('/u/:user/sales', async (req, res) => {
         sale.id = doc.id;
         sales.push(sale);
       }
-      let resp = {
+      const resp = {
         count: sales.length,
         sales: sales
       };
-      resp = utils.jsonString(resp);
+      const respStr = utils.jsonString(resp);
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=30',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
       res.send(resp);
     })
@@ -447,6 +448,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
   }
   db.collectionGroup(fstrCnstnts.OFFERS_COLL)
     .where('metadata.asset.owner', '==', user)
+    // @ts-ignore
     .orderBy('metadata.basePriceInEth', sortByPrice)
     .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfter)
@@ -469,6 +471,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   let docId;
 
   if (req.query.id) {
+    // @ts-ignore
     docId = req.query.id.trim(); // preserve case
   }
 
@@ -573,12 +576,12 @@ const getOrdersWithDocId = async (req, res) => {
 app.get('/u/:user/reward', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   try {
-    let resp = await getReward(user);
-    resp = utils.jsonString(resp);
+    const resp = await getReward(user);
+    const respStr = utils.jsonString(resp);
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
   } catch (err) {
@@ -600,15 +603,15 @@ app.get('/rewards/leaderboard', async (req, res) => {
       for (const doc of data.docs) {
         results.push(doc.data());
       }
-      let resp = {
+      const resp = {
         count: results.length,
         results: results
       };
-      resp = utils.jsonString(resp);
+      const respStr = utils.jsonString(resp);
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=600',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
       res.send(resp);
     })
@@ -633,17 +636,17 @@ app.get('/titles', async (req, res) => {
       .get()
       .then((data) => {
         // to enable cdn cache
-        let resp = data.docs.map((doc) => {
+        const resp = data.docs.map((doc) => {
           return {
             title: doc.data().metadata.asset.title,
             id: doc.data().metadata.asset.id,
             address: doc.data().metadata.asset.address
           };
         });
-        resp = utils.jsonString(resp);
+        const respStr = utils.jsonString(resp);
         res.set({
           'Cache-Control': 'must-revalidate, max-age=600',
-          'Content-Length': Buffer.byteLength(resp, 'utf8')
+          'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
         res.send(resp);
@@ -704,10 +707,10 @@ app.get('/collections', async (req, res) => {
         });
         // remove duplicates and take only the first 10 results
         resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
-        resp = utils.jsonString(resp);
+        const respStr = utils.jsonString(resp);
         res.set({
           'Cache-Control': 'must-revalidate, max-age=600',
-          'Content-Length': Buffer.byteLength(resp, 'utf8')
+          'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
         res.send(resp);
       })
@@ -730,6 +733,7 @@ app.get('/listingsByCollectionName', async (req, res) => {
     .where('metadata.basePriceInEth', '>=', +priceMin)
     .where('metadata.basePriceInEth', '<=', +priceMax)
     .where('metadata.asset.collectionName', '==', collectionName)
+    // @ts-ignore
     .orderBy('metadata.basePriceInEth', sortByPrice)
     .get()
     .then((data) => {
@@ -782,14 +786,14 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       // check status
       waitForTxn(user, txn);
     }
-    let resp = {
+    const resp = {
       count: txns.length,
       listings: txns
     };
-    resp = utils.jsonString(resp);
+    const respStr = utils.jsonString(resp);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
   } catch (err) {
@@ -820,8 +824,10 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     // update rewards
     const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true, 'order');
 
+    // @ts-ignore
     if (userInfo.rewardsInfo) {
       // update user rewards data
+      // @ts-ignore
       storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
     } else {
       utils.log('Not updating rewards data as there are no updates');
@@ -1124,14 +1130,9 @@ async function fulfillOrder(user, batch, payload) {
       prepareEmail(maker, doc, 'itemPurchased');
     }
 
-    // update total sales
-    incrementLocalStats({ totalSales: numOrders });
-
-    // update total fees
-    incrementLocalStats({ totalFees: feesInEth });
-
-    // update total volume
-    incrementLocalStats({ totalVolume: salePriceInEth });
+    // update total sales, total fees and total volume
+    // @ts-ignore
+    incrementLocalStats({ totalSales: numOrders, totalFees: feesInEth, totalVolume: salePriceInEth });
   } catch (err) {
     utils.error('Error in fufilling order');
     utils.error(err);
@@ -1157,15 +1158,19 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   // update rewards first; before stats
   const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, purchaseFees, true, 'purchase');
 
+  // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
+    // @ts-ignore
     storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
 
   // update user txn stats
+  // @ts-ignore
   const purchasesTotal = bn(userInfo.purchasesTotal).plus(salePriceInEth).toString();
+  // @ts-ignore
   const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
@@ -1205,16 +1210,19 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salePriceInEth = bn(order.metadata.salePriceInEth);
   // update rewards first; before stats
   const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, feesInEth, true, 'sale');
-
+  // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
+    // @ts-ignore
     storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
 
   // update user txn stats
+  // @ts-ignore
   const salesTotal = bn(userInfo.salesTotal).plus(salePriceInEth).toString();
+  // @ts-ignore
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
@@ -1331,6 +1339,7 @@ function updateNumTotalOrders(num, hasBonus, side) {
     }
   }
   // apply to memory
+  // @ts-ignore
   incrementLocalStats({
     totalOffers,
     totalBonusOffers,
@@ -1552,9 +1561,10 @@ async function deleteListing(batch, docRef) {
   const numOrders = 1;
 
   const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
-
+  // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
+    // @ts-ignore
     storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
@@ -1590,9 +1600,10 @@ async function deleteOffer(batch, docRef) {
   const numOrders = 1;
 
   const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
-
+  // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
+    // @ts-ignore
     storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
@@ -1650,13 +1661,13 @@ async function hasBonusReward(address) {
 async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease, actionType) {
   utils.log('Getting updated reward for user', user);
 
-  let userInfo = await db
+  const userInfoRef = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .get();
-  userInfo = { ...getEmptyUserInfo(), ...userInfo.data() };
+  const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
   userInfo.rewardsInfo = {
     ...getEmptyUserRewardInfo(),
     ...userInfo.rewardsInfo
@@ -1913,13 +1924,13 @@ async function getCurrentBlock() {
 async function getReward(user) {
   utils.log('Getting reward for user', user);
 
-  let userInfo = await db
+  const userInfoRef = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .get();
-  userInfo = { ...getEmptyUserInfo(), ...userInfo.data() };
+  const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
   userInfo.rewardsInfo = {
     ...getEmptyUserRewardInfo(),
     ...userInfo.rewardsInfo
@@ -2160,8 +2171,11 @@ app.post('/u/:user/setEmail', async (req, res) => {
 });
 
 app.get('/verifyEmail', async (req, res) => {
+  // @ts-ignore
   const user = req.query.user.trim().toLowerCase();
+  // @ts-ignore
   const email = req.query.email.trim().toLowerCase();
+  // @ts-ignore
   const guid = req.query.guid.trim().toLowerCase();
   const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -2319,5 +2333,6 @@ function toFixed5(num) {
 }
 
 function bn(num) {
+  // @ts-ignore
   return BigNumber(num);
 }
