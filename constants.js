@@ -3,39 +3,45 @@
 Data structure in firestore
 	- rootColl
 		- infoDoc
-			- totalListings
-			- totalBonusListings
-			- totalOffers
-			- totalBonusOffers
-			- totalSales
-			- totalFees
-			- totalVolume
+			- totalListings: string
+			- totalBonusListings: string
+			- totalOffers: string
+			- totalBonusOffers: string
+			- totalSales: string
+			- totalFees: string
+			- totalVolume: string
 			- rewardsInfo
-				- accRewardPerShare
-				- accBonusRewardPerShare
-                - accSaleRewardPerShare
-				- accBuyRewardPerShare
-				- totalRewardPaid
-				- totalBonusRewardPaid
-                - totalSaleRewardPaid
-				- totalBuyRewardPaid
-				- lastRewardBlock
-				- rewardPerBlock
-				- bonusRewardPerBlock
-                - saleRewardPerBlock
-				- buyRewardPerBlock
-				- penaltyActivated
-                - penaltyRatio
+				- accRewardPerShare: string
+				- accBonusRewardPerShare: string
+                - accSaleRewardPerShare: string
+				- accPurchaseRewardPerShare: string
+				- totalRewardPaid: string
+				- totalBonusRewardPaid: string
+                - totalSaleRewardPaid: string
+				- totalPurchaseRewardPaid: string
+				- lastRewardBlock: string
+				- rewardPerBlock: string
+				- bonusRewardPerBlock: string
+                - saleRewardPerBlock: string
+				- purchaseRewardPerBlock: string
+				- penaltyActivated: boolean
+                - penaltyRatio: string
 			- usersColl
 				- userDoc
-					- numListings
-					- numOffers
-					- numBonusListings
-					- numBonusOffers
-					- numBought
-					- numSold
-					- saleFees
-					- buyFees
+					- numListings: number
+					- numOffers: number
+					- numBonusListings: number
+					- numBonusOffers: number
+					- numPurchases: number
+					- numSales: number
+    				- salesTotal: string
+					- salesFeesTotal: string
+					- salesTotalNumeric: number
+					- salesFeesTotalNumeric: number
+					- purchasesTotal: string
+					- purchasesFeesTotal: string
+					- purchasesTotalNumeric: number
+					- purchasesFeesTotalNumeric: number
 					- profileInfo
 						- ens
 						- email
@@ -44,16 +50,19 @@ Data structure in firestore
 							- subscribed
 							- verificationGuid
 					- rewardsInfo
-						- rewardDebt
-						- bonusRewardDebt
-                        - saleRewardDebt
-						- buyRewardDebt
-                        - pending
-                        - bonusPending
-                        - salePending
-						- buyPending
-						- netReward
-						- netRewardCalculatedAt
+						- rewardDebt: string
+						- bonusRewardDebt: string
+                        - saleRewardDebt: string
+						- purchaseRewardDebt: string
+                        - pending: string
+                        - bonusPending: string
+                        - salePending: string
+						- purchasePending: string
+						- grossReward: string
+						- grossRewardNumeric: numeric
+						- netReward: string
+						- netRewardNumeric: numeric
+						- rewardCalculatedAt: numeric millis since epoch utc
 					- assetsColl
 					- listingsColl
 					- offersColl
@@ -63,35 +72,22 @@ Data structure in firestore
 			- bonusRewardTokensColl
 				- tokenDoc
 					- name
-					- address
 			- verifiedTokensColl
 				- tokenDoc
 					- name
-					- address
 */
+
+require('dotenv').config();
+const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
 module.exports = {
   firestore: {
-    ROOT_COLL: 'testRoot', //todo: adi change this before push
+    ROOT_COLL: testRoot, //todo: adi change this before push
     //ROOT_COLL: 'root',
     INFO_DOC: 'info',
-    TOTAL_LISTINGS: 'totalListings',
-    TOTAL_BONUS_LISTINGS: 'totalBonusListings',
-    TOTAL_OFFERS: 'totalOffers',
-    TOTAL_BONUS_OFFERS: 'totalBonusOffers',
-    TOTAL_SALES: 'totalSales',
-    TOTAL_FEES: 'totalFees',
-
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
-
     USERS_COLL: 'users',
-    NUM_LISTINGS: 'numListings',
-    NUM_BONUS_LISTINGS: 'numBonusListings',
-    NUM_OFFERS: 'numOffers',
-    NUM_BONUS_OFFERS: 'numBonusOffers',
-    NUM_SALES: 'numSales',
-    FEES_PAID: 'feesPaid',
     LISTINGS_COLL: 'listings',
     OFFERS_COLL: 'offers',
     ASSETS_COLL: 'assets',

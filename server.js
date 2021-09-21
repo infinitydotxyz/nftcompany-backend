@@ -38,13 +38,11 @@ async function init() {
   // get global info doc
   try {
     const globalInfoDoc = await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get();
-
     globalInfo = { ...getEmptyGlobalInfo(), ...globalInfoDoc.data() };
     globalInfo.rewardsInfo = {
       ...getEmptyGlobalInfo().rewardsInfo,
       ...globalInfoDoc.data().rewardsInfo
     };
-
     // set local info
     localInfo = JSON.parse(JSON.stringify(globalInfo));
     origLocalInfo = JSON.parse(JSON.stringify(localInfo));
@@ -74,91 +72,119 @@ async function init() {
     );
 
   // write localdata to firestore every interval
-  setInterval(() => {
+  setInterval(async () => {
     const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
-    db.runTransaction(async (txn) => {
-      const globalDoc = await txn.get(globalDocRef);
-      // reconcile globalinfo
-      reconcileGlobalInfo(globalDoc.data());
-      txn.update(globalDocRef, globalInfo);
-    })
-      .then((res) => {
-        origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
-      })
-      .catch((err) => {
-        utils.error('Failed updating global info in firestore', err);
-        utils.error(err);
+    try {
+      globalInfo = await db.runTransaction(async (txn) => {
+        const globalDoc = await txn.get(globalDocRef);
+        utils.log('Newly fetched firestore global info: ' + utils.jsonString(globalDoc.data()));
+        // reconcile globalinfo
+        const newInfo = reconcileGlobalInfo(globalDoc.data());
+        await txn.update(globalDocRef, newInfo);
+        return newInfo;
       });
+      origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
+      utils.log('Reconciled global info: ' + utils.jsonString(globalInfo));
+    } catch (err) {
+      utils.error('Failed updating global info in firestore', err);
+      utils.error(err);
+    }
   }, 1000 * 60); // every 60 seconds
 }
 
 function reconcileGlobalInfo(globalData) {
-  globalInfo = { ...getEmptyGlobalInfo(), ...globalData };
-  globalInfo.rewardsInfo = {
+  const newInfo = { ...getEmptyGlobalInfo(), ...globalData };
+  newInfo.rewardsInfo = {
     ...getEmptyGlobalInfo().rewardsInfo,
     ...globalData.rewardsInfo
   };
 
   const localInfoDelta = getLocalInfoDelta();
+  utils.log('Local info delta: ' + utils.jsonString(localInfoDelta));
 
-  globalInfo.updatedAt = Date.now();
-  globalInfo.totalSales += localInfoDelta.totalSales;
-  globalInfo.totalFees += localInfoDelta.totalFees;
-  globalInfo.totalVolume += localInfoDelta.totalVolume;
-  globalInfo.totalListings += localInfoDelta.totalListings;
-  globalInfo.totalBonusListings += localInfoDelta.totalBonusListings;
-  globalInfo.totalOffers += localInfoDelta.totalOffers;
-  globalInfo.totalBonusOffers += localInfoDelta.totalBonusOffers;
+  newInfo.updatedAt = Date.now();
+  newInfo.totalSales = bn(newInfo.totalSales).add(localInfoDelta.totalSales).toString();
+  newInfo.totalFees = bn(newInfo.totalFees).add(localInfoDelta.totalFees).toString();
+  newInfo.totalVolume = bn(newInfo.totalVolume).add(localInfoDelta.totalVolume).toString();
+  newInfo.totalListings = bn(newInfo.totalListings).add(localInfoDelta.totalListings).toString();
+  newInfo.totalBonusListings = bn(newInfo.totalBonusListings).add(localInfoDelta.totalBonusListings).toString();
+  newInfo.totalOffers = bn(newInfo.totalOffers).add(localInfoDelta.totalOffers).toString();
+  newInfo.totalBonusOffers = bn(newInfo.totalBonusOffers).add(localInfoDelta.totalBonusOffers).toString();
 
-  globalInfo.rewardsInfo.accRewardPerShare += localInfoDelta.rewardsInfo.accRewardPerShare;
-  globalInfo.rewardsInfo.accBonusRewardPerShare += localInfoDelta.rewardsInfo.accBonusRewardPerShare;
-  globalInfo.rewardsInfo.accSaleRewardPerShare += localInfoDelta.rewardsInfo.accSaleRewardPerShare;
-  globalInfo.rewardsInfo.accBuyRewardPerShare += localInfoDelta.rewardsInfo.accBuyRewardPerShare;
-  globalInfo.rewardsInfo.totalRewardPaid += localInfoDelta.rewardsInfo.totalRewardPaid;
-  globalInfo.rewardsInfo.totalBonusRewardPaid += localInfoDelta.rewardsInfo.totalBonusRewardPaid;
-  globalInfo.rewardsInfo.totalSaleRewardPaid += localInfoDelta.rewardsInfo.totalSaleRewardPaid;
-  globalInfo.rewardsInfo.totalBuyRewardPaid += localInfoDelta.rewardsInfo.totalBuyRewardPaid;
+  newInfo.rewardsInfo.accRewardPerShare = bn(newInfo.rewardsInfo.accRewardPerShare)
+    .add(localInfoDelta.rewardsInfo.accRewardPerShare)
+    .toString();
+  newInfo.rewardsInfo.accBonusRewardPerShare = bn(newInfo.rewardsInfo.accBonusRewardPerShare)
+    .add(localInfoDelta.rewardsInfo.accBonusRewardPerShare)
+    .toString();
+  newInfo.rewardsInfo.accSaleRewardPerShare = bn(newInfo.rewardsInfo.accSaleRewardPerShare)
+    .add(localInfoDelta.rewardsInfo.accSaleRewardPerShare)
+    .toString();
+  newInfo.rewardsInfo.accPurchaseRewardPerShare = bn(newInfo.rewardsInfo.accPurchaseRewardPerShare)
+    .add(localInfoDelta.rewardsInfo.accPurchaseRewardPerShare)
+    .toString();
+  newInfo.rewardsInfo.totalRewardPaid = bn(newInfo.rewardsInfo.totalRewardPaid)
+    .add(localInfoDelta.rewardsInfo.totalRewardPaid)
+    .toString();
+  newInfo.rewardsInfo.totalBonusRewardPaid = bn(newInfo.rewardsInfo.totalBonusRewardPaid)
+    .add(localInfoDelta.rewardsInfo.totalBonusRewardPaid)
+    .toString();
+  newInfo.rewardsInfo.totalSaleRewardPaid = bn(newInfo.rewardsInfo.totalSaleRewardPaid)
+    .add(localInfoDelta.rewardsInfo.totalSaleRewardPaid)
+    .toString();
+  newInfo.rewardsInfo.totalPurchaseRewardPaid = bn(newInfo.rewardsInfo.totalPurchaseRewardPaid)
+    .add(localInfoDelta.rewardsInfo.totalPurchaseRewardPaid)
+    .toString();
 
-  if (globalInfo.rewardsInfo.lastRewardBlock < localInfo.rewardsInfo.lastRewardBlock) {
-    globalInfo.rewardsInfo.lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
+  if (bn(newInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
+    newInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
   }
+  return newInfo;
 }
 
 function getLocalInfoDelta() {
   const localInfoDelta = getEmptyGlobalInfo();
   localInfoDelta.rewardsInfo = getEmptyGlobalInfo().rewardsInfo;
 
-  localInfoDelta.totalSales = localInfo.totalSales - origLocalInfo.totalSales;
-  localInfoDelta.totalFees = localInfo.totalFees - origLocalInfo.totalFees;
-  localInfoDelta.totalVolume = localInfo.totalVolume - origLocalInfo.totalVolume;
-  localInfoDelta.totalListings = localInfo.totalListings - origLocalInfo.totalListings;
-  localInfoDelta.totalBonusListings = localInfo.totalBonusListings - origLocalInfo.totalBonusListings;
-  localInfoDelta.totalOffers = localInfo.totalOffers - origLocalInfo.totalOffers;
-  localInfoDelta.totalBonusOffers = localInfo.totalBonusOffers - origLocalInfo.totalBonusOffers;
+  localInfoDelta.totalSales = bn(localInfo.totalSales).sub(origLocalInfo.totalSales);
+  localInfoDelta.totalFees = bn(localInfo.totalFees).sub(origLocalInfo.totalFees);
+  localInfoDelta.totalVolume = bn(localInfo.totalVolume).sub(origLocalInfo.totalVolume);
+  localInfoDelta.totalListings = bn(localInfo.totalListings).sub(origLocalInfo.totalListings);
+  localInfoDelta.totalBonusListings = bn(localInfo.totalBonusListings).sub(origLocalInfo.totalBonusListings);
+  localInfoDelta.totalOffers = bn(localInfo.totalOffers).sub(origLocalInfo.totalOffers);
+  localInfoDelta.totalBonusOffers = bn(localInfo.totalBonusOffers).sub(origLocalInfo.totalBonusOffers);
 
-  localInfoDelta.rewardsInfo.accRewardPerShare =
-    localInfo.rewardsInfo.accRewardPerShare - origLocalInfo.rewardsInfo.accRewardPerShare;
+  localInfoDelta.rewardsInfo.accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare).sub(
+    origLocalInfo.rewardsInfo.accRewardPerShare
+  );
 
-  localInfoDelta.rewardsInfo.accBonusRewardPerShare =
-    localInfo.rewardsInfo.accBonusRewardPerShare - origLocalInfo.rewardsInfo.accBonusRewardPerShare;
+  localInfoDelta.rewardsInfo.accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare).sub(
+    origLocalInfo.rewardsInfo.accBonusRewardPerShare
+  );
 
-  localInfoDelta.rewardsInfo.accSaleRewardPerShare =
-    localInfo.rewardsInfo.accSaleRewardPerShare - origLocalInfo.rewardsInfo.accSaleRewardPerShare;
+  localInfoDelta.rewardsInfo.accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare).sub(
+    origLocalInfo.rewardsInfo.accSaleRewardPerShare
+  );
 
-  localInfoDelta.rewardsInfo.accBuyRewardPerShare =
-    localInfo.rewardsInfo.accBuyRewardPerShare - origLocalInfo.rewardsInfo.accBuyRewardPerShare;
+  localInfoDelta.rewardsInfo.accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare).sub(
+    origLocalInfo.rewardsInfo.accPurchaseRewardPerShare
+  );
 
-  localInfoDelta.rewardsInfo.totalRewardPaid =
-    localInfo.rewardsInfo.totalRewardPaid - origLocalInfo.rewardsInfo.totalRewardPaid;
+  localInfoDelta.rewardsInfo.totalRewardPaid = bn(localInfo.rewardsInfo.totalRewardPaid).sub(
+    origLocalInfo.rewardsInfo.totalRewardPaid
+  );
 
-  localInfoDelta.rewardsInfo.totalBonusRewardPaid =
-    localInfo.rewardsInfo.totalBonusRewardPaid - origLocalInfo.rewardsInfo.totalBonusRewardPaid;
+  localInfoDelta.rewardsInfo.totalBonusRewardPaid = bn(localInfo.rewardsInfo.totalBonusRewardPaid).sub(
+    origLocalInfo.rewardsInfo.totalBonusRewardPaid
+  );
 
-  localInfoDelta.rewardsInfo.totalSaleRewardPaid =
-    localInfo.rewardsInfo.totalSaleRewardPaid - origLocalInfo.rewardsInfo.totalSaleRewardPaid;
+  localInfoDelta.rewardsInfo.totalSaleRewardPaid = bn(localInfo.rewardsInfo.totalSaleRewardPaid).sub(
+    origLocalInfo.rewardsInfo.totalSaleRewardPaid
+  );
 
-  localInfoDelta.rewardsInfo.totalBuyRewardPaid =
-    localInfo.rewardsInfo.totalBuyRewardPaid - origLocalInfo.rewardsInfo.totalBuyRewardPaid;
+  localInfoDelta.rewardsInfo.totalPurchaseRewardPaid = bn(localInfo.rewardsInfo.totalPurchaseRewardPaid).sub(
+    origLocalInfo.rewardsInfo.totalPurchaseRewardPaid
+  );
 
   return localInfoDelta;
 }
@@ -497,7 +523,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .orderBy('rewardsInfo.netReward', 'desc')
+    .orderBy('rewardsInfo.grossRewardNumeric', 'desc')
     .limit(10)
     .get()
     .then((data) => {
@@ -720,11 +746,11 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     payload.metadata.hasBonusReward = hasBonus;
 
     // update rewards
-    const updatedRewards = await getUpdatedRewards(maker, hasBonus, numOrders, 0, true);
+    const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true);
 
-    if (updatedRewards) {
+    if (userInfo.rewardsInfo) {
       // update user rewards data
-      storeUpdatedUserRewards(batch, maker, updatedRewards);
+      storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
     } else {
       utils.log('Not updating rewards data as there are no updates');
     }
@@ -1052,25 +1078,43 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
     .doc();
   batch.set(ref, order, { merge: true });
 
-  const fees = order.metadata.feesInEth;
-  const buyFees = Math.round(fees / 5);
-  // update rewards first; before stats
-  const updatedRewards = await getUpdatedRewards(user, false, numOrders, buyFees, true);
+  const fees = bn(order.metadata.feesInEth);
+  const purchaseFees = fees.div(5);
+  const salePriceInEth = bn(order.metadata.salePriceInEth);
 
-  if (updatedRewards) {
+  // update rewards first; before stats
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, purchaseFees, true);
+
+  if (userInfo.rewardsInfo) {
     // update user rewards data
-    storeUpdatedUserRewards(batch, user, updatedRewards);
+    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
 
-  // update num user bought
-  const numBoughtRef = db
+  // update user txn stats
+  const purchasesTotal = bn(userInfo.purchasesTotal).add(salePriceInEth).toString();
+  const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).add(purchaseFees).toString();
+  const purchasesTotalNumeric = toFixed5(purchasesTotal);
+  const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
+
+  const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(numBoughtRef, { numBought: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
+  
+  batch.set(
+    userDocRef,
+    {
+      numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+      purchasesTotal,
+      purchasesFeesTotal,
+      purchasesTotalNumeric,
+      purchasesFeesTotalNumeric
+    },
+    { merge: true }
+  );
 }
 
 async function saveSoldOrder(user, order, batch, numOrders) {
@@ -1085,24 +1129,41 @@ async function saveSoldOrder(user, order, batch, numOrders) {
     .doc();
   batch.set(ref, order, { merge: true });
 
-  const fees = order.metadata.feesInEth;
+  const feesInEth = bn(order.metadata.feesInEth);
+  const salePriceInEth = bn(order.metadata.salePriceInEth);
   // update rewards first; before stats
-  const updatedRewards = await getUpdatedRewards(user, false, numOrders, fees, true);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, feesInEth, true);
 
-  if (updatedRewards) {
+  if (userInfo.rewardsInfo) {
     // update user rewards data
-    storeUpdatedUserRewards(batch, user, updatedRewards);
+    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
 
-  // update num user sold
-  const numSoldRef = db
+  // update user txn stats
+  const salesTotal = bn(userInfo.salesTotal).add(salePriceInEth).toString();
+  const salesFeesTotal = bn(userInfo.salesFeesTotal).add(feesInEth).toString();
+  const salesTotalNumeric = toFixed5(salesTotal);
+  const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
+
+  const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  batch.set(numSoldRef, { numSold: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
+
+  batch.set(
+    userDocRef,
+    {
+      numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+      salesTotal,
+      salesFeesTotal,
+      salesTotalNumeric,
+      salesFeesTotalNumeric
+    },
+    { merge: true }
+  );
 }
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
@@ -1421,11 +1482,11 @@ async function deleteListing(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, 0, false);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false);
 
-  if (updatedRewards) {
+  if (userInfo.rewardsInfo) {
     // update user rewards data
-    storeUpdatedUserRewards(batch, user, updatedRewards);
+    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
@@ -1459,11 +1520,11 @@ async function deleteOffer(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const updatedRewards = await getUpdatedRewards(user, hasBonus, numOrders, 0, false);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false);
 
-  if (updatedRewards) {
+  if (userInfo.rewardsInfo) {
     // update user rewards data
-    storeUpdatedUserRewards(batch, user, updatedRewards);
+    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
   } else {
     utils.log('Not updating rewards data as there are no updates');
   }
@@ -1489,13 +1550,13 @@ function incrementLocalStats({
   totalVolume,
   totalSales
 }) {
-  localInfo.totalOffers += totalOffers || 0;
-  localInfo.totalBonusOffers += totalBonusOffers || 0;
-  localInfo.totalListings += totalListings || 0;
-  localInfo.totalBonusListings += totalBonusListings || 0;
-  localInfo.totalFees += totalFees || 0;
-  localInfo.totalVolume += totalVolume || 0;
-  localInfo.totalSales += totalSales || 0;
+  localInfo.totalOffers = bn(localInfo.totalOffers).add(totalOffers || 0);
+  localInfo.totalBonusOffers = bn(localInfo.totalBonusOffers).add(totalBonusOffers || 0);
+  localInfo.totalListings = bn(localInfo.totalListings).add(totalListings || 0);
+  localInfo.totalBonusListings = bn(localInfo.totalBonusListings).add(totalBonusListings || 0);
+  localInfo.totalFees = bn(localInfo.totalFees).add(totalFees || 0);
+  localInfo.totalVolume = bn(localInfo.totalVolume).add(totalVolume || 0);
+  localInfo.totalSales = bn(localInfo.totalSales).add(totalSales || 0);
 }
 
 function storeUpdatedUserRewards(batch, user, data) {
@@ -1517,7 +1578,7 @@ async function hasBonusReward(address) {
   return doc.exists;
 }
 
-async function getUpdatedRewards(user, hasBonus, numOrders, fees, isIncrease) {
+async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease) {
   utils.log('Getting updated reward for user', user);
 
   let userInfo = await db
@@ -1532,35 +1593,38 @@ async function getUpdatedRewards(user, hasBonus, numOrders, fees, isIncrease) {
     ...userInfo.rewardsInfo
   };
 
-  let updatedRewards = updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease);
-  return updatedRewards;
+  const updatedUserRewards = updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease);
+  if (!updatedUserRewards) {
+    userInfo.rewardsInfo = null;
+  }
+  return userInfo;
 }
 
 function getEmptyGlobalInfo() {
   return {
-    totalListings: 0,
-    totalBonusListings: 0,
-    totalOffers: 0,
-    totalBonusOffers: 0,
-    totalSales: 0,
-    totalFees: 0,
-    totalVolume: 0,
+    totalListings: bn(0),
+    totalBonusListings: bn(0),
+    totalOffers: bn(0),
+    totalBonusOffers: bn(0),
+    totalSales: bn(0),
+    totalFees: bn(0),
+    totalVolume: bn(0),
     rewardsInfo: {
-      accRewardPerShare: 0,
-      accBonusRewardPerShare: 0,
-      accSaleRewardPerShare: 0,
-      accBuyRewardPerShare: 0,
-      rewardPerBlock: 0,
-      bonusRewardPerBlock: 0,
-      saleRewardPerBlock: 0,
-      buyRewardPerBlock: 0,
-      totalRewardPaid: 0,
-      totalBonusRewardPaid: 0,
-      totalSaleRewardPaid: 0,
-      totalBuyRewardPaid: 0,
-      lastRewardBlock: 0,
+      accRewardPerShare: bn(0),
+      accBonusRewardPerShare: bn(0),
+      accSaleRewardPerShare: bn(0),
+      accPurchaseRewardPerShare: bn(0),
+      rewardPerBlock: bn(0),
+      bonusRewardPerBlock: bn(0),
+      saleRewardPerBlock: bn(0),
+      purchaseRewardPerBlock: bn(0),
+      totalRewardPaid: bn(0),
+      totalBonusRewardPaid: bn(0),
+      totalSaleRewardPaid: bn(0),
+      totalPurchaseRewardPaid: bn(0),
+      lastRewardBlock: bn(0),
       penaltyActivated: true,
-      penaltyRatio: 0.99
+      penaltyRatio: bn(0.99)
     }
   };
 }
@@ -1577,49 +1641,58 @@ function getEmptyUserProfileInfo() {
 
 function getEmptyUserInfo() {
   return {
-    numListings: 0,
-    numBonusListings: 0,
-    numOffers: 0,
-    numBonusOffers: 0,
-    numBought: 0,
-    numSold: 0,
-    saleFees: 0,
-    buyFees: 0,
+    numListings: bn(0),
+    numBonusListings: bn(0),
+    numOffers: bn(0),
+    numBonusOffers: bn(0),
+    numPurchases: bn(0),
+    numSales: bn(0),
+    salesTotal: bn(0),
+    salesFeesTotal: bn(0),
+    purchasesTotal: bn(0),
+    purchasesFeesTotal: bn(0),
+    salesTotalNumeric: 0,
+    salesFeesTotalNumeric: 0,
+    purchasesTotalNumeric: 0,
+    purchasesFeesTotalNumeric: 0,
     rewardsInfo: getEmptyUserRewardInfo()
   };
 }
 
 function getEmptyUserRewardInfo() {
   return {
-    rewardDebt: 0,
-    bonusRewardDebt: 0,
-    saleRewardDebt: 0,
-    buyRewardDebt: 0,
-    pending: 0,
-    bonusPending: 0,
-    salePending: 0,
-    buyPending: 0,
-    netReward: 0,
-    netRewardCalculatedAt: 0
+    rewardDebt: bn(0),
+    bonusRewardDebt: bn(0),
+    saleRewardDebt: bn(0),
+    purchaseRewardDebt: bn(0),
+    pending: bn(0),
+    bonusPending: bn(0),
+    salePending: bn(0),
+    purchasePending: bn(0),
+    grossReward: bn(0),
+    netReward: bn(0),
+    grossRewardNumeric: 0,
+    netRewardNumeric: 0,
+    rewardCalculatedAt: Date.now()
   };
 }
 
-// updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalBuyRewardPaid and returns user share
+// updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
 async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
   utils.log('Updating rewards in increasing mode = ', isIncrease);
 
-  let userShare = userInfo.numListings + userInfo.numOffers;
-  let userBonusShare = userInfo.numBonusListings + userInfo.numBonusOffers;
-  let saleFees = userInfo.saleFees;
-  let buyFees = userInfo.buyFees;
-  let rewardDebt = userInfo.rewardsInfo.rewardDebt;
-  let bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-  let saleRewardDebt = userInfo.rewardsInfo.saleRewardDebt;
-  let buyRewardDebt = userInfo.rewardsInfo.buyRewardDebt;
-  let pending = 0;
-  let bonusPending = 0;
-  let salePending = 0;
-  let buyPending = 0;
+  let userShare = bn(userInfo.numListings).add(userInfo.numOffers);
+  let userBonusShare = bn(userInfo.numBonusListings).add(userInfo.numBonusOffers);
+  let salesFeesTotal = bn(userInfo.salesFeesTotal);
+  let purchasesFeesTotal = bn(userInfo.purchasesFeesTotal);
+  let rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
+  let bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
+  let saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
+  let purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
+  let pending = bn(0);
+  let bonusPending = bn(0);
+  let salePending = bn(0);
+  let purchasePending = bn(0);
 
   const result = await updateLocalRewards();
   if (!result) {
@@ -1627,70 +1700,70 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
     return;
   }
 
-  const accRewardPerShare = localInfo.rewardsInfo.accRewardPerShare;
-  const accSaleRewardPerShare = localInfo.rewardsInfo.accSaleRewardPerShare;
-  const accBuyRewardPerShare = localInfo.rewardsInfo.accBuyRewardPerShare;
-  const accBonusRewardPerShare = localInfo.rewardsInfo.accBonusRewardPerShare;
+  const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
+  const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
+  const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
+  const accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
 
   if (!isIncrease) {
-    if (userShare >= numOrders) {
-      pending = userShare * accRewardPerShare - rewardDebt;
+    if (userShare.gte(numOrders)) {
+      pending = userShare.mul(accRewardPerShare).sub(rewardDebt);
       // decrease before reward debt calc
-      userShare -= numOrders;
+      userShare = userShare.sub(numOrders);
     }
-    if (saleFees >= fees) {
-      salePending = saleFees * accSaleRewardPerShare - saleRewardDebt;
-      saleFees -= fees;
+    if (salesFeesTotal.gte(fees)) {
+      salePending = salesFeesTotal.mul(accSaleRewardPerShare).sub(saleRewardDebt);
+      salesFeesTotal = salesFeesTotal.sub(fees);
     }
-    if (buyFees >= fees) {
-      buyPending = buyFees * accBuyRewardPerShare - buyRewardDebt;
-      buyFees -= fees;
+    if (purchasesFeesTotal.gte(fees)) {
+      purchasePending = purchasesFeesTotal.mul(accPurchaseRewardPerShare).sub(purchaseRewardDebt);
+      purchasesFeesTotal = purchasesFeesTotal.sub(fees);
     }
   } else {
-    if (userShare > 0) {
-      pending = userShare * accRewardPerShare - rewardDebt;
+    if (userShare.gte(0)) {
+      pending = userShare.mul(accRewardPerShare).sub(rewardDebt);
     }
-    if (saleFees > 0) {
-      salePending = saleFees * accSaleRewardPerShare - saleRewardDebt;
+    if (salesFeesTotal.gte(0)) {
+      salePending = salesFeesTotal.mul(accSaleRewardPerShare).sub(saleRewardDebt);
     }
-    if (buyFees > 0) {
-      buyPending = buyFees * accBuyRewardPerShare - buyRewardDebt;
+    if (purchasesFeesTotal.gte(0)) {
+      purchasePending = purchasesFeesTotal.mul(accPurchaseRewardPerShare).sub(purchaseRewardDebt);
     }
     // increase before reward debt calc
-    userShare += numOrders;
-    saleFees += fees;
-    buyFees += fees;
+    userShare = userShare.add(numOrders);
+    salesFeesTotal = salesFeesTotal.add(fees);
+    purchasesFeesTotal = purchasesFeesTotal.add(fees);
   }
-  userInfo.rewardsInfo.rewardDebt = userShare * accRewardPerShare;
-  userInfo.rewardsInfo.pending = pending;
-  userInfo.rewardsInfo.saleRewardDebt = saleFees * accSaleRewardPerShare;
-  userInfo.rewardsInfo.salePending = salePending;
-  userInfo.rewardsInfo.buyRewardDebt = buyFees * accBuyRewardPerShare;
-  userInfo.rewardsInfo.buyPending = buyPending;
+  userInfo.rewardsInfo.rewardDebt = userShare.mul(accRewardPerShare).toString();
+  userInfo.rewardsInfo.pending = pending.toString();
+  userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.mul(accSaleRewardPerShare).toString();
+  userInfo.rewardsInfo.salePending = salePending.toString();
+  userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.mul(accPurchaseRewardPerShare).toString();
+  userInfo.rewardsInfo.purchasePending = purchasePending.toString();
 
   if (hasBonus) {
     if (!isIncrease) {
-      if (userBonusShare >= numOrders) {
-        bonusPending = userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
+      if (userBonusShare.gte(numOrders)) {
+        bonusPending = userBonusShare.mul(accBonusRewardPerShare).sub(bonusRewardDebt);
         // decrease userShare before rewardDebt calc
-        userBonusShare -= numOrders;
+        userBonusShare = userBonusShare.sub(numOrders);
       }
     } else {
-      if (userBonusShare > 0) {
-        bonusPending = userBonusShare * accBonusRewardPerShare - bonusRewardDebt;
+      if (userBonusShare.gt(0)) {
+        bonusPending = userBonusShare.mul(accBonusRewardPerShare).sub(bonusRewardDebt);
       }
       // add current value before reward debt calc
-      userBonusShare += numOrders;
+      userBonusShare = userBonusShare.add(numOrders);
     }
-    userInfo.rewardsInfo.bonusRewardDebt = userBonusShare * accBonusRewardPerShare;
-    userInfo.rewardsInfo.bonusPending = bonusPending;
+    userInfo.rewardsInfo.bonusRewardDebt = userBonusShare.mul(accBonusRewardPerShare).toString();
+    userInfo.rewardsInfo.bonusPending = bonusPending.toString();
   }
 
   // update local info
-  localInfo.rewardsInfo.totalRewardPaid += pending;
-  localInfo.rewardsInfo.totalBonusRewardPaid += bonusPending;
-  localInfo.rewardsInfo.totalSaleRewardPaid += salePending;
-  localInfo.rewardsInfo.totalBuyRewardPaid += buyPending;
+  localInfo.rewardsInfo.totalRewardPaid = pending.add(localInfo.rewardsInfo.totalRewardPaid);
+  localInfo.rewardsInfo.totalBonusRewardPaid = bonusPending.add(localInfo.rewardsInfo.totalBonusRewardPaid);
+  localInfo.rewardsInfo.totalSaleRewardPaid = salePending.add(localInfo.rewardsInfo.totalSaleRewardPaid);
+  localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.add(localInfo.rewardsInfo.totalPurchaseRewardPaid);
 
   return userInfo.rewardsInfo;
 }
@@ -1699,36 +1772,41 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
 async function updateLocalRewards() {
   utils.log('Updating local rewards');
   const currentBlock = await getCurrentBlock();
-  const totalOrders = globalInfo.totalListings + globalInfo.totalOffers;
-  const totalBonusOrders = globalInfo.totalBonusListings + globalInfo.totalBonusOffers;
-  const totalFees = globalInfo.totalFees;
-  const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
-  const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
-  const saleRewardPerBlock = globalInfo.rewardsInfo.saleRewardPerBlock;
-  const buyRewardPerBlock = globalInfo.rewardsInfo.buyRewardPerBlock;
+  const totalOrders = bn(globalInfo.totalListings).add(globalInfo.totalOffers);
+  const totalBonusOrders = bn(globalInfo.totalBonusListings).add(globalInfo.totalBonusOffers);
+  const totalFees = bn(globalInfo.totalFees);
+  const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
+  const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
+  const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
+  const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
 
-  let lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
+  const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
+  const accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
+  const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
+  const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
 
-  if (currentBlock <= lastRewardBlock) {
+  let lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
+
+  if (currentBlock.lte(lastRewardBlock)) {
     utils.log('Not updating global rewards since current block <= lastRewardBlock');
     return false;
   }
-  if (totalOrders == 0) {
+  if (totalOrders.eq(0)) {
     utils.log('Not updating global rewards since total liquidity is 0');
     return false;
   }
-  const multiplier = currentBlock - lastRewardBlock;
-  const reward = multiplier * rewardPerBlock;
-  localInfo.rewardsInfo.accRewardPerShare += reward / totalOrders;
-  if (totalBonusOrders > 0) {
-    const bonusReward = multiplier * bonusRewardPerBlock;
-    localInfo.rewardsInfo.accBonusRewardPerShare += bonusReward / totalBonusOrders;
+  const multiplier = currentBlock.sub(lastRewardBlock);
+  const reward = multiplier.mul(rewardPerBlock);
+  localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.add(reward.div(totalOrders));
+  if (totalBonusOrders.gte(0)) {
+    const bonusReward = multiplier.mul(bonusRewardPerBlock);
+    localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.add(bonusReward.div(totalBonusOrders));
   }
-  if (totalFees > 0) {
-    const saleReward = multiplier * saleRewardPerBlock;
-    localInfo.rewardsInfo.accSaleRewardPerShare += saleReward / totalFees;
-    const buyReward = multiplier * buyRewardPerBlock;
-    localInfo.rewardsInfo.accBuyRewardPerShare += buyReward / totalFees;
+  if (totalFees.gte(0)) {
+    const saleReward = multiplier.mul(saleRewardPerBlock);
+    localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.add(saleReward.div(totalFees));
+    const purchaseReward = multiplier.mul(purchaseRewardPerBlock);
+    localInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare.add(purchaseReward.div(totalFees));
   }
 
   localInfo.rewardsInfo.lastRewardBlock = currentBlock;
@@ -1740,7 +1818,7 @@ async function getCurrentBlock() {
   const provider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
   const currentBlock = await provider.getBlockNumber();
   utils.log('Current eth block: ' + currentBlock);
-  return currentBlock;
+  return bn(currentBlock);
 }
 
 async function getReward(user) {
@@ -1758,116 +1836,152 @@ async function getReward(user) {
     ...userInfo.rewardsInfo
   };
   const currentBlock = await getCurrentBlock();
-  const totalListings = globalInfo.totalListings;
-  const totalBonusListings = globalInfo.totalBonusListings;
-  const totalFees = globalInfo.totalFees;
-  const totalVolume = globalInfo.totalVolume;
+  const totalOrders = bn(globalInfo.totalListings).add(globalInfo.totalOffers);
+  const totalBonusOrders = bn(globalInfo.totalBonusListings).add(globalInfo.totalBonusOffers);
+  const totalListings = bn(globalInfo.totalListings);
+  const totalBonusListings = bn(globalInfo.totalBonusListings);
+  const totalOffers = bn(globalInfo.totalOffers);
+  const totalBonusOffers = bn(globalInfo.totalBonusOffers);
+  const totalFees = bn(globalInfo.totalFees);
+  const totalVolume = bn(globalInfo.totalVolume);
+  const totalSales = bn(globalInfo.totalSales);
 
   const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated;
-  const penaltyRatio = globalInfo.rewardsInfo.penaltyRatio;
-  const rewardPerBlock = globalInfo.rewardsInfo.rewardPerBlock;
-  const bonusRewardPerBlock = globalInfo.rewardsInfo.bonusRewardPerBlock;
-  const saleRewardPerBlock = globalInfo.rewardsInfo.saleRewardPerBlock;
-  const buyRewardPerBlock = globalInfo.rewardsInfo.buyRewardPerBlock;
+  const penaltyRatio = bn(globalInfo.rewardsInfo.penaltyRatio);
+  const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
+  const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
+  const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
+  const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
 
-  const lastRewardBlock = localInfo.rewardsInfo.lastRewardBlock;
-  let _accRewardPerShare = localInfo.rewardsInfo.accRewardPerShare;
-  let _accBonusRewardPerShare = localInfo.rewardsInfo.accBonusRewardPerShare;
-  let _accSaleRewardPerShare = localInfo.rewardsInfo.accSaleRewardPerShare;
-  let _accBuyRewardPerShare = localInfo.rewardsInfo.accBuyRewardPerShare;
+  const lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
+  let _accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
+  let _accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
+  let _accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
+  let _accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
 
-  const numBought = userInfo.numBought;
-  const numSold = userInfo.numSold;
-  const numOrders = userInfo.numListings + userInfo.numOffers;
-  const numBonusOrders = userInfo.numBonusListings + userInfo.numBonusOffers;
-  const saleFees = userInfo.saleFees;
-  const buyFees = userInfo.buyFees;
-  const rewardDebt = userInfo.rewardsInfo.rewardDebt;
-  const bonusRewardDebt = userInfo.rewardsInfo.bonusRewardDebt;
-  const saleRewardDebt = userInfo.rewardsInfo.saleRewardDebt;
-  const buyRewardDebt = userInfo.rewardsInfo.buyRewardDebt;
-  const pending = userInfo.rewardsInfo.pending;
-  const bonusPending = userInfo.rewardsInfo.bonusPending;
-  const salePending = userInfo.rewardsInfo.salePending;
-  const buyPending = userInfo.rewardsInfo.buyPending;
+  const numListings = bn(userInfo.numListings);
+  const numBonusListings = bn(userInfo.numBonusListings);
+  const numOffers = bn(userInfo.numOffers);
+  const numBonusOffers = bn(userInfo.numBonusOffers);
+  const numPurchases = bn(userInfo.numPurchases);
+  const numSales = bn(userInfo.numSales);
+  const numOrders = bn(userInfo.numListings).add(userInfo.numOffers);
+  const numBonusOrders = bn(userInfo.numBonusListings).add(userInfo.numBonusOffers);
 
-  if (currentBlock > lastRewardBlock && totalListings != 0) {
-    const multiplier = currentBlock - lastRewardBlock;
-    const reward = multiplier * rewardPerBlock;
-    _accRewardPerShare += reward / totalListings;
+  const salesTotal = bn(userInfo.salesFeesTotal);
+  const salesFeesTotal = bn(userInfo.salesFeesTotal);
+  const salesTotalNumeric = userInfo.salesTotalNumeric;
+  const salesFeesTotalNumeric = userInfo.salesFeesTotalNumeric;
+
+  const purchasesTotal = bn(userInfo.purchasesTotal);
+  const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal);
+  const purchasesTotalNumeric = userInfo.purchasesTotalNumeric;
+  const purchasesFeesTotalNumeric = userInfo.purchasesFeesTotalNumeric;
+
+  const rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
+  const bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
+  const saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
+  const purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
+  const pending = bn(userInfo.rewardsInfo.pending);
+  const bonusPending = bn(userInfo.rewardsInfo.bonusPending);
+  const salePending = bn(userInfo.rewardsInfo.salePending);
+  const purchasePending = bn(userInfo.rewardsInfo.purchasePending);
+
+  const multiplier = currentBlock.sub(lastRewardBlock);
+  if (currentBlock.gte(lastRewardBlock) && totalOrders.gt(0)) {
+    const reward = multiplier.mul(rewardPerBlock);
+    _accRewardPerShare = _accRewardPerShare.add(reward.div(totalOrders));
   }
-  if (currentBlock > lastRewardBlock && totalBonusListings != 0) {
-    const multiplier = currentBlock - lastRewardBlock;
-    const reward = multiplier * bonusRewardPerBlock;
-    _accBonusRewardPerShare += reward / totalBonusListings;
+  if (currentBlock.gte(lastRewardBlock) && totalBonusOrders.gt(0)) {
+    const bonusReward = multiplier.mul(bonusRewardPerBlock);
+    _accBonusRewardPerShare = _accBonusRewardPerShare.add(bonusReward.div(totalBonusOrders));
   }
-  if (currentBlock > lastRewardBlock && totalFees != 0) {
-    const multiplier = currentBlock - lastRewardBlock;
-    const saleReward = multiplier * saleRewardPerBlock;
-    const buyReward = multiplier * buyRewardPerBlock;
-    _accSaleRewardPerShare += saleReward / totalFees;
-    _accBuyRewardPerShare += buyReward / totalFees;
+  if (currentBlock.gte(lastRewardBlock) && totalFees.gt(0)) {
+    const saleReward = multiplier.mul(saleRewardPerBlock);
+    const purchaseReward = multiplier.mul(purchaseRewardPerBlock);
+    _accSaleRewardPerShare = _accSaleRewardPerShare.add(saleReward.div(totalFees));
+    _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.add(purchaseReward.div(totalFees));
   }
 
-  const ordersReward = numOrders * _accRewardPerShare - rewardDebt;
-  const bonusReward = numBonusOrders * _accBonusRewardPerShare - bonusRewardDebt;
-  const saleReward = saleFees * _accSaleRewardPerShare - saleRewardDebt;
-  const buyReward = buyFees * _accBuyRewardPerShare - buyRewardDebt;
+  const reward = numOrders.mul(_accRewardPerShare).sub(rewardDebt);
+  const bonusReward = numBonusOrders.mul(_accBonusRewardPerShare).sub(bonusRewardDebt);
+  const saleReward = salesFeesTotal.mul(_accSaleRewardPerShare).sub(saleRewardDebt);
+  const purchaseReward = purchasesFeesTotal.mul(_accPurchaseRewardPerShare).sub(purchaseRewardDebt);
 
-  const grossReward =
-    ordersReward + bonusReward + saleReward + buyReward + pending + bonusPending + salePending + buyPending;
+  const grossReward = reward
+    .add(bonusReward)
+    .add(saleReward)
+    .add(purchaseReward)
+    .add(pending)
+    .add(bonusPending)
+    .add(salePending)
+    .add(purchasePending);
+  
+  const grossRewardNumeric = toFixed5(grossReward);
 
   const resp = {
-    currentBlock,
-    totalListings,
-    totalBonusListings,
-    totalFees,
-    totalVolume,
-    ordersReward,
-    bonusReward,
-    saleReward,
-    buyReward,
-    grossReward,
+    currentBlock: currentBlock.toString(),
+    totalListings: totalListings.toString(),
+    totalBonusListings: totalBonusListings.toString(),
+    totalOffers: totalOffers.toString(),
+    totalBonusOffers: totalBonusOffers.toString(),
+    totalFees: totalFees.toString(),
+    totalVolume: totalVolume.toString(),
+    totalSales: totalSales.toString(),
+    reward: reward.toString(),
+    bonusReward: bonusReward.toString(),
+    saleReward: saleReward.toString(),
+    purchaseReward: purchaseReward.toString(),
+    grossReward: grossReward.toString(),
+    grossRewardNumeric,
     penaltyActivated,
-    penaltyRatio,
-    rewardPerBlock,
-    bonusRewardPerBlock,
-    saleRewardPerBlock,
-    buyRewardPerBlock,
-    numSold,
-    numBought,
-    saleFees,
-    buyFees,
-    numListings: userInfo.numListings,
-    numBonusListings: userInfo.numBonusListings,
-    numOffers: userInfo.numOffers,
-    numBonusOffers: userInfo.numBonusOffers
+    penaltyRatio: penaltyRatio.toString(),
+    rewardPerBlock: rewardPerBlock.toString(),
+    bonusRewardPerBlock: bonusRewardPerBlock.toString(),
+    saleRewardPerBlock: saleRewardPerBlock.toString(),
+    purchaseRewardPerBlock: purchaseRewardPerBlock.toString(),
+    numSales: numSales.toString(),
+    numPurchases: numPurchases.toString(),
+    salesTotal: salesTotal.toString(),
+    salesFeesTotal: salesFeesTotal.toString(),
+    salesTotalNumeric,
+    salesFeesTotalNumeric,
+    purchasesTotal: purchasesTotal.toString(),
+    purchasesFeesTotal: purchasesFeesTotal.toString(),
+    purchasesTotalNumeric,
+    purchasesFeesTotalNumeric,
+    numListings: numListings.toString(),
+    numBonusListings: numBonusListings.toString(),
+    numOffers: numOffers.toString(),
+    numBonusOffers: numBonusOffers.toString()
   };
 
-  let netReward = 0;
+  let netReward = grossReward;
+  let penalty = bn(0);
   if (penaltyActivated) {
-    const salesRatio = numSold / (numOrders + numBonusOrders);
-    const penalty = (penaltyRatio - salesRatio) * grossReward;
+    const salesRatio = numSales.div(numOrders.add(numBonusOrders));
+    penalty = penaltyRatio.sub(salesRatio).mul(grossReward);
     // the edge case where all orders are fulfilled
-    if (penalty < 0) {
-      penalty = 0;
+    if (penalty.lt(0)) {
+      penalty = bn(0);
     }
-    netReward = grossReward - penalty;
-    resp.penalty = penalty;
-    resp.netReward = netReward;
-  } else {
-    resp.penalty = 0;
-    resp.netReward = grossReward;
+    netReward = netReward.sub(penalty);
   }
+  resp.penalty = penalty.toString();
+  resp.netReward = netReward.toString();
+  resp.netRewardNumeric = toFixed5(netReward);
 
-  // write net reward to firestore async for leader board purpose
+  // write net reward to firestore async for leaderboard purpose
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .update({
-      'rewardsInfo.netReward': netReward,
-      'rewardsInfo.netRewardCalculatedAt': Date.now()
+      'rewardsInfo.netReward': netReward.toString(),
+      'rewardsInfo.netRewardNumeric': toFixed5(netReward),
+      'rewardsInfo.grossReward': grossReward.toString(),
+      'rewardsInfo.grossRewardNumeric': grossRewardNumeric,
+      'rewardsInfo.rewardCalculatedAt': Date.now()
     })
     .then((resp) => {
       // nothing to do
@@ -2106,4 +2220,12 @@ async function isTokenVerified(address) {
 function getSearchFriendlyString(input) {
   const noSpace = input.replace(/\s/g, '');
   return noSpace.toLowerCase();
+}
+
+function toFixed5(num) {
+  return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+}
+
+function bn(num) {
+  return ethers.BigNumber.from(num);
 }
