@@ -140,6 +140,8 @@ function reconcileGlobalInfo(globalData) {
   if (bn(newInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
     newInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
   }
+  utils.trace('=================================== NEW INFO ==================================================');
+  utils.trace(utils.jsonString(newInfo));
   return newInfo;
 }
 
@@ -1870,6 +1872,11 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   localInfo.rewardsInfo.totalSaleRewardPaid = salePending.plus(localInfo.rewardsInfo.totalSaleRewardPaid);
   localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.plus(localInfo.rewardsInfo.totalPurchaseRewardPaid);
 
+  utils.trace('============================= LOCAL REWARDS ===========================');
+  utils.trace(utils.jsonString(localInfo));
+  utils.trace('============================= USER INFO ===========================');
+  utils.trace(utils.jsonString(userInfo));
+
   return userInfo.rewardsInfo;
 }
 
@@ -1903,11 +1910,11 @@ async function updateLocalRewards() {
   const multiplier = currentBlock.minus(lastRewardBlock);
   const reward = multiplier.times(rewardPerBlock);
   localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
-  if (totalBonusOrders.gte(0)) {
+  if (totalBonusOrders.gt(0)) {
     const bonusReward = multiplier.times(bonusRewardPerBlock);
     localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
   }
-  if (totalFees.gte(0)) {
+  if (totalFees.gt(0)) {
     const saleReward = multiplier.times(saleRewardPerBlock);
     localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees));
     const purchaseReward = multiplier.times(purchaseRewardPerBlock);
