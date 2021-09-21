@@ -747,7 +747,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     payload.metadata.hasBonusReward = hasBonus;
 
     // update rewards
-    const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true);
+    const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true, 'order');
 
     if (userInfo.rewardsInfo) {
       // update user rewards data
@@ -1084,7 +1084,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const salePriceInEth = bn(order.metadata.salePriceInEth);
 
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, purchaseFees, true);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, purchaseFees, true, 'purchase');
 
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1104,7 +1104,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  
+
   batch.set(
     userDocRef,
     {
@@ -1133,7 +1133,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const feesInEth = bn(order.metadata.feesInEth);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, feesInEth, true);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, feesInEth, true, 'sale');
 
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1483,7 +1483,7 @@ async function deleteListing(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
 
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1521,7 +1521,7 @@ async function deleteOffer(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false);
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
 
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1579,7 +1579,7 @@ async function hasBonusReward(address) {
   return doc.exists;
 }
 
-async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease) {
+async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease, actionType) {
   utils.log('Getting updated reward for user', user);
 
   let userInfo = await db
@@ -1594,7 +1594,7 @@ async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees,
     ...userInfo.rewardsInfo
   };
 
-  const updatedUserRewards = updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease);
+  const updatedUserRewards = updateRewards(userInfo, hasBonus, numOrders, bn(fees), isIncrease, actionType);
   if (!updatedUserRewards) {
     userInfo.rewardsInfo = null;
   }
@@ -1679,7 +1679,7 @@ function getEmptyUserRewardInfo() {
 }
 
 // updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
-async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
+async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, actionType) {
   utils.log('Updating rewards in increasing mode = ', isIncrease);
 
   let userShare = bn(userInfo.numListings).plus(userInfo.numOffers);
@@ -1701,48 +1701,68 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
     return;
   }
 
+  const isOrder = actionType == 'order' ? true : false;
+  const isSale = actionType == 'sale' ? true : false;
+  const isPurchase = actionType == 'purchase' ? true : false;
+
   const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
   const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
   const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
   const accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
 
   if (!isIncrease) {
-    if (userShare.gte(numOrders)) {
+    // update for making an order
+    if (isOrder && userShare.gte(numOrders)) {
       pending = userShare.times(accRewardPerShare).minus(rewardDebt);
       // decrease before reward debt calc
       userShare = userShare.minus(numOrders);
     }
-    if (salesFeesTotal.gte(fees)) {
+    // update for making a sale
+    if (isSale && salesFeesTotal.gte(fees)) {
       salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
       salesFeesTotal = salesFeesTotal.minus(fees);
     }
-    if (purchasesFeesTotal.gte(fees)) {
+    // update for making a purchase
+    if (isPurchase && purchasesFeesTotal.gte(fees)) {
       purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
       purchasesFeesTotal = purchasesFeesTotal.minus(fees);
     }
   } else {
-    if (userShare.gte(0)) {
+    if (isOrder && userShare.gte(0)) {
       pending = userShare.times(accRewardPerShare).minus(rewardDebt);
     }
-    if (salesFeesTotal.gte(0)) {
+    if (isSale && salesFeesTotal.gte(0)) {
       salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
     }
-    if (purchasesFeesTotal.gte(0)) {
+    if (isPurchase && purchasesFeesTotal.gte(0)) {
       purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
     }
     // increase before reward debt calc
-    userShare = userShare.plus(numOrders);
-    salesFeesTotal = salesFeesTotal.plus(fees);
-    purchasesFeesTotal = purchasesFeesTotal.plus(fees);
+    if (isOrder) {
+      userShare = userShare.plus(numOrders);
+    }
+    if (isSale) {
+      salesFeesTotal = salesFeesTotal.plus(fees);
+    }
+    if (isPurchase) {
+      purchasesFeesTotal = purchasesFeesTotal.plus(fees);
+    }
   }
-  userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
-  userInfo.rewardsInfo.pending = pending.toString();
-  userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
-  userInfo.rewardsInfo.salePending = salePending.toString();
-  userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
-  userInfo.rewardsInfo.purchasePending = purchasePending.toString();
+  
+  if (isOrder) {
+    userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
+    userInfo.rewardsInfo.pending = pending.toString();
+  }
+  if (isSale) {
+    userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
+    userInfo.rewardsInfo.salePending = salePending.toString();
+  }
+  if (isPurchase) {
+    userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
+    userInfo.rewardsInfo.purchasePending = purchasePending.toString();
+  }
 
-  if (hasBonus) {
+  if (isOrder && hasBonus) {
     if (!isIncrease) {
       if (userBonusShare.gte(numOrders)) {
         bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
@@ -1917,7 +1937,7 @@ async function getReward(user) {
     .plus(bonusPending)
     .plus(salePending)
     .plus(purchasePending);
-  
+
   const grossRewardNumeric = toFixed5(grossReward);
 
   const resp = {
