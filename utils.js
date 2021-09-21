@@ -11,15 +11,9 @@ firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.applicationDefault()
 // })
 
-let DEBUG_LOG = true; // todo: adi change this
-if (process.env.DEBUG_LOG === 'false') {
-  DEBUG_LOG = false;
-}
-
-let ERROR_LOG = true;
-if (process.env.ERROR_LOG === 'false') {
-  ERROR_LOG = false;
-}
+const TRACE_LOG = process.env.TRACE_LOG === 'true';
+const DEBUG_LOG = process.env.DEBUG_LOG === 'true';
+const ERROR_LOG = process.env.DEBUG_LOG === 'false';
 
 function error(obj, ...objs) {
   if (ERROR_LOG) {
@@ -46,10 +40,22 @@ function error(obj, ...objs) {
   }
 }
 
+function trace(obj, ...objs) {
+  if (TRACE_LOG) {
+    let msg = '';
+    for (const s of objs) {
+      msg += ' ' + s;
+    }
+    console.log('[TRACE]: ' + obj + msg);
+  }
+}
+
 module.exports = {
   getFirebaseAdmin: function () {
     return firebaseAdmin;
   },
+
+  trace,
 
   log: function (obj, ...objs) {
     if (DEBUG_LOG) {

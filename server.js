@@ -78,14 +78,14 @@ async function init() {
     try {
       globalInfo = await db.runTransaction(async (txn) => {
         const globalDoc = await txn.get(globalDocRef);
-        utils.log('Newly fetched firestore global info: ' + utils.jsonString(globalDoc.data()));
+        utils.trace('Newly fetched firestore global info: ' + utils.jsonString(globalDoc.data()));
         // reconcile globalinfo
         const newInfo = reconcileGlobalInfo(globalDoc.data());
         await txn.update(globalDocRef, newInfo);
         return newInfo;
       });
       origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
-      utils.log('Reconciled global info: ' + utils.jsonString(globalInfo));
+      utils.trace('Reconciled global info: ' + utils.jsonString(globalInfo));
     } catch (err) {
       utils.error('Failed updating global info in firestore', err);
       utils.error(err);
@@ -101,7 +101,7 @@ function reconcileGlobalInfo(globalData) {
   };
 
   const localInfoDelta = getLocalInfoDelta();
-  utils.log('Local info delta: ' + utils.jsonString(localInfoDelta));
+  utils.trace('Local info delta: ' + utils.jsonString(localInfoDelta));
 
   newInfo.updatedAt = Date.now();
   newInfo.totalSales = bn(newInfo.totalSales).plus(localInfoDelta.totalSales).toString();
