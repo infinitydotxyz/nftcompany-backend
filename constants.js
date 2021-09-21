@@ -99,5 +99,8 @@ module.exports = {
   auth: {
     signature: 'X-AUTH-SIGNATURE',
     message: 'X-AUTH-MESSAGE'
-  }
+  },
+
+  //API_BASE: 'https://server.nftcompany.com', // todo: adi
+  API_BASE: 'http://localhost:9090'
 };

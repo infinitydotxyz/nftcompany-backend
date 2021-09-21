@@ -1055,8 +1055,8 @@ async function fulfillOrder(user, batch, payload) {
       // delete listing from maker
       await deleteListingWithId(docId, maker, batch);
 
-      // send email to maker that the listing is bought
-      prepareEmail(maker, doc, 'listingBought');
+      // send email to maker that the item is purchased
+      prepareEmail(maker, doc, 'itemPurchased');
     }
 
     // update total sales
@@ -2072,7 +2072,7 @@ app.post('/u/:user/setEmail', async (req, res) => {
   const guid = crypto.randomBytes(30).toString('hex');
 
   // store
-  const userDoc = await db
+  await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -2091,7 +2091,7 @@ app.post('/u/:user/setEmail', async (req, res) => {
 
   // send email
   const subject = 'Verify your email for NFT Company';
-  const link = 'http://localhost:9090/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
+  const link = constants.API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
   const html =
     '<p>Click the below link to verify your email</p> <br>' + '<a href=' + link + ' target="_blank">' + link + '</a>';
   sendEmail(email, subject, html);
@@ -2171,7 +2171,7 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
     });
 });
 
-// right now emails are sent when a listing is bought, offer is made or an offer is accepted
+// right now emails are sent when an item is purchased, offer is made or an offer is accepted
 async function prepareEmail(user, order, type) {
   const userDoc = await db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -2197,21 +2197,25 @@ async function prepareEmail(user, order, type) {
     return;
   }
 
+  const price = order.metadata.basePriceInEth;
+
   let subject = '';
-  let html = ''; //todo: adi
+  let link = constants.API_BASE;
   if (type == 'offerMade') {
-    subject = 'You received an offer on your listing.';
-    html = '';
+    subject = 'You received a ' + price + ' ETH offer at NFT Company';
+    link += '/offers-received';
   } else if (type == 'offerAccepted') {
-    subject = 'Your offer has been accepted.';
-    html = '';
-  } else if (type == 'listingBought') {
-    subject = 'Your listing has been purchased.';
-    html = '';
+    subject = 'Your offer of ' + price + ' ETH has been accepted at NFT Company';
+    link += '/purchases';
+  } else if (type == 'itemPurchased') {
+    subject = 'Your item has been purchased for ' + price + ' ETH at NFT Company';
+    link += '/sales';
   } else {
     utils.error('Cannot prepare email for unknown action type');
     return;
   }
+
+  const html = '<p>See it here:</p> <br>' + '<a href=' + link + ' target="_blank">' + link + '</a>';
   // send email
   sendEmail(email, subject, html);
 }
