@@ -21,6 +21,7 @@
   "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
   "dependencies": {
     "axios": "^0.21.3",
+    "bignumber.js": "^9.0.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "ethers": "^5.4.6",

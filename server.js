@@ -2,6 +2,7 @@ require('dotenv').config();
 const { ethers } = require('ethers');
 const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
 
+const BigNumber = require('bignumber.js');
 const express = require('express');
 const axios = require('axios').default;
 const crypto = require('crypto');
@@ -103,37 +104,37 @@ function reconcileGlobalInfo(globalData) {
   utils.log('Local info delta: ' + utils.jsonString(localInfoDelta));
 
   newInfo.updatedAt = Date.now();
-  newInfo.totalSales = bn(newInfo.totalSales).add(localInfoDelta.totalSales).toString();
-  newInfo.totalFees = bn(newInfo.totalFees).add(localInfoDelta.totalFees).toString();
-  newInfo.totalVolume = bn(newInfo.totalVolume).add(localInfoDelta.totalVolume).toString();
-  newInfo.totalListings = bn(newInfo.totalListings).add(localInfoDelta.totalListings).toString();
-  newInfo.totalBonusListings = bn(newInfo.totalBonusListings).add(localInfoDelta.totalBonusListings).toString();
-  newInfo.totalOffers = bn(newInfo.totalOffers).add(localInfoDelta.totalOffers).toString();
-  newInfo.totalBonusOffers = bn(newInfo.totalBonusOffers).add(localInfoDelta.totalBonusOffers).toString();
+  newInfo.totalSales = bn(newInfo.totalSales).plus(localInfoDelta.totalSales).toString();
+  newInfo.totalFees = bn(newInfo.totalFees).plus(localInfoDelta.totalFees).toString();
+  newInfo.totalVolume = bn(newInfo.totalVolume).plus(localInfoDelta.totalVolume).toString();
+  newInfo.totalListings = bn(newInfo.totalListings).plus(localInfoDelta.totalListings).toString();
+  newInfo.totalBonusListings = bn(newInfo.totalBonusListings).plus(localInfoDelta.totalBonusListings).toString();
+  newInfo.totalOffers = bn(newInfo.totalOffers).plus(localInfoDelta.totalOffers).toString();
+  newInfo.totalBonusOffers = bn(newInfo.totalBonusOffers).plus(localInfoDelta.totalBonusOffers).toString();
 
   newInfo.rewardsInfo.accRewardPerShare = bn(newInfo.rewardsInfo.accRewardPerShare)
-    .add(localInfoDelta.rewardsInfo.accRewardPerShare)
+    .plus(localInfoDelta.rewardsInfo.accRewardPerShare)
     .toString();
   newInfo.rewardsInfo.accBonusRewardPerShare = bn(newInfo.rewardsInfo.accBonusRewardPerShare)
-    .add(localInfoDelta.rewardsInfo.accBonusRewardPerShare)
+    .plus(localInfoDelta.rewardsInfo.accBonusRewardPerShare)
     .toString();
   newInfo.rewardsInfo.accSaleRewardPerShare = bn(newInfo.rewardsInfo.accSaleRewardPerShare)
-    .add(localInfoDelta.rewardsInfo.accSaleRewardPerShare)
+    .plus(localInfoDelta.rewardsInfo.accSaleRewardPerShare)
     .toString();
   newInfo.rewardsInfo.accPurchaseRewardPerShare = bn(newInfo.rewardsInfo.accPurchaseRewardPerShare)
-    .add(localInfoDelta.rewardsInfo.accPurchaseRewardPerShare)
+    .plus(localInfoDelta.rewardsInfo.accPurchaseRewardPerShare)
     .toString();
   newInfo.rewardsInfo.totalRewardPaid = bn(newInfo.rewardsInfo.totalRewardPaid)
-    .add(localInfoDelta.rewardsInfo.totalRewardPaid)
+    .plus(localInfoDelta.rewardsInfo.totalRewardPaid)
     .toString();
   newInfo.rewardsInfo.totalBonusRewardPaid = bn(newInfo.rewardsInfo.totalBonusRewardPaid)
-    .add(localInfoDelta.rewardsInfo.totalBonusRewardPaid)
+    .plus(localInfoDelta.rewardsInfo.totalBonusRewardPaid)
     .toString();
   newInfo.rewardsInfo.totalSaleRewardPaid = bn(newInfo.rewardsInfo.totalSaleRewardPaid)
-    .add(localInfoDelta.rewardsInfo.totalSaleRewardPaid)
+    .plus(localInfoDelta.rewardsInfo.totalSaleRewardPaid)
     .toString();
   newInfo.rewardsInfo.totalPurchaseRewardPaid = bn(newInfo.rewardsInfo.totalPurchaseRewardPaid)
-    .add(localInfoDelta.rewardsInfo.totalPurchaseRewardPaid)
+    .plus(localInfoDelta.rewardsInfo.totalPurchaseRewardPaid)
     .toString();
 
   if (bn(newInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
@@ -146,43 +147,43 @@ function getLocalInfoDelta() {
   const localInfoDelta = getEmptyGlobalInfo();
   localInfoDelta.rewardsInfo = getEmptyGlobalInfo().rewardsInfo;
 
-  localInfoDelta.totalSales = bn(localInfo.totalSales).sub(origLocalInfo.totalSales);
-  localInfoDelta.totalFees = bn(localInfo.totalFees).sub(origLocalInfo.totalFees);
-  localInfoDelta.totalVolume = bn(localInfo.totalVolume).sub(origLocalInfo.totalVolume);
-  localInfoDelta.totalListings = bn(localInfo.totalListings).sub(origLocalInfo.totalListings);
-  localInfoDelta.totalBonusListings = bn(localInfo.totalBonusListings).sub(origLocalInfo.totalBonusListings);
-  localInfoDelta.totalOffers = bn(localInfo.totalOffers).sub(origLocalInfo.totalOffers);
-  localInfoDelta.totalBonusOffers = bn(localInfo.totalBonusOffers).sub(origLocalInfo.totalBonusOffers);
+  localInfoDelta.totalSales = bn(localInfo.totalSales).minus(origLocalInfo.totalSales);
+  localInfoDelta.totalFees = bn(localInfo.totalFees).minus(origLocalInfo.totalFees);
+  localInfoDelta.totalVolume = bn(localInfo.totalVolume).minus(origLocalInfo.totalVolume);
+  localInfoDelta.totalListings = bn(localInfo.totalListings).minus(origLocalInfo.totalListings);
+  localInfoDelta.totalBonusListings = bn(localInfo.totalBonusListings).minus(origLocalInfo.totalBonusListings);
+  localInfoDelta.totalOffers = bn(localInfo.totalOffers).minus(origLocalInfo.totalOffers);
+  localInfoDelta.totalBonusOffers = bn(localInfo.totalBonusOffers).minus(origLocalInfo.totalBonusOffers);
 
-  localInfoDelta.rewardsInfo.accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare).sub(
+  localInfoDelta.rewardsInfo.accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare).minus(
     origLocalInfo.rewardsInfo.accRewardPerShare
   );
 
-  localInfoDelta.rewardsInfo.accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare).sub(
+  localInfoDelta.rewardsInfo.accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare).minus(
     origLocalInfo.rewardsInfo.accBonusRewardPerShare
   );
 
-  localInfoDelta.rewardsInfo.accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare).sub(
+  localInfoDelta.rewardsInfo.accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare).minus(
     origLocalInfo.rewardsInfo.accSaleRewardPerShare
   );
 
-  localInfoDelta.rewardsInfo.accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare).sub(
+  localInfoDelta.rewardsInfo.accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare).minus(
     origLocalInfo.rewardsInfo.accPurchaseRewardPerShare
   );
 
-  localInfoDelta.rewardsInfo.totalRewardPaid = bn(localInfo.rewardsInfo.totalRewardPaid).sub(
+  localInfoDelta.rewardsInfo.totalRewardPaid = bn(localInfo.rewardsInfo.totalRewardPaid).minus(
     origLocalInfo.rewardsInfo.totalRewardPaid
   );
 
-  localInfoDelta.rewardsInfo.totalBonusRewardPaid = bn(localInfo.rewardsInfo.totalBonusRewardPaid).sub(
+  localInfoDelta.rewardsInfo.totalBonusRewardPaid = bn(localInfo.rewardsInfo.totalBonusRewardPaid).minus(
     origLocalInfo.rewardsInfo.totalBonusRewardPaid
   );
 
-  localInfoDelta.rewardsInfo.totalSaleRewardPaid = bn(localInfo.rewardsInfo.totalSaleRewardPaid).sub(
+  localInfoDelta.rewardsInfo.totalSaleRewardPaid = bn(localInfo.rewardsInfo.totalSaleRewardPaid).minus(
     origLocalInfo.rewardsInfo.totalSaleRewardPaid
   );
 
-  localInfoDelta.rewardsInfo.totalPurchaseRewardPaid = bn(localInfo.rewardsInfo.totalPurchaseRewardPaid).sub(
+  localInfoDelta.rewardsInfo.totalPurchaseRewardPaid = bn(localInfo.rewardsInfo.totalPurchaseRewardPaid).minus(
     origLocalInfo.rewardsInfo.totalPurchaseRewardPaid
   );
 
@@ -1093,8 +1094,8 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   }
 
   // update user txn stats
-  const purchasesTotal = bn(userInfo.purchasesTotal).add(salePriceInEth).toString();
-  const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).add(purchaseFees).toString();
+  const purchasesTotal = bn(userInfo.purchasesTotal).plus(salePriceInEth).toString();
+  const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
 
@@ -1142,8 +1143,8 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   }
 
   // update user txn stats
-  const salesTotal = bn(userInfo.salesTotal).add(salePriceInEth).toString();
-  const salesFeesTotal = bn(userInfo.salesFeesTotal).add(feesInEth).toString();
+  const salesTotal = bn(userInfo.salesTotal).plus(salePriceInEth).toString();
+  const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
 
@@ -1550,13 +1551,13 @@ function incrementLocalStats({
   totalVolume,
   totalSales
 }) {
-  localInfo.totalOffers = bn(localInfo.totalOffers).add(totalOffers || 0);
-  localInfo.totalBonusOffers = bn(localInfo.totalBonusOffers).add(totalBonusOffers || 0);
-  localInfo.totalListings = bn(localInfo.totalListings).add(totalListings || 0);
-  localInfo.totalBonusListings = bn(localInfo.totalBonusListings).add(totalBonusListings || 0);
-  localInfo.totalFees = bn(localInfo.totalFees).add(totalFees || 0);
-  localInfo.totalVolume = bn(localInfo.totalVolume).add(totalVolume || 0);
-  localInfo.totalSales = bn(localInfo.totalSales).add(totalSales || 0);
+  localInfo.totalOffers = bn(localInfo.totalOffers).plus(totalOffers || 0);
+  localInfo.totalBonusOffers = bn(localInfo.totalBonusOffers).plus(totalBonusOffers || 0);
+  localInfo.totalListings = bn(localInfo.totalListings).plus(totalListings || 0);
+  localInfo.totalBonusListings = bn(localInfo.totalBonusListings).plus(totalBonusListings || 0);
+  localInfo.totalFees = bn(localInfo.totalFees).plus(totalFees || 0);
+  localInfo.totalVolume = bn(localInfo.totalVolume).plus(totalVolume || 0);
+  localInfo.totalSales = bn(localInfo.totalSales).plus(totalSales || 0);
 }
 
 function storeUpdatedUserRewards(batch, user, data) {
@@ -1681,8 +1682,8 @@ function getEmptyUserRewardInfo() {
 async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
   utils.log('Updating rewards in increasing mode = ', isIncrease);
 
-  let userShare = bn(userInfo.numListings).add(userInfo.numOffers);
-  let userBonusShare = bn(userInfo.numBonusListings).add(userInfo.numBonusOffers);
+  let userShare = bn(userInfo.numListings).plus(userInfo.numOffers);
+  let userBonusShare = bn(userInfo.numBonusListings).plus(userInfo.numBonusOffers);
   let salesFeesTotal = bn(userInfo.salesFeesTotal);
   let purchasesFeesTotal = bn(userInfo.purchasesFeesTotal);
   let rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
@@ -1707,63 +1708,63 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
 
   if (!isIncrease) {
     if (userShare.gte(numOrders)) {
-      pending = userShare.mul(accRewardPerShare).sub(rewardDebt);
+      pending = userShare.times(accRewardPerShare).minus(rewardDebt);
       // decrease before reward debt calc
-      userShare = userShare.sub(numOrders);
+      userShare = userShare.minus(numOrders);
     }
     if (salesFeesTotal.gte(fees)) {
-      salePending = salesFeesTotal.mul(accSaleRewardPerShare).sub(saleRewardDebt);
-      salesFeesTotal = salesFeesTotal.sub(fees);
+      salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
+      salesFeesTotal = salesFeesTotal.minus(fees);
     }
     if (purchasesFeesTotal.gte(fees)) {
-      purchasePending = purchasesFeesTotal.mul(accPurchaseRewardPerShare).sub(purchaseRewardDebt);
-      purchasesFeesTotal = purchasesFeesTotal.sub(fees);
+      purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
+      purchasesFeesTotal = purchasesFeesTotal.minus(fees);
     }
   } else {
     if (userShare.gte(0)) {
-      pending = userShare.mul(accRewardPerShare).sub(rewardDebt);
+      pending = userShare.times(accRewardPerShare).minus(rewardDebt);
     }
     if (salesFeesTotal.gte(0)) {
-      salePending = salesFeesTotal.mul(accSaleRewardPerShare).sub(saleRewardDebt);
+      salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
     }
     if (purchasesFeesTotal.gte(0)) {
-      purchasePending = purchasesFeesTotal.mul(accPurchaseRewardPerShare).sub(purchaseRewardDebt);
+      purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
     }
     // increase before reward debt calc
-    userShare = userShare.add(numOrders);
-    salesFeesTotal = salesFeesTotal.add(fees);
-    purchasesFeesTotal = purchasesFeesTotal.add(fees);
+    userShare = userShare.plus(numOrders);
+    salesFeesTotal = salesFeesTotal.plus(fees);
+    purchasesFeesTotal = purchasesFeesTotal.plus(fees);
   }
-  userInfo.rewardsInfo.rewardDebt = userShare.mul(accRewardPerShare).toString();
+  userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
   userInfo.rewardsInfo.pending = pending.toString();
-  userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.mul(accSaleRewardPerShare).toString();
+  userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
   userInfo.rewardsInfo.salePending = salePending.toString();
-  userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.mul(accPurchaseRewardPerShare).toString();
+  userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
   userInfo.rewardsInfo.purchasePending = purchasePending.toString();
 
   if (hasBonus) {
     if (!isIncrease) {
       if (userBonusShare.gte(numOrders)) {
-        bonusPending = userBonusShare.mul(accBonusRewardPerShare).sub(bonusRewardDebt);
+        bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
         // decrease userShare before rewardDebt calc
-        userBonusShare = userBonusShare.sub(numOrders);
+        userBonusShare = userBonusShare.minus(numOrders);
       }
     } else {
       if (userBonusShare.gt(0)) {
-        bonusPending = userBonusShare.mul(accBonusRewardPerShare).sub(bonusRewardDebt);
+        bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
       }
       // add current value before reward debt calc
-      userBonusShare = userBonusShare.add(numOrders);
+      userBonusShare = userBonusShare.plus(numOrders);
     }
-    userInfo.rewardsInfo.bonusRewardDebt = userBonusShare.mul(accBonusRewardPerShare).toString();
+    userInfo.rewardsInfo.bonusRewardDebt = userBonusShare.times(accBonusRewardPerShare).toString();
     userInfo.rewardsInfo.bonusPending = bonusPending.toString();
   }
 
   // update local info
-  localInfo.rewardsInfo.totalRewardPaid = pending.add(localInfo.rewardsInfo.totalRewardPaid);
-  localInfo.rewardsInfo.totalBonusRewardPaid = bonusPending.add(localInfo.rewardsInfo.totalBonusRewardPaid);
-  localInfo.rewardsInfo.totalSaleRewardPaid = salePending.add(localInfo.rewardsInfo.totalSaleRewardPaid);
-  localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.add(localInfo.rewardsInfo.totalPurchaseRewardPaid);
+  localInfo.rewardsInfo.totalRewardPaid = pending.plus(localInfo.rewardsInfo.totalRewardPaid);
+  localInfo.rewardsInfo.totalBonusRewardPaid = bonusPending.plus(localInfo.rewardsInfo.totalBonusRewardPaid);
+  localInfo.rewardsInfo.totalSaleRewardPaid = salePending.plus(localInfo.rewardsInfo.totalSaleRewardPaid);
+  localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.plus(localInfo.rewardsInfo.totalPurchaseRewardPaid);
 
   return userInfo.rewardsInfo;
 }
@@ -1772,8 +1773,8 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease) {
 async function updateLocalRewards() {
   utils.log('Updating local rewards');
   const currentBlock = await getCurrentBlock();
-  const totalOrders = bn(globalInfo.totalListings).add(globalInfo.totalOffers);
-  const totalBonusOrders = bn(globalInfo.totalBonusListings).add(globalInfo.totalBonusOffers);
+  const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
+  const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
   const totalFees = bn(globalInfo.totalFees);
   const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
   const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
@@ -1795,18 +1796,18 @@ async function updateLocalRewards() {
     utils.log('Not updating global rewards since total liquidity is 0');
     return false;
   }
-  const multiplier = currentBlock.sub(lastRewardBlock);
-  const reward = multiplier.mul(rewardPerBlock);
-  localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.add(reward.div(totalOrders));
+  const multiplier = currentBlock.minus(lastRewardBlock);
+  const reward = multiplier.times(rewardPerBlock);
+  localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
   if (totalBonusOrders.gte(0)) {
-    const bonusReward = multiplier.mul(bonusRewardPerBlock);
-    localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.add(bonusReward.div(totalBonusOrders));
+    const bonusReward = multiplier.times(bonusRewardPerBlock);
+    localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
   }
   if (totalFees.gte(0)) {
-    const saleReward = multiplier.mul(saleRewardPerBlock);
-    localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.add(saleReward.div(totalFees));
-    const purchaseReward = multiplier.mul(purchaseRewardPerBlock);
-    localInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare.add(purchaseReward.div(totalFees));
+    const saleReward = multiplier.times(saleRewardPerBlock);
+    localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees));
+    const purchaseReward = multiplier.times(purchaseRewardPerBlock);
+    localInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
   }
 
   localInfo.rewardsInfo.lastRewardBlock = currentBlock;
@@ -1836,8 +1837,8 @@ async function getReward(user) {
     ...userInfo.rewardsInfo
   };
   const currentBlock = await getCurrentBlock();
-  const totalOrders = bn(globalInfo.totalListings).add(globalInfo.totalOffers);
-  const totalBonusOrders = bn(globalInfo.totalBonusListings).add(globalInfo.totalBonusOffers);
+  const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
+  const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
   const totalListings = bn(globalInfo.totalListings);
   const totalBonusListings = bn(globalInfo.totalBonusListings);
   const totalOffers = bn(globalInfo.totalOffers);
@@ -1865,8 +1866,8 @@ async function getReward(user) {
   const numBonusOffers = bn(userInfo.numBonusOffers);
   const numPurchases = bn(userInfo.numPurchases);
   const numSales = bn(userInfo.numSales);
-  const numOrders = bn(userInfo.numListings).add(userInfo.numOffers);
-  const numBonusOrders = bn(userInfo.numBonusListings).add(userInfo.numBonusOffers);
+  const numOrders = bn(userInfo.numListings).plus(userInfo.numOffers);
+  const numBonusOrders = bn(userInfo.numBonusListings).plus(userInfo.numBonusOffers);
 
   const salesTotal = bn(userInfo.salesFeesTotal);
   const salesFeesTotal = bn(userInfo.salesFeesTotal);
@@ -1887,35 +1888,35 @@ async function getReward(user) {
   const salePending = bn(userInfo.rewardsInfo.salePending);
   const purchasePending = bn(userInfo.rewardsInfo.purchasePending);
 
-  const multiplier = currentBlock.sub(lastRewardBlock);
+  const multiplier = currentBlock.minus(lastRewardBlock);
   if (currentBlock.gte(lastRewardBlock) && totalOrders.gt(0)) {
-    const reward = multiplier.mul(rewardPerBlock);
-    _accRewardPerShare = _accRewardPerShare.add(reward.div(totalOrders));
+    const reward = multiplier.times(rewardPerBlock);
+    _accRewardPerShare = _accRewardPerShare.plus(reward.div(totalOrders));
   }
   if (currentBlock.gte(lastRewardBlock) && totalBonusOrders.gt(0)) {
-    const bonusReward = multiplier.mul(bonusRewardPerBlock);
-    _accBonusRewardPerShare = _accBonusRewardPerShare.add(bonusReward.div(totalBonusOrders));
+    const bonusReward = multiplier.times(bonusRewardPerBlock);
+    _accBonusRewardPerShare = _accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
   }
   if (currentBlock.gte(lastRewardBlock) && totalFees.gt(0)) {
-    const saleReward = multiplier.mul(saleRewardPerBlock);
-    const purchaseReward = multiplier.mul(purchaseRewardPerBlock);
-    _accSaleRewardPerShare = _accSaleRewardPerShare.add(saleReward.div(totalFees));
-    _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.add(purchaseReward.div(totalFees));
+    const saleReward = multiplier.times(saleRewardPerBlock);
+    const purchaseReward = multiplier.times(purchaseRewardPerBlock);
+    _accSaleRewardPerShare = _accSaleRewardPerShare.plus(saleReward.div(totalFees));
+    _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
   }
 
-  const reward = numOrders.mul(_accRewardPerShare).sub(rewardDebt);
-  const bonusReward = numBonusOrders.mul(_accBonusRewardPerShare).sub(bonusRewardDebt);
-  const saleReward = salesFeesTotal.mul(_accSaleRewardPerShare).sub(saleRewardDebt);
-  const purchaseReward = purchasesFeesTotal.mul(_accPurchaseRewardPerShare).sub(purchaseRewardDebt);
+  const reward = numOrders.times(_accRewardPerShare).minus(rewardDebt);
+  const bonusReward = numBonusOrders.times(_accBonusRewardPerShare).minus(bonusRewardDebt);
+  const saleReward = salesFeesTotal.times(_accSaleRewardPerShare).minus(saleRewardDebt);
+  const purchaseReward = purchasesFeesTotal.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt);
 
   const grossReward = reward
-    .add(bonusReward)
-    .add(saleReward)
-    .add(purchaseReward)
-    .add(pending)
-    .add(bonusPending)
-    .add(salePending)
-    .add(purchasePending);
+    .plus(bonusReward)
+    .plus(saleReward)
+    .plus(purchaseReward)
+    .plus(pending)
+    .plus(bonusPending)
+    .plus(salePending)
+    .plus(purchasePending);
   
   const grossRewardNumeric = toFixed5(grossReward);
 
@@ -1959,13 +1960,13 @@ async function getReward(user) {
   let netReward = grossReward;
   let penalty = bn(0);
   if (penaltyActivated) {
-    const salesRatio = numSales.div(numOrders.add(numBonusOrders));
-    penalty = penaltyRatio.sub(salesRatio).mul(grossReward);
+    const salesRatio = numSales.div(numOrders.plus(numBonusOrders));
+    penalty = penaltyRatio.minus(salesRatio).times(grossReward);
     // the edge case where all orders are fulfilled
     if (penalty.lt(0)) {
       penalty = bn(0);
     }
-    netReward = netReward.sub(penalty);
+    netReward = netReward.minus(penalty);
   }
   resp.penalty = penalty.toString();
   resp.netReward = netReward.toString();
@@ -2227,5 +2228,5 @@ function toFixed5(num) {
 }
 
 function bn(num) {
-  return ethers.BigNumber.from(num);
+  return BigNumber(num);
 }
