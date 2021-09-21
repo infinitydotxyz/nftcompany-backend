@@ -193,7 +193,7 @@ function getLocalInfoDelta() {
 // =========================================== Server ===========================================================
 
 app.all('/u/*', async (req, res, next) => {
-  let authorized = await utils.authorizeUser(
+  const authorized = await utils.authorizeUser(
     req.path,
     req.header(constants.auth.signature),
     req.header(constants.auth.message)
@@ -232,7 +232,6 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch listings (for Explore page)
 app.get('/listings', async (req, res) => {
-
   const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
   const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH; // add a default max of 5000 eth
   const sortByPrice = `${req.query.sortByPrice || 'asc'}`.toLowerCase(); // ascending default
@@ -307,7 +306,7 @@ app.get('/u/:user/listings', async (req, res) => {
     });
 });
 
-//fetch items bought by user
+// fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const { limit, startAfter, error } = utils.parseQueryFields(
@@ -354,7 +353,7 @@ app.get('/u/:user/purchases', async (req, res) => {
     });
 });
 
-//fetch items sold by user
+// fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const { limit, startAfter, error } = utils.parseQueryFields(
@@ -401,7 +400,7 @@ app.get('/u/:user/sales', async (req, res) => {
     });
 });
 
-//fetch offer made by user
+// fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const { limit, startAfter, error } = utils.parseQueryFields(
@@ -433,7 +432,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
     });
 });
 
-//fetch offer received by user
+// fetch offer received by user
 app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
@@ -470,9 +469,9 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   const maker = req.query.maker.trim().toLowerCase();
   const docId = req.query.id.trim(); // preserve case
   const side = +req.query.side;
+  let collection = fstrCnstnts.LISTINGS_COLL;
   try {
-    let collection = fstrCnstnts.LISTINGS_COLL;
-    if (side == 0) {
+    if (side === 0) {
       collection = fstrCnstnts.OFFERS_COLL;
     }
     const doc = await db
@@ -485,7 +484,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
       .get();
 
     if (doc.exists) {
-      let orders = [];
+      const orders = [];
       const order = doc.data();
       order.id = doc.id;
       orders.push(order);
@@ -522,7 +521,7 @@ app.get('/u/:user/reward', async (req, res) => {
   }
 });
 
-//fetch rewards leaderboard
+// fetch rewards leaderboard
 app.get('/rewards/leaderboard', async (req, res) => {
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -531,7 +530,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
     .limit(10)
     .get()
     .then((data) => {
-      let results = [];
+      const results = [];
       for (const doc of data.docs) {
         results.push(doc.data());
       }
@@ -710,7 +709,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .get();
 
     const txns = [];
-    for (doc of snapshot.docs) {
+    for (const doc of snapshot.docs) {
       const txn = doc.data();
       txn.id = doc.id;
       txns.push(txn);
@@ -762,10 +761,10 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
       utils.log('Not updating rewards data as there are no updates');
     }
 
-    if (payload.side == 1) {
+    if (payload.side === 1) {
       // listing
       await postListing(maker, payload, batch, numOrders, hasBonus);
-    } else if (payload.side == 0) {
+    } else if (payload.side === 0) {
       // offer
       await postOffer(maker, payload, batch, numOrders, hasBonus);
     } else {
@@ -801,7 +800,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     // input checking
     let inputError = '';
     const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
-    if (actionType != 'fulfill' && actionType != 'cancel') {
+    if (actionType !== 'fulfill' && actionType !== 'cancel') {
       inputError += 'Invalid actionType: ' + actionType + ' ';
     }
 
@@ -811,7 +810,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     }
 
     const side = +payload.side;
-    if (side != 0 && side != 1) {
+    if (side !== 0 && side !== 1) {
       inputError += 'Unknown order side: ' + side + ' ';
     }
 
@@ -821,7 +820,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     }
 
     // input checking for fulfill action
-    if (actionType == 'fulfill') {
+    if (actionType === 'fulfill') {
       const salePriceInEth = +payload.salePriceInEth;
       if (isNaN(salePriceInEth)) {
         inputError += 'Invalid salePriceInEth: ' + salePriceInEth + ' ';
@@ -898,22 +897,22 @@ async function waitForTxn(user, payload) {
     utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
     const txnData = JSON.parse(utils.jsonString(receipt));
     batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
-    if (actionType == 'fulfill') {
+    if (actionType === 'fulfill') {
       await fulfillOrder(user, batch, payload);
-    } else if (actionType == 'cancel') {
+    } else if (actionType === 'cancel') {
       const docId = payload.orderId.trim(); // preserve case
       const side = +payload.side;
-      if (side == 0) {
+      if (side === 0) {
         await cancelOffer(user, batch, docId);
-      } else if (side == 1) {
+      } else if (side === 1) {
         await cancelListing(user, batch, docId);
       }
     }
   } catch (err) {
     utils.error('Txn: ' + origTxnHash + ' was rejected');
     // if the txn failed, err.receipt.status = 0
-    if (err.receipt && err.receipt.status == 0) {
-      utils.error('Txn with hash: ' + txnHash + ' rejected');
+    if (err.receipt && err.receipt.status === 0) {
+      utils.error('Txn with hash: ' + origTxnHash + ' rejected');
       utils.error(err);
 
       const txnData = JSON.parse(utils.jsonString(err.receipt));
@@ -921,11 +920,11 @@ async function waitForTxn(user, payload) {
     }
     // if the txn failed due to replacement or cancellation or repricing
     if (err && err.reason && err.replacement) {
-      utils.error('Txn with hash: ' + txnHash + ' rejected with reason ' + err.reason);
+      utils.error('Txn with hash: ' + origTxnHash + ' rejected with reason ' + err.reason);
       utils.error(err);
 
       const replacementTxnHash = err.replacement.hash;
-      if (err.reason == 'cancelled') {
+      if (err.reason === 'cancelled') {
         payload.txnType = 'cancellation';
         batch.set(origTxnDocRef, { status: 'cancelled', cancelTxnHash: replacementTxnHash }, { merge: true });
       } else {
@@ -977,12 +976,12 @@ async function fulfillOrder(user, batch, payload) {
 
     const numOrders = 1;
 
-    if (side != 0 && side != 1) {
+    if (side !== 0 && side !== 1) {
       utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
 
-    if (side == 0) {
+    if (side === 0) {
       // taker accepted offerReceived, maker is the buyer
 
       // check if order exists
@@ -1021,7 +1020,7 @@ async function fulfillOrder(user, batch, payload) {
 
       // send email to maker that the offer is accepted
       prepareEmail(maker, doc, 'offerAccepted');
-    } else if (side == 1) {
+    } else if (side === 1) {
       // taker bought a listing, maker is the seller
 
       // check if order exists
@@ -1062,10 +1061,10 @@ async function fulfillOrder(user, batch, payload) {
     // update total sales
     incrementLocalStats({ totalSales: numOrders });
 
-    //update total fees
+    // update total fees
     incrementLocalStats({ totalFees: feesInEth });
 
-    //update total volume
+    // update total volume
     incrementLocalStats({ totalVolume: salePriceInEth });
   } catch (err) {
     utils.error('Error in fufilling order');
@@ -1232,13 +1231,13 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
-  if (side == 0) {
-    //offers
+  if (side === 0) {
+    // offers
     batch.set(ref, { numOffers: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
     if (hasBonus) {
       batch.set(ref, { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
     }
-  } else if (side == 1) {
+  } else if (side === 1) {
     // listings
     batch.set(ref, { numListings: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
     if (hasBonus) {
@@ -1249,17 +1248,17 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 
 function updateNumTotalOrders(num, hasBonus, side) {
   utils.log('Updating num total orders');
-  let totalOffers = 0,
-    totalBonusOffers = 0,
-    totalListings = 0,
-    totalBonusListings = 0;
+  let totalOffers = 0;
+  let totalBonusOffers = 0;
+  let totalListings = 0;
+  let totalBonusListings = 0;
 
-  if (side == 0) {
+  if (side === 0) {
     totalOffers = num;
     if (hasBonus) {
       totalBonusOffers = num;
     }
-  } else if (side == 1) {
+  } else if (side === 1) {
     totalListings = num;
     if (hasBonus) {
       totalBonusListings = num;
@@ -1344,14 +1343,13 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
   }
   return data;
 }
+
 async function getAssetsFromNftc(address, limit, offset) {
   utils.log('Fetching assets from nftc');
-  return;
 }
 
 async function getAssetsFromAlchemy(address, limit, offset) {
   utils.log('Fetching assets from alchemy');
-  return;
 }
 
 async function getAssetsFromUnmarshal(address, limit, offset) {
@@ -1366,7 +1364,6 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
   } catch (err) {
     utils.error('Error occured while fetching assets from unmarshal');
     utils.error(err);
-    return;
   }
 }
 
@@ -1387,7 +1384,6 @@ async function getAssetsFromOpensea(address, limit, offset) {
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
-    return;
   }
 }
 
@@ -1443,8 +1439,8 @@ function isOrderExpired(doc) {
   const order = doc.data();
   const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
   const orderExpirationTime = +order.expirationTime;
-  if (orderExpirationTime == 0) {
-    //special case of never expire
+  if (orderExpirationTime === 0) {
+    // special case of never expire
     return false;
   }
   return orderExpirationTime <= utcSecondsSinceEpoch;
@@ -1455,10 +1451,10 @@ function deleteExpiredOrder(doc) {
   const order = doc.data();
   const side = +order.side;
   const batch = db.batch();
-  if (side == 1) {
+  if (side === 1) {
     // listing
     deleteListing(batch, doc.ref);
-  } else if (side == 0) {
+  } else if (side === 0) {
     // offer
     deleteOffer(batch, doc.ref);
   } else {
@@ -1692,10 +1688,10 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   let userBonusShare = bn(userInfo.numBonusListings).plus(userInfo.numBonusOffers);
   let salesFeesTotal = bn(userInfo.salesFeesTotal);
   let purchasesFeesTotal = bn(userInfo.purchasesFeesTotal);
-  let rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
-  let bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
-  let saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
-  let purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
+  const rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
+  const bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
+  const saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
+  const purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
   let pending = bn(0);
   let bonusPending = bn(0);
   let salePending = bn(0);
@@ -1707,9 +1703,9 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
     return;
   }
 
-  const isOrder = actionType == 'order' ? true : false;
-  const isSale = actionType == 'sale' ? true : false;
-  const isPurchase = actionType == 'purchase' ? true : false;
+  const isOrder = actionType === 'order';
+  const isSale = actionType === 'sale';
+  const isPurchase = actionType === 'purchase';
 
   const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
   const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
@@ -1754,7 +1750,7 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
       purchasesFeesTotal = purchasesFeesTotal.plus(fees);
     }
   }
-  
+
   if (isOrder) {
     userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
     userInfo.rewardsInfo.pending = pending.toString();
@@ -1812,7 +1808,7 @@ async function updateLocalRewards() {
   const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
   const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
 
-  let lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
+  const lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
 
   if (currentBlock.lte(lastRewardBlock)) {
     utils.log('Not updating global rewards since current block <= lastRewardBlock');
@@ -2027,7 +2023,6 @@ const nodemailer = require('nodemailer');
 const mailCreds = require('./creds/nftc-web-nodemailer-creds.json');
 
 const senderEmailAddress = 'hi@nftcompany.com';
-const testReceiverEmailAddress = 'findadit@gmail.com';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -2050,10 +2045,10 @@ app.get('/u/:user/getEmail', async (req, res) => {
     .doc(user)
     .get();
 
-  let data = userDoc.data();
+  const data = userDoc.data();
 
-  if (data?.profileInfo?.email?.address) {
-    let resp = utils.jsonString(data.profileInfo.email);
+  if (data.profileInfo && data.profileInfo.email && data.profileInfo.email.address) {
+    const resp = utils.jsonString(data.profileInfo.email);
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
@@ -2110,13 +2105,13 @@ app.get('/verifyEmail', async (req, res) => {
   const userDoc = await userDocRef.get();
   // check email
   const storedEmail = userDoc.data().profileInfo.email.address;
-  if (storedEmail != email) {
+  if (storedEmail !== email) {
     res.status(401).send('Wrong email');
     return;
   }
   // check guid
   const storedGuid = userDoc.data().profileInfo.email.verificationGuid;
-  if (storedGuid != guid) {
+  if (storedGuid !== guid) {
     res.status(401).send('Wrong verification code');
     return;
   }
@@ -2201,13 +2196,13 @@ async function prepareEmail(user, order, type) {
 
   let subject = '';
   let link = constants.API_BASE;
-  if (type == 'offerMade') {
+  if (type === 'offerMade') {
     subject = 'You received a ' + price + ' ETH offer at NFT Company';
     link += '/offers-received';
-  } else if (type == 'offerAccepted') {
+  } else if (type === 'offerAccepted') {
     subject = 'Your offer of ' + price + ' ETH has been accepted at NFT Company';
     link += '/purchases';
-  } else if (type == 'itemPurchased') {
+  } else if (type === 'itemPurchased') {
     subject = 'Your item has been purchased for ' + price + ' ETH at NFT Company';
     link += '/sales';
   } else {

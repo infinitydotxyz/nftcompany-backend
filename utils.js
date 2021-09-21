@@ -1,8 +1,8 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
 
-//todo: adi change this before push
-var serviceAccount = require('./creds/nftc-web-firebase-creds.json');
+// todo: adi change this before push
+const serviceAccount = require('./creds/nftc-web-firebase-creds.json');
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
@@ -11,13 +11,13 @@ firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.applicationDefault()
 // })
 
-let DEBUG_LOG = true; //todo: adi change this
-if (process.env.DEBUG_LOG == 'false') {
+let DEBUG_LOG = true; // todo: adi change this
+if (process.env.DEBUG_LOG === 'false') {
   DEBUG_LOG = false;
 }
 
 let ERROR_LOG = true;
-if (process.env.ERROR_LOG == 'false') {
+if (process.env.ERROR_LOG === 'false') {
   ERROR_LOG = false;
 }
 
@@ -28,20 +28,20 @@ function error(obj, ...objs) {
       msg += ' ' + s;
     }
     console.error('[ERROR]: ' + obj + msg);
-    if (typeof err === 'object') {
-      if (err.message) {
-        console.log('\nMessage: ' + err.message);
+    if (typeof obj === 'object') {
+      if (obj.message) {
+        console.log('\nMessage: ' + obj.message);
       }
-      if (err.lineNumber) {
-        console.log('Error line number ' + err.lineNumber);
+      if (obj.lineNumber) {
+        console.log('Error line number ' + obj.lineNumber);
       }
-      if (err.stack) {
+      if (obj.stack) {
         console.log('\nStacktrace:');
         console.log('====================');
-        console.log(err.stack);
+        console.log(obj.stack);
       }
     } else {
-      console.log('error not object');
+      console.log('Error not object');
     }
   }
 }
@@ -72,13 +72,13 @@ module.exports = {
     // return true;
 
     // path is in the form /u/user/*
-    let userId = path.split('/')[2].trim().toLowerCase();
+    const userId = path.split('/')[2].trim().toLowerCase();
     try {
       this.log('Authorizing ' + userId + ' for ' + path);
       // verify signature
       const sign = JSON.parse(signature);
       const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
-      if (actualAddress == userId) {
+      if (actualAddress === userId) {
         return true;
       }
     } catch (error) {
@@ -96,7 +96,7 @@ module.exports = {
     const strLength = searchTerm.length;
     const strFrontCode = searchTerm.slice(0, strLength - 1);
     const strEndCode = searchTerm.slice(strLength - 1, searchTerm.length);
-    endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
+    const endCode = strFrontCode + String.fromCharCode(strEndCode.charCodeAt(0) + 1);
     return endCode;
   },
 
@@ -107,7 +107,7 @@ module.exports = {
       fieldArr.forEach((name, idx) => {
         numberFields[name] = parseInt(req.query[name] || defaultValues[idx]);
         if (isNaN(numberFields[name])) {
-          throw `Invalid query param: ${name} = ${req.query[name]}`;
+          throw Error(`Invalid query param: ${name} = ${req.query[name]}`);
         }
       });
     } catch (err) {
