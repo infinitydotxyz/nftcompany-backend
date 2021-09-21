@@ -482,54 +482,6 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   return getOrdersWithTokenId(req, res);
 });
 
-async function getOrders(maker, tokenAddress, tokenId, side) {
-  utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
-  const results = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(maker)
-    .collection(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.asset.address', '==', tokenAddress)
-    .where('metadata.asset.id', '==', tokenId)
-    .where('side', '==', parseInt(side))
-    .get();
-
-  if (results.empty) {
-    utils.log('No matching orders');
-    return [];
-  }
-  return results.docs;
-}
-
-const getOrdersWithTokenId = async (req, res) => {
-  if (!req.query.maker || !req.query.tokenAddress) {
-    res.sendStatus(400);
-  }
-
-  const maker = req.query.maker.trim().toLowerCase();
-  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
-  const tokenId = req.query.tokenId;
-  const side = req.query.side;
-
-  const docs = await getOrders(maker, tokenAddress, tokenId, side);
-  if (docs) {
-    const orders = [];
-    for (const doc of docs) {
-      const order = doc.data();
-      order.id = doc.id;
-      orders.push(order);
-    }
-    const resp = {
-      count: orders.length,
-      orders: orders
-    };
-    res.send(resp);
-  } else {
-    res.sendStatus(404);
-  }
-};
-
 const getOrdersWithDocId = async (req, res) => {
   if (!req.query.maker || !req.query.id) {
     res.sendStatus(400);
@@ -571,6 +523,59 @@ const getOrdersWithDocId = async (req, res) => {
     res.sendStatus(500);
   }
 };
+
+const getOrdersWithTokenId = async (req, res) => {
+  if (!req.query.maker || !req.query.tokenAddress) {
+    res.sendStatus(400);
+  }
+
+  const maker = req.query.maker.trim().toLowerCase();
+  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
+  const tokenId = req.query.tokenId;
+  const side = +req.query.side;
+
+  const docs = await getOrders(maker, tokenAddress, tokenId, side);
+  if (docs) {
+    const orders = [];
+    for (const doc of docs) {
+      const order = doc.data();
+      order.id = doc.id;
+      orders.push(order);
+    }
+    const resp = {
+      count: orders.length,
+      orders: orders
+    };
+    res.send(resp);
+  } else {
+    res.sendStatus(404);
+  }
+};
+
+async function getOrders(maker, tokenAddress, tokenId, side) {
+  utils.log('Fetching order for', maker, tokenAddress, tokenId, side);
+
+  let collection = fstrCnstnts.LISTINGS_COLL;
+  if (side === 0) {
+    collection = fstrCnstnts.OFFERS_COLL;
+  }
+  const results = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(maker)
+    .collection(collection)
+    .where('metadata.asset.address', '==', tokenAddress)
+    .where('metadata.asset.id', '==', tokenId)
+    .where('side', '==', parseInt(side))
+    .get();
+
+  if (results.empty) {
+    utils.log('No matching orders');
+    return [];
+  }
+  return results.docs;
+}
 
 // fetch user reward
 app.get('/u/:user/reward', async (req, res) => {
