@@ -685,7 +685,7 @@ app.get('/listingsByCollectionName', async (req, res) => {
     });
 });
 
-app.get('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
+app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const { limit, startAfter, error } = utils.parseQueryFields(
     res,
@@ -702,7 +702,7 @@ app.get('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
-      .collection(fstrCnstnts.PENDING_TXNS_COLL)
+      .collection(fstrCnstnts.TXNS_COLL)
       .where('status', '==', 'pending')
       .orderBy('createdAt', 'desc')
       .startAfter(startAfter)
@@ -791,9 +791,9 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   }
 });
 
-// save pending txn
+// save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
   try {
     const payload = req.body;
     const user = req.params.user.trim().toLowerCase();
@@ -853,7 +853,7 @@ app.post('/u/:user/wyvern/v1/pendingtxns', async (req, res) => {
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
-      .collection(fstrCnstnts.PENDING_TXNS_COLL)
+      .collection(fstrCnstnts.TXNS_COLL)
       .doc(txnHash)
       .set(payload)
       .then(() => {
@@ -887,7 +887,7 @@ async function waitForTxn(user, payload) {
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .collection(fstrCnstnts.PENDING_TXNS_COLL);
+    .collection(fstrCnstnts.TXNS_COLL);
 
   const origTxnDocRef = userPendingTxnCollRef.doc(origTxnHash);
   const confirms = 1;

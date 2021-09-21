@@ -68,7 +68,7 @@ Data structure in firestore
 					- offersColl
 					- purchasesColl
 					- salesColl
-					- pendingTxnsColl
+					- txnsColl
 			- bonusRewardTokensColl
 				- tokenDoc
 					- name
@@ -93,7 +93,7 @@ module.exports = {
     ASSETS_COLL: 'assets',
     PURCHASES_COLL: 'purchases',
     SALES_COLL: 'sales',
-    PENDING_TXNS_COLL: 'pendingTxns'
+    TXNS_COLL: 'txns'
   },
 
   auth: {
