@@ -530,7 +530,6 @@ const getOrdersWithDocId = async (req, res) => {
     utils.error('Error fetching order: ' + docId + ' for user ' + maker + ' from collection ' + collection);
     utils.error(err);
     res.sendStatus(500);
-    return;
   }
 };
 
