@@ -243,7 +243,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 app.get('/listings', async (req, res) => {
   const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
   const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH; // add a default max of 5000 eth
-  const sortByPrice = `${req.query.sortByPrice || 'asc'}`.toLowerCase(); // ascending default
+  const sortByPrice = `${req.query.sortByPrice || 'desc'}`.toLowerCase(); // descending default
   const { limit, startAfterPrice, startAfter, error } = utils.parseQueryFields(
     res,
     req,
