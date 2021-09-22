@@ -47,6 +47,7 @@ async function init() {
     // set local info
     localInfo = JSON.parse(JSON.stringify(globalInfo));
     origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
+    utils.trace('Fetched startup global info: ' + utils.jsonString(globalInfo));
   } catch (err) {
     utils.error('Encountered error while getting global info. Exiting process');
     utils.error(err);
@@ -79,7 +80,9 @@ async function init() {
     try {
       globalInfo = await db.runTransaction(async (txn) => {
         const fetchedGlobalInfo = await txn.get(globalDocRef);
-        utils.trace('Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data()));
+        utils.trace(
+          'Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data())
+        );
         // reconcile globalinfo
         const newGlobalInfo = reconcileGlobalInfo(fetchedGlobalInfo.data());
         await txn.update(globalDocRef, newGlobalInfo);
@@ -95,6 +98,7 @@ async function init() {
 }
 
 function reconcileGlobalInfo(globalData) {
+  utils.trace('Reconciling global info');
   const newGlobalInfo = { ...getEmptyGlobalInfo(), ...globalData };
   newGlobalInfo.rewardsInfo = {
     ...getEmptyGlobalInfo().rewardsInfo,
@@ -143,8 +147,7 @@ function reconcileGlobalInfo(globalData) {
   if (bn(newGlobalInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
     newGlobalInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
   }
-  utils.trace('=================================== NEW INFO ==================================================');
-  utils.trace(utils.jsonString(newGlobalInfo));
+  utils.trace('New global info after reconcile: ' + utils.jsonString(newGlobalInfo));
   return newGlobalInfo;
 }
 
@@ -829,6 +832,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   // default one order per post call
   const numOrders = 1;
   const batch = db.batch();
+  utils.log('Making an order for user: ' + maker);
   try {
     // check if token has bonus if payload instructs so
     let hasBonus = payload.metadata.hasBonusReward;
@@ -839,15 +843,14 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
     // update rewards
     const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true, 'order');
-    utils.trace('=========== Updated user rewards =====================================');
-    utils.trace(utils.jsonString(userInfo));
+    utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
     // @ts-ignore
     if (userInfo.rewardsInfo) {
       // update user rewards data
       // @ts-ignore
       storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
     } else {
-      utils.log('Not updating rewards data as there are no updates');
+      utils.trace('Not updating rewards data as there are no updates');
     }
 
     if (payload.side === 1) {
@@ -862,6 +865,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     }
 
     // commit batch
+    utils.log('Committing post order batch to firestore');
     batch
       .commit()
       .then((resp) => {
@@ -934,7 +938,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     payload.txnType = 'original'; // possible values are original, cancellation and replacement
     payload.createdAt = Date.now();
 
-    utils.log('Writing pending txn: ' + txnHash + ' to firestore');
+    utils.log('Writing txn', txnHash, 'to firestore for user', user);
     // save to firestore
     db.collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
@@ -966,7 +970,7 @@ async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
-  utils.log('Waiting for txn: ' + origTxnHash);
+  utils.log('Waiting for txn', origTxnHash);
 
   const batch = db.batch();
   const userTxnCollRef = db
@@ -1032,6 +1036,7 @@ async function waitForTxn(user, payload) {
   }
 
   // commit batch
+  utils.log('Committing the big `wait for txn` batch to firestore');
   batch
     .commit()
     .then((resp) => {
@@ -1053,7 +1058,6 @@ async function fulfillOrder(user, batch, payload) {
     3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
   */
   try {
-    utils.log('Fulfilling order');
     const taker = user.trim().toLowerCase();
     const salePriceInEth = +payload.salePriceInEth;
     const side = +payload.side;
@@ -1061,6 +1065,18 @@ async function fulfillOrder(user, batch, payload) {
     const feesInEth = +payload.feesInEth;
     const txnHash = payload.txnHash;
     const maker = payload.maker.trim().toLowerCase();
+    utils.log(
+      'Fulfilling order for taker',
+      taker,
+      'maker',
+      maker,
+      'sale price ETH',
+      salePriceInEth,
+      'fees in Eth',
+      feesInEth,
+      'and txn hash',
+      txnHash
+    );
 
     const numOrders = 1;
 
@@ -1082,7 +1098,7 @@ async function fulfillOrder(user, batch, payload) {
         .doc(docId)
         .get();
       if (!docSnap.exists) {
-        utils.log('No order ' + docId + ' to fulfill');
+        utils.log('No offer ' + docId + ' to fulfill');
         return;
       }
 
@@ -1121,7 +1137,7 @@ async function fulfillOrder(user, batch, payload) {
         .doc(docId)
         .get();
       if (!docSnap.exists) {
-        utils.log('No order ' + docId + ' to fulfill');
+        utils.log('No listing ' + docId + ' to fulfill');
         return;
       }
 
@@ -1156,7 +1172,7 @@ async function fulfillOrder(user, batch, payload) {
 }
 
 async function saveBoughtOrder(user, order, batch, numOrders) {
-  utils.log('Writing purchase to firestore');
+  utils.log('Writing purchase to firestore for user', user);
   order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1168,7 +1184,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   batch.set(ref, order, { merge: true });
 
   const fees = bn(order.metadata.feesInEth);
-  const purchaseFees = fees.div(5);
+  const purchaseFees = fees.div(constants.SALE_FEES_TO_PURCHASE_FEES_RATIO);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
 
   // update rewards first; before stats
@@ -1191,6 +1207,17 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
 
+  utils.trace(
+    'User purchases total',
+    purchasesTotal,
+    'purchases fees total',
+    purchasesFeesTotal,
+    'purchases total numeric',
+    purchasesTotalNumeric,
+    'purchases fees total numeric',
+    purchasesFeesTotalNumeric
+  );
+
   const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1211,7 +1238,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
 }
 
 async function saveSoldOrder(user, order, batch, numOrders) {
-  utils.log('Writing sale to firestore');
+  utils.log('Writing sale to firestore for user', user);
   order.metadata.createdAt = Date.now();
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1243,6 +1270,17 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
 
+  utils.trace(
+    'User sales total',
+    salesTotal,
+    'sales fees total',
+    salesFeesTotal,
+    'sales total numeric',
+    salesTotalNumeric,
+    'sales fees total numeric',
+    salesFeesTotalNumeric
+  );
+
   const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1263,7 +1301,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 }
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
-  utils.log('Writing listing to firestore');
+  utils.log('Writing listing to firestore for user + ' + maker);
   // check if token is verified if payload instructs so
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -1291,7 +1329,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 }
 
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
-  utils.log('Writing offer to firestore');
+  utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
   payload.metadata.createdAt = Date.now();
   // store data in offers of maker
@@ -1315,7 +1353,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
 }
 
 function updateNumOrders(batch, user, num, hasBonus, side) {
-  utils.log('Updating num orders');
+  utils.log('Updating num orders for user:', user, 'with num:', num, 'hasBonus:', hasBonus, 'and side:', side);
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1337,7 +1375,7 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 }
 
 function updateNumTotalOrders(num, hasBonus, side) {
-  utils.log('Updating num total orders');
+  utils.log('Updating num orders with num:', num, 'hasBonus:', hasBonus, 'and side:', side);
   let totalOffers = 0;
   let totalBonusOffers = 0;
   let totalListings = 0;
@@ -1481,6 +1519,7 @@ async function getAssetsFromOpensea(address, limit, offset) {
 // ============================================= Delete helpers ==========================================================
 
 async function cancelListing(user, batch, docId) {
+  utils.log('Canceling listing for user', user);
   try {
     // check if listing exists first
     const listingRef = db
@@ -1504,6 +1543,7 @@ async function cancelListing(user, batch, docId) {
 }
 
 async function cancelOffer(user, batch, docId) {
+  utils.log('Canceling offer for user', user);
   try {
     // check if offer exists first
     const offerRef = db
@@ -1552,6 +1592,7 @@ async function deleteExpiredOrder(doc) {
     utils.error('Unknown order type', doc.id);
   }
   // commit batch
+  utils.log('Committing delete expired order batch');
   batch
     .commit()
     .then((resp) => {
@@ -1564,6 +1605,7 @@ async function deleteExpiredOrder(doc) {
 }
 
 async function deleteListingWithId(id, user, batch) {
+  utils.log('Deleting listing with id', id, 'from user', user);
   const docRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1607,6 +1649,7 @@ async function deleteListing(batch, docRef) {
 }
 
 async function deleteOfferMadeWithId(id, user, batch) {
+  utils.log('Deleting offer with id', id, 'from user', user);
   const docRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1660,6 +1703,7 @@ function incrementLocalStats({
   totalVolume,
   totalSales
 }) {
+  utils.log('Incrementing local info for total global stats');
   localInfo.totalOffers = bn(localInfo.totalOffers).plus(totalOffers || 0);
   localInfo.totalBonusOffers = bn(localInfo.totalBonusOffers).plus(totalBonusOffers || 0);
   localInfo.totalListings = bn(localInfo.totalListings).plus(totalListings || 0);
@@ -1690,7 +1734,7 @@ async function hasBonusReward(address) {
 }
 
 async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease, actionType) {
-  utils.log('Getting updated reward for user', user);
+  utils.log('Getting UserInfo and updated reward for user', user);
 
   const userInfoRef = await db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1792,7 +1836,18 @@ function getEmptyUserRewardInfo() {
 
 // updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
 async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, actionType) {
-  utils.log('Updating rewards in increasing mode = ', isIncrease);
+  utils.log(
+    'Updating rewards in increasing mode',
+      isIncrease,
+      'with hasBonus',
+      hasBonus,
+      'numOrders',
+      numOrders,
+      'fees',
+      fees,
+      'actionType',
+      actionType
+  );
 
   let userShare = bn(userInfo.numListings).plus(userInfo.numOffers);
   let userBonusShare = bn(userInfo.numBonusListings).plus(userInfo.numBonusOffers);
@@ -1898,10 +1953,8 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   localInfo.rewardsInfo.totalSaleRewardPaid = salePending.plus(localInfo.rewardsInfo.totalSaleRewardPaid);
   localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.plus(localInfo.rewardsInfo.totalPurchaseRewardPaid);
 
-  utils.trace('============================= LOCAL REWARDS ===========================');
-  utils.trace(utils.jsonString(localInfo));
-  utils.trace('============================= USER INFO ===========================');
-  utils.trace(utils.jsonString(userInfo.rewardsInfo));
+  utils.trace('Updated local rewards: ' + utils.jsonString(localInfo));
+  utils.trace('Updated user rewards: ' + utils.jsonString(userInfo.rewardsInfo));
 
   return userInfo.rewardsInfo;
 }
@@ -1926,26 +1979,36 @@ async function updateLocalRewardPerShares() {
   const lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
 
   if (currentBlock.lte(lastRewardBlock)) {
-    utils.log('Not updating global rewards since current block <= lastRewardBlock');
+    utils.log(
+      'Not updating global rewards since current block:',
+        currentBlock.toString(),
+        '<= lastRewardBlock:',
+        lastRewardBlock.toString()
+    );
     return false;
   }
   const multiplier = currentBlock.minus(lastRewardBlock);
+  utils.trace('Reward multiplier:', multiplier);
   if (!totalOrders.eq(0)) {
-    utils.trace('Total orders: ' + totalOrders.toString());
     const reward = multiplier.times(rewardPerBlock);
     localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
+    utils.trace('Total orders:', totalOrders.toString());
+    utils.trace('Updated accRewardPerShare to:', localInfo.rewardsInfo.accRewardPerShare.toString());
   }
   if (!totalBonusOrders.eq(0)) {
-    utils.trace('Total bonus orders: ' + totalBonusOrders.toString());
     const bonusReward = multiplier.times(bonusRewardPerBlock);
     localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
+    utils.trace('Total bonus orders:', totalBonusOrders.toString());
+    utils.trace('Updated accBonusRewardPerShare to:', localInfo.rewardsInfo.accBonusRewardPerShare.toString());
   }
   if (!totalFees.eq(0)) {
-    utils.trace('Total fees: ' + totalFees.toString());
     const saleReward = multiplier.times(saleRewardPerBlock);
     localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees));
     const purchaseReward = multiplier.times(purchaseRewardPerBlock);
     localInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
+    utils.trace('Total fees:', totalFees.toString());
+    utils.trace('Updated accSaleRewardPerShare to:', localInfo.rewardsInfo.accSaleRewardPerShare.toString());
+    utils.trace('Updated accPurchaseRewardPerShare to:', localInfo.rewardsInfo.accPurchaseRewardPerShare.toString());
   }
 
   localInfo.rewardsInfo.lastRewardBlock = currentBlock;
@@ -2296,6 +2359,7 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
 
 // right now emails are sent when an item is purchased, offer is made or an offer is accepted
 async function prepareEmail(user, order, type) {
+  utils.log('Preparing to send email to user', user, 'for action type', type);
   const userDoc = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -2377,7 +2441,6 @@ function getSearchFriendlyString(input) {
 }
 
 function toFixed5(num) {
-  utils.log('toFixed5: ' + num);
   // @ts-ignore
   // eslint-disable-next-line no-undef
   // console.log(__line);

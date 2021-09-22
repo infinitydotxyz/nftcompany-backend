@@ -102,7 +102,7 @@ module.exports = {
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {
-      this.log('Authorizing ' + userId + ' for ' + path);
+      trace('Authorizing ' + userId + ' for ' + path);
       // verify signature
       const sign = JSON.parse(signature);
       const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
@@ -110,7 +110,8 @@ module.exports = {
         return true;
       }
     } catch (error) {
-      this.error('Cannot authorize user ' + userId, error);
+      error('Cannot authorize user ' + userId);
+      error(error);
     }
     return false;
   },
