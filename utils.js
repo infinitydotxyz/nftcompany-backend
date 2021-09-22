@@ -12,9 +12,32 @@ firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.applicationDefault()
 // })
 
+Object.defineProperty(global, '__stack', {
+  get: function () {
+    const orig = Error.prepareStackTrace;
+    Error.prepareStackTrace = function (_, stack) {
+      return stack;
+    };
+    const err = new Error();
+    // eslint-disable-next-line no-caller
+    Error.captureStackTrace(err, arguments.callee);
+    const stack = err.stack;
+    Error.prepareStackTrace = orig;
+    return stack;
+  }
+});
+
+Object.defineProperty(global, '__line', {
+  get: function () {
+    // @ts-ignore
+    // eslint-disable-next-line no-undef
+    return __stack[2].getLineNumber();
+  }
+});
+
 const TRACE_LOG = process.env.TRACE_LOG === 'true';
-const DEBUG_LOG = process.env.DEBUG_LOG === 'true';
-const ERROR_LOG = process.env.DEBUG_LOG === 'false';
+const INFO_LOG = process.env.INFO_LOG === 'true';
+const ERROR_LOG = process.env.ERROR_LOG === 'true';
 
 function error(obj, ...objs) {
   if (ERROR_LOG) {
@@ -35,8 +58,6 @@ function error(obj, ...objs) {
         console.log('====================');
         console.log(obj.stack);
       }
-    } else {
-      console.log('Error not object');
     }
   }
 }
@@ -59,7 +80,7 @@ module.exports = {
   trace,
 
   log: function (obj, ...objs) {
-    if (DEBUG_LOG) {
+    if (INFO_LOG) {
       let msg = '';
       for (const s of objs) {
         msg += ' ' + s;

@@ -102,5 +102,7 @@ module.exports = {
   },
 
   // API_BASE: 'https://server.nftcompany.com', // todo: adi
-  API_BASE: 'http://localhost:9090'
+  API_BASE: 'http://localhost:9090',
+  // SITE_BASE: 'https://nftcompany.com',
+  SITE_BASE: 'http://localhost:3000'
 };

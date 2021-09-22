@@ -46,11 +46,11 @@ async function init() {
     };
     // set local info
     localInfo = JSON.parse(JSON.stringify(globalInfo));
-    origLocalInfo = JSON.parse(JSON.stringify(localInfo));
+    origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
   } catch (err) {
     utils.error('Encountered error while getting global info. Exiting process');
     utils.error(err);
-    process.exit();
+    process.exit(1);
   }
 
   // Start server and listen to the App Engine-specified port, or 9090 otherwise
@@ -65,6 +65,7 @@ async function init() {
     .onSnapshot(
       (snapshot) => {
         globalInfo = snapshot.data();
+        utils.trace('Newly changed firestore global info: ' + utils.jsonString(globalInfo));
       },
       (err) => {
         utils.error('Error in listening to global info doc changes');
@@ -77,25 +78,25 @@ async function init() {
     const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
     try {
       globalInfo = await db.runTransaction(async (txn) => {
-        const globalDoc = await txn.get(globalDocRef);
-        utils.trace('Newly fetched firestore global info: ' + utils.jsonString(globalDoc.data()));
+        const fetchedGlobalInfo = await txn.get(globalDocRef);
+        utils.trace('Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data()));
         // reconcile globalinfo
-        const newInfo = reconcileGlobalInfo(globalDoc.data());
-        await txn.update(globalDocRef, newInfo);
-        return newInfo;
+        const newGlobalInfo = reconcileGlobalInfo(fetchedGlobalInfo.data());
+        await txn.update(globalDocRef, newGlobalInfo);
+        return newGlobalInfo;
       });
       origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
       utils.trace('Reconciled global info: ' + utils.jsonString(globalInfo));
     } catch (err) {
-      utils.error('Failed updating global info in firestore', err);
+      utils.error('Failed updating global info in firestore');
       utils.error(err);
     }
-  }, 1000 * 60); // every 60 seconds
+  }, 1000 * 15); // every 15 seconds todo: adi
 }
 
 function reconcileGlobalInfo(globalData) {
-  const newInfo = { ...getEmptyGlobalInfo(), ...globalData };
-  newInfo.rewardsInfo = {
+  const newGlobalInfo = { ...getEmptyGlobalInfo(), ...globalData };
+  newGlobalInfo.rewardsInfo = {
     ...getEmptyGlobalInfo().rewardsInfo,
     ...globalData.rewardsInfo
   };
@@ -103,46 +104,48 @@ function reconcileGlobalInfo(globalData) {
   const localInfoDelta = getLocalInfoDelta();
   utils.trace('Local info delta: ' + utils.jsonString(localInfoDelta));
 
-  newInfo.updatedAt = Date.now();
-  newInfo.totalSales = bn(newInfo.totalSales).plus(localInfoDelta.totalSales).toString();
-  newInfo.totalFees = bn(newInfo.totalFees).plus(localInfoDelta.totalFees).toString();
-  newInfo.totalVolume = bn(newInfo.totalVolume).plus(localInfoDelta.totalVolume).toString();
-  newInfo.totalListings = bn(newInfo.totalListings).plus(localInfoDelta.totalListings).toString();
-  newInfo.totalBonusListings = bn(newInfo.totalBonusListings).plus(localInfoDelta.totalBonusListings).toString();
-  newInfo.totalOffers = bn(newInfo.totalOffers).plus(localInfoDelta.totalOffers).toString();
-  newInfo.totalBonusOffers = bn(newInfo.totalBonusOffers).plus(localInfoDelta.totalBonusOffers).toString();
+  newGlobalInfo.updatedAt = Date.now();
+  newGlobalInfo.totalSales = bn(newGlobalInfo.totalSales).plus(localInfoDelta.totalSales).toString();
+  newGlobalInfo.totalFees = bn(newGlobalInfo.totalFees).plus(localInfoDelta.totalFees).toString();
+  newGlobalInfo.totalVolume = bn(newGlobalInfo.totalVolume).plus(localInfoDelta.totalVolume).toString();
+  newGlobalInfo.totalListings = bn(newGlobalInfo.totalListings).plus(localInfoDelta.totalListings).toString();
+  newGlobalInfo.totalBonusListings = bn(newGlobalInfo.totalBonusListings)
+    .plus(localInfoDelta.totalBonusListings)
+    .toString();
+  newGlobalInfo.totalOffers = bn(newGlobalInfo.totalOffers).plus(localInfoDelta.totalOffers).toString();
+  newGlobalInfo.totalBonusOffers = bn(newGlobalInfo.totalBonusOffers).plus(localInfoDelta.totalBonusOffers).toString();
 
-  newInfo.rewardsInfo.accRewardPerShare = bn(newInfo.rewardsInfo.accRewardPerShare)
+  newGlobalInfo.rewardsInfo.accRewardPerShare = bn(newGlobalInfo.rewardsInfo.accRewardPerShare)
     .plus(localInfoDelta.rewardsInfo.accRewardPerShare)
     .toString();
-  newInfo.rewardsInfo.accBonusRewardPerShare = bn(newInfo.rewardsInfo.accBonusRewardPerShare)
+  newGlobalInfo.rewardsInfo.accBonusRewardPerShare = bn(newGlobalInfo.rewardsInfo.accBonusRewardPerShare)
     .plus(localInfoDelta.rewardsInfo.accBonusRewardPerShare)
     .toString();
-  newInfo.rewardsInfo.accSaleRewardPerShare = bn(newInfo.rewardsInfo.accSaleRewardPerShare)
+  newGlobalInfo.rewardsInfo.accSaleRewardPerShare = bn(newGlobalInfo.rewardsInfo.accSaleRewardPerShare)
     .plus(localInfoDelta.rewardsInfo.accSaleRewardPerShare)
     .toString();
-  newInfo.rewardsInfo.accPurchaseRewardPerShare = bn(newInfo.rewardsInfo.accPurchaseRewardPerShare)
+  newGlobalInfo.rewardsInfo.accPurchaseRewardPerShare = bn(newGlobalInfo.rewardsInfo.accPurchaseRewardPerShare)
     .plus(localInfoDelta.rewardsInfo.accPurchaseRewardPerShare)
     .toString();
-  newInfo.rewardsInfo.totalRewardPaid = bn(newInfo.rewardsInfo.totalRewardPaid)
+  newGlobalInfo.rewardsInfo.totalRewardPaid = bn(newGlobalInfo.rewardsInfo.totalRewardPaid)
     .plus(localInfoDelta.rewardsInfo.totalRewardPaid)
     .toString();
-  newInfo.rewardsInfo.totalBonusRewardPaid = bn(newInfo.rewardsInfo.totalBonusRewardPaid)
+  newGlobalInfo.rewardsInfo.totalBonusRewardPaid = bn(newGlobalInfo.rewardsInfo.totalBonusRewardPaid)
     .plus(localInfoDelta.rewardsInfo.totalBonusRewardPaid)
     .toString();
-  newInfo.rewardsInfo.totalSaleRewardPaid = bn(newInfo.rewardsInfo.totalSaleRewardPaid)
+  newGlobalInfo.rewardsInfo.totalSaleRewardPaid = bn(newGlobalInfo.rewardsInfo.totalSaleRewardPaid)
     .plus(localInfoDelta.rewardsInfo.totalSaleRewardPaid)
     .toString();
-  newInfo.rewardsInfo.totalPurchaseRewardPaid = bn(newInfo.rewardsInfo.totalPurchaseRewardPaid)
+  newGlobalInfo.rewardsInfo.totalPurchaseRewardPaid = bn(newGlobalInfo.rewardsInfo.totalPurchaseRewardPaid)
     .plus(localInfoDelta.rewardsInfo.totalPurchaseRewardPaid)
     .toString();
 
-  if (bn(newInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
-    newInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
+  if (bn(newGlobalInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
+    newGlobalInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
   }
   utils.trace('=================================== NEW INFO ==================================================');
-  utils.trace(utils.jsonString(newInfo));
-  return newInfo;
+  utils.trace(utils.jsonString(newGlobalInfo));
+  return newGlobalInfo;
 }
 
 function getLocalInfoDelta() {
@@ -227,6 +230,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
     });
     res.send(resp);
   } catch (err) {
+    utils.error('Error in checking whether token: ' + tokenAddress + ' is verified or has bonus');
     utils.error(err);
     res.sendStatus(500);
   }
@@ -468,7 +472,6 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 });
 
 // fetch order to fulfill
-// todo: adi who using it
 app.get('/wyvern/v1/orders', async (req, res) => {
   let docId;
 
@@ -681,7 +684,7 @@ app.get('/listingById', async (req, res) => {
         })[0]
       );
       res.set({
-        'Cache-Control': 'must-revalidate, max-age=600',
+        'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
       res.send(resp);
@@ -750,7 +753,7 @@ app.get('/listingsByCollectionName', async (req, res) => {
         })
       );
       res.set({
-        'Cache-Control': 'must-revalidate, max-age=600',
+        'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
       res.send(resp);
@@ -830,7 +833,8 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
     // update rewards
     const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true, 'order');
-
+    utils.trace('=========== Updated user rewards =====================================');
+    utils.trace(utils.jsonString(userInfo));
     // @ts-ignore
     if (userInfo.rewardsInfo) {
       // update user rewards data
@@ -852,7 +856,6 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     }
 
     // commit batch
-    utils.log('Posting an order');
     batch
       .commit()
       .then((resp) => {
@@ -960,14 +963,14 @@ async function waitForTxn(user, payload) {
   utils.log('Waiting for txn: ' + origTxnHash);
 
   const batch = db.batch();
-  const userPendingTxnCollRef = db
+  const userTxnCollRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .collection(fstrCnstnts.TXNS_COLL);
 
-  const origTxnDocRef = userPendingTxnCollRef.doc(origTxnHash);
+  const origTxnDocRef = userTxnCollRef.doc(origTxnHash);
   const confirms = 1;
 
   try {
@@ -1012,7 +1015,7 @@ async function waitForTxn(user, payload) {
       }
       // write a new pending txn in firestore
       utils.log('Writing replacement txn: ' + replacementTxnHash + ' to firestore');
-      const newTxnDocRef = userPendingTxnCollRef.doc(replacementTxnHash);
+      const newTxnDocRef = userTxnCollRef.doc(replacementTxnHash);
       payload.createdAt = Date.now();
       const newPayload = {
         origTxnHash,
@@ -1460,7 +1463,7 @@ async function getAssetsFromOpensea(address, limit, offset) {
     }
   };
   try {
-    utils.log(url);
+    utils.trace(url);
     const { data } = await axios.get(url, options);
     return data;
   } catch (err) {
@@ -1528,20 +1531,30 @@ function isOrderExpired(doc) {
   return orderExpirationTime <= utcSecondsSinceEpoch;
 }
 
-function deleteExpiredOrder(doc) {
+async function deleteExpiredOrder(doc) {
   utils.log('Deleting expired order', doc.id);
   const order = doc.data();
   const side = +order.side;
   const batch = db.batch();
   if (side === 1) {
     // listing
-    deleteListing(batch, doc.ref);
+    await deleteListing(batch, doc.ref);
   } else if (side === 0) {
     // offer
-    deleteOffer(batch, doc.ref);
+    await deleteOffer(batch, doc.ref);
   } else {
     utils.error('Unknown order type', doc.id);
   }
+  // commit batch
+  batch
+    .commit()
+    .then((resp) => {
+      // no op
+    })
+    .catch((err) => {
+      utils.error('Failed to commit delete expired order batch');
+      utils.error(err);
+    });
 }
 
 async function deleteListingWithId(id, user, batch) {
@@ -1600,6 +1613,10 @@ async function deleteOfferMadeWithId(id, user, batch) {
 
 async function deleteOffer(batch, docRef) {
   const doc = await docRef.get();
+  if (!doc.exists) {
+    utils.log('No offer to delete: ' + docRef);
+    return;
+  }
   const offer = doc.id;
   utils.log('Deleting offer', offer);
   const user = doc.data().maker;
@@ -1647,6 +1664,7 @@ function incrementLocalStats({
 }
 
 function storeUpdatedUserRewards(batch, user, data) {
+  utils.trace('Storing updated user rewards:', utils.jsonString(data));
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1680,8 +1698,10 @@ async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees,
     ...userInfo.rewardsInfo
   };
 
-  const updatedUserRewards = updateRewards(userInfo, hasBonus, numOrders, bn(fees), isIncrease, actionType);
+  const updatedUserRewards = await updateRewards(userInfo, hasBonus, numOrders, bn(fees), isIncrease, actionType);
+
   if (!updatedUserRewards) {
+    utils.trace('Setting user updated rewards to null as there are no updates');
     userInfo.rewardsInfo = null;
   }
   return userInfo;
@@ -1781,9 +1801,9 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   let salePending = bn(0);
   let purchasePending = bn(0);
 
-  const result = await updateLocalRewards();
+  const result = await updateLocalRewardPerShares();
   if (!result) {
-    utils.log('Not updating rewards');
+    utils.error('Not updating rewards as updating local reward per shares did not complete');
     return;
   }
 
@@ -1814,13 +1834,13 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
       purchasesFeesTotal = purchasesFeesTotal.minus(fees);
     }
   } else {
-    if (isOrder && userShare.gte(0)) {
+    if (isOrder && userShare.gt(0)) {
       pending = userShare.times(accRewardPerShare).minus(rewardDebt);
     }
-    if (isSale && salesFeesTotal.gte(0)) {
+    if (isSale && salesFeesTotal.gt(0)) {
       salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
     }
-    if (isPurchase && purchasesFeesTotal.gte(0)) {
+    if (isPurchase && purchasesFeesTotal.gt(0)) {
       purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
     }
     // increase before reward debt calc
@@ -1837,15 +1857,15 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
 
   if (isOrder) {
     userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
-    userInfo.rewardsInfo.pending = pending.toString();
+    userInfo.rewardsInfo.pending = pending.plus(userInfo.rewardsInfo.pending).toString();
   }
   if (isSale) {
     userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
-    userInfo.rewardsInfo.salePending = salePending.toString();
+    userInfo.rewardsInfo.salePending = salePending.plus(userInfo.rewardsInfo.salePending).toString();
   }
   if (isPurchase) {
     userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
-    userInfo.rewardsInfo.purchasePending = purchasePending.toString();
+    userInfo.rewardsInfo.purchasePending = purchasePending.plus(userInfo.rewardsInfo.purchasePending).toString();
   }
 
   if (isOrder && hasBonus) {
@@ -1863,7 +1883,7 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
       userBonusShare = userBonusShare.plus(numOrders);
     }
     userInfo.rewardsInfo.bonusRewardDebt = userBonusShare.times(accBonusRewardPerShare).toString();
-    userInfo.rewardsInfo.bonusPending = bonusPending.toString();
+    userInfo.rewardsInfo.bonusPending = bonusPending.plus(userInfo.rewardsInfo.bonusPending).toString();
   }
 
   // update local info
@@ -1875,14 +1895,14 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   utils.trace('============================= LOCAL REWARDS ===========================');
   utils.trace(utils.jsonString(localInfo));
   utils.trace('============================= USER INFO ===========================');
-  utils.trace(utils.jsonString(userInfo));
+  utils.trace(utils.jsonString(userInfo.rewardsInfo));
 
   return userInfo.rewardsInfo;
 }
 
 // updates lastRewardBlock, accRewardPerShare, accBonusRewardPerShare
-async function updateLocalRewards() {
-  utils.log('Updating local rewards');
+async function updateLocalRewardPerShares() {
+  utils.log('Updating local reward per shares');
   const currentBlock = await getCurrentBlock();
   const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
   const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
@@ -1903,18 +1923,19 @@ async function updateLocalRewards() {
     utils.log('Not updating global rewards since current block <= lastRewardBlock');
     return false;
   }
-  if (totalOrders.eq(0)) {
-    utils.log('Not updating global rewards since total liquidity is 0');
-    return false;
-  }
   const multiplier = currentBlock.minus(lastRewardBlock);
-  const reward = multiplier.times(rewardPerBlock);
-  localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
-  if (totalBonusOrders.gt(0)) {
+  if (!totalOrders.eq(0)) {
+    utils.trace('Total orders: ' + totalOrders.toString());
+    const reward = multiplier.times(rewardPerBlock);
+    localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
+  }
+  if (!totalBonusOrders.eq(0)) {
+    utils.trace('Total bonus orders: ' + totalBonusOrders.toString());
     const bonusReward = multiplier.times(bonusRewardPerBlock);
     localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
   }
-  if (totalFees.gt(0)) {
+  if (!totalFees.eq(0)) {
+    utils.trace('Total fees: ' + totalFees.toString());
     const saleReward = multiplier.times(saleRewardPerBlock);
     localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees));
     const purchaseReward = multiplier.times(purchaseRewardPerBlock);
@@ -2000,15 +2021,15 @@ async function getReward(user) {
   const purchasePending = bn(userInfo.rewardsInfo.purchasePending);
 
   const multiplier = currentBlock.minus(lastRewardBlock);
-  if (currentBlock.gte(lastRewardBlock) && totalOrders.gt(0)) {
+  if (currentBlock.gt(lastRewardBlock) && !totalOrders.eq(0)) {
     const reward = multiplier.times(rewardPerBlock);
     _accRewardPerShare = _accRewardPerShare.plus(reward.div(totalOrders));
   }
-  if (currentBlock.gte(lastRewardBlock) && totalBonusOrders.gt(0)) {
+  if (currentBlock.gt(lastRewardBlock) && !totalBonusOrders.eq(0)) {
     const bonusReward = multiplier.times(bonusRewardPerBlock);
     _accBonusRewardPerShare = _accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
   }
-  if (currentBlock.gte(lastRewardBlock) && totalFees.gt(0)) {
+  if (currentBlock.gt(lastRewardBlock) && !totalFees.eq(0)) {
     const saleReward = multiplier.times(saleRewardPerBlock);
     const purchaseReward = multiplier.times(purchaseRewardPerBlock);
     _accSaleRewardPerShare = _accSaleRewardPerShare.plus(saleReward.div(totalFees));
@@ -2070,9 +2091,17 @@ async function getReward(user) {
 
   let netReward = grossReward;
   let penalty = bn(0);
-  if (penaltyActivated) {
-    const salesRatio = numSales.div(numOrders.plus(numBonusOrders));
-    penalty = penaltyRatio.minus(salesRatio).times(grossReward);
+  if (penaltyActivated && !netReward.eq(0)) {
+    let numTotalOrders = numOrders.plus(numBonusOrders);
+    const numTotalFulfills = numSales.plus(numPurchases);
+    // special case where user only made purchases without placing any orders;
+    // also handles the case where numTotalFulfills = 0 to avoid div by 0
+    // this code should never be executed after the netReward > 0 check above
+    // also takes care of ratio > 1 case
+    // but im paranoid
+    numTotalOrders = numTotalOrders.eq(0) ? (numTotalFulfills.eq(0) ? 1 : numTotalFulfills) : numTotalOrders;
+    const salesRatio = numTotalFulfills.div(numTotalOrders);
+    penalty = penaltyRatio.minus(salesRatio).times(netReward);
     // the edge case where all orders are fulfilled
     if (penalty.lt(0)) {
       penalty = bn(0);
@@ -2084,6 +2113,7 @@ async function getReward(user) {
   resp.netRewardNumeric = toFixed5(netReward);
 
   // write net reward to firestore async for leaderboard purpose
+  // will fail if user doesn't exist
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -2177,7 +2207,7 @@ app.post('/u/:user/setEmail', async (req, res) => {
   const subject = 'Verify your email for NFT Company';
   const link = constants.API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
   const html =
-    '<p>Click the below link to verify your email</p> <br>' + '<a href=' + link + ' target="_blank">' + link + '</a>';
+    '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
   sendEmail(email, subject, html);
   res.sendStatus(200);
 });
@@ -2287,7 +2317,7 @@ async function prepareEmail(user, order, type) {
   const price = order.metadata.basePriceInEth;
 
   let subject = '';
-  let link = constants.API_BASE;
+  let link = constants.SITE_BASE;
   if (type === 'offerMade') {
     subject = 'You received a ' + price + ' ETH offer at NFT Company';
     link += '/offers-received';
@@ -2302,7 +2332,7 @@ async function prepareEmail(user, order, type) {
     return;
   }
 
-  const html = '<p>See it here:</p> <br>' + '<a href=' + link + ' target="_blank">' + link + '</a>';
+  const html = '<p>See it here:</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
   // send email
   sendEmail(email, subject, html);
 }
@@ -2341,10 +2371,17 @@ function getSearchFriendlyString(input) {
 }
 
 function toFixed5(num) {
+  utils.log('toFixed5: ' + num);
+  // @ts-ignore
+  // eslint-disable-next-line no-undef
+  // console.log(__line);
   return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 function bn(num) {
   // @ts-ignore
-  return BigNumber(num);
+  const bigNum = BigNumber(num);
+  // console.log(num + '   ====== bigNUm ' + bigNum);
+  // console.log(__line);
+  return bigNum;
 }
