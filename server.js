@@ -803,7 +803,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       txn.id = doc.id;
       txns.push(txn);
       // check status
-      waitForTxn(user, txn);
+      waitForTxn(user, txn, true);
     }
     const resp = {
       count: txns.length,
@@ -938,7 +938,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     payload.txnType = 'original'; // possible values are original, cancellation and replacement
     payload.createdAt = Date.now();
 
-    utils.log('Writing txn', txnHash, 'to firestore for user', user);
+    utils.log('Writing txn', txnHash, 'in pending state to firestore for user', user);
     // save to firestore
     db.collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
@@ -949,7 +949,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
       .set(payload)
       .then(() => {
         // listen for txn mined or not mined
-        waitForTxn(user, payload);
+        waitForTxn(user, payload, false);
         res.sendStatus(200);
       })
       .catch((err) => {
@@ -966,12 +966,19 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // ====================================================== Write helpers ==========================================================
 
-async function waitForTxn(user, payload) {
+async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
-  utils.log('Waiting for txn', origTxnHash);
 
+  // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
+  const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
+  if (!isStillPending) {
+    utils.trace('Txn', origTxnHash, 'already updated in firestore');
+    return;
+  }
+
+  utils.log('Waiting for txn', origTxnHash);
   const batch = db.batch();
   const userTxnCollRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1046,6 +1053,19 @@ async function waitForTxn(user, payload) {
       utils.error('Failed to commit pending txn batch');
       utils.error(err);
     });
+}
+
+async function isTxnPendingInFirestore(user, txnHash) {
+  const userTxnDoc = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.TXNS_COLL)
+    .doc(txnHash)
+    .get();
+
+  return userTxnDoc.get('status') === 'pending';
 }
 
 // order fulfill
@@ -1838,15 +1858,15 @@ function getEmptyUserRewardInfo() {
 async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, actionType) {
   utils.log(
     'Updating rewards in increasing mode',
-      isIncrease,
-      'with hasBonus',
-      hasBonus,
-      'numOrders',
-      numOrders,
-      'fees',
-      fees,
-      'actionType',
-      actionType
+    isIncrease,
+    'with hasBonus',
+    hasBonus,
+    'numOrders',
+    numOrders,
+    'fees',
+    fees,
+    'actionType',
+    actionType
   );
 
   let userShare = bn(userInfo.numListings).plus(userInfo.numOffers);
@@ -1981,9 +2001,9 @@ async function updateLocalRewardPerShares() {
   if (currentBlock.lte(lastRewardBlock)) {
     utils.log(
       'Not updating global rewards since current block:',
-        currentBlock.toString(),
-        '<= lastRewardBlock:',
-        lastRewardBlock.toString()
+      currentBlock.toString(),
+      '<= lastRewardBlock:',
+      lastRewardBlock.toString()
     );
     return false;
   }
