@@ -473,6 +473,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
+  // query: id, maker, side
   let docId;
 
   if (req.query.id) {
@@ -487,9 +488,11 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   return getOrdersWithTokenId(req, res);
 });
 
+// TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
 const getOrdersWithDocId = async (req, res) => {
   if (!req.query.maker || !req.query.id) {
     res.sendStatus(400);
+    return;
   }
 
   const maker = req.query.maker.trim().toLowerCase();
@@ -521,11 +524,13 @@ const getOrdersWithDocId = async (req, res) => {
       res.send(resp);
     } else {
       res.sendStatus(404);
+      return;
     }
   } catch (err) {
     utils.error('Error fetching order: ' + docId + ' for user ' + maker + ' from collection ' + collection);
     utils.error(err);
     res.sendStatus(500);
+    return;
   }
 };
 
