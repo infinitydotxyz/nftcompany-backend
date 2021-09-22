@@ -615,7 +615,9 @@ app.get('/rewards/leaderboard', async (req, res) => {
     .then((data) => {
       const results = [];
       for (const doc of data.docs) {
-        results.push(doc.data());
+        const result = doc.data();
+        result.id = doc.id;
+        results.push(result);
       }
       const resp = {
         count: results.length,
