@@ -102,6 +102,9 @@ dist
 # DynamoDB Local files
 .dynamodb/
 
+
+
+
 # cred files
 creds/
 
@@ -109,3 +112,5 @@ creds/
 .tern-port
 
 /firebase-ty.json
+
+pnpm-lock.yaml
