@@ -105,7 +105,6 @@ app.get('/listings', async (req, res) => {
   if (error) {
     return;
   }
-  utils.log('Query: ' + utils.jsonString(req.query));
 
   let resp;
   if (tokenAddress && tokenId) {
