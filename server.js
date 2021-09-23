@@ -30,177 +30,10 @@ const DEFAULT_MAX_ETH = 10000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
 // init server
-init();
-
-// ============================================== Global data handling ======================================================
-let globalInfo;
-let localInfo;
-let origLocalInfo;
-
-async function init() {
-  // get global info doc
-  try {
-    const globalInfoDoc = await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get();
-    globalInfo = { ...getEmptyGlobalInfo(), ...globalInfoDoc.data() };
-    globalInfo.rewardsInfo = {
-      ...getEmptyGlobalInfo().rewardsInfo,
-      ...globalInfoDoc.data().rewardsInfo
-    };
-    // set local info
-    localInfo = JSON.parse(JSON.stringify(globalInfo));
-    origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
-    utils.trace('Fetched startup global info: ' + utils.jsonString(globalInfo));
-  } catch (err) {
-    utils.error('Encountered error while getting global info. Exiting process');
-    utils.error(err);
-    process.exit(1);
-  }
-
-  // Start server and listen to the App Engine-specified port, or 9090 otherwise
-  const PORT = process.env.PORT || 9090;
-  app.listen(PORT, () => {
-    utils.log(`Server listening on port ${PORT}...`);
-  });
-
-  // listen to global info changes and update
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .onSnapshot(
-      (snapshot) => {
-        globalInfo = snapshot.data();
-        utils.trace('Newly changed firestore global info: ' + utils.jsonString(globalInfo));
-      },
-      (err) => {
-        utils.error('Error in listening to global info doc changes');
-        utils.error(err);
-      }
-    );
-
-  // write localdata to firestore every interval
-  setInterval(async () => {
-    const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
-    try {
-      globalInfo = await db.runTransaction(async (txn) => {
-        const fetchedGlobalInfo = await txn.get(globalDocRef);
-        utils.trace(
-          'Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data())
-        );
-        // reconcile globalinfo
-        const newGlobalInfo = reconcileGlobalInfo(fetchedGlobalInfo.data());
-        await txn.update(globalDocRef, newGlobalInfo);
-        return newGlobalInfo;
-      });
-      origLocalInfo = JSON.parse(JSON.stringify(globalInfo));
-      utils.trace('Reconciled global info: ' + utils.jsonString(globalInfo));
-    } catch (err) {
-      utils.error('Failed updating global info in firestore');
-      utils.error(err);
-    }
-  }, 1000 * 15); // every 15 seconds todo: adi
-}
-
-function reconcileGlobalInfo(globalData) {
-  utils.trace('Reconciling global info');
-  const newGlobalInfo = { ...getEmptyGlobalInfo(), ...globalData };
-  newGlobalInfo.rewardsInfo = {
-    ...getEmptyGlobalInfo().rewardsInfo,
-    ...globalData.rewardsInfo
-  };
-
-  const localInfoDelta = getLocalInfoDelta();
-  utils.trace('Local info delta: ' + utils.jsonString(localInfoDelta));
-
-  newGlobalInfo.updatedAt = Date.now();
-  newGlobalInfo.totalSales = bn(newGlobalInfo.totalSales).plus(localInfoDelta.totalSales).toString();
-  newGlobalInfo.totalFees = bn(newGlobalInfo.totalFees).plus(localInfoDelta.totalFees).toString();
-  newGlobalInfo.totalVolume = bn(newGlobalInfo.totalVolume).plus(localInfoDelta.totalVolume).toString();
-  newGlobalInfo.totalListings = bn(newGlobalInfo.totalListings).plus(localInfoDelta.totalListings).toString();
-  newGlobalInfo.totalBonusListings = bn(newGlobalInfo.totalBonusListings)
-    .plus(localInfoDelta.totalBonusListings)
-    .toString();
-  newGlobalInfo.totalOffers = bn(newGlobalInfo.totalOffers).plus(localInfoDelta.totalOffers).toString();
-  newGlobalInfo.totalBonusOffers = bn(newGlobalInfo.totalBonusOffers).plus(localInfoDelta.totalBonusOffers).toString();
-
-  newGlobalInfo.rewardsInfo.accRewardPerShare = bn(newGlobalInfo.rewardsInfo.accRewardPerShare)
-    .plus(localInfoDelta.rewardsInfo.accRewardPerShare)
-    .toString();
-  newGlobalInfo.rewardsInfo.accBonusRewardPerShare = bn(newGlobalInfo.rewardsInfo.accBonusRewardPerShare)
-    .plus(localInfoDelta.rewardsInfo.accBonusRewardPerShare)
-    .toString();
-  newGlobalInfo.rewardsInfo.accSaleRewardPerShare = bn(newGlobalInfo.rewardsInfo.accSaleRewardPerShare)
-    .plus(localInfoDelta.rewardsInfo.accSaleRewardPerShare)
-    .toString();
-  newGlobalInfo.rewardsInfo.accPurchaseRewardPerShare = bn(newGlobalInfo.rewardsInfo.accPurchaseRewardPerShare)
-    .plus(localInfoDelta.rewardsInfo.accPurchaseRewardPerShare)
-    .toString();
-  newGlobalInfo.rewardsInfo.totalRewardPaid = bn(newGlobalInfo.rewardsInfo.totalRewardPaid)
-    .plus(localInfoDelta.rewardsInfo.totalRewardPaid)
-    .toString();
-  newGlobalInfo.rewardsInfo.totalBonusRewardPaid = bn(newGlobalInfo.rewardsInfo.totalBonusRewardPaid)
-    .plus(localInfoDelta.rewardsInfo.totalBonusRewardPaid)
-    .toString();
-  newGlobalInfo.rewardsInfo.totalSaleRewardPaid = bn(newGlobalInfo.rewardsInfo.totalSaleRewardPaid)
-    .plus(localInfoDelta.rewardsInfo.totalSaleRewardPaid)
-    .toString();
-  newGlobalInfo.rewardsInfo.totalPurchaseRewardPaid = bn(newGlobalInfo.rewardsInfo.totalPurchaseRewardPaid)
-    .plus(localInfoDelta.rewardsInfo.totalPurchaseRewardPaid)
-    .toString();
-
-  if (bn(newGlobalInfo.rewardsInfo.lastRewardBlock).lt(localInfo.rewardsInfo.lastRewardBlock)) {
-    newGlobalInfo.rewardsInfo.lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock).toString();
-  }
-  utils.trace('New global info after reconcile: ' + utils.jsonString(newGlobalInfo));
-  return newGlobalInfo;
-}
-
-function getLocalInfoDelta() {
-  const localInfoDelta = getEmptyGlobalInfo();
-  localInfoDelta.rewardsInfo = getEmptyGlobalInfo().rewardsInfo;
-
-  localInfoDelta.totalSales = bn(localInfo.totalSales).minus(origLocalInfo.totalSales);
-  localInfoDelta.totalFees = bn(localInfo.totalFees).minus(origLocalInfo.totalFees);
-  localInfoDelta.totalVolume = bn(localInfo.totalVolume).minus(origLocalInfo.totalVolume);
-  localInfoDelta.totalListings = bn(localInfo.totalListings).minus(origLocalInfo.totalListings);
-  localInfoDelta.totalBonusListings = bn(localInfo.totalBonusListings).minus(origLocalInfo.totalBonusListings);
-  localInfoDelta.totalOffers = bn(localInfo.totalOffers).minus(origLocalInfo.totalOffers);
-  localInfoDelta.totalBonusOffers = bn(localInfo.totalBonusOffers).minus(origLocalInfo.totalBonusOffers);
-
-  localInfoDelta.rewardsInfo.accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare).minus(
-    origLocalInfo.rewardsInfo.accRewardPerShare
-  );
-
-  localInfoDelta.rewardsInfo.accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare).minus(
-    origLocalInfo.rewardsInfo.accBonusRewardPerShare
-  );
-
-  localInfoDelta.rewardsInfo.accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare).minus(
-    origLocalInfo.rewardsInfo.accSaleRewardPerShare
-  );
-
-  localInfoDelta.rewardsInfo.accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare).minus(
-    origLocalInfo.rewardsInfo.accPurchaseRewardPerShare
-  );
-
-  localInfoDelta.rewardsInfo.totalRewardPaid = bn(localInfo.rewardsInfo.totalRewardPaid).minus(
-    origLocalInfo.rewardsInfo.totalRewardPaid
-  );
-
-  localInfoDelta.rewardsInfo.totalBonusRewardPaid = bn(localInfo.rewardsInfo.totalBonusRewardPaid).minus(
-    origLocalInfo.rewardsInfo.totalBonusRewardPaid
-  );
-
-  localInfoDelta.rewardsInfo.totalSaleRewardPaid = bn(localInfo.rewardsInfo.totalSaleRewardPaid).minus(
-    origLocalInfo.rewardsInfo.totalSaleRewardPaid
-  );
-
-  localInfoDelta.rewardsInfo.totalPurchaseRewardPaid = bn(localInfo.rewardsInfo.totalPurchaseRewardPaid).minus(
-    origLocalInfo.rewardsInfo.totalPurchaseRewardPaid
-  );
-
-  return localInfoDelta;
-}
-
-// =========================================== Server ===========================================================
+const PORT = process.env.PORT || 9090;
+app.listen(PORT, () => {
+  utils.log(`Server listening on port ${PORT}...`);
+});
 
 app.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
@@ -916,18 +749,6 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     }
     payload.metadata.hasBonusReward = hasBonus;
 
-    // update rewards
-    const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, true, 'order');
-    utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
-    // @ts-ignore
-    if (userInfo.rewardsInfo) {
-      // update user rewards data
-      // @ts-ignore
-      storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
-    } else {
-      utils.trace('Not updating rewards data as there are no updates');
-    }
-
     if (payload.side === 1) {
       // listing
       await postListing(maker, payload, batch, numOrders, hasBonus);
@@ -1256,10 +1077,6 @@ async function fulfillOrder(user, batch, payload) {
       // send email to maker that the item is purchased
       prepareEmail(maker, doc, 'itemPurchased');
     }
-
-    // update total sales, total fees and total volume
-    // @ts-ignore
-    incrementLocalStats({ totalSales: numOrders, totalFees: feesInEth, totalVolume: salePriceInEth });
   } catch (err) {
     utils.error('Error in fufilling order');
     utils.error(err);
@@ -1283,7 +1100,15 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const salePriceInEth = bn(order.metadata.salePriceInEth);
 
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, purchaseFees, true, 'purchase');
+  const userInfo = await getUserInfoAndUpdatedUserRewards(
+    user,
+    false,
+    numOrders,
+    purchaseFees,
+    salePriceInEth,
+    true,
+    'purchase'
+  );
 
   // @ts-ignore
   if (userInfo.rewardsInfo) {
@@ -1347,7 +1172,15 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const feesInEth = bn(order.metadata.feesInEth);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, false, numOrders, feesInEth, true, 'sale');
+  const userInfo = await getUserInfoAndUpdatedUserRewards(
+    user,
+    false,
+    numOrders,
+    feesInEth,
+    salePriceInEth,
+    true,
+    'sale'
+  );
   // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1406,6 +1239,18 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
   payload.metadata.hasBlueCheck = blueCheck;
   payload.metadata.createdAt = Date.now();
 
+  // update rewards
+  const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'list');
+  utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
+  // @ts-ignore
+  if (userInfo.rewardsInfo) {
+    // update user rewards data
+    // @ts-ignore
+    storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
+  } else {
+    utils.trace('Not updating rewards data as there are no updates');
+  }
+
   // write listing
   const listingRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1419,14 +1264,25 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 
   // update num user listings
   updateNumOrders(batch, maker, numOrders, hasBonus, 1);
-  // update total listings
-  updateNumTotalOrders(numOrders, hasBonus, 1);
 }
 
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
   payload.metadata.createdAt = Date.now();
+
+  // update rewards
+  const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'offer');
+  utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
+  // @ts-ignore
+  if (userInfo.rewardsInfo) {
+    // update user rewards data
+    // @ts-ignore
+    storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
+  } else {
+    utils.trace('Not updating rewards data as there are no updates');
+  }
+
   // store data in offers of maker
   const offerRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1440,15 +1296,14 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('updating num offers since offer does not exist');
   // update num user offers made
   updateNumOrders(batch, maker, numOrders, hasBonus, 0);
-  // update total offers made
-  updateNumTotalOrders(numOrders, hasBonus, 0);
 
   // send email to taker that an offer is made
   prepareEmail(taker, payload, 'offerMade');
 }
 
 function updateNumOrders(batch, user, num, hasBonus, side) {
-  utils.log('Updating num orders for user:', user, 'with num:', num, 'hasBonus:', hasBonus, 'and side:', side);
+  utils.log('Updating user stats');
+  
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1467,34 +1322,6 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
       batch.set(ref, { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
     }
   }
-}
-
-function updateNumTotalOrders(num, hasBonus, side) {
-  utils.log('Updating num orders with num:', num, 'hasBonus:', hasBonus, 'and side:', side);
-  let totalOffers = 0;
-  let totalBonusOffers = 0;
-  let totalListings = 0;
-  let totalBonusListings = 0;
-
-  if (side === 0) {
-    totalOffers = num;
-    if (hasBonus) {
-      totalBonusOffers = num;
-    }
-  } else if (side === 1) {
-    totalListings = num;
-    if (hasBonus) {
-      totalBonusListings = num;
-    }
-  }
-  // apply to memory
-  // @ts-ignore
-  incrementLocalStats({
-    totalOffers,
-    totalBonusOffers,
-    totalListings,
-    totalBonusListings
-  });
 }
 
 // ================================================= Read helpers =================================================
@@ -1724,7 +1551,7 @@ async function deleteListing(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, 0, false, 'list');
   // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1739,9 +1566,6 @@ async function deleteListing(batch, docRef) {
 
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
-
-  // update total listings
-  updateNumTotalOrders(-1 * numOrders, hasBonus, 1);
 }
 
 async function deleteOfferMadeWithId(id, user, batch) {
@@ -1768,7 +1592,7 @@ async function deleteOffer(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, false, 'order');
+  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, 0, false, 'offer');
   // @ts-ignore
   if (userInfo.rewardsInfo) {
     // update user rewards data
@@ -1783,33 +1607,12 @@ async function deleteOffer(batch, docRef) {
 
   // update num user offers
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
-
-  // update total offers
-  updateNumTotalOrders(-1 * numOrders, hasBonus, 0);
 }
 
 // =============================================== Rewards calc logic ========================================================
 
-function incrementLocalStats({
-  totalOffers,
-  totalBonusOffers,
-  totalListings,
-  totalBonusListings,
-  totalFees,
-  totalVolume,
-  totalSales
-}) {
-  utils.log('Incrementing local info for total global stats');
-  localInfo.totalOffers = bn(localInfo.totalOffers).plus(totalOffers || 0);
-  localInfo.totalBonusOffers = bn(localInfo.totalBonusOffers).plus(totalBonusOffers || 0);
-  localInfo.totalListings = bn(localInfo.totalListings).plus(totalListings || 0);
-  localInfo.totalBonusListings = bn(localInfo.totalBonusListings).plus(totalBonusListings || 0);
-  localInfo.totalFees = bn(localInfo.totalFees).plus(totalFees || 0);
-  localInfo.totalVolume = bn(localInfo.totalVolume).plus(totalVolume || 0);
-  localInfo.totalSales = bn(localInfo.totalSales).plus(totalSales || 0);
-}
-
 function storeUpdatedUserRewards(batch, user, data) {
+  utils.log('Storing updated user rewards');
   utils.trace('Storing updated user rewards:', utils.jsonString(data));
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1829,7 +1632,15 @@ async function hasBonusReward(address) {
   return doc.exists;
 }
 
-async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees, isIncrease, actionType) {
+async function getUserInfoAndUpdatedUserRewards(
+  user,
+  hasBonus,
+  numOrders,
+  feesInEth,
+  salePriceInEth,
+  isIncrease,
+  actionType
+) {
   utils.log('Getting UserInfo and updated reward for user', user);
 
   const userInfoRef = await db
@@ -1844,11 +1655,21 @@ async function getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, fees,
     ...userInfo.rewardsInfo
   };
 
-  const updatedUserRewards = await updateRewards(userInfo, hasBonus, numOrders, bn(fees), isIncrease, actionType);
+  const updatedUserRewards = await updateRewards(
+    userInfo,
+    hasBonus,
+    numOrders,
+    bn(feesInEth),
+    bn(salePriceInEth),
+    isIncrease,
+    actionType
+  );
 
   if (!updatedUserRewards) {
-    utils.trace('Setting user updated rewards to null as there are no updates');
+    utils.trace('Setting updated user rewards to null as there are no updates');
     userInfo.rewardsInfo = null;
+  } else {
+    userInfo.rewardsInfo = { ...userInfo.rewardsInfo, ...updatedUserRewards };
   }
   return userInfo;
 }
@@ -1931,7 +1752,7 @@ function getEmptyUserRewardInfo() {
 }
 
 // updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
-async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, actionType) {
+async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePriceInEth, isIncrease, actionType) {
   utils.log(
     'Updating rewards in increasing mode',
     isIncrease,
@@ -1940,7 +1761,9 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
     'numOrders',
     numOrders,
     'fees',
-    fees,
+    feesInEth,
+    'salePrice',
+    salePriceInEth,
     'actionType',
     actionType
   );
@@ -1958,158 +1781,201 @@ async function updateRewards(userInfo, hasBonus, numOrders, fees, isIncrease, ac
   let salePending = bn(0);
   let purchasePending = bn(0);
 
-  const result = await updateLocalRewardPerShares();
-  if (!result) {
-    utils.error('Not updating rewards as updating local reward per shares did not complete');
-    return;
-  }
+  let updatedUserRewards;
+  try {
+    utils.log('Updating global reward per shares');
+    const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
+    const currentBlock = await getCurrentBlock();
+    updatedUserRewards = await db.runTransaction(async (txn) => {
+      const globalInfoDocBlah = (await txn.get(globalDocRef)).data();
+      let globalInfo = globalInfoDocBlah;
+      globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
+      globalInfo.rewardsInfo = {
+        ...getEmptyGlobalInfo().rewardsInfo,
+        ...globalInfo.rewardsInfo
+      };
+      // utils.trace(
+      //   'Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data())
+      // );
+      const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
+      const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
+      const totalFees = bn(globalInfo.totalFees);
+      const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
+      const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
+      const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
+      const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
 
-  const isOrder = actionType === 'order';
-  const isSale = actionType === 'sale';
-  const isPurchase = actionType === 'purchase';
+      const accRewardPerShare = bn(globalInfo.rewardsInfo.accRewardPerShare);
+      const accBonusRewardPerShare = bn(globalInfo.rewardsInfo.accBonusRewardPerShare);
+      const accSaleRewardPerShare = bn(globalInfo.rewardsInfo.accSaleRewardPerShare);
+      const accPurchaseRewardPerShare = bn(globalInfo.rewardsInfo.accPurchaseRewardPerShare);
 
-  const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
-  const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
-  const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
-  const accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
+      const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
 
-  if (!isIncrease) {
-    // update for making an order
-    if (isOrder && userShare.gte(numOrders)) {
-      pending = userShare.times(accRewardPerShare).minus(rewardDebt);
-      // decrease before reward debt calc
-      userShare = userShare.minus(numOrders);
-    }
-    // update for making a sale
-    if (isSale && salesFeesTotal.gte(fees)) {
-      salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
-      salesFeesTotal = salesFeesTotal.minus(fees);
-    }
-    // update for making a purchase
-    if (isPurchase && purchasesFeesTotal.gte(fees)) {
-      purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
-      purchasesFeesTotal = purchasesFeesTotal.minus(fees);
-    }
-  } else {
-    if (isOrder && userShare.gt(0)) {
-      pending = userShare.times(accRewardPerShare).minus(rewardDebt);
-    }
-    if (isSale && salesFeesTotal.gt(0)) {
-      salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
-    }
-    if (isPurchase && purchasesFeesTotal.gt(0)) {
-      purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
-    }
-    // increase before reward debt calc
-    if (isOrder) {
-      userShare = userShare.plus(numOrders);
-    }
-    if (isSale) {
-      salesFeesTotal = salesFeesTotal.plus(fees);
-    }
-    if (isPurchase) {
-      purchasesFeesTotal = purchasesFeesTotal.plus(fees);
-    }
-  }
-
-  if (isOrder) {
-    userInfo.rewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
-    userInfo.rewardsInfo.pending = pending.plus(userInfo.rewardsInfo.pending).toString();
-  }
-  if (isSale) {
-    userInfo.rewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
-    userInfo.rewardsInfo.salePending = salePending.plus(userInfo.rewardsInfo.salePending).toString();
-  }
-  if (isPurchase) {
-    userInfo.rewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
-    userInfo.rewardsInfo.purchasePending = purchasePending.plus(userInfo.rewardsInfo.purchasePending).toString();
-  }
-
-  if (isOrder && hasBonus) {
-    if (!isIncrease) {
-      if (userBonusShare.gte(numOrders)) {
-        bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
-        // decrease userShare before rewardDebt calc
-        userBonusShare = userBonusShare.minus(numOrders);
+      if (currentBlock.lte(lastRewardBlock)) {
+        utils.log(
+          'Not updating global rewards since current block:',
+          currentBlock.toString(),
+          '<= lastRewardBlock:',
+          lastRewardBlock.toString()
+        );
+        return null;
       }
-    } else {
-      if (userBonusShare.gt(0)) {
-        bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
+      const multiplier = currentBlock.minus(lastRewardBlock);
+      utils.trace('Reward multiplier:', multiplier);
+      if (!totalOrders.eq(0)) {
+        const reward = multiplier.times(rewardPerBlock);
+        globalInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders)).toString();
+        utils.trace('Total orders:', totalOrders.toString());
+        utils.trace('Updated accRewardPerShare to:', globalInfo.rewardsInfo.accRewardPerShare.toString());
       }
-      // add current value before reward debt calc
-      userBonusShare = userBonusShare.plus(numOrders);
-    }
-    userInfo.rewardsInfo.bonusRewardDebt = userBonusShare.times(accBonusRewardPerShare).toString();
-    userInfo.rewardsInfo.bonusPending = bonusPending.plus(userInfo.rewardsInfo.bonusPending).toString();
+      if (!totalBonusOrders.eq(0)) {
+        const bonusReward = multiplier.times(bonusRewardPerBlock);
+        globalInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare
+          .plus(bonusReward.div(totalBonusOrders))
+          .toString();
+        utils.trace('Total bonus orders:', totalBonusOrders.toString());
+        utils.trace('Updated accBonusRewardPerShare to:', globalInfo.rewardsInfo.accBonusRewardPerShare.toString());
+      }
+      if (!totalFees.eq(0)) {
+        const saleReward = multiplier.times(saleRewardPerBlock);
+        globalInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees)).toString();
+        const purchaseReward = multiplier.times(purchaseRewardPerBlock);
+        globalInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare
+          .plus(purchaseReward.div(totalFees))
+          .toString();
+        utils.trace('Total fees:', totalFees.toString());
+        utils.trace('Updated accSaleRewardPerShare to:', globalInfo.rewardsInfo.accSaleRewardPerShare.toString());
+        utils.trace(
+          'Updated accPurchaseRewardPerShare to:',
+          globalInfo.rewardsInfo.accPurchaseRewardPerShare.toString()
+        );
+      }
+
+      globalInfo.rewardsInfo.lastRewardBlock = currentBlock.toString();
+
+      const isOrder = actionType === 'offer' || actionType === 'list';
+      const isSale = actionType === 'sale';
+      const isPurchase = actionType === 'purchase';
+
+      utils.log('Updating user pending and reward debts');
+      const userRewardsInfo = {};
+      if (!isIncrease) {
+        // update for making an order
+        if (isOrder && userShare.gte(numOrders)) {
+          pending = userShare.times(accRewardPerShare).minus(rewardDebt);
+          // decrease before reward debt calc
+          userShare = userShare.minus(numOrders);
+        }
+        // update for making a sale
+        if (isSale && salesFeesTotal.gte(feesInEth)) {
+          salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
+          salesFeesTotal = salesFeesTotal.minus(feesInEth);
+        }
+        // update for making a purchase
+        if (isPurchase && purchasesFeesTotal.gte(feesInEth)) {
+          purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
+          purchasesFeesTotal = purchasesFeesTotal.minus(feesInEth);
+        }
+      } else {
+        if (isOrder && userShare.gt(0)) {
+          pending = userShare.times(accRewardPerShare).minus(rewardDebt);
+        }
+        if (isSale && salesFeesTotal.gt(0)) {
+          salePending = salesFeesTotal.times(accSaleRewardPerShare).minus(saleRewardDebt);
+        }
+        if (isPurchase && purchasesFeesTotal.gt(0)) {
+          purchasePending = purchasesFeesTotal.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
+        }
+        // increase before reward debt calc
+        if (isOrder) {
+          userShare = userShare.plus(numOrders);
+        }
+        if (isSale) {
+          salesFeesTotal = salesFeesTotal.plus(feesInEth);
+        }
+        if (isPurchase) {
+          purchasesFeesTotal = purchasesFeesTotal.plus(feesInEth);
+        }
+      }
+
+      if (isOrder) {
+        userRewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
+        userRewardsInfo.pending = pending.plus(userInfo.rewardsInfo.pending).toString();
+      }
+      if (isSale) {
+        userRewardsInfo.saleRewardDebt = salesFeesTotal.times(accSaleRewardPerShare).toString();
+        userRewardsInfo.salePending = salePending.plus(userInfo.rewardsInfo.salePending).toString();
+      }
+      if (isPurchase) {
+        userRewardsInfo.purchaseRewardDebt = purchasesFeesTotal.times(accPurchaseRewardPerShare).toString();
+        userRewardsInfo.purchasePending = purchasePending.plus(userInfo.rewardsInfo.purchasePending).toString();
+      }
+
+      if (isOrder && hasBonus) {
+        if (!isIncrease) {
+          if (userBonusShare.gte(numOrders)) {
+            bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
+            // decrease userShare before rewardDebt calc
+            userBonusShare = userBonusShare.minus(numOrders);
+          }
+        } else {
+          if (userBonusShare.gt(0)) {
+            bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
+          }
+          // add current value before reward debt calc
+          userBonusShare = userBonusShare.plus(numOrders);
+        }
+        userRewardsInfo.bonusRewardDebt = userBonusShare.times(accBonusRewardPerShare).toString();
+        userRewardsInfo.bonusPending = bonusPending.plus(userInfo.rewardsInfo.bonusPending).toString();
+      }
+
+      // update global info
+      utils.log('Updating global rewards paid');
+      globalInfo.rewardsInfo.totalRewardPaid = pending.plus(globalInfo.rewardsInfo.totalRewardPaid).toString();
+      globalInfo.rewardsInfo.totalBonusRewardPaid = bonusPending
+        .plus(globalInfo.rewardsInfo.totalBonusRewardPaid)
+        .toString();
+      globalInfo.rewardsInfo.totalSaleRewardPaid = salePending
+        .plus(globalInfo.rewardsInfo.totalSaleRewardPaid)
+        .toString();
+      globalInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending
+        .plus(globalInfo.rewardsInfo.totalPurchaseRewardPaid)
+        .toString();
+
+      utils.trace('Updated global rewards: ' + utils.jsonString(globalInfo));
+      utils.trace('Updated user rewards: ' + utils.jsonString(userRewardsInfo));
+
+      // update global stats
+      const delta = isIncrease ? numOrders : -1 * numOrders;
+
+      utils.log('Updating global stats');
+      if (actionType === 'offer') {
+        globalInfo.totalOffers = bn(globalInfo.totalOffers).plus(delta).toString();
+        if (hasBonus) {
+          globalInfo.totalBonusOffers = bn(globalInfo.totalBonusOffers).plus(delta).toString();
+        }
+      }
+      if (actionType === 'list') {
+        globalInfo.totalListings = bn(globalInfo.totalListings).plus(delta).toString();
+        if (hasBonus) {
+          globalInfo.totalBonusListings = bn(globalInfo.totalBonusListings).plus(delta).toString();
+        }
+      }
+      if (actionType === 'purchase' || actionType === 'sale') {
+        globalInfo.totalFees = bn(globalInfo.totalFees).plus(feesInEth).toString();
+        globalInfo.totalVolume = bn(globalInfo.totalVolume).plus(salePriceInEth).toString();
+        globalInfo.totalSales = bn(globalInfo.totalSales).plus(numOrders).toString();
+      }
+
+      await txn.set(globalDocRef, globalInfo, { merge: true });
+      return userRewardsInfo;
+    });
+  } catch (err) {
+    utils.error('Failed updating global info in firestore');
+    utils.error(err);
   }
-
-  // update local info
-  localInfo.rewardsInfo.totalRewardPaid = pending.plus(localInfo.rewardsInfo.totalRewardPaid);
-  localInfo.rewardsInfo.totalBonusRewardPaid = bonusPending.plus(localInfo.rewardsInfo.totalBonusRewardPaid);
-  localInfo.rewardsInfo.totalSaleRewardPaid = salePending.plus(localInfo.rewardsInfo.totalSaleRewardPaid);
-  localInfo.rewardsInfo.totalPurchaseRewardPaid = purchasePending.plus(localInfo.rewardsInfo.totalPurchaseRewardPaid);
-
-  utils.trace('Updated local rewards: ' + utils.jsonString(localInfo));
-  utils.trace('Updated user rewards: ' + utils.jsonString(userInfo.rewardsInfo));
-
-  return userInfo.rewardsInfo;
-}
-
-// updates lastRewardBlock, accRewardPerShare, accBonusRewardPerShare
-async function updateLocalRewardPerShares() {
-  utils.log('Updating local reward per shares');
-  const currentBlock = await getCurrentBlock();
-  const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
-  const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
-  const totalFees = bn(globalInfo.totalFees);
-  const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
-  const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
-  const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
-  const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
-
-  const accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
-  const accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
-  const accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
-  const accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
-
-  const lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
-
-  if (currentBlock.lte(lastRewardBlock)) {
-    utils.log(
-      'Not updating global rewards since current block:',
-      currentBlock.toString(),
-      '<= lastRewardBlock:',
-      lastRewardBlock.toString()
-    );
-    return false;
-  }
-  const multiplier = currentBlock.minus(lastRewardBlock);
-  utils.trace('Reward multiplier:', multiplier);
-  if (!totalOrders.eq(0)) {
-    const reward = multiplier.times(rewardPerBlock);
-    localInfo.rewardsInfo.accRewardPerShare = accRewardPerShare.plus(reward.div(totalOrders));
-    utils.trace('Total orders:', totalOrders.toString());
-    utils.trace('Updated accRewardPerShare to:', localInfo.rewardsInfo.accRewardPerShare.toString());
-  }
-  if (!totalBonusOrders.eq(0)) {
-    const bonusReward = multiplier.times(bonusRewardPerBlock);
-    localInfo.rewardsInfo.accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
-    utils.trace('Total bonus orders:', totalBonusOrders.toString());
-    utils.trace('Updated accBonusRewardPerShare to:', localInfo.rewardsInfo.accBonusRewardPerShare.toString());
-  }
-  if (!totalFees.eq(0)) {
-    const saleReward = multiplier.times(saleRewardPerBlock);
-    localInfo.rewardsInfo.accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFees));
-    const purchaseReward = multiplier.times(purchaseRewardPerBlock);
-    localInfo.rewardsInfo.accPurchaseRewardPerShare = accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
-    utils.trace('Total fees:', totalFees.toString());
-    utils.trace('Updated accSaleRewardPerShare to:', localInfo.rewardsInfo.accSaleRewardPerShare.toString());
-    utils.trace('Updated accPurchaseRewardPerShare to:', localInfo.rewardsInfo.accPurchaseRewardPerShare.toString());
-  }
-
-  localInfo.rewardsInfo.lastRewardBlock = currentBlock;
-
-  return true;
+  return updatedUserRewards;
 }
 
 async function getCurrentBlock() {
@@ -2134,6 +2000,13 @@ async function getReward(user) {
     ...userInfo.rewardsInfo
   };
   const currentBlock = await getCurrentBlock();
+  const globalInfoDocBlah = (await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get()).data();
+  let globalInfo = globalInfoDocBlah;
+  globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
+  globalInfo.rewardsInfo = {
+    ...getEmptyGlobalInfo().rewardsInfo,
+    ...globalInfo.rewardsInfo
+  };
   const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
   const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
   const totalListings = bn(globalInfo.totalListings);
@@ -2151,11 +2024,11 @@ async function getReward(user) {
   const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
   const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
 
-  const lastRewardBlock = bn(localInfo.rewardsInfo.lastRewardBlock);
-  let _accRewardPerShare = bn(localInfo.rewardsInfo.accRewardPerShare);
-  let _accBonusRewardPerShare = bn(localInfo.rewardsInfo.accBonusRewardPerShare);
-  let _accSaleRewardPerShare = bn(localInfo.rewardsInfo.accSaleRewardPerShare);
-  let _accPurchaseRewardPerShare = bn(localInfo.rewardsInfo.accPurchaseRewardPerShare);
+  const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
+  let _accRewardPerShare = bn(globalInfo.rewardsInfo.accRewardPerShare);
+  let _accBonusRewardPerShare = bn(globalInfo.rewardsInfo.accBonusRewardPerShare);
+  let _accSaleRewardPerShare = bn(globalInfo.rewardsInfo.accSaleRewardPerShare);
+  let _accPurchaseRewardPerShare = bn(globalInfo.rewardsInfo.accPurchaseRewardPerShare);
 
   const numListings = bn(userInfo.numListings);
   const numBonusListings = bn(userInfo.numBonusListings);
