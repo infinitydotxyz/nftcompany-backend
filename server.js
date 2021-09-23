@@ -25,7 +25,9 @@ const nftDataSources = {
   3: 'alchemy'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
+const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 10000; // for listings
+const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
 // init server
 init();
@@ -240,39 +242,168 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 });
 
 // fetch listings (for Explore page)
+/*
+- supports the following queries - from most to least restrictive
+- supports tokenId and tokenAddress query
+- supports collectionName, priceMin and priceMax query ordered by price
+- supports priceMin and priceMax query ordered by price
+- supports !user
+- supports all listings
+*/
 app.get('/listings', async (req, res) => {
-  const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
-  const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH; // add a default max of 5000 eth
-  const sortByPrice = `${req.query.sortByPrice || 'desc'}`.toLowerCase(); // descending default
-  const { limit, startAfterPrice, startAfter, error } = utils.parseQueryFields(
+  const tokenId = req.query.tokenId;
+  // @ts-ignore
+  const tokenAddress = req.query.address.trim().toLowerCase();
+  // @ts-ignore
+  const collectionName = req.query.collectionName.trim(); // preserve case
+  const priceMin = +req.query.priceMin || DEFAULT_MIN_ETH;
+  const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH;
+  // @ts-ignore
+  const user = req.query.user.trim().toLowerCase();
+  const sortByPriceDirection = `${req.query.sortByPrice || DEFAULT_PRICE_SORT_DIRECTION}`.toLowerCase();
+  // @ts-ignore
+  const startAfterUser = req.query.startAfterUser.trim().toLowerCase();
+  const { limit, startAfterPrice, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfterPrice', 'startAfter'],
-    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPrice === 'asc' ? '0' : `${priceMax}`, `${Date.now()}`]
+    ['limit', 'startAfterPrice', 'startAfterMillis'],
+    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPriceDirection === 'asc' ? '0' : `${priceMax}`, `${Date.now()}`]
   );
   if (error) {
     return;
   }
-  // console.log('/listings params:', price, sortByPrice, limit, startAfter, startAfterPrice)
-  db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.basePriceInEth', '>=', +priceMin)
-    .where('metadata.basePriceInEth', '<=', +priceMax)
-    // @ts-ignore
-    .orderBy('metadata.basePriceInEth', sortByPrice) // asc (default) or desc
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterPrice, startAfter)
-    .limit(limit)
-    .get()
-    .then((data) => {
-      const resp = getOrdersResponse(data);
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get listings');
-      utils.error(err);
-      res.sendStatus(500);
-    });
+  utils.log('Query: ' + utils.jsonString(req.query));
+
+  let resp;
+  if (tokenAddress && tokenId) {
+    resp = await getListingByTokenAddressAndId(tokenId, tokenAddress, limit);
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  } else if (collectionName || priceMin || priceMax) {
+    resp = await getListingsByCollectionNameAndPrice(
+      collectionName,
+      priceMin,
+      priceMax,
+      sortByPriceDirection,
+      startAfterPrice,
+      startAfterMillis,
+      limit
+    );
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  } else if (user) {
+    resp = await getListingsNotMadeByUser(user, startAfterUser, limit);
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  } else {
+    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit);
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  }
+
+  if (resp) {
+    res.send(resp);
+  } else {
+    res.sendStatus(500);
+  }
 });
+
+async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
+  try {
+    const data = await db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where('metadata.asset.id', '==', tokenId)
+      .where('metadata.asset.address', '==', tokenAddress)
+      .limit(limit) // should only be one but to catch errors
+      .get();
+
+    return getOrdersResponse(data);
+  } catch (err) {
+    utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function getListingsByCollectionNameAndPrice(
+  collectionName,
+  priceMin,
+  priceMax,
+  sortByPriceDirection,
+  startAfterPrice,
+  startAfterMillis,
+  limit
+) {
+  try {
+    let queryRef = db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where('metadata.basePriceInEth', '>=', +priceMin)
+      .where('metadata.basePriceInEth', '<=', +priceMax);
+    if (collectionName) {
+      queryRef = queryRef.where('metadata.asset.collectionName', '==', collectionName);
+    }
+    queryRef = queryRef
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterPrice, startAfterMillis)
+      .limit(limit);
+
+    const data = await queryRef.get();
+    return getOrdersResponse(data);
+  } catch (err) {
+    utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
+    utils.error(err);
+  }
+}
+
+async function getListingsNotMadeByUser(user, startAfterUser, limit) {
+  try {
+    const data = await db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where('maker', '!=', user)
+      .orderBy('maker', 'desc')
+      .startAfter(startAfterUser)
+      .limit(limit)
+      .get();
+
+    return getOrdersResponse(data);
+  } catch (err) {
+    utils.error('Failed to get listings not made by user', user);
+    utils.error(err);
+  }
+}
+
+async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit) {
+  try {
+    const data = await db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterPrice, startAfterMillis)
+      .limit(limit)
+      .get();
+
+    return getOrdersResponse(data);
+  } catch (err) {
+    utils.error('Failed to get listings');
+    utils.error(err);
+  }
+}
 
 // fetch assets of user as public
 app.get('/p/u/:user/assets', async (req, res) => {
@@ -287,10 +418,10 @@ app.get('/u/:user/assets', async (req, res) => {
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -302,7 +433,7 @@ app.get('/u/:user/listings', async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.LISTINGS_COLL)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfter)
+    .startAfter(startAfterMillis)
     .limit(limit)
     .get()
     .then((data) => {
@@ -319,10 +450,10 @@ app.get('/u/:user/listings', async (req, res) => {
 // fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -334,7 +465,7 @@ app.get('/u/:user/purchases', async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.PURCHASES_COLL)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfter)
+    .startAfter(startAfterMillis)
     .limit(limit)
     .get()
     .then((data) => {
@@ -366,10 +497,10 @@ app.get('/u/:user/purchases', async (req, res) => {
 // fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -381,7 +512,7 @@ app.get('/u/:user/sales', async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.SALES_COLL)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfter)
+    .startAfter(startAfterMillis)
     .limit(limit)
     .get()
     .then((data) => {
@@ -413,10 +544,10 @@ app.get('/u/:user/sales', async (req, res) => {
 // fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -428,7 +559,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
     .doc(user)
     .collection(fstrCnstnts.OFFERS_COLL)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfter)
+    .startAfter(startAfterMillis)
     .limit(limit)
     .get()
     .then((data) => {
@@ -446,10 +577,10 @@ app.get('/u/:user/offersmade', async (req, res) => {
 app.get('/u/:user/offersreceived', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -460,7 +591,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
     // @ts-ignore
     .orderBy('metadata.basePriceInEth', sortByPrice)
     .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfter)
+    .startAfter(startAfterMillis)
     .limit(limit)
     .get()
     .then((data) => {
@@ -679,31 +810,6 @@ app.get('/titles', async (req, res) => {
   }
 });
 
-app.get('/listingById', async (req, res) => {
-  const id = req.query.id;
-  const address = req.query.address;
-  db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.asset.id', '==', id)
-    .where('metadata.asset.address', '==', address)
-    .get()
-    .then((data) => {
-      const resp = utils.jsonString(
-        data.docs.map((doc) => {
-          return doc.data();
-        })[0]
-      );
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get listing by id', err);
-      res.sendStatus(500);
-    });
-});
-
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig);
@@ -742,43 +848,12 @@ app.get('/collections', async (req, res) => {
   }
 });
 
-app.get('/listingsByCollectionName', async (req, res) => {
-  const collectionName = req.query.collectionName;
-
-  const priceMin = req.query.priceMin || '0'; // add a default min of 0 eth
-  const priceMax = req.query.priceMax || '5000'; // add a default max of 5000 eth
-  const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
-  db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .where('metadata.basePriceInEth', '>=', +priceMin)
-    .where('metadata.basePriceInEth', '<=', +priceMax)
-    .where('metadata.asset.collectionName', '==', collectionName)
-    // @ts-ignore
-    .orderBy('metadata.basePriceInEth', sortByPrice)
-    .get()
-    .then((data) => {
-      const resp = utils.jsonString(
-        data.docs.map((doc) => {
-          return doc.data();
-        })
-      );
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get listings by collection name', err);
-      res.sendStatus(500);
-    });
-});
-
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   const user = req.params.user.trim().toLowerCase();
-  const { limit, startAfter, error } = utils.parseQueryFields(
+  const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
-    ['limit', 'startAfter'],
+    ['limit', 'startAfterMillis'],
     ['50', `${Date.now()}`]
   );
   if (error) {
@@ -793,7 +868,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .collection(fstrCnstnts.TXNS_COLL)
       .where('status', '==', 'pending')
       .orderBy('createdAt', 'desc')
-      .startAfter(startAfter)
+      .startAfter(startAfterMillis)
       .limit(limit)
       .get();
 
@@ -1440,7 +1515,8 @@ function getOrdersResponse(data) {
     count: listings.length,
     listings
   };
-  return resp;
+  const respStr = utils.jsonString(resp);
+  return respStr;
 }
 
 async function fetchAssetsOfUser(req, res) {
