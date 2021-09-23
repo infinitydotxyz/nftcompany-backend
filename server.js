@@ -25,7 +25,7 @@ const nftDataSources = {
   3: 'alchemy'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
-const DEFAULT_MAX_ETH = 5000; // for listings
+const DEFAULT_MAX_ETH = 10000; // for listings
 
 // init server
 init();
