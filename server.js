@@ -25,7 +25,7 @@ const nftDataSources = {
   3: 'alchemy'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
-const DEFAULT_MIN_ETH = 0.0000001;
+// const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 10000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
@@ -86,11 +86,11 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 app.get('/listings', async (req, res) => {
   const tokenId = req.query.tokenId;
   // @ts-ignore
-  const tokenAddress = req.query.address.trim().toLowerCase();
+  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
   // @ts-ignore
   const collectionName = req.query.collectionName.trim(); // preserve case
-  const priceMin = +req.query.priceMin || DEFAULT_MIN_ETH;
-  const priceMax = +req.query.priceMax || DEFAULT_MAX_ETH;
+  const priceMin = +req.query.priceMin;
+  const priceMax = +req.query.priceMax;
   // @ts-ignore
   const user = req.query.user.trim().toLowerCase();
   const sortByPriceDirection = `${req.query.sortByPrice || DEFAULT_PRICE_SORT_DIRECTION}`.toLowerCase();
@@ -100,7 +100,7 @@ app.get('/listings', async (req, res) => {
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfterMillis'],
-    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPriceDirection === 'asc' ? '0' : `${priceMax}`, `${Date.now()}`]
+    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPriceDirection === 'asc' ? '0' : `${DEFAULT_MAX_ETH}`, `${Date.now()}`]
   );
   if (error) {
     return;
