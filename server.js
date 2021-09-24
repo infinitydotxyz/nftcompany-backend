@@ -157,6 +157,7 @@ app.get('/listings', async (req, res) => {
 });
 
 async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
+  utils.log('Getting listings of token id and token address');
   try {
     const data = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -182,6 +183,8 @@ async function getListingsByCollectionNameAndPrice(
   limit
 ) {
   try {
+    utils.log('Getting listings of a collection');
+
     let queryRef = db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.basePriceInEth', '>=', +priceMin)
@@ -204,16 +207,19 @@ async function getListingsByCollectionNameAndPrice(
 }
 
 async function getListingsNotMadeByUser(user, startAfterUser, limit) {
+  utils.log('Getting listings not made by user');
+
   try {
     const data = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('maker', '!=', user)
-      .orderBy('maker', 'desc')
+      .orderBy('maker', 'asc')
       .startAfter(startAfterUser)
       .limit(limit)
       .get();
-
-    return getOrdersResponse(data);
+    const data1 = getOrdersResponse(data);
+    utils.log(utils.jsonString(data1));
+    return data1;
   } catch (err) {
     utils.error('Failed to get listings not made by user', user);
     utils.error(err);
@@ -221,6 +227,8 @@ async function getListingsNotMadeByUser(user, startAfterUser, limit) {
 }
 
 async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit) {
+  utils.log('Getting all listings');
+
   try {
     const data = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -1549,7 +1557,7 @@ async function deleteOffer(batch, docRef) {
   const numOrders = 1;
 
   getUserInfoAndUpdateUserRewards(user, hasBonus, numOrders, 0, 0, false, 'offer');
-  
+
   // delete offer
   batch.delete(doc.ref);
 
