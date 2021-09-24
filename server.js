@@ -868,7 +868,7 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
 
   // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
   const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
-  if (!isStillPending) {
+  if (checkTxnStatusInFirestore && !isStillPending) {
     utils.trace('Txn', origTxnHash, 'already updated in firestore');
     return;
   }
