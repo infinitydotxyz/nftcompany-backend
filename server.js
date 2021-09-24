@@ -93,7 +93,13 @@ app.get('/listings', async (req, res) => {
   const priceMax = +req.query.priceMax;
   // @ts-ignore
   const user = req.query.user.trim().toLowerCase();
-  const sortByPriceDirection = `${req.query.sortByPrice || DEFAULT_PRICE_SORT_DIRECTION}`.toLowerCase();
+  let sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase();
+  let isPriceFilter = false;
+  if (sortByPriceDirection) {
+    isPriceFilter = true;
+  } else {
+    sortByPriceDirection = DEFAULT_PRICE_SORT_DIRECTION;
+  }
   // @ts-ignore
   const startAfterUser = req.query.startAfterUser.trim().toLowerCase();
   const { limit, startAfterPrice, startAfterMillis, error } = utils.parseQueryFields(
@@ -125,6 +131,14 @@ app.get('/listings', async (req, res) => {
       startAfterMillis,
       limit
     );
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  } else if (isPriceFilter) {
+    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -217,9 +231,8 @@ async function getListingsNotMadeByUser(user, startAfterUser, limit) {
       .startAfter(startAfterUser)
       .limit(limit)
       .get();
-    const data1 = getOrdersResponse(data);
-    utils.log(utils.jsonString(data1));
-    return data1;
+
+    return getOrdersResponse(data);
   } catch (err) {
     utils.error('Failed to get listings not made by user', user);
     utils.error(err);
