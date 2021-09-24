@@ -1,4 +1,4 @@
-service: server
+service: sv-dev
 runtime: nodejs14
 env: standard
 instance_class: F4_1G
