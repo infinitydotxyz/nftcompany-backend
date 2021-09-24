@@ -1,17 +1,9 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
 
-// todo: adi change this before push
-const serviceAccount = require('./creds/nftc-web-firebase-creds.json');
 firebaseAdmin.initializeApp({
-  // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
-});
-
-// firebaseAdmin.initializeApp({
-//   credential: firebaseAdmin.credential.applicationDefault()
-// })
-
+  credential: firebaseAdmin.credential.applicationDefault()
+})
 Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
@@ -96,9 +88,6 @@ module.exports = {
   },
 
   authorizeUser: async function (path, signature, message) {
-    // todo: adi for testing only
-    // return true;
-
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {
