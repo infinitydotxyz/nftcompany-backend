@@ -1099,7 +1099,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const salePriceInEth = bn(order.metadata.salePriceInEth);
 
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(
+  const userInfo = await getUserInfoAndUpdateUserRewards(
     user,
     false,
     numOrders,
@@ -1108,15 +1108,6 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
     true,
     'purchase'
   );
-
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
-  } else {
-    utils.log('Not updating rewards data as there are no updates');
-  }
 
   // update user txn stats
   // @ts-ignore
@@ -1171,7 +1162,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const feesInEth = bn(order.metadata.feesInEth);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
   // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdatedUserRewards(
+  const userInfo = await getUserInfoAndUpdateUserRewards(
     user,
     false,
     numOrders,
@@ -1180,14 +1171,6 @@ async function saveSoldOrder(user, order, batch, numOrders) {
     true,
     'sale'
   );
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
-  } else {
-    utils.log('Not updating rewards data as there are no updates');
-  }
 
   // update user txn stats
   // @ts-ignore
@@ -1239,16 +1222,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
   payload.metadata.createdAt = Date.now();
 
   // update rewards
-  const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'list');
-  utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
-  } else {
-    utils.trace('Not updating rewards data as there are no updates');
-  }
+  getUserInfoAndUpdateUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'list');
 
   // write listing
   const listingRef = db
@@ -1271,16 +1245,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   payload.metadata.createdAt = Date.now();
 
   // update rewards
-  const userInfo = await getUserInfoAndUpdatedUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'offer');
-  utils.trace('UserInfo and updated rewards ' + utils.jsonString(userInfo));
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, maker, userInfo.rewardsInfo);
-  } else {
-    utils.trace('Not updating rewards data as there are no updates');
-  }
+  getUserInfoAndUpdateUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'offer');
 
   // store data in offers of maker
   const offerRef = db
@@ -1302,7 +1267,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
 
 function updateNumOrders(batch, user, num, hasBonus, side) {
   utils.log('Updating user stats');
-  
+
   const ref = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -1550,15 +1515,7 @@ async function deleteListing(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, 0, false, 'list');
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
-  } else {
-    utils.log('Not updating rewards data as there are no updates');
-  }
+  getUserInfoAndUpdateUserRewards(user, hasBonus, numOrders, 0, 0, false, 'list');
 
   // delete listing
   batch.delete(doc.ref);
@@ -1591,16 +1548,8 @@ async function deleteOffer(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  const userInfo = await getUserInfoAndUpdatedUserRewards(user, hasBonus, numOrders, 0, 0, false, 'offer');
-  // @ts-ignore
-  if (userInfo.rewardsInfo) {
-    // update user rewards data
-    // @ts-ignore
-    storeUpdatedUserRewards(batch, user, userInfo.rewardsInfo);
-  } else {
-    utils.log('Not updating rewards data as there are no updates');
-  }
-
+  getUserInfoAndUpdateUserRewards(user, hasBonus, numOrders, 0, 0, false, 'offer');
+  
   // delete offer
   batch.delete(doc.ref);
 
@@ -1609,17 +1558,6 @@ async function deleteOffer(batch, docRef) {
 }
 
 // =============================================== Rewards calc logic ========================================================
-
-function storeUpdatedUserRewards(batch, user, data) {
-  utils.log('Storing updated user rewards');
-  utils.trace('Storing updated user rewards:', utils.jsonString(data));
-  const ref = db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user);
-  batch.set(ref, { rewardsInfo: data, updatedAt: Date.now() }, { merge: true });
-}
 
 async function hasBonusReward(address) {
   const doc = await db
@@ -1631,7 +1569,7 @@ async function hasBonusReward(address) {
   return doc.exists;
 }
 
-async function getUserInfoAndUpdatedUserRewards(
+async function getUserInfoAndUpdateUserRewards(
   user,
   hasBonus,
   numOrders,
@@ -1654,22 +1592,8 @@ async function getUserInfoAndUpdatedUserRewards(
     ...userInfo.rewardsInfo
   };
 
-  const updatedUserRewards = await updateRewards(
-    userInfo,
-    hasBonus,
-    numOrders,
-    bn(feesInEth),
-    bn(salePriceInEth),
-    isIncrease,
-    actionType
-  );
+  updateRewards(user, userInfo, hasBonus, numOrders, bn(feesInEth), bn(salePriceInEth), isIncrease, actionType);
 
-  if (!updatedUserRewards) {
-    utils.trace('Setting updated user rewards to null as there are no updates');
-    userInfo.rewardsInfo = null;
-  } else {
-    userInfo.rewardsInfo = { ...userInfo.rewardsInfo, ...updatedUserRewards };
-  }
   return userInfo;
 }
 
@@ -1751,7 +1675,7 @@ function getEmptyUserRewardInfo() {
 }
 
 // updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
-async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePriceInEth, isIncrease, actionType) {
+async function updateRewards(user, userInfo, hasBonus, numOrders, feesInEth, salePriceInEth, isIncrease, actionType) {
   utils.log(
     'Updating rewards in increasing mode',
     isIncrease,
@@ -1780,22 +1704,32 @@ async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePrice
   let salePending = bn(0);
   let purchasePending = bn(0);
 
-  let updatedUserRewards;
   try {
     utils.log('Updating global reward per shares');
     const globalDocRef = db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC);
     const currentBlock = await getCurrentBlock();
-    updatedUserRewards = await db.runTransaction(async (txn) => {
-      const globalInfoDocBlah = (await txn.get(globalDocRef)).data();
-      let globalInfo = globalInfoDocBlah;
+
+    // run txn
+    db.runTransaction(async (txn) => {
+      let globalInfo = (await txn.get(globalDocRef)).data();
       globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
       globalInfo.rewardsInfo = {
         ...getEmptyGlobalInfo().rewardsInfo,
         ...globalInfo.rewardsInfo
       };
-      // utils.trace(
-      //   'Newly fetched after interval firestore global info: ' + utils.jsonString(fetchedGlobalInfo.data())
-      // );
+
+      // only once per block
+      const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
+      if (currentBlock.lte(lastRewardBlock)) {
+        utils.log(
+          'Not updating global rewards since current block:',
+          currentBlock.toString(),
+          '<= lastRewardBlock:',
+          lastRewardBlock.toString()
+        );
+        return;
+      }
+
       const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
       const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
       const totalFees = bn(globalInfo.totalFees);
@@ -1809,17 +1743,6 @@ async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePrice
       const accSaleRewardPerShare = bn(globalInfo.rewardsInfo.accSaleRewardPerShare);
       const accPurchaseRewardPerShare = bn(globalInfo.rewardsInfo.accPurchaseRewardPerShare);
 
-      const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
-
-      if (currentBlock.lte(lastRewardBlock)) {
-        utils.log(
-          'Not updating global rewards since current block:',
-          currentBlock.toString(),
-          '<= lastRewardBlock:',
-          lastRewardBlock.toString()
-        );
-        return null;
-      }
       const multiplier = currentBlock.minus(lastRewardBlock);
       utils.trace('Reward multiplier:', multiplier);
       if (!totalOrders.eq(0)) {
@@ -1858,7 +1781,7 @@ async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePrice
       const isPurchase = actionType === 'purchase';
 
       utils.log('Updating user pending and reward debts');
-      const userRewardsInfo = {};
+      let userRewardsInfo = {};
       if (!isIncrease) {
         // update for making an order
         if (isOrder && userShare.gte(numOrders)) {
@@ -1967,14 +1890,33 @@ async function updateRewards(userInfo, hasBonus, numOrders, feesInEth, salePrice
         globalInfo.totalSales = bn(globalInfo.totalSales).plus(numOrders).toString();
       }
 
-      await txn.set(globalDocRef, globalInfo, { merge: true });
-      return userRewardsInfo;
+      txn.set(globalDocRef, globalInfo, { merge: true });
+
+      // store updated user rewards
+      if (userRewardsInfo) {
+        utils.log('Storing updated user rewards');
+        userRewardsInfo = { ...userInfo.rewardsInfo, ...userRewardsInfo };
+        utils.trace('Storing updated user rewards:', utils.jsonString(userRewardsInfo));
+        db.collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(user)
+          .set({ rewardsInfo: userRewardsInfo, updatedAt: Date.now() }, { merge: true })
+          .catch((err) => {
+            utils.error('Failed updating user rewards info in firestore');
+            utils.error(err);
+          });
+      } else {
+        utils.log('Not updated user rewards as there are no updates');
+      }
+    }).catch((err) => {
+      utils.error('Failed updating global rewards info in firestore');
+      utils.error(err);
     });
   } catch (err) {
-    utils.error('Failed updating global info in firestore');
+    utils.error('Failed updating user and global rewards info in firestore');
     utils.error(err);
   }
-  return updatedUserRewards;
 }
 
 async function getCurrentBlock() {
@@ -1999,8 +1941,7 @@ async function getReward(user) {
     ...userInfo.rewardsInfo
   };
   const currentBlock = await getCurrentBlock();
-  const globalInfoDocBlah = (await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get()).data();
-  let globalInfo = globalInfoDocBlah;
+  let globalInfo = (await db.collection(fstrCnstnts.ROOT_COLL).doc(fstrCnstnts.INFO_DOC).get()).data();
   globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
   globalInfo.rewardsInfo = {
     ...getEmptyGlobalInfo().rewardsInfo,

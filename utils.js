@@ -109,9 +109,9 @@ module.exports = {
       if (actualAddress === userId) {
         return true;
       }
-    } catch (error) {
+    } catch (err) {
       error('Cannot authorize user ' + userId);
-      error(error);
+      error(err);
     }
     return false;
   },
