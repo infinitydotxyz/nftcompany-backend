@@ -79,8 +79,6 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - supports the following queries - from most to least restrictive
 - supports tokenId and tokenAddress query
 - supports collectionName, priceMin and priceMax query ordered by price
-- supports priceMin and priceMax query ordered by price
-- supports !user
 - supports all listings
 */
 app.get('/listings', async (req, res) => {
@@ -91,17 +89,7 @@ app.get('/listings', async (req, res) => {
   const collectionName = req.query.collectionName.trim(); // preserve case
   const priceMin = +req.query.priceMin;
   const priceMax = +req.query.priceMax;
-  // @ts-ignore
-  const user = req.query.user.trim().toLowerCase();
-  let sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase();
-  let isPriceFilter = false;
-  if (sortByPriceDirection) {
-    isPriceFilter = true;
-  } else {
-    sortByPriceDirection = DEFAULT_PRICE_SORT_DIRECTION;
-  }
-  // @ts-ignore
-  const startAfterUser = req.query.startAfterUser.trim().toLowerCase();
+  const sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const { limit, startAfterPrice, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -131,22 +119,6 @@ app.get('/listings', async (req, res) => {
       startAfterMillis,
       limit
     );
-    if (resp) {
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
-      });
-    }
-  } else if (isPriceFilter) {
-    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit);
-    if (resp) {
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
-      });
-    }
-  } else if (user) {
-    resp = await getListingsNotMadeByUser(user, startAfterUser, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -216,25 +188,6 @@ async function getListingsByCollectionNameAndPrice(
     return getOrdersResponse(data);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
-    utils.error(err);
-  }
-}
-
-async function getListingsNotMadeByUser(user, startAfterUser, limit) {
-  utils.log('Getting listings not made by user');
-
-  try {
-    const data = await db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('maker', '!=', user)
-      .orderBy('maker', 'asc')
-      .startAfter(startAfterUser)
-      .limit(limit)
-      .get();
-
-    return getOrdersResponse(data);
-  } catch (err) {
-    utils.error('Failed to get listings not made by user', user);
     utils.error(err);
   }
 }
