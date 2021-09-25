@@ -1,17 +1,11 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
 
-// todo: adi change this before push
-const serviceAccount = require('./creds/nftc-web-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
-
-// firebaseAdmin.initializeApp({
-//   credential: firebaseAdmin.credential.applicationDefault()
-// })
-
 Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
