@@ -2138,8 +2138,7 @@ app.post('/u/:user/setEmail', async (req, res) => {
   const guid = crypto.randomBytes(30).toString('hex');
 
   // store
-  db
-    .collection(fstrCnstnts.ROOT_COLL)
+  db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
@@ -2155,7 +2154,8 @@ app.post('/u/:user/setEmail', async (req, res) => {
         }
       },
       { merge: true }
-    ).then(() => {
+    )
+    .then(() => {
       // send email
       const subject = 'Verify your email for NFT Company';
       const link = constants.API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
@@ -2163,11 +2163,12 @@ app.post('/u/:user/setEmail', async (req, res) => {
         '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
       sendEmail(email, subject, html);
       res.sendStatus(200);
-    }).catch(err => {
+    })
+    .catch((err) => {
       utils.error('Error setting user email for user', user);
       utils.error(err);
       res.sendStatus(500);
-    })
+    });
 });
 
 app.get('/verifyEmail', async (req, res) => {
