@@ -78,7 +78,6 @@ Data structure in firestore
 */
 
 require('dotenv').config();
-const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
 module.exports = {
   firestore: {
