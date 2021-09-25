@@ -2138,7 +2138,7 @@ async function getReward(user) {
 // ==================================================== Email ==============================================================
 
 const nodemailer = require('nodemailer');
-const mailCreds = require('./creds/nftc-web-nodemailer-creds.json');
+const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
 
 const senderEmailAddress = 'hi@nftcompany.com';
 const transporter = nodemailer.createTransport({
