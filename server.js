@@ -1671,7 +1671,7 @@ async function updateRewards(user, hasBonus, numOrders, feesInEth, salePriceInEt
     try {
       // run txn
       await client.query('BEGIN');
-      const table = process.env.PG_REWARDS_TABLE;
+      const table = process.env.PG_REWARDS_TABLE_PROD;
       const globalInfoId = 'globalInfo';
 
       const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
@@ -1972,7 +1972,7 @@ async function getReward(user) {
 
   const client = await pool.connect();
   try {
-    const table = process.env.PG_REWARDS_TABLE;
+    const table = process.env.PG_REWARDS_TABLE_PROD;
     const globalInfoId = 'globalInfo';
     const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
     const res = await client.query(selectQuery, [globalInfoId]);
