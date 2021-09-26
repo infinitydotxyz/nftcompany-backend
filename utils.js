@@ -119,7 +119,7 @@ module.exports = {
     const numberFields = {};
     try {
       fieldArr.forEach((name, idx) => {
-        numberFields[name] = parseInt(req.query[name] || defaultValues[idx]);
+        numberFields[name] = parseFloat(req.query[name] || defaultValues[idx]);
         if (isNaN(numberFields[name])) {
           throw Error(`Invalid query param: ${name} = ${req.query[name]}`);
         }
