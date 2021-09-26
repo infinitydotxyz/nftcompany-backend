@@ -18,7 +18,6 @@ const fstrCnstnts = constants.firestore;
 const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
-// todo: adi check this
 const { Pool } = require('pg');
 const pool = new Pool({
   user: process.env.PG_USER,
