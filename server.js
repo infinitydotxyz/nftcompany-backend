@@ -850,13 +850,6 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
 
-  // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
-  const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
-  if (checkTxnStatusInFirestore && !isStillPending) {
-    utils.trace('Txn', origTxnHash, 'already updated in firestore');
-    return;
-  }
-
   utils.log('Waiting for txn', origTxnHash);
   const batch = db.batch();
   const userTxnCollRef = db
@@ -871,6 +864,12 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
 
   try {
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
+    // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
+    const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
+    if (checkTxnStatusInFirestore && !isStillPending) {
+      utils.trace('Txn', origTxnHash, 'already updated in firestore');
+      return;
+    }
     // orig txn confirmed
     utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
     const txnData = JSON.parse(utils.jsonString(receipt));
