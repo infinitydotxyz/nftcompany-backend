@@ -681,7 +681,6 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
       .collection(fstrCnstnts.TXNS_COLL)
-      .where('status', '==', 'pending')
       .orderBy('createdAt', 'desc')
       .startAfter(startAfterMillis)
       .limit(limit)
@@ -693,7 +692,9 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       txn.id = doc.id;
       txns.push(txn);
       // check status
-      waitForTxn(user, txn, true);
+      if (txn.status === 'pending') {
+        waitForTxn(user, txn, true);
+      }
     }
     const resp = {
       count: txns.length,
