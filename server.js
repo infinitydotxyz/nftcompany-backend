@@ -693,7 +693,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       txns.push(txn);
       // check status
       if (txn.status === 'pending') {
-        waitForTxn(user, txn, true);
+        waitForTxn(user, txn);
       }
     }
     const resp = {
@@ -848,7 +848,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
       .set(payload)
       .then(() => {
         // listen for txn mined or not mined
-        waitForTxn(user, payload, false);
+        waitForTxn(user, payload);
         res.sendStatus(200);
       })
       .catch((err) => {
@@ -909,7 +909,7 @@ async function isValidNftcTxn(txnHash, isOptimistic) {
   return isValid;
 }
 
-async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
+async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
@@ -937,25 +937,37 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
     }
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
-    const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
-    if (checkTxnStatusInFirestore && !isStillPending) {
-      utils.trace('Txn', origTxnHash, 'already updated in firestore');
-      return;
-    }
-    // orig txn confirmed
-    utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
-    const txnData = JSON.parse(utils.jsonString(receipt));
-    batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
-    if (actionType === 'fulfill') {
-      await fulfillOrder(user, batch, payload);
-    } else if (actionType === 'cancel') {
-      const docId = payload.orderId.trim(); // preserve case
-      const side = +payload.side;
-      if (side === 0) {
-        await cancelOffer(user, batch, docId);
-      } else if (side === 1) {
-        await cancelListing(user, batch, docId);
+    try {
+      const isUpdated = await db.runTransaction(async (txn) => {
+        const txnDoc = await txn.get(origTxnDocRef);
+        const status = txnDoc.get('status');
+        if (status === 'pending') {
+          // orig txn confirmed
+          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
+          const txnData = JSON.parse(utils.jsonString(receipt));
+          await txn.update(origTxnDocRef, { status: 'confirmed', txnData });
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+      if (isUpdated) {
+        if (actionType === 'fulfill') {
+          await fulfillOrder(user, batch, payload);
+        } else if (actionType === 'cancel') {
+          const docId = payload.orderId.trim(); // preserve case
+          const side = +payload.side;
+          if (side === 0) {
+            await cancelOffer(user, batch, docId);
+          } else if (side === 1) {
+            await cancelListing(user, batch, docId);
+          }
+        }
       }
+    } catch (err) {
+      utils.error('Error updating txn status in firestore');
+      utils.error(err);
     }
   } catch (err) {
     utils.error('Txn: ' + origTxnHash + ' was rejected');
@@ -1003,19 +1015,6 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
       utils.error('Failed to commit pending txn batch');
       utils.error(err);
     });
-}
-
-async function isTxnPendingInFirestore(user, txnHash) {
-  const userTxnDoc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.TXNS_COLL)
-    .doc(txnHash)
-    .get();
-
-  return userTxnDoc.get('status') === 'pending';
 }
 
 // order fulfill
