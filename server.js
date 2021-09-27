@@ -813,18 +813,38 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
       return;
     }
 
-    payload.status = 'pending';
-    payload.txnType = 'original'; // possible values are original, cancellation and replacement
-    payload.createdAt = Date.now();
+    // check if valid nftc txn
+    // txn would be null for recently sent txns
+    // taking optimistic approach of assuming this would be a valid txn
+    const isValid = await isValidNftcTxn(txnHash, true);
+    if (!isValid) {
+      utils.error('Invalid txn', txnHash);
+      res.status(500).send('Invalid txn: ' + txnHash);
+      return;
+    }
 
-    utils.log('Writing txn', txnHash, 'in pending state to firestore for user', user);
-    // save to firestore
-    db.collection(fstrCnstnts.ROOT_COLL)
+    // check if already exists
+    const docRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
       .collection(fstrCnstnts.TXNS_COLL)
-      .doc(txnHash)
+      .doc(txnHash);
+
+    const doc = await docRef.get();
+    if (doc.exists) {
+      utils.error('Txn already exists in firestore', txnHash);
+      res.status(500).send('Txn already exists: ' + txnHash);
+      return;
+    }
+
+    // save to firestore
+    payload.status = 'pending';
+    payload.txnType = 'original'; // possible values are original, cancellation and replacement
+    payload.createdAt = Date.now();
+    utils.log('Writing txn', txnHash, 'in pending state to firestore for user', user);
+    docRef
       .set(payload)
       .then(() => {
         // listen for txn mined or not mined
@@ -845,6 +865,50 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // ====================================================== Write helpers ==========================================================
 
+const openseaAbi = require('./abi/openseaExchangeContract.json');
+
+async function isValidNftcTxn(txnHash, isOptimistic) {
+  let isValid = isOptimistic;
+  const txn = await ethersProvider.getTransaction(txnHash);
+  if (txn) {
+    const to = txn.to;
+    const chainId = txn.chainId;
+    const data = txn.data;
+    const value = txn.value;
+    const openseaIface = new ethers.utils.Interface(openseaAbi);
+    const decodedData = openseaIface.parseTransaction({ data, value });
+    const functionName = decodedData.name;
+    const args = decodedData.args;
+    if (args && args.length > 0) {
+      const addresses = args[0];
+      if (addresses && addresses.length === 14) {
+        const buyFeeRecipient = args[0][3];
+        const sellFeeRecipient = args[0][10];
+        if (
+          buyFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase() &&
+          sellFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()
+        ) {
+          isValid = false;
+        }
+      } else {
+        isValid = false;
+      }
+    } else {
+      isValid = false;
+    }
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+  }
+  return isValid;
+}
+
 async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
@@ -864,6 +928,14 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
 
   try {
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
+
+    // check if valid nftc txn
+    const isValid = await isValidNftcTxn(origTxnHash, false);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', origTxnHash);
+      return;
+    }
+
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
     if (checkTxnStatusInFirestore && !isStillPending) {
