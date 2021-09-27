@@ -2098,6 +2098,11 @@ async function getReward(user) {
   const totalVolume = bn(globalInfo.totalVolume);
   const totalSales = bn(globalInfo.totalSales);
 
+  const totalRewardPaid = bn(globalInfo.rewardsInfo.totalRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalBonusRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalSaleRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalPurchaseRewardPaid);
+
   const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated;
   const penaltyRatio = bn(globalInfo.rewardsInfo.penaltyRatio);
   const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
@@ -2209,7 +2214,8 @@ async function getReward(user) {
     numListings: numListings.toString(),
     numBonusListings: numBonusListings.toString(),
     numOffers: numOffers.toString(),
-    numBonusOffers: numBonusOffers.toString()
+    numBonusOffers: numBonusOffers.toString(),
+    totalRewardPaid
   };
 
   let netReward = grossReward;
