@@ -2083,7 +2083,8 @@ async function getReward(user) {
     .doc(user)
     .get();
 
-  const userStats = userStatsRef.data();
+  let userStats = userStatsRef.data();
+  userStats = { ...getEmptyUserInfo(), ...userStats };
 
   const currentBlock = await getCurrentBlock();
 
