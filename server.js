@@ -816,7 +816,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     // check if valid nftc txn
     // txn would be null for recently sent txns
     // taking optimistic approach of assuming this would be a valid txn
-    const isValid = await isValidNftcTxn(txnHash, true);
+    const isValid = await isValidNftcTxn(txnHash, actionType, true);
     if (!isValid) {
       utils.error('Invalid txn', txnHash);
       res.status(500).send('Invalid txn: ' + txnHash);
@@ -867,8 +867,8 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
 
-async function isValidNftcTxn(txnHash, isOptimistic) {
-  let isValid = isOptimistic;
+async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
+  let isValid = true;
   const txn = await ethersProvider.getTransaction(txnHash);
   if (txn) {
     const to = txn.to;
@@ -879,9 +879,24 @@ async function isValidNftcTxn(txnHash, isOptimistic) {
     const decodedData = openseaIface.parseTransaction({ data, value });
     const functionName = decodedData.name;
     const args = decodedData.args;
+
+    // checks
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+    if (actionType === 'cancel' && functionName !== constants.WYVERN_CANCEL_ORDER_FUNCTION) {
+      isValid = false;
+    }
+
     if (args && args.length > 0) {
       const addresses = args[0];
-      if (addresses && addresses.length === 14) {
+      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
         const buyFeeRecipient = args[0][3];
         const sellFeeRecipient = args[0][10];
         if (
@@ -890,21 +905,19 @@ async function isValidNftcTxn(txnHash, isOptimistic) {
         ) {
           isValid = false;
         }
+      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
+        const feeRecipient = args[0][3];
+        if (feeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+          isValid = false;
+        }
       } else {
         isValid = false;
       }
     } else {
       isValid = false;
     }
-    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
-      isValid = false;
-    }
-    if (chainId !== constants.ETH_CHAIN_ID) {
-      isValid = false;
-    }
-    if (functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
-      isValid = false;
-    }
+  } else {
+    isValid = isOptimistic;
   }
   return isValid;
 }
@@ -930,7 +943,7 @@ async function waitForTxn(user, payload) {
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
 
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(origTxnHash, false);
+    const isValid = await isValidNftcTxn(origTxnHash, actionType, false);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
