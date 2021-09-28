@@ -610,7 +610,7 @@ app.get('/titles', async (req, res) => {
         });
         const respStr = utils.jsonString(resp);
         res.set({
-          'Cache-Control': 'must-revalidate, max-age=600',
+          'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
@@ -649,7 +649,7 @@ app.get('/collections', async (req, res) => {
         resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
         const respStr = utils.jsonString(resp);
         res.set({
-          'Cache-Control': 'must-revalidate, max-age=600',
+          'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
         res.send(resp);
@@ -702,7 +702,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
     };
     const respStr = utils.jsonString(resp);
     res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
+      'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
