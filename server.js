@@ -958,8 +958,10 @@ async function waitForTxn(user, payload) {
           // orig txn confirmed
           utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
-          await txn.update(origTxnDocRef, { status: 'confirmed', txnData });
-          return true;
+          const txnSuceeded = txnData.status === 1;
+          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+          await txn.update(origTxnDocRef, { status: updatedStatus, txnData });
+          return txnSuceeded;
         } else {
           return false;
         }
@@ -2428,7 +2430,7 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
       { merge: true }
     )
     .then(() => {
-      res.send({subscribed: isSubscribed});
+      res.send({ subscribed: isSubscribed });
     })
     .catch((err) => {
       utils.error('Subscribing email failed');
