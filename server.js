@@ -2427,8 +2427,8 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
       },
       { merge: true }
     )
-    .then((data) => {
-      res.sendStatus(200);
+    .then(() => {
+      res.send({subscribed: isSubscribed});
     })
     .catch((err) => {
       utils.error('Subscribing email failed');
