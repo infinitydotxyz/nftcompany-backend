@@ -2236,8 +2236,8 @@ async function getReward(user) {
   let netReward = grossReward;
   let penalty = bn(0);
   if (penaltyActivated && !netReward.eq(0)) {
-    let numTotalOrders = share.plus(bonusShare);
-    const numTotalFulfills = salesShare.plus(purchasesShare);
+    let numTotalOrders = numListings.plus(numBonusListings).plus(numOffers).plus(numBonusOffers);
+    const numTotalFulfills = numSales.plus(numPurchases);
     // special case where user only made purchases without placing any orders;
     // also handles the case where numTotalFulfills = 0 to avoid div by 0
     // this code should never be executed after the netReward > 0 check above
