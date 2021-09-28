@@ -2524,7 +2524,8 @@ function toFixed5(num) {
   // @ts-ignore
   // eslint-disable-next-line no-undef
   // console.log(__line);
-  return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+  return bn(num).toFixed(5);
+  // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 function bn(num) {
