@@ -1573,7 +1573,7 @@ async function deleteListingWithId(id, user, batch) {
 async function deleteListing(batch, docRef) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    utils.log('No listing to delete: ' + docRef);
+    utils.log('No listing to delete: ' + docRef.id);
     return;
   }
   const listing = doc.id;
@@ -1606,7 +1606,7 @@ async function deleteOfferMadeWithId(id, user, batch) {
 async function deleteOffer(batch, docRef) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    utils.log('No offer to delete: ' + docRef);
+    utils.log('No offer to delete: ' + docRef.id);
     return;
   }
   const offer = doc.id;
