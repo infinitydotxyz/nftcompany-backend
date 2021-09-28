@@ -89,13 +89,15 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - supports tokenId and tokenAddress query
 - supports collectionName, priceMin and priceMax query ordered by price
 - supports all listings
+- support title
 */
 app.get('/listings', async (req, res) => {
-  const tokenId = req.query.tokenId;
+  const { tokenId } = req.query;
   // @ts-ignore
   const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
   // @ts-ignore
   const collectionName = req.query.collectionName.trim(); // preserve case
+  const text = (req.query.text || '').trim(); // preserve case
   const priceMin = +req.query.priceMin;
   const priceMax = +req.query.priceMax;
   const sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
@@ -112,6 +114,14 @@ app.get('/listings', async (req, res) => {
   let resp;
   if (tokenAddress && tokenId) {
     resp = await getListingByTokenAddressAndId(tokenId, tokenAddress, limit);
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
+  } else if (text) {
+    resp = await getListingsContainText(text, limit, startAfterMillis);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -187,6 +197,11 @@ async function getListingsByCollectionNameAndPrice(
     if (collectionName) {
       queryRef = queryRef.where('metadata.asset.collectionName', '==', collectionName);
     }
+    if (title) {
+      queryRef = queryRef
+        .where('metadata.asset.title', '>=', title)
+        .where('metadata.asset.title', '<=', title + '\uf8ff');
+    }
     queryRef = queryRef
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
@@ -197,6 +212,48 @@ async function getListingsByCollectionNameAndPrice(
     return getOrdersResponse(data);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
+    utils.error(err);
+  }
+}
+
+async function getListingsContainText(text, limit, startAfterMillis) {
+  try {
+    utils.log('Getting listings match with text:', text);
+
+    // search for listings which title startsWith text
+    let queryRef = db.collectionGroup(fstrCnstnts.LISTINGS_COLL);
+    if (text) {
+      const startsWith = getSearchFriendlyString(text);
+      queryRef = queryRef
+        .where('metadata.asset.searchTitle', '>=', startsWith)
+        .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith));
+    }
+    queryRef = queryRef
+      .orderBy('metadata.asset.searchTitle', 'asc')
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterMillis)
+      .limit(Math.ceil(limit / 2));
+    const resultByTitle = (await queryRef.get()) || [];
+
+    // search for listings which collectionName startsWith text
+    queryRef = db.collectionGroup(fstrCnstnts.LISTINGS_COLL);
+    if (text) {
+      const startsWith = getSearchFriendlyString(text);
+      queryRef = queryRef
+        .where('metadata.asset.searchCollectionName', '>=', startsWith)
+        .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith));
+    }
+    queryRef = queryRef
+      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterMillis)
+      .limit(Math.ceil(limit / 2));
+    const resultByCollectionName = (await queryRef.get()) || [];
+
+    // combine both results:
+    return getOrdersResponse({ docs: [...resultByCollectionName.docs, ...resultByTitle.docs] });
+  } catch (err) {
+    utils.error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
     utils.error(err);
   }
 }
