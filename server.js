@@ -2177,10 +2177,10 @@ async function getReward(user) {
     _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
   }
 
-  const reward = share.times(_accRewardPerShare).minus(rewardDebt);
-  const bonusReward = bonusShare.times(_accBonusRewardPerShare).minus(bonusRewardDebt);
-  const saleReward = salesShare.times(_accSaleRewardPerShare).minus(saleRewardDebt);
-  const purchaseReward = purchasesShare.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt);
+  const reward = share.times(_accRewardPerShare).minus(rewardDebt).abs();
+  const bonusReward = bonusShare.times(_accBonusRewardPerShare).minus(bonusRewardDebt).abs();
+  const saleReward = salesShare.times(_accSaleRewardPerShare).minus(saleRewardDebt).abs();
+  const purchaseReward = purchasesShare.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt).abs();
 
   const grossReward = reward
     .plus(bonusReward)
