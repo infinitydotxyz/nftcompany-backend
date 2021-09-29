@@ -4,12 +4,14 @@ const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJ
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
+const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
 const app = express();
 const cors = require('cors');
 app.use(express.json());
 app.use(cors());
+app.use(helmet());
 
 const utils = require('./utils');
 const constants = require('./constants');
