@@ -63,6 +63,7 @@ app.all('/u/*', async (req, res, next) => {
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
   const tokenAddress = (req.params.tokenAddress || '').trim().toLowerCase();
   if (!tokenAddress) {
+    utils.error('Empty token address');
     res.sendStatus(500);
     return;
   }
@@ -319,6 +320,7 @@ app.get('/u/:user/listings', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
@@ -355,6 +357,7 @@ app.get('/u/:user/purchases', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
@@ -406,6 +409,7 @@ app.get('/u/:user/sales', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
@@ -457,6 +461,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
@@ -494,6 +499,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
@@ -536,6 +542,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 // TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
 const getOrdersWithDocId = async (req, res) => {
   if (!req.query.maker || !req.query.id || !req.query.side || (req.query.side !== '0' && req.query.side !== '1')) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -585,6 +592,7 @@ const getOrdersWithTokenId = async (req, res) => {
     !req.query.tokenId ||
     (req.query.side !== '0' && req.query.side !== '1')
   ) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -641,6 +649,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 app.get('/u/:user/reward', async (req, res) => {
   const user = (req.params.user || '').trim().toLowerCase();
   if (!user) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -781,6 +790,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
     return;
   }
   if (!user) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -841,11 +851,13 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     !payload.metadata.basePriceInEth ||
     !payload.metadata.createdAt
   ) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
   if (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -854,6 +866,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
   const maker = (req.params.user || '').trim().toLowerCase();
   if (!maker) {
+    utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
@@ -907,11 +920,13 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
 
     const user = (req.params.user || '').trim().toLowerCase();
     if (!user) {
+      utils.error('Invalid input');
       res.sendStatus(500);
       return;
     }
 
     if (!payload.actionType || !payload.txnHash || !payload.side || !payload.orderId || !payload.maker) {
+      utils.error('Invalid input');
       res.sendStatus(500);
       return;
     }
@@ -957,6 +972,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     }
 
     if (inputError) {
+      utils.error('Invalid input');
       res.sendStatus(500);
       return;
     }
@@ -1535,10 +1551,16 @@ async function fetchAssetsOfUser(req, res) {
     return;
   }
   if (!user) {
+    utils.error('Empty user');
     res.sendStatus(500);
     return;
   }
   const sourceName = nftDataSources[source];
+  if (!sourceName) {
+    utils.error('Empty sourceName');
+    res.sendStatus(500);
+    return;
+  }
   try {
     let resp = await getAssets(user, limit, offset, sourceName);
     resp = utils.jsonString(resp);
