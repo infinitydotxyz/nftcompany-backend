@@ -34,7 +34,7 @@ const nftDataSources = {
   3: 'alchemy'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
-// const DEFAULT_MIN_ETH = 0.0000001;
+const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 10000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
@@ -61,7 +61,11 @@ app.all('/u/*', async (req, res, next) => {
 
 // check if token is verified or has bonus reward
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
-  const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
+  const tokenAddress = (req.params.tokenAddress || '').trim().toLowerCase();
+  if (!tokenAddress) {
+    res.sendStatus(500);
+    return;
+  }
   try {
     const verified = await isTokenVerified(tokenAddress);
     const bonusReward = await hasBonusReward(tokenAddress);
@@ -94,18 +98,19 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 app.get('/listings', async (req, res) => {
   const { tokenId } = req.query;
   // @ts-ignore
-  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
+  const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
-  const collectionName = req.query.collectionName.trim(); // preserve case
+  const collectionName = (req.query.collectionName || '').trim(); // preserve case
   // @ts-ignore
   const text = (req.query.text || '').trim(); // preserve case
   // @ts-ignore
   const startAfterSearchTitle = (req.query.startAfterSearchTitle || '').trim();
   // @ts-ignore
   const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
-  const priceMin = +req.query.priceMin;
-  const priceMax = +req.query.priceMax;
-  const sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
+  let priceMin = +(req.query.priceMin || 0);
+  let priceMax = +(req.query.priceMax || 0);
+  // @ts-ignore
+  const sortByPriceDirection = (req.query.sortByPrice || '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const { limit, startAfterPrice, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -140,6 +145,12 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else if (collectionName || priceMin || priceMax) {
+    if (!priceMin) {
+      priceMin = DEFAULT_MIN_ETH;
+    }
+    if (!priceMax) {
+      priceMax = DEFAULT_MAX_ETH;
+    }
     resp = await getListingsByCollectionNameAndPrice(
       collectionName,
       priceMin,
@@ -297,7 +308,7 @@ app.get('/u/:user/assets', async (req, res) => {
 
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -305,6 +316,10 @@ app.get('/u/:user/listings', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -329,7 +344,7 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -337,6 +352,10 @@ app.get('/u/:user/purchases', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -376,7 +395,7 @@ app.get('/u/:user/purchases', async (req, res) => {
 
 // fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -384,6 +403,10 @@ app.get('/u/:user/sales', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -423,7 +446,7 @@ app.get('/u/:user/sales', async (req, res) => {
 
 // fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -431,6 +454,10 @@ app.get('/u/:user/offersmade', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -455,7 +482,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
 
 // fetch offer received by user
 app.get('/u/:user/offersreceived', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
@@ -464,6 +491,10 @@ app.get('/u/:user/offersreceived', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   db.collectionGroup(fstrCnstnts.OFFERS_COLL)
@@ -504,8 +535,8 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 
 // TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
 const getOrdersWithDocId = async (req, res) => {
-  if (!req.query.maker || !req.query.id) {
-    res.sendStatus(400);
+  if (!req.query.maker || !req.query.id || !req.query.side || (req.query.side !== '0' && req.query.side !== '1')) {
+    res.sendStatus(500);
     return;
   }
 
@@ -548,8 +579,14 @@ const getOrdersWithDocId = async (req, res) => {
 };
 
 const getOrdersWithTokenId = async (req, res) => {
-  if (!req.query.maker || !req.query.tokenAddress) {
-    res.sendStatus(400);
+  if (
+    !req.query.maker ||
+    !req.query.tokenAddress ||
+    !req.query.tokenId ||
+    (req.query.side !== '0' && req.query.side !== '1')
+  ) {
+    res.sendStatus(500);
+    return;
   }
 
   const maker = req.query.maker.trim().toLowerCase();
@@ -602,7 +639,11 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 
 // fetch user reward
 app.get('/u/:user/reward', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
+  if (!user) {
+    res.sendStatus(500);
+    return;
+  }
   try {
     const resp = await getReward(user);
     const respStr = utils.jsonString(resp);
@@ -655,7 +696,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 app.get('/titles', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig);
-  if (typeof startsWith === 'string') {
+  if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
@@ -693,7 +734,7 @@ app.get('/titles', async (req, res) => {
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig);
-  if (typeof startsWith === 'string') {
+  if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
@@ -729,7 +770,7 @@ app.get('/collections', async (req, res) => {
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -737,6 +778,10 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   try {
@@ -783,8 +828,35 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // post a listing or make offer
 app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   const payload = req.body;
+
+  if (
+    !payload ||
+    !payload.hash ||
+    !payload.metadata ||
+    !payload.metadata.asset ||
+    !payload.metadata.asset.address ||
+    !payload.metadata.asset.id ||
+    !payload.metadata.asset.collectionName ||
+    !payload.metadata.asset.searchCollectionName ||
+    !payload.metadata.basePriceInEth ||
+    !payload.metadata.createdAt
+  ) {
+    res.sendStatus(500);
+    return;
+  }
+
+  if (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+    res.sendStatus(500);
+    return;
+  }
+
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
-  const maker = req.params.user.trim().toLowerCase();
+
+  const maker = (req.params.user || '').trim().toLowerCase();
+  if (!maker) {
+    res.sendStatus(500);
+    return;
+  }
   // default one order per post call
   const numOrders = 1;
   const batch = db.batch();
@@ -805,6 +877,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
       await postOffer(maker, payload, batch, numOrders, hasBonus);
     } else {
       utils.error('Unknown order type');
+      res.sendStatus(500);
       return;
     }
 
@@ -831,7 +904,17 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
   try {
     const payload = req.body;
-    const user = req.params.user.trim().toLowerCase();
+
+    const user = (req.params.user || '').trim().toLowerCase();
+    if (!user) {
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.actionType || !payload.txnHash || !payload.side || !payload.orderId || !payload.maker) {
+      res.sendStatus(500);
+      return;
+    }
 
     // input checking
     let inputError = '';
@@ -874,7 +957,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     }
 
     if (inputError) {
-      res.status(500).send(inputError);
+      res.sendStatus(500);
       return;
     }
 
@@ -1445,10 +1528,14 @@ function getOrdersResponse(data) {
 }
 
 async function fetchAssetsOfUser(req, res) {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (req.params.user || '').trim().toLowerCase();
   const { source } = req.query;
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
+    return;
+  }
+  if (!user) {
+    res.sendStatus(500);
     return;
   }
   const sourceName = nftDataSources[source];
