@@ -856,15 +856,14 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     !payload.metadata.asset.id ||
     !payload.metadata.asset.collectionName ||
     !payload.metadata.asset.searchCollectionName ||
-    !payload.metadata.basePriceInEth ||
-    !payload.metadata.createdAt
+    !payload.metadata.basePriceInEth
   ) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  if (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+  if (!payload.englishAuctionReservePrice && (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase())) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
@@ -939,7 +938,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
       return;
     }
 
-    if (!payload.actionType || !payload.txnHash || !payload.side || !payload.orderId || !payload.maker) {
+    if (!payload.actionType || !payload.txnHash || !payload.orderId || !payload.maker) {
       utils.error('Invalid input');
       res.sendStatus(500);
       return;
