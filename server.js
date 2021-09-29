@@ -2505,15 +2505,16 @@ app.get('/u/:user/getEmail', async (req, res) => {
 
 app.post('/u/:user/setEmail', async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const email = (`${req.body.email}` || '').trim().toLowerCase();
-  // generate guid
-  const guid = crypto.randomBytes(30).toString('hex');
+  const email = (req.body.email || '').trim().toLowerCase();
 
   if (!user || !email) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
+
+  // generate guid
+  const guid = crypto.randomBytes(30).toString('hex');
 
   // store
   db.collection(fstrCnstnts.ROOT_COLL)
