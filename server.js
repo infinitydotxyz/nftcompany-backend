@@ -839,6 +839,12 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   const payload = req.body;
 
+  if (Object.keys(payload).length === 0) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   if (
     !payload ||
     !payload.hash ||
@@ -917,6 +923,12 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
   try {
     const payload = req.body;
+
+    if (Object.keys(payload).length === 0) {
+      utils.error('Invalid input');
+      res.sendStatus(500);
+      return;
+    }
 
     const user = (`${req.params.user}` || '').trim().toLowerCase();
     if (!user) {
@@ -2609,7 +2621,7 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 
-  if (!user || !data) {
+  if (!user || Object.keys(data).length === 0) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;

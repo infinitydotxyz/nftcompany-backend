@@ -91,7 +91,7 @@ module.exports = {
 
   authorizeUser: async function (path, signature, message) {
     // todo: adi for testing only
-     return true;
+    // return true;
 
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
