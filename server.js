@@ -61,7 +61,7 @@ app.all('/u/*', async (req, res, next) => {
 
 // check if token is verified or has bonus reward
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
-  const tokenAddress = (req.params.tokenAddress || '').trim().toLowerCase();
+  const tokenAddress = (`${req.params.tokenAddress}` || '').trim().toLowerCase();
   if (!tokenAddress) {
     utils.error('Empty token address');
     res.sendStatus(500);
@@ -309,7 +309,7 @@ app.get('/u/:user/assets', async (req, res) => {
 
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -346,7 +346,7 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -398,7 +398,7 @@ app.get('/u/:user/purchases', async (req, res) => {
 
 // fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -450,7 +450,7 @@ app.get('/u/:user/sales', async (req, res) => {
 
 // fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -487,7 +487,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
 
 // fetch offer received by user
 app.get('/u/:user/offersreceived', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
@@ -647,7 +647,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 
 // fetch user reward
 app.get('/u/:user/reward', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     utils.error('Invalid input');
     res.sendStatus(500);
@@ -779,7 +779,7 @@ app.get('/collections', async (req, res) => {
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -864,7 +864,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
 
-  const maker = (req.params.user || '').trim().toLowerCase();
+  const maker = (`${req.params.user}` || '').trim().toLowerCase();
   if (!maker) {
     utils.error('Invalid input');
     res.sendStatus(500);
@@ -918,7 +918,7 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
   try {
     const payload = req.body;
 
-    const user = (req.params.user || '').trim().toLowerCase();
+    const user = (`${req.params.user}` || '').trim().toLowerCase();
     if (!user) {
       utils.error('Invalid input');
       res.sendStatus(500);
@@ -1544,7 +1544,7 @@ function getOrdersResponse(data) {
 }
 
 async function fetchAssetsOfUser(req, res) {
-  const user = (req.params.user || '').trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
@@ -2473,7 +2473,13 @@ const transporter = nodemailer.createTransport({
 });
 
 app.get('/u/:user/getEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+
+  if (!user) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
 
   const userDoc = await db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -2498,10 +2504,16 @@ app.get('/u/:user/getEmail', async (req, res) => {
 });
 
 app.post('/u/:user/setEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
-  const email = req.body.email.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const email = (`${req.body.email}` || '').trim().toLowerCase();
   // generate guid
   const guid = crypto.randomBytes(30).toString('hex');
+
+  if (!user || !email) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
 
   // store
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -2539,11 +2551,18 @@ app.post('/u/:user/setEmail', async (req, res) => {
 
 app.get('/verifyEmail', async (req, res) => {
   // @ts-ignore
-  const user = req.query.user.trim().toLowerCase();
+  const user = (req.query.user || '').trim().toLowerCase();
   // @ts-ignore
-  const email = req.query.email.trim().toLowerCase();
+  const email = (req.query.email || '').trim().toLowerCase();
   // @ts-ignore
-  const guid = req.query.guid.trim().toLowerCase();
+  const guid = (req.query.guid || '').trim().toLowerCase();
+
+  if (!user || !email || !guid) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -2586,8 +2605,15 @@ app.get('/verifyEmail', async (req, res) => {
 });
 
 app.post('/u/:user/subscribeEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
+
+  if (!user || !data) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   const isSubscribed = data.subscribe;
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
