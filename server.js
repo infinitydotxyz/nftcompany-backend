@@ -34,7 +34,7 @@ const nftDataSources = {
   3: 'alchemy'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
-// const DEFAULT_MIN_ETH = 0.0000001;
+const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 10000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
@@ -61,7 +61,12 @@ app.all('/u/*', async (req, res, next) => {
 
 // check if token is verified or has bonus reward
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
-  const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
+  const tokenAddress = (`${req.params.tokenAddress}` || '').trim().toLowerCase();
+  if (!tokenAddress) {
+    utils.error('Empty token address');
+    res.sendStatus(500);
+    return;
+  }
   try {
     const verified = await isTokenVerified(tokenAddress);
     const bonusReward = await hasBonusReward(tokenAddress);
@@ -89,16 +94,24 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - supports tokenId and tokenAddress query
 - supports collectionName, priceMin and priceMax query ordered by price
 - supports all listings
+- support title
 */
 app.get('/listings', async (req, res) => {
-  const tokenId = req.query.tokenId;
+  const { tokenId } = req.query;
   // @ts-ignore
-  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
+  const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
-  const collectionName = req.query.collectionName.trim(); // preserve case
-  const priceMin = +req.query.priceMin;
-  const priceMax = +req.query.priceMax;
-  const sortByPriceDirection = `${req.query.sortByPrice}`.toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
+  const collectionName = (req.query.collectionName || '').trim(); // preserve case
+  // @ts-ignore
+  const text = (req.query.text || '').trim(); // preserve case
+  // @ts-ignore
+  const startAfterSearchTitle = (req.query.startAfterSearchTitle || '').trim();
+  // @ts-ignore
+  const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
+  let priceMin = +(req.query.priceMin || 0);
+  let priceMax = +(req.query.priceMax || 0);
+  // @ts-ignore
+  const sortByPriceDirection = (req.query.sortByPrice || '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const { limit, startAfterPrice, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -118,7 +131,27 @@ app.get('/listings', async (req, res) => {
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
     }
+  } else if (text) {
+    resp = await getListingsContainText(
+      text,
+      limit,
+      startAfterSearchTitle,
+      startAfterSearchCollectionName,
+      startAfterMillis
+    );
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp, 'utf8')
+      });
+    }
   } else if (collectionName || priceMin || priceMax) {
+    if (!priceMin) {
+      priceMin = DEFAULT_MIN_ETH;
+    }
+    if (!priceMax) {
+      priceMax = DEFAULT_MAX_ETH;
+    }
     resp = await getListingsByCollectionNameAndPrice(
       collectionName,
       priceMin,
@@ -201,6 +234,50 @@ async function getListingsByCollectionNameAndPrice(
   }
 }
 
+async function getListingsContainText(
+  text,
+  limit,
+  startAfterSearchTitle,
+  startAfterSearchCollectionName,
+  startAfterMillis
+) {
+  try {
+    utils.log('Getting listings match with text:', text);
+
+    // search for listings which title startsWith text
+    const startsWith = getSearchFriendlyString(text);
+    const limit1 = Math.ceil(limit / 2);
+    const limit2 = limit - limit1;
+
+    const queryRef1 = db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where('metadata.asset.searchTitle', '>=', startsWith)
+      .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith))
+      .orderBy('metadata.asset.searchTitle', 'asc')
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterSearchTitle, startAfterMillis)
+      .limit(limit1);
+    const resultByTitle = await queryRef1.get();
+
+    // search for listings which collectionName startsWith text
+    const queryRef2 = db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .where('metadata.asset.searchCollectionName', '>=', startsWith)
+      .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith))
+      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.createdAt', 'desc')
+      .startAfter(startAfterSearchCollectionName, startAfterMillis)
+      .limit(limit2);
+    const resultByCollectionName = await queryRef2.get();
+
+    // combine both results:
+    return getOrdersResponse({ docs: [...resultByCollectionName.docs, ...resultByTitle.docs] });
+  } catch (err) {
+    utils.error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
+    utils.error(err);
+  }
+}
+
 async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit) {
   utils.log('Getting all listings');
 
@@ -232,7 +309,7 @@ app.get('/u/:user/assets', async (req, res) => {
 
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -240,6 +317,11 @@ app.get('/u/:user/listings', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -264,7 +346,7 @@ app.get('/u/:user/listings', async (req, res) => {
 
 // fetch items bought by user
 app.get('/u/:user/purchases', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -272,6 +354,11 @@ app.get('/u/:user/purchases', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -311,7 +398,7 @@ app.get('/u/:user/purchases', async (req, res) => {
 
 // fetch items sold by user
 app.get('/u/:user/sales', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -319,6 +406,11 @@ app.get('/u/:user/sales', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -358,7 +450,7 @@ app.get('/u/:user/sales', async (req, res) => {
 
 // fetch offer made by user
 app.get('/u/:user/offersmade', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -366,6 +458,11 @@ app.get('/u/:user/offersmade', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
     return;
   }
   db.collection(fstrCnstnts.ROOT_COLL)
@@ -390,7 +487,7 @@ app.get('/u/:user/offersmade', async (req, res) => {
 
 // fetch offer received by user
 app.get('/u/:user/offersreceived', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
@@ -399,6 +496,11 @@ app.get('/u/:user/offersreceived', async (req, res) => {
     ['50', `${Date.now()}`]
   );
   if (error) {
+    return;
+  }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
     return;
   }
   db.collectionGroup(fstrCnstnts.OFFERS_COLL)
@@ -439,8 +541,9 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 
 // TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
 const getOrdersWithDocId = async (req, res) => {
-  if (!req.query.maker || !req.query.id) {
-    res.sendStatus(400);
+  if (!req.query.maker || !req.query.id || !req.query.side || (req.query.side !== '0' && req.query.side !== '1')) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
     return;
   }
 
@@ -483,8 +586,15 @@ const getOrdersWithDocId = async (req, res) => {
 };
 
 const getOrdersWithTokenId = async (req, res) => {
-  if (!req.query.maker || !req.query.tokenAddress) {
-    res.sendStatus(400);
+  if (
+    !req.query.maker ||
+    !req.query.tokenAddress ||
+    !req.query.tokenId ||
+    (req.query.side !== '0' && req.query.side !== '1')
+  ) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
   }
 
   const maker = req.query.maker.trim().toLowerCase();
@@ -537,7 +647,12 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 
 // fetch user reward
 app.get('/u/:user/reward', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  if (!user) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
   try {
     const resp = await getReward(user);
     const respStr = utils.jsonString(resp);
@@ -590,7 +705,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 app.get('/titles', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig);
-  if (typeof startsWith === 'string') {
+  if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
@@ -610,7 +725,7 @@ app.get('/titles', async (req, res) => {
         });
         const respStr = utils.jsonString(resp);
         res.set({
-          'Cache-Control': 'must-revalidate, max-age=600',
+          'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
@@ -628,7 +743,7 @@ app.get('/titles', async (req, res) => {
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig);
-  if (typeof startsWith === 'string') {
+  if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
@@ -649,7 +764,7 @@ app.get('/collections', async (req, res) => {
         resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
         const respStr = utils.jsonString(resp);
         res.set({
-          'Cache-Control': 'must-revalidate, max-age=600',
+          'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
         res.send(resp);
@@ -664,7 +779,7 @@ app.get('/collections', async (req, res) => {
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { limit, startAfterMillis, error } = utils.parseQueryFields(
     res,
     req,
@@ -674,6 +789,11 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   if (error) {
     return;
   }
+  if (!user) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
   try {
     const snapshot = await db
       .collection(fstrCnstnts.ROOT_COLL)
@@ -681,7 +801,6 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
       .collection(fstrCnstnts.TXNS_COLL)
-      .where('status', '==', 'pending')
       .orderBy('createdAt', 'desc')
       .startAfter(startAfterMillis)
       .limit(limit)
@@ -693,7 +812,9 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       txn.id = doc.id;
       txns.push(txn);
       // check status
-      waitForTxn(user, txn, true);
+      if (txn.status === 'pending') {
+        waitForTxn(user, txn);
+      }
     }
     const resp = {
       count: txns.length,
@@ -701,7 +822,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
     };
     const respStr = utils.jsonString(resp);
     res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
+      'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
@@ -717,8 +838,44 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // post a listing or make offer
 app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   const payload = req.body;
+
+  if (Object.keys(payload).length === 0) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
+  if (
+    !payload ||
+    !payload.hash ||
+    !payload.metadata ||
+    !payload.metadata.asset ||
+    !payload.metadata.asset.address ||
+    !payload.metadata.asset.id ||
+    !payload.metadata.asset.collectionName ||
+    !payload.metadata.asset.searchCollectionName ||
+    !payload.metadata.basePriceInEth ||
+    !payload.metadata.createdAt
+  ) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
+  if (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
-  const maker = req.params.user.trim().toLowerCase();
+
+  const maker = (`${req.params.user}` || '').trim().toLowerCase();
+  if (!maker) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
   // default one order per post call
   const numOrders = 1;
   const batch = db.batch();
@@ -739,6 +896,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
       await postOffer(maker, payload, batch, numOrders, hasBonus);
     } else {
       utils.error('Unknown order type');
+      res.sendStatus(500);
       return;
     }
 
@@ -765,7 +923,25 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
   try {
     const payload = req.body;
-    const user = req.params.user.trim().toLowerCase();
+
+    if (Object.keys(payload).length === 0) {
+      utils.error('Invalid input');
+      res.sendStatus(500);
+      return;
+    }
+
+    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    if (!user) {
+      utils.error('Invalid input');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.actionType || !payload.txnHash || !payload.side || !payload.orderId || !payload.maker) {
+      utils.error('Invalid input');
+      res.sendStatus(500);
+      return;
+    }
 
     // input checking
     let inputError = '';
@@ -808,26 +984,47 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
     }
 
     if (inputError) {
-      res.status(500).send(inputError);
+      utils.error('Invalid input');
+      res.sendStatus(500);
       return;
     }
 
-    payload.status = 'pending';
-    payload.txnType = 'original'; // possible values are original, cancellation and replacement
-    payload.createdAt = Date.now();
+    // check if valid nftc txn
+    // txn would be null for recently sent txns
+    // taking optimistic approach of assuming this would be a valid txn
+    const isValid = await isValidNftcTxn(txnHash, actionType, true);
+    if (!isValid) {
+      utils.error('Invalid txn', txnHash);
+      res.status(500).send('Invalid txn: ' + txnHash);
+      return;
+    }
 
-    utils.log('Writing txn', txnHash, 'in pending state to firestore for user', user);
-    // save to firestore
-    db.collection(fstrCnstnts.ROOT_COLL)
+    // check if already exists
+    const docRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
       .doc(user)
       .collection(fstrCnstnts.TXNS_COLL)
-      .doc(txnHash)
+      .doc(txnHash);
+
+    const doc = await docRef.get();
+    if (doc.exists) {
+      utils.error('Txn already exists in firestore', txnHash);
+      res.status(500).send('Txn already exists: ' + txnHash);
+      return;
+    }
+
+    // save to firestore
+    payload.status = 'pending';
+    payload.txnType = 'original'; // possible values are original, cancellation and replacement
+    payload.createdAt = Date.now();
+    utils.log('Writing txn', txnHash, 'in pending state to firestore for user', user);
+    docRef
       .set(payload)
       .then(() => {
         // listen for txn mined or not mined
-        waitForTxn(user, payload, false);
+        waitForTxn(user, payload);
         res.sendStatus(200);
       })
       .catch((err) => {
@@ -844,7 +1041,64 @@ app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // ====================================================== Write helpers ==========================================================
 
-async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
+const openseaAbi = require('./abi/openseaExchangeContract.json');
+
+async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
+  let isValid = true;
+  const txn = await ethersProvider.getTransaction(txnHash);
+  if (txn) {
+    const to = txn.to;
+    const chainId = txn.chainId;
+    const data = txn.data;
+    const value = txn.value;
+    const openseaIface = new ethers.utils.Interface(openseaAbi);
+    const decodedData = openseaIface.parseTransaction({ data, value });
+    const functionName = decodedData.name;
+    const args = decodedData.args;
+
+    // checks
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+    if (actionType === 'cancel' && functionName !== constants.WYVERN_CANCEL_ORDER_FUNCTION) {
+      isValid = false;
+    }
+
+    if (args && args.length > 0) {
+      const addresses = args[0];
+      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
+        const buyFeeRecipient = args[0][3];
+        const sellFeeRecipient = args[0][10];
+        if (
+          buyFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase() &&
+          sellFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()
+        ) {
+          isValid = false;
+        }
+      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
+        const feeRecipient = args[0][3];
+        if (feeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+          isValid = false;
+        }
+      } else {
+        isValid = false;
+      }
+    } else {
+      isValid = false;
+    }
+  } else {
+    isValid = isOptimistic;
+  }
+  return isValid;
+}
+
+async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
@@ -863,26 +1117,48 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
 
   try {
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
-    // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
-    const isStillPending = checkTxnStatusInFirestore ? await isTxnPendingInFirestore(user, origTxnHash) : false;
-    if (checkTxnStatusInFirestore && !isStillPending) {
-      utils.trace('Txn', origTxnHash, 'already updated in firestore');
+
+    // check if valid nftc txn
+    const isValid = await isValidNftcTxn(origTxnHash, actionType, false);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
-    // orig txn confirmed
-    utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
-    const txnData = JSON.parse(utils.jsonString(receipt));
-    batch.set(origTxnDocRef, { status: 'confirmed', txnData }, { merge: true });
-    if (actionType === 'fulfill') {
-      await fulfillOrder(user, batch, payload);
-    } else if (actionType === 'cancel') {
-      const docId = payload.orderId.trim(); // preserve case
-      const side = +payload.side;
-      if (side === 0) {
-        await cancelOffer(user, batch, docId);
-      } else if (side === 1) {
-        await cancelListing(user, batch, docId);
+
+    // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
+    try {
+      const isUpdated = await db.runTransaction(async (txn) => {
+        const txnDoc = await txn.get(origTxnDocRef);
+        const status = txnDoc.get('status');
+        if (status === 'pending') {
+          // orig txn confirmed
+          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
+          const txnData = JSON.parse(utils.jsonString(receipt));
+          const txnSuceeded = txnData.status === 1;
+          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+          await txn.update(origTxnDocRef, { status: updatedStatus, txnData });
+          return txnSuceeded;
+        } else {
+          return false;
+        }
+      });
+
+      if (isUpdated) {
+        if (actionType === 'fulfill') {
+          await fulfillOrder(user, batch, payload);
+        } else if (actionType === 'cancel') {
+          const docId = payload.orderId.trim(); // preserve case
+          const side = +payload.side;
+          if (side === 0) {
+            await cancelOffer(user, batch, docId);
+          } else if (side === 1) {
+            await cancelListing(user, batch, docId);
+          }
+        }
       }
+    } catch (err) {
+      utils.error('Error updating txn status in firestore');
+      utils.error(err);
     }
   } catch (err) {
     utils.error('Txn: ' + origTxnHash + ' was rejected');
@@ -930,19 +1206,6 @@ async function waitForTxn(user, payload, checkTxnStatusInFirestore) {
       utils.error('Failed to commit pending txn batch');
       utils.error(err);
     });
-}
-
-async function isTxnPendingInFirestore(user, txnHash) {
-  const userTxnDoc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.TXNS_COLL)
-    .doc(txnHash)
-    .get();
-
-  return userTxnDoc.get('status') === 'pending';
 }
 
 // order fulfill
@@ -1293,13 +1556,23 @@ function getOrdersResponse(data) {
 }
 
 async function fetchAssetsOfUser(req, res) {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
     return;
   }
+  if (!user) {
+    utils.error('Empty user');
+    res.sendStatus(500);
+    return;
+  }
   const sourceName = nftDataSources[source];
+  if (!sourceName) {
+    utils.error('Empty sourceName');
+    res.sendStatus(500);
+    return;
+  }
   try {
     let resp = await getAssets(user, limit, offset, sourceName);
     resp = utils.jsonString(resp);
@@ -1488,7 +1761,7 @@ async function deleteListingWithId(id, user, batch) {
 async function deleteListing(batch, docRef) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    utils.log('No listing to delete: ' + docRef);
+    utils.log('No listing to delete: ' + docRef.id);
     return;
   }
   const listing = doc.id;
@@ -1521,7 +1794,7 @@ async function deleteOfferMadeWithId(id, user, batch) {
 async function deleteOffer(batch, docRef) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    utils.log('No offer to delete: ' + docRef);
+    utils.log('No offer to delete: ' + docRef.id);
     return;
   }
   const offer = doc.id;
@@ -2011,7 +2284,8 @@ async function getReward(user) {
     .doc(user)
     .get();
 
-  const userStats = userStatsRef.data();
+  let userStats = userStatsRef.data();
+  userStats = { ...getEmptyUserInfo(), ...userStats };
 
   const currentBlock = await getCurrentBlock();
 
@@ -2024,6 +2298,11 @@ async function getReward(user) {
   const totalFees = bn(globalInfo.totalFees);
   const totalVolume = bn(globalInfo.totalVolume);
   const totalSales = bn(globalInfo.totalSales);
+
+  const totalRewardPaid = bn(globalInfo.rewardsInfo.totalRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalBonusRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalSaleRewardPaid)
+    .plus(globalInfo.rewardsInfo.totalPurchaseRewardPaid);
 
   const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated;
   const penaltyRatio = bn(globalInfo.rewardsInfo.penaltyRatio);
@@ -2086,10 +2365,10 @@ async function getReward(user) {
     _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
   }
 
-  const reward = share.times(_accRewardPerShare).minus(rewardDebt);
-  const bonusReward = bonusShare.times(_accBonusRewardPerShare).minus(bonusRewardDebt);
-  const saleReward = salesShare.times(_accSaleRewardPerShare).minus(saleRewardDebt);
-  const purchaseReward = purchasesShare.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt);
+  const reward = share.times(_accRewardPerShare).minus(rewardDebt).abs();
+  const bonusReward = bonusShare.times(_accBonusRewardPerShare).minus(bonusRewardDebt).abs();
+  const saleReward = salesShare.times(_accSaleRewardPerShare).minus(saleRewardDebt).abs();
+  const purchaseReward = purchasesShare.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt).abs();
 
   const grossReward = reward
     .plus(bonusReward)
@@ -2136,14 +2415,15 @@ async function getReward(user) {
     numListings: numListings.toString(),
     numBonusListings: numBonusListings.toString(),
     numOffers: numOffers.toString(),
-    numBonusOffers: numBonusOffers.toString()
+    numBonusOffers: numBonusOffers.toString(),
+    totalRewardPaid
   };
 
   let netReward = grossReward;
   let penalty = bn(0);
   if (penaltyActivated && !netReward.eq(0)) {
-    let numTotalOrders = share.plus(bonusShare);
-    const numTotalFulfills = salesShare.plus(purchasesShare);
+    let numTotalOrders = numListings.plus(numBonusListings).plus(numOffers).plus(numBonusOffers);
+    const numTotalFulfills = numSales.plus(numPurchases);
     // special case where user only made purchases without placing any orders;
     // also handles the case where numTotalFulfills = 0 to avoid div by 0
     // this code should never be executed after the netReward > 0 check above
@@ -2205,7 +2485,13 @@ const transporter = nodemailer.createTransport({
 });
 
 app.get('/u/:user/getEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+
+  if (!user) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
 
   const userDoc = await db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -2230,8 +2516,15 @@ app.get('/u/:user/getEmail', async (req, res) => {
 });
 
 app.post('/u/:user/setEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
-  const email = req.body.email.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const email = (req.body.email || '').trim().toLowerCase();
+
+  if (!user || !email) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   // generate guid
   const guid = crypto.randomBytes(30).toString('hex');
 
@@ -2271,11 +2564,18 @@ app.post('/u/:user/setEmail', async (req, res) => {
 
 app.get('/verifyEmail', async (req, res) => {
   // @ts-ignore
-  const user = req.query.user.trim().toLowerCase();
+  const user = (req.query.user || '').trim().toLowerCase();
   // @ts-ignore
-  const email = req.query.email.trim().toLowerCase();
+  const email = (req.query.email || '').trim().toLowerCase();
   // @ts-ignore
-  const guid = req.query.guid.trim().toLowerCase();
+  const guid = (req.query.guid || '').trim().toLowerCase();
+
+  if (!user || !email || !guid) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   const userDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -2318,8 +2618,15 @@ app.get('/verifyEmail', async (req, res) => {
 });
 
 app.post('/u/:user/subscribeEmail', async (req, res) => {
-  const user = req.params.user.trim().toLowerCase();
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
+
+  if (!user || Object.keys(data).length === 0) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
   const isSubscribed = data.subscribe;
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -2335,8 +2642,8 @@ app.post('/u/:user/subscribeEmail', async (req, res) => {
       },
       { merge: true }
     )
-    .then((data) => {
-      res.sendStatus(200);
+    .then(() => {
+      res.send({ subscribed: isSubscribed });
     })
     .catch((err) => {
       utils.error('Subscribing email failed');
@@ -2432,7 +2739,8 @@ function toFixed5(num) {
   // @ts-ignore
   // eslint-disable-next-line no-undef
   // console.log(__line);
-  return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+  return bn(num).toFixed(5);
+  // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 function bn(num) {
