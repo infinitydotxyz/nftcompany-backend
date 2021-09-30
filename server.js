@@ -853,7 +853,6 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     !payload.metadata ||
     !payload.metadata.asset ||
     !payload.metadata.asset.address ||
-    !payload.metadata.asset.id ||
     !payload.metadata.asset.collectionName ||
     !payload.metadata.asset.searchCollectionName ||
     !payload.metadata.basePriceInEth
@@ -864,6 +863,12 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
   }
 
   if (!payload.englishAuctionReservePrice && (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase())) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
+  if(payload.metadata.asset.id === undefined || payload.metadata.asset.id === null) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
