@@ -6,6 +6,12 @@ firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
+
+const allowedDomains = [
+  'sv-dev.nftcompany.com',
+  'http://localhost:3000' // remove this for Prod
+];
+
 Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
@@ -87,6 +93,25 @@ module.exports = {
 
   jsonString: function (obj) {
     return JSON.stringify(obj, null, 2);
+  },
+
+  getAppCorsOptions: function() {
+    const escapeForRegex = function (str) {
+      return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+    // if (isLocalhost()) {
+    //   return {}; // if local, don't set CORS origin.
+    // }
+    const allowedOrigins = [];
+    for (const domain of allowedDomains) {
+      allowedOrigins.push(new RegExp(`^${escapeForRegex(domain)}$`));
+      allowedOrigins.push(new RegExp(`^https:\/\/${escapeForRegex(domain)}$`));
+    }
+    const corsOptions = {
+      origin: allowedOrigins,
+      optionsSuccessStatus: 200,
+    };
+    return corsOptions;
   },
 
   authorizeUser: async function (path, signature, message) {
