@@ -862,13 +862,16 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
     return;
   }
 
-  if (!payload.englishAuctionReservePrice && (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase())) {
+  if (
+    !payload.englishAuctionReservePrice &&
+    (!payload.feeRecipient || payload.feeRecipient.trim().toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase())
+  ) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  if(payload.metadata.asset.id === undefined || payload.metadata.asset.id === null) {
+  if (payload.metadata.asset.id === undefined || payload.metadata.asset.id === null) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
@@ -2755,4 +2758,12 @@ function bn(num) {
   // console.log(num + '   ====== bigNUm ' + bigNum);
   // console.log(__line);
   return bigNum;
+}
+
+// eslint-disable-next-line no-unused-vars
+function getDocId(tokenAddress, tokenId) {
+  const data = tokenAddress + tokenId;
+  const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
+  return id;
 }
