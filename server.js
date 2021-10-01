@@ -7,13 +7,15 @@ const express = require('express');
 const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
+const utils = require('./utils');
+
 const app = express();
 const cors = require('cors');
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
+app.use('/u/', utils.rateLimit); // only apply rate limit to requests that begin with /u/
 
-const utils = require('./utils');
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
 
