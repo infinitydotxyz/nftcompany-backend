@@ -7,13 +7,14 @@ const express = require('express');
 const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
+const utils = require('./utils');
+
 const app = express();
 const cors = require('cors');
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
-const utils = require('./utils');
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
 
@@ -838,7 +839,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // =============================================== POSTS =====================================================================
 
 // post a listing or make offer
-app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -929,7 +930,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
   try {
     const payload = req.body;
 
@@ -2524,7 +2525,7 @@ app.get('/u/:user/getEmail', async (req, res) => {
   }
 });
 
-app.post('/u/:user/setEmail', async (req, res) => {
+app.post('/u/:user/setEmail', utils.rateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const email = (req.body.email || '').trim().toLowerCase();
 
@@ -2626,7 +2627,7 @@ app.get('/verifyEmail', async (req, res) => {
     });
 });
 
-app.post('/u/:user/subscribeEmail', async (req, res) => {
+app.post('/u/:user/subscribeEmail', utils.rateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 
