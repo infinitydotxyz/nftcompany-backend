@@ -1467,10 +1467,9 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing listing to firestore for user + ' + maker);
-  const { expirationTime } = payload;
+  const { basePrice, expirationTime } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
-  const tokenId = payload.metadata.asset.id.trim().toLowerCase();
-  const { basePriceInEth } = payload.metadata;
+  const tokenId = payload.metadata.asset.id.trim();
 
   // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -1490,7 +1489,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(`id_${tokenAddress}_${tokenId}_${basePriceInEth}_${expirationTime}`);
+    .doc(`id_${getDocId(tokenAddress, tokenId)}_${basePrice}_${expirationTime}`);
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1501,10 +1500,9 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
-  const { expirationTime } = payload;
+  const { basePrice, expirationTime } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
-  const tokenId = payload.metadata.asset.id.trim().toLowerCase();
-  const { basePriceInEth } = payload.metadata;
+  const tokenId = payload.metadata.asset.id.trim();
   payload.metadata.createdAt = Date.now();
 
   // update rewards
@@ -1517,7 +1515,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(`id_${tokenAddress}_${tokenId}_${basePriceInEth}_${expirationTime}`);
+    .doc(`id_${getDocId(tokenAddress, tokenId)}_${basePrice}_${expirationTime}`);
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
