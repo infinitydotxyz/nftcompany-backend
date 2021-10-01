@@ -1467,8 +1467,12 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing listing to firestore for user + ' + maker);
-  // check if token is verified if payload instructs so
+  const { expirationTime } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
+  const tokenId = payload.metadata.asset.id.trim().toLowerCase();
+  const { basePriceInEth } = payload.metadata;
+
+  // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
   if (payload.metadata.checkBlueCheck) {
     blueCheck = await isTokenVerified(tokenAddress);
@@ -1486,7 +1490,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc();
+    .doc(`id_${tokenAddress}_${tokenId}_${basePriceInEth}_${expirationTime}`);
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1497,6 +1501,10 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
+  const { expirationTime } = payload;
+  const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
+  const tokenId = payload.metadata.asset.id.trim().toLowerCase();
+  const { basePriceInEth } = payload.metadata;
   payload.metadata.createdAt = Date.now();
 
   // update rewards
@@ -1509,7 +1517,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc();
+    .doc(`id_${tokenAddress}_${tokenId}_${basePriceInEth}_${expirationTime}`);
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
