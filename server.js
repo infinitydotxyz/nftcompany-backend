@@ -2531,7 +2531,7 @@ app.get('/u/:user/getEmail', async (req, res) => {
   }
 });
 
-app.post('/u/:user/setEmail', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/setEmail', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const email = (req.body.email || '').trim().toLowerCase();
 
@@ -2633,7 +2633,7 @@ app.get('/verifyEmail', async (req, res) => {
     });
 });
 
-app.post('/u/:user/subscribeEmail', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/subscribeEmail', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 

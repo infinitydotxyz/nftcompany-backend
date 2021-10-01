@@ -121,6 +121,16 @@ module.exports = {
     }
   }),
 
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  lowRateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // limit each user's address to 5 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user;
+    }
+  }),
+
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
     const strLength = searchTerm.length;
