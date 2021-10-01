@@ -1489,7 +1489,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(`id_${getDocId(tokenAddress, tokenId)}_${basePrice}_${expirationTime}`);
+    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1515,7 +1515,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(`id_${getDocId(tokenAddress, tokenId)}_${basePrice}_${expirationTime}`);
+    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
@@ -2768,8 +2768,8 @@ function bn(num) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function getDocId(tokenAddress, tokenId) {
-  const data = tokenAddress + tokenId;
+function getDocId({ tokenAddress, tokenId, basePrice, expirationTime }) {
+  const data = tokenAddress.trim() + tokenId.trim() + basePrice + expirationTime;
   const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
