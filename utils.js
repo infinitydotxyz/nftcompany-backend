@@ -1,11 +1,13 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
+const rateLimit = require('express-rate-limit');
 
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
+
 Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
@@ -106,6 +108,25 @@ module.exports = {
     }
     return false;
   },
+
+  rateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 40, // limit each user's address to 40 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
+
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  lowRateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // limit each user's address to 5 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
 
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
