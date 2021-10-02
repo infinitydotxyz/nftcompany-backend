@@ -2485,7 +2485,7 @@ async function getReward(user) {
 // ==================================================== Email ==============================================================
 
 const nodemailer = require('nodemailer');
-const mailCreds = require('./creds/infinity-nodemailer-creds.json');
+const mailCreds = require('./creds/nftc-infinity-nodemailer-creds.json');
 
 const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
