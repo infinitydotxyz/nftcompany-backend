@@ -99,7 +99,12 @@ module.exports = {
     message: 'X-AUTH-MESSAGE'
   },
 
-  API_BASE: 'https://server.nftcompany.com',
-  SITE_BASE: 'https://nftcompany.com',
-  SALE_FEES_TO_PURCHASE_FEES_RATIO: 5
+  API_BASE: 'https://sv.infinity.xyz',
+  SITE_BASE: 'https://infinity.xyz',
+  SALE_FEES_TO_PURCHASE_FEES_RATIO: 5,
+  ETH_CHAIN_ID: 1,
+  WYVERN_EXCHANGE_ADDRESS: '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b',
+  WYVERN_ATOMIC_MATCH_FUNCTION: 'atomicMatch_',
+  WYVERN_CANCEL_ORDER_FUNCTION: 'cancelOrder_',
+  NFTC_FEE_ADDRESS: '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57'
 };
