@@ -23,9 +23,9 @@ const db = firebaseAdmin.firestore();
 const { Pool } = require('pg');
 const pool = new Pool({
   user: process.env.PG_USER,
-  host: process.env.PG_HOST,
+  host: process.env.PG_HOST_PROD,
   database: process.env.PG_DB_NAME,
-  password: process.env.PG_PASS,
+  password: process.env.PG_PASS_PROD,
   port: parseInt(process.env.PG_PORT)
 });
 
@@ -838,7 +838,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // =============================================== POSTS =====================================================================
 
 // post a listing or make offer
-app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -929,7 +929,7 @@ app.post('/u/:user/wyvern/v1/orders', async (req, res) => {
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/txns', async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
   try {
     const payload = req.body;
 
@@ -1466,8 +1466,11 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing listing to firestore for user + ' + maker);
-  // check if token is verified if payload instructs so
+  const { basePrice, expirationTime } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
+  const tokenId = payload.metadata.asset.id.trim();
+
+  // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
   if (payload.metadata.checkBlueCheck) {
     blueCheck = await isTokenVerified(tokenAddress);
@@ -1485,7 +1488,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc();
+    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1496,6 +1499,9 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
+  const { basePrice, expirationTime } = payload;
+  const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
+  const tokenId = payload.metadata.asset.id.trim();
   payload.metadata.createdAt = Date.now();
 
   // update rewards
@@ -1508,7 +1514,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc();
+    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
@@ -2478,9 +2484,9 @@ async function getReward(user) {
 // ==================================================== Email ==============================================================
 
 const nodemailer = require('nodemailer');
-const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
+const mailCreds = require('./creds/nftc-infinity-nodemailer-creds.json');
 
-const senderEmailAddress = 'hi@nftcompany.com';
+const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -2524,7 +2530,7 @@ app.get('/u/:user/getEmail', async (req, res) => {
   }
 });
 
-app.post('/u/:user/setEmail', async (req, res) => {
+app.post('/u/:user/setEmail', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const email = (req.body.email || '').trim().toLowerCase();
 
@@ -2626,7 +2632,7 @@ app.get('/verifyEmail', async (req, res) => {
     });
 });
 
-app.post('/u/:user/subscribeEmail', async (req, res) => {
+app.post('/u/:user/subscribeEmail', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 
@@ -2761,8 +2767,8 @@ function bn(num) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function getDocId(tokenAddress, tokenId) {
-  const data = tokenAddress + tokenId;
+function getDocId({ tokenAddress, tokenId, basePrice, expirationTime }) {
+  const data = tokenAddress.trim() + tokenId.trim() + basePrice + expirationTime;
   const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;

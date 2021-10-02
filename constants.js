@@ -78,11 +78,10 @@ Data structure in firestore
 */
 
 require('dotenv').config();
-const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
 module.exports = {
   firestore: {
-    ROOT_COLL: testRoot,
+    ROOT_COLL: 'root',
     INFO_DOC: 'info',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
@@ -100,10 +99,9 @@ module.exports = {
     message: 'X-AUTH-MESSAGE'
   },
 
-  API_BASE: 'http://localhost:9090',
-  SITE_BASE: 'http://localhost:3000',
+  API_BASE: 'https://sv.infinity.xyz',
+  SITE_BASE: 'https://infinity.xyz',
   SALE_FEES_TO_PURCHASE_FEES_RATIO: 5,
-
   ETH_CHAIN_ID: 1,
   WYVERN_EXCHANGE_ADDRESS: '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b',
   WYVERN_ATOMIC_MATCH_FUNCTION: 'atomicMatch_',

@@ -1,15 +1,13 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
+const rateLimit = require('express-rate-limit');
 
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
-  // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.applicationDefault()
 });
 
 const allowedDomains = [
-  'sv-dev.nftcompany.com',
-  'http://localhost:3000' // remove this for Prod
+  'infinity.xyz',
 ];
 
 Object.defineProperty(global, '__stack', {
@@ -99,9 +97,6 @@ module.exports = {
     const escapeForRegex = function (str) {
       return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     };
-    // if (isLocalhost()) {
-    //   return {}; // if local, don't set CORS origin.
-    // }
     const allowedOrigins = [];
     for (const domain of allowedDomains) {
       allowedOrigins.push(new RegExp(`^${escapeForRegex(domain)}$`));
@@ -115,9 +110,6 @@ module.exports = {
   },
 
   authorizeUser: async function (path, signature, message) {
-    // todo: adi for testing only
-    // return true;
-
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {
@@ -134,6 +126,25 @@ module.exports = {
     }
     return false;
   },
+
+  rateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 40, // limit each user's address to 40 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
+
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  lowRateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // limit each user's address to 5 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
 
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
