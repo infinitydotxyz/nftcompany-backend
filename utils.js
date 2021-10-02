@@ -4,7 +4,12 @@ const rateLimit = require('express-rate-limit');
 
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.applicationDefault()
-})
+});
+
+const allowedDomains = [
+  'infinity.xyz',
+];
+
 Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
@@ -86,6 +91,22 @@ module.exports = {
 
   jsonString: function (obj) {
     return JSON.stringify(obj, null, 2);
+  },
+
+  getAppCorsOptions: function() {
+    const escapeForRegex = function (str) {
+      return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+    const allowedOrigins = [];
+    for (const domain of allowedDomains) {
+      allowedOrigins.push(new RegExp(`^${escapeForRegex(domain)}$`));
+      allowedOrigins.push(new RegExp(`^https:\/\/${escapeForRegex(domain)}$`));
+    }
+    const corsOptions = {
+      origin: allowedOrigins,
+      optionsSuccessStatus: 200,
+    };
+    return corsOptions;
   },
 
   authorizeUser: async function (path, signature, message) {

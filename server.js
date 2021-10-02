@@ -8,11 +8,10 @@ const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
 const utils = require('./utils');
-
 const app = express();
 const cors = require('cors');
 app.use(express.json());
-app.use(cors());
+app.use(cors(utils.getAppCorsOptions()));
 app.use(helmet());
 
 const constants = require('./constants');
