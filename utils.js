@@ -117,7 +117,17 @@ module.exports = {
     max: 40, // limit each user's address to 40 requests per windowMs
     keyGenerator: function (req, res) {
       // uses user's address as key for rate limiting
-      return req.params.user;
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
+
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  lowRateLimit: rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 5, // limit each user's address to 5 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
     }
   }),
 
