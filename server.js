@@ -1960,7 +1960,7 @@ async function updateRewards(user, hasBonus, numOrders, feesInEth, salePriceInEt
     try {
       // run txn
       await client.query('BEGIN');
-      const table = process.env.PG_REWARDS_TABLE_PROD;
+      const table = process.env.PG_REWARDS_TABLE;
       const globalInfoId = 'globalInfo';
 
       const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
@@ -2261,7 +2261,7 @@ async function getReward(user) {
 
   const client = await pool.connect();
   try {
-    const table = process.env.PG_REWARDS_TABLE_PROD;
+    const table = process.env.PG_REWARDS_TABLE;
     const globalInfoId = 'globalInfo';
     const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
     const res = await client.query(selectQuery, [globalInfoId]);
@@ -2485,9 +2485,9 @@ async function getReward(user) {
 // ==================================================== Email ==============================================================
 
 const nodemailer = require('nodemailer');
-const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
+const mailCreds = require('./creds/infinity-nodemailer-creds.json');
 
-const senderEmailAddress = 'hi@nftcompany.com';
+const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
