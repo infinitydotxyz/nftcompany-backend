@@ -2487,7 +2487,7 @@ async function getReward(user) {
 const nodemailer = require('nodemailer');
 const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
 
-const senderEmailAddress = 'hi@nftcompany.com';
+const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -2564,7 +2564,7 @@ app.post('/u/:user/setEmail', utils.lowRateLimit, async (req, res) => {
     )
     .then(() => {
       // send email
-      const subject = 'Verify your email for NFT Company';
+      const subject = 'Verify your email for Infinity';
       const link = constants.API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
       const html =
         '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
@@ -2700,13 +2700,13 @@ async function prepareEmail(user, order, type) {
   let subject = '';
   let link = constants.SITE_BASE;
   if (type === 'offerMade') {
-    subject = 'You received a ' + price + ' ETH offer at NFT Company';
+    subject = 'You received a ' + price + ' ETH offer at Infinity';
     link += '/offers-received';
   } else if (type === 'offerAccepted') {
-    subject = 'Your offer of ' + price + ' ETH has been accepted at NFT Company';
+    subject = 'Your offer of ' + price + ' ETH has been accepted at Infinity';
     link += '/purchases';
   } else if (type === 'itemPurchased') {
-    subject = 'Your item has been purchased for ' + price + ' ETH at NFT Company';
+    subject = 'Your item has been purchased for ' + price + ' ETH at Infinity';
     link += '/sales';
   } else {
     utils.error('Cannot prepare email for unknown action type');
