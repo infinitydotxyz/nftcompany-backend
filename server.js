@@ -1467,7 +1467,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing listing to firestore for user + ' + maker);
-  const { basePrice, expirationTime } = payload;
+  const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
 
@@ -1489,7 +1489,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
+    .doc(getDocId({ tokenAddress, tokenId, basePrice }));
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1500,7 +1500,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
-  const { basePrice, expirationTime } = payload;
+  const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
   payload.metadata.createdAt = Date.now();
@@ -1515,7 +1515,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
+    .doc(getDocId({ tokenAddress, tokenId, basePrice }));
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
@@ -2768,8 +2768,8 @@ function bn(num) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function getDocId({ tokenAddress, tokenId, basePrice, expirationTime }) {
-  const data = tokenAddress.trim() + tokenId.trim() + basePrice + expirationTime;
+function getDocId({ tokenAddress, tokenId, basePrice }) {
+  const data = tokenAddress.trim() + tokenId.trim() + basePrice;
   const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
