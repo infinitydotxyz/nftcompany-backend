@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
 const utils = require('./utils');
+const types = require('./types');
 
 const app = express();
 const cors = require('cors');
@@ -527,7 +528,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-  // query: id, maker, side
+  const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
   if (req.query.id) {
@@ -536,33 +537,33 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   }
 
   if (docId && docId.length > 0) {
-    return getOrdersWithDocId(req, res);
+    return getOrdersWithDocId(res, { maker, id, side });
   }
 
-  return getOrdersWithTokenId(req, res);
+  return getOrdersWithTokenId(res, { maker, tokenAddress, tokenId, side });
 });
 
 // TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
-const getOrdersWithDocId = async (req, res) => {
-  if (!req.query.maker || !req.query.id || !req.query.side || (req.query.side !== '0' && req.query.side !== '1')) {
+const getOrdersWithDocId = async (res, { maker, id, side }) => {
+  if (!maker || !id || !side || (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const maker = req.query.maker.trim().toLowerCase();
-  const docId = req.query.id.trim(); // preserve case
-  const side = +req.query.side;
+  const makerStr = maker.trim().toLowerCase();
+  const docId = id.trim(); // preserve case
+  const sideStr = side;
   let collection = fstrCnstnts.LISTINGS_COLL;
   try {
-    if (side === 0) {
+    if (sideStr === types.OrderSide.Buy.toString()) {
       collection = fstrCnstnts.OFFERS_COLL;
     }
     const doc = await db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
+      .doc(makerStr)
       .collection(collection)
       .doc(docId)
       .get();
@@ -582,30 +583,28 @@ const getOrdersWithDocId = async (req, res) => {
       return;
     }
   } catch (err) {
-    utils.error('Error fetching order: ' + docId + ' for user ' + maker + ' from collection ' + collection);
+    utils.error('Error fetching order: ' + docId + ' for user ' + makerStr + ' from collection ' + collection);
     utils.error(err);
     res.sendStatus(500);
   }
 };
 
-const getOrdersWithTokenId = async (req, res) => {
+const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side }) => {
   if (
-    !req.query.maker ||
-    !req.query.tokenAddress ||
-    !req.query.tokenId ||
-    (req.query.side !== '0' && req.query.side !== '1')
+    !maker ||
+    !tokenAddress ||
+    !tokenId ||
+    (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())
   ) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const maker = req.query.maker.trim().toLowerCase();
-  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
-  const tokenId = req.query.tokenId;
-  const side = +req.query.side;
+  const makerStr = maker.trim().toLowerCase();
+  const tokenAddressStr = tokenAddress.trim().toLowerCase();
 
-  const docs = await getOrders(maker, tokenAddress, tokenId, side);
+  const docs = await getOrders(makerStr, tokenAddressStr, tokenId, +side);
   if (docs) {
     const orders = [];
     for (const doc of docs) {
