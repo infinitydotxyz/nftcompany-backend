@@ -660,7 +660,7 @@ app.get('/u/:user/reward', async (req, res) => {
     const respStr = utils.jsonString(resp);
     // to enable cdn cache
     res.set({
-      'Cache-Control': 'must-revalidate, max-age=300',
+      'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
     res.send(resp);
@@ -692,7 +692,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
       const respStr = utils.jsonString(resp);
       // to enable cdn cache
       res.set({
-        'Cache-Control': 'must-revalidate, max-age=600',
+        'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
       res.send(resp);
