@@ -8,6 +8,8 @@ const helmet = require('helmet');
 const axios = require('axios').default;
 const crypto = require('crypto');
 const utils = require('./utils');
+const types = require('./types');
+
 const app = express();
 const cors = require('cors');
 app.use(express.json());
@@ -526,7 +528,7 @@ app.get('/u/:user/offersreceived', async (req, res) => {
 
 // fetch order to fulfill
 app.get('/wyvern/v1/orders', async (req, res) => {
-  // query: id, maker, side
+  const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
   if (req.query.id) {
@@ -535,33 +537,33 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   }
 
   if (docId && docId.length > 0) {
-    return getOrdersWithDocId(req, res);
+    return getOrdersWithDocId(res, { maker, id, side });
   }
 
-  return getOrdersWithTokenId(req, res);
+  return getOrdersWithTokenId(res, { maker, tokenAddress, tokenId, side });
 });
 
 // TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
-const getOrdersWithDocId = async (req, res) => {
-  if (!req.query.maker || !req.query.id || !req.query.side || (req.query.side !== '0' && req.query.side !== '1')) {
+const getOrdersWithDocId = async (res, { maker, id, side }) => {
+  if (!maker || !id || !side || (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const maker = req.query.maker.trim().toLowerCase();
-  const docId = req.query.id.trim(); // preserve case
-  const side = +req.query.side;
+  const makerStr = maker.trim().toLowerCase();
+  const docId = id.trim(); // preserve case
+  const sideStr = side;
   let collection = fstrCnstnts.LISTINGS_COLL;
   try {
-    if (side === 0) {
+    if (sideStr === types.OrderSide.Buy.toString()) {
       collection = fstrCnstnts.OFFERS_COLL;
     }
     const doc = await db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.USERS_COLL)
-      .doc(maker)
+      .doc(makerStr)
       .collection(collection)
       .doc(docId)
       .get();
@@ -581,30 +583,28 @@ const getOrdersWithDocId = async (req, res) => {
       return;
     }
   } catch (err) {
-    utils.error('Error fetching order: ' + docId + ' for user ' + maker + ' from collection ' + collection);
+    utils.error('Error fetching order: ' + docId + ' for user ' + makerStr + ' from collection ' + collection);
     utils.error(err);
     res.sendStatus(500);
   }
 };
 
-const getOrdersWithTokenId = async (req, res) => {
+const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side }) => {
   if (
-    !req.query.maker ||
-    !req.query.tokenAddress ||
-    !req.query.tokenId ||
-    (req.query.side !== '0' && req.query.side !== '1')
+    !maker ||
+    !tokenAddress ||
+    !tokenId ||
+    (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())
   ) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const maker = req.query.maker.trim().toLowerCase();
-  const tokenAddress = req.query.tokenAddress.trim().toLowerCase();
-  const tokenId = req.query.tokenId;
-  const side = +req.query.side;
+  const makerStr = maker.trim().toLowerCase();
+  const tokenAddressStr = tokenAddress.trim().toLowerCase();
 
-  const docs = await getOrders(maker, tokenAddress, tokenId, side);
+  const docs = await getOrders(makerStr, tokenAddressStr, tokenId, +side);
   if (docs) {
     const orders = [];
     for (const doc of docs) {
@@ -1466,7 +1466,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
 async function postListing(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing listing to firestore for user + ' + maker);
-  const { basePrice, expirationTime } = payload;
+  const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
 
@@ -1488,7 +1488,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.LISTINGS_COLL)
-    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
+    .doc(getDocId({ tokenAddress, tokenId, basePrice }));
 
   batch.set(listingRef, payload, { merge: true });
 
@@ -1499,7 +1499,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   utils.log('Writing offer to firestore for user', maker);
   const taker = payload.metadata.asset.owner.trim().toLowerCase();
-  const { basePrice, expirationTime } = payload;
+  const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
   payload.metadata.createdAt = Date.now();
@@ -1514,7 +1514,7 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.USERS_COLL)
     .doc(maker)
     .collection(fstrCnstnts.OFFERS_COLL)
-    .doc(getDocId({ tokenAddress, tokenId, basePrice, expirationTime }));
+    .doc(getDocId({ tokenAddress, tokenId, basePrice }));
   batch.set(offerRef, payload, { merge: true });
 
   utils.log('updating num offers since offer does not exist');
@@ -2563,7 +2563,7 @@ app.post('/u/:user/setEmail', utils.lowRateLimit, async (req, res) => {
     )
     .then(() => {
       // send email
-      const subject = 'Verify your email for NFT Company';
+      const subject = 'Verify your email for Infinity';
       const link = constants.API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
       const html =
         '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
@@ -2699,13 +2699,13 @@ async function prepareEmail(user, order, type) {
   let subject = '';
   let link = constants.SITE_BASE;
   if (type === 'offerMade') {
-    subject = 'You received a ' + price + ' ETH offer at NFT Company';
+    subject = 'You received a ' + price + ' ETH offer at Infinity';
     link += '/offers-received';
   } else if (type === 'offerAccepted') {
-    subject = 'Your offer of ' + price + ' ETH has been accepted at NFT Company';
+    subject = 'Your offer of ' + price + ' ETH has been accepted at Infinity';
     link += '/purchases';
   } else if (type === 'itemPurchased') {
-    subject = 'Your item has been purchased for ' + price + ' ETH at NFT Company';
+    subject = 'Your item has been purchased for ' + price + ' ETH at Infinity';
     link += '/sales';
   } else {
     utils.error('Cannot prepare email for unknown action type');
@@ -2767,8 +2767,8 @@ function bn(num) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function getDocId({ tokenAddress, tokenId, basePrice, expirationTime }) {
-  const data = tokenAddress.trim() + tokenId.trim() + basePrice + expirationTime;
+function getDocId({ tokenAddress, tokenId, basePrice }) {
+  const data = tokenAddress.trim() + tokenId.trim() + basePrice;
   const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
