@@ -666,14 +666,17 @@ app.get('/rewards/leaderboard', async (req, res) => {
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .orderBy('rewardsInfo.netRewardNumeric', 'desc')
+    .orderBy('salesAndPurchasesTotalNumeric', 'desc')
     .limit(10)
     .get()
     .then((data) => {
       const results = [];
       for (const doc of data.docs) {
-        const result = doc.data();
-        result.id = doc.id;
+        const docData = doc.data();
+        const result = {
+          id: doc.id,
+          total: docData.salesAndPurchasesTotalNumeric
+        };
         results.push(result);
       }
       const resp = {
@@ -1358,6 +1361,7 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
+  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
 
   utils.trace(
     'User purchases total',
@@ -1383,7 +1387,8 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
       purchasesTotal,
       purchasesFeesTotal,
       purchasesTotalNumeric,
-      purchasesFeesTotalNumeric
+      purchasesFeesTotalNumeric,
+      salesAndPurchasesTotalNumeric
     },
     { merge: true }
   );
@@ -1419,6 +1424,7 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
+  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
 
   utils.trace(
     'User sales total',
@@ -1444,7 +1450,8 @@ async function saveSoldOrder(user, order, batch, numOrders) {
       salesTotal,
       salesFeesTotal,
       salesTotalNumeric,
-      salesFeesTotalNumeric
+      salesFeesTotalNumeric,
+      salesAndPurchasesTotalNumeric
     },
     { merge: true }
   );
@@ -1841,6 +1848,7 @@ function getEmptyUserInfo() {
     salesFeesTotalNumeric: 0,
     purchasesTotalNumeric: 0,
     purchasesFeesTotalNumeric: 0,
+    salesAndPurchasesTotalNumeric: 0,
     rewardsInfo: getEmptyUserRewardInfo()
   };
 }
@@ -1863,6 +1871,7 @@ function getEmptyUserRewardInfo() {
     netReward: '0',
     grossRewardNumeric: 0,
     netRewardNumeric: 0,
+    openseaVol: 0,
     rewardCalculatedAt: Date.now()
   };
 }

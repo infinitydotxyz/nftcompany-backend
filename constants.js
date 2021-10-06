@@ -19,6 +19,7 @@ Data structure in firestore
 					- purchasesFeesTotal: string
 					- purchasesTotalNumeric: number
 					- purchasesFeesTotalNumeric: number
+					- salesAndPurchasesTotalNumeric: number
 					- profileInfo
 						- ens
 						- email
