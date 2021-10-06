@@ -64,6 +64,7 @@ async function removeInvalidAddresses(records) {
   // records.forEach(async (record, i) => {});
 }
 
+// eslint-disable-next-line no-unused-vars
 function writeToFirestore(records) {
   const batchCommits = [];
   let batch = db.batch();
