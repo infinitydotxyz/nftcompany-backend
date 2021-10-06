@@ -27,8 +27,8 @@ async function importCsv(csvFileName) {
   // @ts-ignore
   const records = await parse(fileContents, { columns: false });
   try {
-    // await writeToFirestore(records);
-    await removeInvalidAddresses(records);
+    await writeToFirestore(records);
+    // await removeInvalidAddresses(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -36,6 +36,7 @@ async function importCsv(csvFileName) {
   console.log(`Processed ${records.length} records`);
 }
 
+// eslint-disable-next-line no-unused-vars
 async function removeInvalidAddresses(records) {
   for (let i = 0; i < records.length; i++) {
     console.log(i);
@@ -69,8 +70,10 @@ function writeToFirestore(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const docRef = db.collection('openseaData').doc(record.from_address);
-    batch.set(docRef, record);
+    const address = record[0];
+    const total = +parseFloat(record[1]).toFixed(2);
+    const docRef = db.collection('openseaSnapshot').doc(address);
+    batch.set(docRef, {totalVolUSD: total});
     if ((i + 1) % 500 === 0) {
       console.log(`Writing record ${i + 1}`);
       batchCommits.push(batch.commit());
