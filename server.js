@@ -1891,7 +1891,7 @@ async function getReward(user) {
     .doc(user)
     .get();
 
-  const openseaVol = userOpenseaRef.get('totalVolUSD');
+  const openseaVol = userOpenseaRef.get('totalVolUSD') || 0;
   const rewardTier = getUserRewardTier(openseaVol);
 
   let userStats = userStatsRef.data();
@@ -1914,6 +1914,8 @@ async function getReward(user) {
   const purchasesTotalNumeric = userStats.purchasesTotalNumeric;
   const purchasesFeesTotalNumeric = userStats.purchasesFeesTotalNumeric;
 
+  const doneSoFar = Math.max(salesTotalNumeric, purchasesTotalNumeric);
+
   const resp = {
     numSales: numSales.toString(),
     numPurchases: numPurchases.toString(),
@@ -1930,7 +1932,8 @@ async function getReward(user) {
     numOffers: numOffers.toString(),
     numBonusOffers: numBonusOffers.toString(),
     openseaVol,
-    rewardTier
+    rewardTier,
+    doneSoFar
   };
 
   // write net reward to firestore async for leaderboard purpose
@@ -2242,7 +2245,7 @@ function toFixed5(num) {
   // @ts-ignore
   // eslint-disable-next-line no-undef
   // console.log(__line);
-  return bn(num).toFixed(5);
+  return +bn(num).toFixed(5);
   // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
