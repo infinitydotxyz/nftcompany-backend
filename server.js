@@ -1873,7 +1873,7 @@ function getEmptyUserRewardInfo() {
 async function getReward(user) {
   utils.log('Getting reward for user', user);
 
-  const userStatsRef = await db
+  const userRef = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -1891,8 +1891,14 @@ async function getReward(user) {
     hasAirdrop = true;
   }
 
-  let userStats = userStatsRef.data();
+  let userStats = userRef.data();
   userStats = { ...getEmptyUserInfo(), ...userStats };
+
+  let usPerson = false;
+  const userProfile = userStats.profileInfo;
+  if (userProfile && userProfile.isUSPerson) {
+    usPerson = true;
+  }
 
   const numListings = bn(userStats.numListings);
   const numBonusListings = bn(userStats.numBonusListings);
@@ -1931,7 +1937,8 @@ async function getReward(user) {
     hasAirdrop,
     openseaVol,
     rewardTier,
-    doneSoFar
+    doneSoFar,
+    usPerson
   };
 
   // write net reward to firestore async for leaderboard purpose
@@ -1941,8 +1948,8 @@ async function getReward(user) {
     .doc(user)
     .set(
       {
-        'openseaVol': openseaVol,
-        'rewardCalculatedAt': Date.now()
+        openseaVol: openseaVol,
+        rewardCalculatedAt: Date.now()
       },
       { merge: true }
     )
@@ -2223,6 +2230,41 @@ function sendEmail(to, subject, html) {
     utils.error(err);
   });
 }
+
+// =========================================================== Profile ==================================================
+
+app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const data = req.body;
+
+  if (!user || Object.keys(data).length === 0) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
+  const usPerson = data.usPerson;
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .set(
+      {
+        profileInfo: {
+          usPerson: usPerson
+        }
+      },
+      { merge: true }
+    )
+    .then(() => {
+      res.send({ usPerson });
+    })
+    .catch((err) => {
+      utils.error('Setting US person status failed');
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
 
 // ============================================================ Misc ======================================================
 
