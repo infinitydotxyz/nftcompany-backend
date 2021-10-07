@@ -1904,7 +1904,7 @@ async function getReward(user) {
   const purchasesTotalNumeric = userStats.purchasesTotalNumeric;
   const purchasesFeesTotalNumeric = userStats.purchasesFeesTotalNumeric;
 
-  const doneSoFar = Math.max(salesTotalNumeric, purchasesTotalNumeric);
+  const doneSoFar = +salesTotalNumeric +  +purchasesTotalNumeric;
 
   const resp = {
     numSales: numSales.toString(),
