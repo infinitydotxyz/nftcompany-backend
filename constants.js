@@ -3,29 +3,6 @@
 Data structure in firestore
 	- rootColl
 		- infoDoc
-			- totalListings: string
-			- totalBonusListings: string
-			- totalOffers: string
-			- totalBonusOffers: string
-			- totalSales: string
-			- totalFees: string
-			- totalVolume: string
-			- rewardsInfo
-				- accRewardPerShare: string
-				- accBonusRewardPerShare: string
-                - accSaleRewardPerShare: string
-				- accPurchaseRewardPerShare: string
-				- totalRewardPaid: string
-				- totalBonusRewardPaid: string
-                - totalSaleRewardPaid: string
-				- totalPurchaseRewardPaid: string
-				- lastRewardBlock: string
-				- rewardPerBlock: string
-				- bonusRewardPerBlock: string
-                - saleRewardPerBlock: string
-				- purchaseRewardPerBlock: string
-				- penaltyActivated: boolean
-                - penaltyRatio: string
 			- usersColl
 				- userDoc
 					- numListings: number
@@ -42,6 +19,7 @@ Data structure in firestore
 					- purchasesFeesTotal: string
 					- purchasesTotalNumeric: number
 					- purchasesFeesTotalNumeric: number
+					- salesAndPurchasesTotalNumeric: number
 					- profileInfo
 						- ens
 						- email
@@ -50,18 +28,7 @@ Data structure in firestore
 							- subscribed
 							- verificationGuid
 					- rewardsInfo
-						- rewardDebt: string
-						- bonusRewardDebt: string
-                        - saleRewardDebt: string
-						- purchaseRewardDebt: string
-                        - pending: string
-                        - bonusPending: string
-                        - salePending: string
-						- purchasePending: string
-						- grossReward: string
-						- grossRewardNumeric: numeric
-						- netReward: string
-						- netRewardNumeric: numeric
+						- openseaVol: numeric
 						- rewardCalculatedAt: numeric millis since epoch utc
 					- assetsColl
 					- listingsColl
@@ -82,6 +49,7 @@ require('dotenv').config();
 module.exports = {
   firestore: {
     ROOT_COLL: 'root',
+	OPENSEA_COLL: 'openseaSnapshot',
     INFO_DOC: 'info',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',

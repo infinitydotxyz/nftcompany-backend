@@ -128,8 +128,8 @@ module.exports = {
   },
 
   rateLimit: rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 40, // limit each user's address to 40 requests per windowMs
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 200, // limit each user's address to 200 requests per windowMs
     keyGenerator: function (req, res) {
       // uses user's address as key for rate limiting
       return req.params.user ? req.params.user.trim().toLowerCase() : '';
