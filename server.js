@@ -1361,7 +1361,9 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
     'purchases total numeric',
     purchasesTotalNumeric,
     'purchases fees total numeric',
-    purchasesFeesTotalNumeric
+    purchasesFeesTotalNumeric,
+    'salesAndPurchasesTotalNumeric',
+    salesAndPurchasesTotalNumeric
   );
 
   const userDocRef = db
@@ -1424,7 +1426,9 @@ async function saveSoldOrder(user, order, batch, numOrders) {
     'sales total numeric',
     salesTotalNumeric,
     'sales fees total numeric',
-    salesFeesTotalNumeric
+    salesFeesTotalNumeric,
+    'salesAndPurchasesTotalNumeric',
+    salesAndPurchasesTotalNumeric
   );
 
   const userDocRef = db
@@ -1937,8 +1941,8 @@ async function getReward(user) {
     .doc(user)
     .set(
       {
-        'rewardsInfo.openseaVol': openseaVol,
-        'rewardsInfo.rewardCalculatedAt': Date.now()
+        'openseaVol': openseaVol,
+        'rewardCalculatedAt': Date.now()
       },
       { merge: true }
     )
