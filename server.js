@@ -992,16 +992,6 @@ app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
       return;
     }
 
-    // check if valid nftc txn
-    // txn would be null for recently sent txns
-    // taking optimistic approach of assuming this would be a valid txn
-    const isValid = await isValidNftcTxn(txnHash, actionType, true);
-    if (!isValid) {
-      utils.error('Invalid txn', txnHash);
-      res.status(500).send('Invalid txn: ' + txnHash);
-      return;
-    }
-
     // check if already exists
     const docRef = db
       .collection(fstrCnstnts.ROOT_COLL)
@@ -1046,7 +1036,7 @@ app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
 
-async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
+async function isValidNftcTxn(txnHash, actionType) {
   let isValid = true;
   const txn = await ethersProvider.getTransaction(txnHash);
   if (txn) {
@@ -1096,7 +1086,7 @@ async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
       isValid = false;
     }
   } else {
-    isValid = isOptimistic;
+    isValid = false;
   }
   return isValid;
 }
@@ -1122,7 +1112,7 @@ async function waitForTxn(user, payload) {
     const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
 
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(origTxnHash, actionType, false);
+    const isValid = await isValidNftcTxn(origTxnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
