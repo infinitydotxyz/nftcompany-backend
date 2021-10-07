@@ -1876,13 +1876,16 @@ async function getReward(user) {
     .doc(user)
     .get();
 
-  const userOpenseaRef = await db
-    .collection(fstrCnstnts.OPENSEA_COLL)
-    .doc(user)
-    .get();
+  const userOpenseaRef = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(user).get();
 
-  const openseaVol = userOpenseaRef.get('totalVolUSD') || 0;
-  const rewardTier = getUserRewardTier(openseaVol);
+  let openseaVol = 0;
+  let rewardTier = {};
+  let hasAirdrop = false;
+  if (userOpenseaRef.exists) {
+    openseaVol = userOpenseaRef.get('totalVolUSD');
+    rewardTier = getUserRewardTier(openseaVol);
+    hasAirdrop = true;
+  }
 
   let userStats = userStatsRef.data();
   userStats = { ...getEmptyUserInfo(), ...userStats };
@@ -1904,7 +1907,7 @@ async function getReward(user) {
   const purchasesTotalNumeric = userStats.purchasesTotalNumeric;
   const purchasesFeesTotalNumeric = userStats.purchasesFeesTotalNumeric;
 
-  const doneSoFar = +salesTotalNumeric +  +purchasesTotalNumeric;
+  const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
   const resp = {
     numSales: numSales.toString(),
@@ -1921,21 +1924,24 @@ async function getReward(user) {
     numBonusListings: numBonusListings.toString(),
     numOffers: numOffers.toString(),
     numBonusOffers: numBonusOffers.toString(),
+    hasAirdrop,
     openseaVol,
     rewardTier,
     doneSoFar
   };
 
   // write net reward to firestore async for leaderboard purpose
-  // will fail if user doesn't exist
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .update({
-      'rewardsInfo.openseaVol': openseaVol,
-      'rewardsInfo.rewardCalculatedAt': Date.now()
-    })
+    .set(
+      {
+        'rewardsInfo.openseaVol': openseaVol,
+        'rewardsInfo.rewardCalculatedAt': Date.now()
+      },
+      { merge: true }
+    )
     .catch((err) => {
       utils.error('Error updating reward info for user ' + user);
       utils.error(err);
