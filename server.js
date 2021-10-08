@@ -127,7 +127,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else if (text) {
-    resp = await getListingsContainText(
+    resp = await getListingsStartingWithText(
       text,
       limit,
       startAfterSearchTitle,
@@ -229,7 +229,7 @@ async function getListingsByCollectionNameAndPrice(
   }
 }
 
-async function getListingsContainText(
+async function getListingsStartingWithText(
   text,
   limit,
   startAfterSearchTitle,
@@ -279,6 +279,7 @@ async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterM
   try {
     const data = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterPrice, startAfterMillis)
