@@ -1894,10 +1894,10 @@ async function getReward(user) {
   let userStats = userRef.data();
   userStats = { ...getEmptyUserInfo(), ...userStats };
 
-  let usPerson = false;
+  let usPerson = types.UsPersonAnswer.none;
   const userProfile = userStats.profileInfo;
-  if (userProfile && userProfile.isUSPerson) {
-    usPerson = true;
+  if (userProfile && userProfile.usResidentStatus) {
+    usPerson = userProfile.usResidentStatus.usPerson;
   }
 
   const numListings = bn(userStats.numListings);
@@ -2236,14 +2236,17 @@ function sendEmail(to, subject, html) {
 app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
+  let usPerson = '';
+  if (data) {
+    usPerson = types.UsPersonAnswer[data.usPerson];
+  }
 
-  if (!user || Object.keys(data).length === 0) {
+  if (!user || !usPerson) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const usPerson = data.usPerson;
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -2251,7 +2254,10 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
     .set(
       {
         profileInfo: {
-          usPerson: usPerson
+          usResidentStatus: {
+            usPerson,
+            answeredAt: Date.now()
+          }
         }
       },
       { merge: true }
