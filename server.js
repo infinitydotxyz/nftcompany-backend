@@ -640,7 +640,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 }
 
 // fetch user reward
-app.get('/u/:user/reward', async (req, res) => {
+app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     utils.error('Invalid input');
@@ -649,12 +649,6 @@ app.get('/u/:user/reward', async (req, res) => {
   }
   try {
     const resp = await getReward(user);
-    const respStr = utils.jsonString(resp);
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
-    });
     res.send(resp);
   } catch (err) {
     utils.error(err);
@@ -833,7 +827,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // =============================================== POSTS =====================================================================
 
 // post a listing or make offer
-app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', utils.postUserRateLimit, async (req, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -924,7 +918,7 @@ app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) => {
   try {
     const payload = req.body;
 
@@ -2236,13 +2230,14 @@ function sendEmail(to, subject, html) {
 
 app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const data = req.body;
-  let usPerson = '';
-  if (data) {
-    usPerson = types.UsPersonAnswer[data.usPerson];
+  const { usPerson } = req.body;
+
+  let usPersonValue = '';
+  if (usPerson) {
+    usPersonValue = types.UsPersonAnswer[usPerson];
   }
 
-  if (!user || !usPerson) {
+  if (!user || !usPersonValue) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
@@ -2256,7 +2251,7 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
       {
         profileInfo: {
           usResidentStatus: {
-            usPerson,
+            usPerson: usPersonValue,
             answeredAt: Date.now()
           }
         }
@@ -2264,7 +2259,7 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
       { merge: true }
     )
     .then(() => {
-      res.send({ usPerson });
+      res.send({ usPerson: usPersonValue });
     })
     .catch((err) => {
       utils.error('Setting US person status failed');
