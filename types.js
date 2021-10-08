@@ -36,7 +36,15 @@ const RewardTiers = {
   }
 };
 
+const UsPersonAnswer = {
+  yes: 'YES',
+  no: 'NO',
+  none: 'NONE',
+  answeredAt: 0
+};
+
 module.exports = {
   OrderSide,
-  RewardTiers
+  RewardTiers,
+  UsPersonAnswer
 };

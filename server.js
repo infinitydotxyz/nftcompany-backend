@@ -127,12 +127,13 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else if (text) {
-    resp = await getListingsContainText(
+    resp = await getListingsStartingWithText(
       text,
       limit,
       startAfterSearchTitle,
       startAfterSearchCollectionName,
-      startAfterMillis
+      startAfterMillis,
+      sortByPriceDirection
     );
     if (resp) {
       res.set({
@@ -229,12 +230,13 @@ async function getListingsByCollectionNameAndPrice(
   }
 }
 
-async function getListingsContainText(
+async function getListingsStartingWithText(
   text,
   limit,
   startAfterSearchTitle,
   startAfterSearchCollectionName,
-  startAfterMillis
+  startAfterMillis,
+  sortByPriceDirection
 ) {
   try {
     utils.log('Getting listings match with text:', text);
@@ -249,6 +251,7 @@ async function getListingsContainText(
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchTitle', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterSearchTitle, startAfterMillis)
       .limit(limit1);
@@ -260,6 +263,7 @@ async function getListingsContainText(
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterSearchCollectionName, startAfterMillis)
       .limit(limit2);
@@ -279,6 +283,7 @@ async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterM
   try {
     const data = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterPrice, startAfterMillis)
@@ -639,7 +644,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 }
 
 // fetch user reward
-app.get('/u/:user/reward', async (req, res) => {
+app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     utils.error('Invalid input');
@@ -648,12 +653,6 @@ app.get('/u/:user/reward', async (req, res) => {
   }
   try {
     const resp = await getReward(user);
-    const respStr = utils.jsonString(resp);
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
-    });
     res.send(resp);
   } catch (err) {
     utils.error(err);
@@ -832,7 +831,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 // =============================================== POSTS =====================================================================
 
 // post a listing or make offer
-app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', utils.postUserRateLimit, async (req, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -923,7 +922,7 @@ app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) => {
   try {
     const payload = req.body;
 
@@ -1894,10 +1893,10 @@ async function getReward(user) {
   let userStats = userRef.data();
   userStats = { ...getEmptyUserInfo(), ...userStats };
 
-  let usPerson = false;
+  let usPerson = types.UsPersonAnswer.none;
   const userProfile = userStats.profileInfo;
-  if (userProfile && userProfile.isUSPerson) {
-    usPerson = true;
+  if (userProfile && userProfile.usResidentStatus) {
+    usPerson = userProfile.usResidentStatus.usPerson;
   }
 
   const numListings = bn(userStats.numListings);
@@ -2235,15 +2234,19 @@ function sendEmail(to, subject, html) {
 
 app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const data = req.body;
+  const { usPerson } = req.body;
 
-  if (!user || Object.keys(data).length === 0) {
+  let usPersonValue = '';
+  if (usPerson) {
+    usPersonValue = types.UsPersonAnswer[usPerson];
+  }
+
+  if (!user || !usPersonValue) {
     utils.error('Invalid input');
     res.sendStatus(500);
     return;
   }
 
-  const usPerson = data.usPerson;
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -2251,13 +2254,16 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
     .set(
       {
         profileInfo: {
-          usPerson: usPerson
+          usResidentStatus: {
+            usPerson: usPersonValue,
+            answeredAt: Date.now()
+          }
         }
       },
       { merge: true }
     )
     .then(() => {
-      res.send({ usPerson });
+      res.send({ usPerson: usPersonValue });
     })
     .catch((err) => {
       utils.error('Setting US person status failed');
