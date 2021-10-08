@@ -132,7 +132,8 @@ app.get('/listings', async (req, res) => {
       limit,
       startAfterSearchTitle,
       startAfterSearchCollectionName,
-      startAfterMillis
+      startAfterMillis,
+      sortByPriceDirection
     );
     if (resp) {
       res.set({
@@ -234,7 +235,8 @@ async function getListingsStartingWithText(
   limit,
   startAfterSearchTitle,
   startAfterSearchCollectionName,
-  startAfterMillis
+  startAfterMillis,
+  sortByPriceDirection
 ) {
   try {
     utils.log('Getting listings match with text:', text);
@@ -249,6 +251,7 @@ async function getListingsStartingWithText(
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchTitle', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterSearchTitle, startAfterMillis)
       .limit(limit1);
@@ -260,6 +263,7 @@ async function getListingsStartingWithText(
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
       .startAfter(startAfterSearchCollectionName, startAfterMillis)
       .limit(limit2);
