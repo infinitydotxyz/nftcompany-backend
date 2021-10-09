@@ -290,10 +290,11 @@ async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterM
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc');
 
-    if (startAfterBlueCheck !== undefined) {
-      query = query.startAfter(startAfterBlueCheck, startAfterPrice, startAfterMillis);
-    } else {
+    if (startAfterBlueCheck === undefined) {
       query = query.startAfter(true, startAfterPrice, startAfterMillis);
+    } else {
+      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+      query = query.startAfter(startAfterBlueCheckBool, startAfterPrice, startAfterMillis);
     }
 
     const data = await query.limit(limit).get();
