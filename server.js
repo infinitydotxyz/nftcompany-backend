@@ -837,6 +837,41 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   }
 });
 
+app.get('/verified', async (req, res) => {
+  try {
+    const data = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+      .get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
 // =============================================== POSTS =====================================================================
 
 // post a listing or make offer
