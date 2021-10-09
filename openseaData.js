@@ -46,7 +46,7 @@ async function aggregateAddressTotals(records) {
     const address = record[0];
     const total = record[1];
     const existing = combined[address] || 0;
-    combined[address] = existing + total;
+    combined[address] = +existing + +total;
   }
   // const array = [];
   for (const [key, value] of Object.entries(combined)) {
