@@ -101,6 +101,7 @@ app.get('/listings', async (req, res) => {
   const text = (req.query.text || '').trim(); // preserve case
   // @ts-ignore
   const startAfterSearchTitle = (req.query.startAfterSearchTitle || '').trim();
+  const startAfterBlueCheck = req.query.startAfterBlueCheck;
   // @ts-ignore
   const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
   let priceMin = +(req.query.priceMin || 0);
@@ -133,6 +134,7 @@ app.get('/listings', async (req, res) => {
       startAfterSearchTitle,
       startAfterSearchCollectionName,
       startAfterMillis,
+      startAfterPrice,
       sortByPriceDirection
     );
     if (resp) {
@@ -164,7 +166,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit);
+    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -236,10 +238,11 @@ async function getListingsStartingWithText(
   startAfterSearchTitle,
   startAfterSearchCollectionName,
   startAfterMillis,
+  startAfterPrice,
   sortByPriceDirection
 ) {
   try {
-    utils.log('Getting listings match with text:', text);
+    utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
     const startsWith = getSearchFriendlyString(text);
@@ -253,7 +256,7 @@ async function getListingsStartingWithText(
       .orderBy('metadata.asset.searchTitle', 'asc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterSearchTitle, startAfterMillis)
+      .startAfter(startAfterSearchTitle, startAfterPrice, startAfterMillis)
       .limit(limit1);
     const resultByTitle = await queryRef1.get();
 
@@ -265,7 +268,7 @@ async function getListingsStartingWithText(
       .orderBy('metadata.asset.searchCollectionName', 'asc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterSearchCollectionName, startAfterMillis)
+      .startAfter(startAfterSearchCollectionName, startAfterPrice, startAfterMillis)
       .limit(limit2);
     const resultByCollectionName = await queryRef2.get();
 
@@ -277,18 +280,24 @@ async function getListingsStartingWithText(
   }
 }
 
-async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit) {
+async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit) {
   utils.log('Getting all listings');
 
   try {
-    const data = await db
+    let query = db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .orderBy('metadata.hasBlueCheck', 'desc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterPrice, startAfterMillis)
-      .limit(limit)
-      .get();
+      .orderBy('metadata.createdAt', 'desc');
+
+    if (startAfterBlueCheck === undefined) {
+      query = query.startAfter(true, startAfterPrice, startAfterMillis);
+    } else {
+      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+      query = query.startAfter(startAfterBlueCheckBool, startAfterPrice, startAfterMillis);
+    }
+
+    const data = await query.limit(limit).get();
 
     return getOrdersResponse(data);
   } catch (err) {
