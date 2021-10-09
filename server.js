@@ -242,7 +242,7 @@ async function getListingsStartingWithText(
   sortByPriceDirection
 ) {
   try {
-    utils.log('Getting listings match with text:', text);
+    utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
     const startsWith = getSearchFriendlyString(text);
