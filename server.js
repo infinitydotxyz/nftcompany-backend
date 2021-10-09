@@ -671,39 +671,59 @@ app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
 
 // fetch rewards leaderboard
 app.get('/rewards/leaderboard', async (req, res) => {
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .orderBy('salesAndPurchasesTotalNumeric', 'desc')
-    .limit(10)
-    .get()
-    .then((data) => {
-      const results = [];
-      for (const doc of data.docs) {
-        const docData = doc.data();
-        const result = {
-          id: doc.id,
-          total: docData.salesAndPurchasesTotalNumeric
-        };
-        results.push(result);
-      }
-      const resp = {
-        count: results.length,
-        results: results
+  try {
+    const sales = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .orderBy('salesTotalNumeric', 'desc')
+      .limit(10)
+      .get();
+
+    const saleLeaders = [];
+    for (const doc of sales.docs) {
+      const docData = doc.data();
+      const result = {
+        id: doc.id,
+        total: docData.salesTotalNumeric
       };
-      const respStr = utils.jsonString(resp);
-      // to enable cdn cache
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get leaderboard');
-      utils.error(err);
-      res.sendStatus(500);
+      saleLeaders.push(result);
+    }
+
+    const buys = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .orderBy('purchasesTotalNumeric', 'desc')
+      .limit(10)
+      .get();
+
+    const buyLeaders = [];
+    for (const doc of buys.docs) {
+      const docData = doc.data();
+      const result = {
+        id: doc.id,
+        total: docData.purchasesTotalNumeric
+      };
+      buyLeaders.push(result);
+    }
+
+    const resp = {
+      count: saleLeaders.length + buyLeaders.length,
+      results: {saleLeaders, buyLeaders}
+    };
+    const respStr = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
+    res.send(resp);
+  } catch (err) {
+    utils.error('Failed to get leaderboard');
+    utils.error(err);
+    res.sendStatus(500);
+  }
 });
 
 app.get('/titles', async (req, res) => {
