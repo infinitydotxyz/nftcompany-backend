@@ -71,7 +71,7 @@ function writeToFirestore(records) {
   records.forEach((record, i) => {
     const address = record[0];
     const total = +parseFloat(record[1]).toFixed(2);
-    const docRef = db.collection('openseaSnapshotCombined').doc(address);
+    const docRef = db.collection('combinedOpenseaSnapshot').doc(address);
     batch.set(docRef, { totalVolUSD: firebaseAdmin.firestore.FieldValue.increment(total) }, {merge: true});
     if ((i + 1) % 500 === 0) {
       console.log(`Writing record ${i + 1}`);
