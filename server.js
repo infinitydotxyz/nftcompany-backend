@@ -30,7 +30,7 @@ const nftDataSources = {
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
 const DEFAULT_MIN_ETH = 0.0000001;
-const DEFAULT_MAX_ETH = 10000; // for listings
+const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
 // init server
