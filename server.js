@@ -216,7 +216,7 @@ async function getListingsByCollectionNameAndPrice(
       .where('metadata.basePriceInEth', '>=', +priceMin)
       .where('metadata.basePriceInEth', '<=', +priceMax);
     if (collectionName) {
-      queryRef = queryRef.where('metadata.asset.collectionName', '==', collectionName);
+      queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
     }
     queryRef = queryRef
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
@@ -852,6 +852,49 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
     res.send(resp);
   } catch (err) {
     utils.error('Failed to get pending txns of user ' + user);
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+app.post('/verifiedTokens', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
+  try {
+    let query = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+      .orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
     utils.error(err);
     res.sendStatus(500);
   }
