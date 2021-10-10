@@ -837,13 +837,21 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   }
 });
 
-app.get('/verified', async (req, res) => {
+app.post('/verifiedTokens', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
   try {
-    const data = await db
+    let query = db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-      .get();
+      .orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
 
     const collections = [];
     for (const doc of data.docs) {
