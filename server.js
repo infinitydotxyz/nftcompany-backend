@@ -216,7 +216,7 @@ async function getListingsByCollectionNameAndPrice(
       .where('metadata.basePriceInEth', '>=', +priceMin)
       .where('metadata.basePriceInEth', '<=', +priceMax);
     if (collectionName) {
-      queryRef = queryRef.where('metadata.asset.collectionName', '==', collectionName);
+      queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
     }
     queryRef = queryRef
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
