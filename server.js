@@ -2347,11 +2347,12 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
 // ============================================================ Misc ======================================================
 
 async function isTokenVerified(address) {
+  const tokenAddress = address.trim().toLowerCase();
   const doc = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .doc(address)
+    .doc(tokenAddress)
     .get();
   return doc.exists;
 }
