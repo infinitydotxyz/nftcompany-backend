@@ -50,7 +50,7 @@ const testRoot = process.env.firestoreTestRoot || 'testRoot';
 module.exports = {
   firestore: {
     ROOT_COLL: testRoot,
-	OPENSEA_COLL: 'openseaSnapshot',
+    OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
