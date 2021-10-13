@@ -49,7 +49,7 @@ require('dotenv').config();
 module.exports = {
   firestore: {
     ROOT_COLL: 'root',
-	OPENSEA_COLL: 'openseaSnapshot',
+    OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
