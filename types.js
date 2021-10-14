@@ -14,25 +14,25 @@ const RewardTiers = {
     min: 1000,
     max: 20000,
     eligible: 1088,
-    threshold: 2.5
+    threshold: 2
   },
   t3: {
     min: 20000,
     max: 100000,
     eligible: 2636,
-    threshold: 10
+    threshold: 5
   },
   t4: {
     min: 100000,
     max: 500000,
     eligible: 7337,
-    threshold: 50
+    threshold: 15
   },
   t5: {
     min: 500000,
     max: Infinity,
     eligible: 16678,
-    threshold: 100
+    threshold: 30
   }
 };
 
