@@ -130,7 +130,7 @@ module.exports = {
     }
   }),
 
-  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.)
   lowRateLimit: rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // limit each user's address to 5 requests per windowMs
@@ -140,7 +140,10 @@ module.exports = {
     }
   }),
 
-  docsToArray: function(dbDocs) {
+  docsToArray: function (dbDocs) {
+    if (!dbDocs) {
+      return { results: [], count: 0 };
+    }
     const results = [];
     for (const doc of dbDocs) {
       const item = doc.data();
