@@ -374,6 +374,27 @@ app.get('/u/:user/assets', async (req, res) => {
   fetchAssetsOfUser(req, res);
 });
 
+app.get('/featured-collections', async (req, res) => {
+  utils.log('fetch list of Featured Collections');
+  try {
+    const result = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.FEATURED_COLL)
+      .get();
+
+    if (result.docs) {
+      const { results: collections, count } = utils.docsToArray(result.docs);
+      res.send({ collections, count });
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (err) {
+    utils.error('Error fetching featured collections.');
+    utils.error(err);
+  }
+});
+
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();

@@ -140,6 +140,18 @@ module.exports = {
     }
   }),
 
+  docsToArray: function(dbDocs) {
+    const results = [];
+    for (const doc of dbDocs) {
+      const item = doc.data();
+      if (doc.id) {
+        item.id = doc.id;
+      }
+      results.push(item);
+    }
+    return { results, count: results.length };
+  },
+
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
     const strLength = searchTerm.length;
