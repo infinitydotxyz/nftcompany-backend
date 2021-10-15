@@ -64,7 +64,7 @@ module.exports = {
     SALES_COLL: 'sales',
     TXNS_COLL: 'txns',
     MISSED_TXNS_COLL: 'missedTxns',
-	FEATURED_COLL: 'featuredCollections',
+    FEATURED_COLL: 'featuredCollections'
   },
 
   auth: {
