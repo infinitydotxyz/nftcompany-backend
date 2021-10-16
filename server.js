@@ -378,9 +378,8 @@ app.get('/featured-collections', async (req, res) => {
   utils.log('fetch list of Featured Collections');
   try {
     const result = await db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.FEATURED_COLL)
+      .limit(3)
       .get();
 
     if (result.docs) {
