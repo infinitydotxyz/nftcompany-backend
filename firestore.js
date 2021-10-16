@@ -27,7 +27,8 @@ async function importCsv(csvFileName) {
   // @ts-ignore
   const records = await parse(fileContents, { columns: false });
   try {
-    await updateBlueCheck(records);
+    // await updateBlueCheck(records);
+    await writeToFirestore(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -40,14 +41,17 @@ function writeToFirestore(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const address = record[0];
-    const total = +parseFloat(record[1]).toFixed(2);
-    const docRef = db.collection('combinedOpenseaSnapshot').doc(address);
-    batch.set(docRef, { totalVolUSD: firebaseAdmin.firestore.FieldValue.increment(total) }, { merge: true });
-    if ((i + 1) % 500 === 0) {
-      console.log(`Writing record ${i + 1}`);
-      batchCommits.push(batch.commit());
-      batch = db.batch();
+    const [name, openseaUrl, address, description, cardImage, bannerImage] = record;
+    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, cardImage, bannerImage };
+    console.log(obj);
+    if (name && openseaUrl && address && description && cardImage && bannerImage) {
+      const docRef = db.collection('featuredCollections').doc(address.trim().toLowerCase());
+      batch.set(docRef, obj, { merge: true });
+      if ((i + 1) % 500 === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
     }
   });
   batchCommits.push(batch.commit());
@@ -63,7 +67,7 @@ async function updateBlueCheck(records) {
 
     db.runTransaction(async (txn) => {
       const results = await txn.get(queryRef);
-      console.log('length', results.docs.length );
+      console.log('length', results.docs.length);
       for (const doc of results.docs) {
         const docRef = doc.ref;
         txn.update(docRef, { 'metadata.hasBlueCheck': true });
