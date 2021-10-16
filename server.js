@@ -374,12 +374,13 @@ app.get('/u/:user/assets', async (req, res) => {
   fetchAssetsOfUser(req, res);
 });
 
+// get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
 app.get('/featured-collections', async (req, res) => {
   utils.log('fetch list of Featured Collections');
   try {
     const result = await db
       .collection(fstrCnstnts.FEATURED_COLL)
-      .limit(3)
+      .limit(constants.FEATURED_LIMIT)
       .get();
 
     if (result.docs) {
