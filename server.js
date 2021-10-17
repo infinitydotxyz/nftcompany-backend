@@ -710,7 +710,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
     const resp = {
       count: saleLeaders.length + buyLeaders.length,
-      results: {saleLeaders, buyLeaders}
+      results: { saleLeaders, buyLeaders }
     };
     const respStr = utils.jsonString(resp);
     // to enable cdn cache
@@ -1103,9 +1103,227 @@ app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) =>
   }
 });
 
+// check txn
+app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, res) => {
+  try {
+    const payload = req.body;
+
+    if (Object.keys(payload).length === 0) {
+      utils.error('Invalid input - payload empty');
+      res.sendStatus(500);
+      return;
+    }
+
+    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    if (!user) {
+      utils.error('Invalid input - no user');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.txnHash || !payload.txnHash.trim()) {
+      utils.error('Invalid input - no txn hash');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.actionType) {
+      utils.error('Invalid input - no action type');
+      res.sendStatus(500);
+      return;
+    }
+
+    const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
+    if (actionType !== 'fulfill' && actionType !== 'cancel') {
+      utils.error('Invalid action type', actionType);
+      res.sendStatus(500);
+      return;
+    }
+
+    const txnHash = payload.txnHash.trim(); // preserve case
+
+    // check if valid nftc txn
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      res.sendStatus(500);
+      return;
+    } else {
+      // check if doc exists
+      const docRef = db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(from)
+        .collection(fstrCnstnts.TXNS_COLL)
+        .doc(txnHash);
+
+      const doc = await docRef.get();
+      if (doc.exists) {
+        // listen for txn mined or not mined
+        waitForTxn(user, doc.data());
+        res.sendStatus(200);
+        return;
+      } else {
+        // txn is valid but it doesn't exist in firestore
+        // so we update purchases/sales data for buyer and seller
+        utils.log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
+        const batch = db.batch();
+        const numOrders = 1;
+        const valueInEth = ethers.utils.parseEther(value + '');
+
+        const buyerRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(buyer);
+
+        const sellerRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(seller);
+
+        const buyerInfoRef = await buyerRef.get();
+        let buyerInfo = getEmptyUserInfo();
+        if (buyerInfoRef.exists) {
+          buyerInfo = { ...buyerInfo, ...buyerInfoRef.data() };
+        }
+
+        const sellerInfoRef = await sellerRef.get();
+        let sellerInfo = getEmptyUserInfo();
+        if (sellerInfoRef.exists) {
+          sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
+        }
+
+        // update user txn stats
+        // @ts-ignore
+        const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
+        // @ts-ignore
+        const purchasesTotalNumeric = toFixed5(purchasesTotal);
+
+        // update user txn stats
+        // @ts-ignore
+        const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
+        // @ts-ignore
+        const salesTotalNumeric = toFixed5(salesTotal);
+
+        utils.trace(
+          'purchases total',
+          purchasesTotal,
+          'purchases total numeric',
+          purchasesTotalNumeric,
+          'sales total',
+          salesTotal,
+          'sales total numeric',
+          salesTotalNumeric
+        );
+
+        batch.set(
+          buyerRef,
+          {
+            numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+            purchasesTotal,
+            purchasesTotalNumeric
+          },
+          { merge: true }
+        );
+
+        batch.set(
+          sellerRef,
+          {
+            numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+            salesTotal,
+            salesTotalNumeric
+          },
+          { merge: true }
+        );
+
+        // commit batch
+        utils.log('Committing the non-existent valid txn', txnHash, ' batch to firestore');
+        batch
+          .commit()
+          .then((resp) => {
+            // no op
+          })
+          .catch((err) => {
+            utils.error('Failed to commit non-existent valid txn', txnHash, ' batch');
+            utils.error(err);
+          });
+      }
+    }
+  } catch (err) {
+    utils.error('Error saving pending txn');
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
 // ====================================================== Write helpers ==========================================================
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
+
+async function getTxnData(txnHash, actionType) {
+  let isValid = true;
+  let from = '';
+  let buyer = '';
+  let seller = '';
+  let value = bn(0);
+  const txn = await ethersProvider.getTransaction(txnHash);
+  if (txn) {
+    from = txn.from ? txn.from.trim().toLowerCase() : '';
+    const to = txn.to;
+    const chainId = txn.chainId;
+    const data = txn.data;
+    value = txn.value;
+    const openseaIface = new ethers.utils.Interface(openseaAbi);
+    const decodedData = openseaIface.parseTransaction({ data, value });
+    const functionName = decodedData.name;
+    const args = decodedData.args;
+
+    // checks
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+    if (actionType === 'cancel' && functionName !== constants.WYVERN_CANCEL_ORDER_FUNCTION) {
+      isValid = false;
+    }
+
+    if (args && args.length > 0) {
+      const addresses = args[0];
+      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
+        buyer = addresses[1] ? addresses[1].trim().toLowerCase() : '';
+        seller = addresses[8] ? addresses[8].trim().toLowerCase() : '';
+        const buyFeeRecipient = addresses[3];
+        const sellFeeRecipient = addresses[10];
+        if (
+          buyFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase() &&
+          sellFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()
+        ) {
+          isValid = false;
+        }
+      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
+        const feeRecipient = addresses[3];
+        if (feeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+          isValid = false;
+        }
+      } else {
+        isValid = false;
+      }
+    } else {
+      isValid = false;
+    }
+  } else {
+    isValid = false;
+  }
+  return { isValid, from, buyer, seller, value };
+}
 
 async function isValidNftcTxn(txnHash, actionType) {
   let isValid = true;
@@ -1180,14 +1398,14 @@ async function waitForTxn(user, payload) {
   const confirms = 1;
 
   try {
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
-
     // check if valid nftc txn
     const isValid = await isValidNftcTxn(origTxnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
+
+    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
