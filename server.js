@@ -710,7 +710,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
     const resp = {
       count: saleLeaders.length + buyLeaders.length,
-      results: {saleLeaders, buyLeaders}
+      results: { saleLeaders, buyLeaders }
     };
     const respStr = utils.jsonString(resp);
     // to enable cdn cache
@@ -857,6 +857,8 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
   }
 });
 
+// =============================================== POSTS =====================================================================
+
 app.post('/verifiedTokens', async (req, res) => {
   const { startAfterName, limit } = req.body;
 
@@ -900,7 +902,44 @@ app.post('/verifiedTokens', async (req, res) => {
   }
 });
 
-// =============================================== POSTS =====================================================================
+app.post('/verifiedCollections', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
+  try {
+    let query = db.collection(fstrCnstnts.VERIFIED_COLLECTIONS_COLL).orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
 
 // post a listing or make offer
 app.post('/u/:user/wyvern/v1/orders', utils.postUserRateLimit, async (req, res) => {
