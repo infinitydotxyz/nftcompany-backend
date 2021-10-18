@@ -53,6 +53,7 @@ module.exports = {
     OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
+    VERIFIED_COLLECTIONS_COLL: 'verifiedCollections',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
     USERS_COLL: 'users',
     LISTINGS_COLL: 'listings',
