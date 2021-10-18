@@ -207,7 +207,7 @@ async function getListingsByCollection(startAfterBlueCheck, startAfterSearchColl
   }
   try {
     utils.log('Getting listings by collection');
-    const numColls = 10;
+    const numColls = 50;
     for (let i = 0; i < numColls; i++) {
       const query = db
         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -219,7 +219,7 @@ async function getListingsByCollection(startAfterBlueCheck, startAfterSearchColl
       if (snapshot.docs.length > 0) {
         const listing = snapshot.docs[0].data();
         if (listing && listing.metadata && listing.metadata.asset) {
-          listing.id = snapshot.docs[0].data().id;
+          listing.id = snapshot.docs[0].id;
           // eslint-disable-next-line no-unneeded-ternary
           startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
           startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName;
