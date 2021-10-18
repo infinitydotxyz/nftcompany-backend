@@ -166,7 +166,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -199,24 +199,37 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   }
 }
 
-async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
+async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName) {
+  const listings = [];
+  let startAfterBlueCheckBool = true;
+  if (startAfterBlueCheck !== undefined) {
+    startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+  }
   try {
     utils.log('Getting listings by collection');
+    const numColls = 10;
+    for (let i = 0; i < numColls; i++) {
+      const query = db
+        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .orderBy('metadata.hasBlueCheck', 'desc')
+        .orderBy('metadata.asset.searchCollectionName', 'asc')
+        .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName);
 
-    let query = db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .orderBy('metadata.hasBlueCheck', 'desc')
-      .orderBy('metadata.asset.searchCollectionName', 'asc');
-
-    if (startAfterBlueCheck === undefined) {
-      query = query.startAfter(true, startAfterSearchCollectionName);
-    } else {
-      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
-      query = query.startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName);
+      const snapshot = await query.limit(1).get();
+      if (snapshot.docs.length > 0) {
+        const listing = snapshot.docs[0].data();
+        listing.id = snapshot.docs[0].data().id;
+        // eslint-disable-next-line no-unneeded-ternary
+        startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
+        startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName; 
+        listings.push(listing);
+      }
     }
-
-    const data = await query.limit(limit).get();
-    return getOrdersResponse(data);
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
   } catch (err) {
     utils.error('Failed to get listings by collection');
     utils.error(err);
