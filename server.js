@@ -218,11 +218,13 @@ async function getListingsByCollection(startAfterBlueCheck, startAfterSearchColl
       const snapshot = await query.limit(1).get();
       if (snapshot.docs.length > 0) {
         const listing = snapshot.docs[0].data();
-        listing.id = snapshot.docs[0].data().id;
-        // eslint-disable-next-line no-unneeded-ternary
-        startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
-        startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName; 
-        listings.push(listing);
+        if (listing && listing.metadata && listing.metadata.asset) {
+          listing.id = snapshot.docs[0].data().id;
+          // eslint-disable-next-line no-unneeded-ternary
+          startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
+          startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName;
+          listings.push(listing);
+        }
       }
     }
     const resp = {
