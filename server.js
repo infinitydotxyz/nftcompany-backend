@@ -182,6 +182,28 @@ app.get('/listings', async (req, res) => {
   }
 });
 
+app.get('/listingsByCollection', async (req, res) => {
+  // @ts-ignore
+  const startAfterBlueCheck = req.query.startAfterBlueCheck;
+  // @ts-ignore
+  const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
+  const limit = +req.query.limit || DEFAULT_ITEMS_PER_PAGE;
+
+  const resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
+  if (resp) {
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+  }
+
+  if (resp) {
+    res.send(resp);
+  } else {
+    res.sendStatus(500);
+  }
+});
+
 async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   utils.log('Getting listings of token id and token address');
   try {
@@ -195,6 +217,30 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
     return getOrdersResponse(data);
   } catch (err) {
     utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
+  try {
+    utils.log('Getting listings by collection');
+
+    let query = db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.asset.searchCollectionName', 'asc');
+
+    if (startAfterBlueCheck === undefined) {
+      query = query.startAfter(true, startAfterSearchCollectionName);
+    } else {
+      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+      query = query.startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName);
+    }
+
+    const data = await query.limit(limit).get();
+    return getOrdersResponse(data);
+  } catch (err) {
+    utils.error('Failed to get listings by collection');
     utils.error(err);
   }
 }
