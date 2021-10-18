@@ -166,35 +166,13 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
     }
-  }
-
-  if (resp) {
-    res.send(resp);
-  } else {
-    res.sendStatus(500);
-  }
-});
-
-app.get('/listingsByCollection', async (req, res) => {
-  // @ts-ignore
-  const startAfterBlueCheck = req.query.startAfterBlueCheck;
-  // @ts-ignore
-  const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
-  const limit = +req.query.limit || DEFAULT_ITEMS_PER_PAGE;
-
-  const resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
-  if (resp) {
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
-    });
   }
 
   if (resp) {
@@ -326,6 +304,7 @@ async function getListingsStartingWithText(
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit) {
   utils.log('Getting all listings');
 
