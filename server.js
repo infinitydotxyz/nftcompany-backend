@@ -972,6 +972,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .limit(limit)
       .get();
 
+    const missedTxnSnapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.MISSED_TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .startAfter(startAfterMillis)
+      .limit(limit)
+      .get();
+
     const txns = [];
     for (const doc of snapshot.docs) {
       const txn = doc.data();
@@ -982,6 +993,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
         waitForTxn(user, txn);
       }
     }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      txn.id = doc.id;
+      txns.push(txn);
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
+      }
+    }
+
     const resp = {
       count: txns.length,
       listings: txns
@@ -1324,7 +1346,7 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
     const txnHash = payload.txnHash.trim(); // preserve case
 
     // check if valid nftc txn
-    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    const { isValid, from, buyer, seller, value, timestamp } = await getTxnData(txnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       res.sendStatus(500);
@@ -1347,78 +1369,53 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
         return;
       } else {
         // txn is valid but it doesn't exist in firestore
-        // so we update purchases/sales data for buyer and seller
+        // we write to firestore
         utils.log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
         const batch = db.batch();
-        const numOrders = 1;
         const valueInEth = ethers.utils.parseEther(value + '');
 
-        const buyerRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(buyer);
+        const txnPayload = {
+          txnHash,
+          status: 'pending',
+          salePriceInEth: valueInEth,
+          actionType,
+          createdAt: timestamp,
+          buyer,
+          seller
+        };
 
-        const sellerRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(seller);
+        // if cancel order
+        if (actionType === 'cancel') {
+          const cancelTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(from)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const buyerInfoRef = await buyerRef.get();
-        let buyerInfo = getEmptyUserInfo();
-        if (buyerInfoRef.exists) {
-          buyerInfo = { ...buyerInfo, ...buyerInfoRef.data() };
+          batch.set(cancelTxnRef, txnPayload, { merge: true });
+        } else if (actionType === 'fulfill') {
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(buyerTxnRef, txnPayload, { merge: true });
+
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(sellerTxnRef, txnPayload, { merge: true });
         }
-
-        const sellerInfoRef = await sellerRef.get();
-        let sellerInfo = getEmptyUserInfo();
-        if (sellerInfoRef.exists) {
-          sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
-        }
-
-        // update user txn stats
-        // @ts-ignore
-        const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
-        // @ts-ignore
-        const purchasesTotalNumeric = toFixed5(purchasesTotal);
-
-        // update user txn stats
-        // @ts-ignore
-        const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
-        // @ts-ignore
-        const salesTotalNumeric = toFixed5(salesTotal);
-
-        utils.trace(
-          'purchases total',
-          purchasesTotal,
-          'purchases total numeric',
-          purchasesTotalNumeric,
-          'sales total',
-          salesTotal,
-          'sales total numeric',
-          salesTotalNumeric
-        );
-
-        batch.set(
-          buyerRef,
-          {
-            numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
-            purchasesTotal,
-            purchasesTotalNumeric
-          },
-          { merge: true }
-        );
-
-        batch.set(
-          sellerRef,
-          {
-            numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
-            salesTotal,
-            salesTotalNumeric
-          },
-          { merge: true }
-        );
 
         // commit batch
         utils.log('Committing the non-existent valid txn', txnHash, ' batch to firestore');
@@ -1450,8 +1447,10 @@ async function getTxnData(txnHash, actionType) {
   let buyer = '';
   let seller = '';
   let value = bn(0);
+  let timestamp = 0;
   const txn = await ethersProvider.getTransaction(txnHash);
   if (txn) {
+    timestamp = txn.timestamp;
     from = txn.from ? txn.from.trim().toLowerCase() : '';
     const to = txn.to;
     const chainId = txn.chainId;
@@ -1503,7 +1502,7 @@ async function getTxnData(txnHash, actionType) {
   } else {
     isValid = false;
   }
-  return { isValid, from, buyer, seller, value };
+  return { isValid, from, buyer, seller, value, timestamp };
 }
 
 async function isValidNftcTxn(txnHash, actionType) {
@@ -1671,6 +1670,148 @@ async function waitForTxn(user, payload) {
     });
 }
 
+async function waitForMissedTxn(user, payload) {
+  user = user.trim().toLowerCase();
+  const actionType = payload.actionType.trim().toLowerCase();
+  const txnHash = payload.txnHash.trim();
+
+  utils.log('Waiting for missed txn', txnHash);
+  const batch = db.batch();
+  const userTxnCollRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.MISSED_TXNS_COLL);
+
+  const txnDocRef = userTxnCollRef.doc(txnHash);
+  const confirms = 1;
+
+  try {
+    // check if valid nftc txn
+    const isValid = await isValidNftcTxn(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      return;
+    }
+
+    const receipt = await ethersProvider.waitForTransaction(txnHash, confirms);
+
+    // check if txn status is not already updated in firestore by another call
+    try {
+      const isUpdated = await db.runTransaction(async (txn) => {
+        const txnDoc = await txn.get(txnDocRef);
+        const status = txnDoc.get('status');
+        if (status === 'pending') {
+          // orig txn confirmed
+          utils.log('Txn: ' + txnHash + ' confirmed after ' + confirms + ' block(s)');
+          const txnData = JSON.parse(utils.jsonString(receipt));
+          const txnSuceeded = txnData.status === 1;
+          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+          await txn.update(txnDocRef, { status: updatedStatus, txnData });
+          return txnSuceeded;
+        } else {
+          return false;
+        }
+      });
+
+      if (isUpdated) {
+        if (actionType === 'fulfill') {
+          const numOrders = 1;
+          const buyer = payload.buyer.trim().toLowerCase();
+          const seller = payload.seller.trim().toLowerCase();
+          const valueInEth = payload.salePriceInEth;
+
+          const buyerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer);
+
+          const sellerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller);
+
+          const buyerInfoRef = await buyerRef.get();
+          let buyerInfo = getEmptyUserInfo();
+          if (buyerInfoRef.exists) {
+            buyerInfo = { ...buyerInfo, ...buyerInfoRef.data() };
+          }
+
+          const sellerInfoRef = await sellerRef.get();
+          let sellerInfo = getEmptyUserInfo();
+          if (sellerInfoRef.exists) {
+            sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
+          }
+
+          // update user txn stats
+          // @ts-ignore
+          const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const purchasesTotalNumeric = toFixed5(purchasesTotal);
+
+          // update user txn stats
+          // @ts-ignore
+          const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const salesTotalNumeric = toFixed5(salesTotal);
+
+          utils.trace(
+            'purchases total',
+            purchasesTotal,
+            'purchases total numeric',
+            purchasesTotalNumeric,
+            'sales total',
+            salesTotal,
+            'sales total numeric',
+            salesTotalNumeric
+          );
+
+          batch.set(
+            buyerRef,
+            {
+              numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              purchasesTotal,
+              purchasesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          batch.set(
+            sellerRef,
+            {
+              numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              salesTotal,
+              salesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          // commit batch
+          utils.log('Updating purchase and sale data for missed txn', txnHash, ' in firestore');
+          batch
+            .commit()
+            .then((resp) => {
+              // no op
+            })
+            .catch((err) => {
+              utils.error('Failed updating purchase and sale data for missed txn', txnHash);
+              utils.error(err);
+            });
+        } 
+      }
+    } catch (err) {
+      utils.error('Error updating missed txn status in firestore');
+      utils.error(err);
+    }
+  } catch (err) {
+    utils.error('Error waiting for missed txn');
+    utils.error(err);
+  }
+}
+
 // order fulfill
 async function fulfillOrder(user, batch, payload) {
   // user is the taker of the order - either bought now or accepted offer
@@ -1707,6 +1848,25 @@ async function fulfillOrder(user, batch, payload) {
       utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
+
+    // record txn for maker
+    const txnPayload = {
+      txnHash,
+      status: 'confirmed',
+      salePriceInEth,
+      actionType: payload.actionType.trim().toLowerCase(),
+      createdAt: Date.now()
+    };
+
+    const makerTxnRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(fstrCnstnts.TXNS_COLL)
+      .doc(txnHash);
+
+    batch.set(makerTxnRef, txnPayload, { merge: true });
 
     if (side === 0) {
       // taker accepted offerReceived, maker is the buyer

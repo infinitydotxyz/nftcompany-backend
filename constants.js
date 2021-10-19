@@ -61,7 +61,8 @@ module.exports = {
     ASSETS_COLL: 'assets',
     PURCHASES_COLL: 'purchases',
     SALES_COLL: 'sales',
-    TXNS_COLL: 'txns'
+    TXNS_COLL: 'txns',
+	MISSED_TXNS_COLL: 'missedTxns'
   },
 
   auth: {
