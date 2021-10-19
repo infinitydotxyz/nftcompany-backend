@@ -77,7 +77,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=3600',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Error in checking whether token: ' + tokenAddress + ' is verified or has bonus');
     utils.error(err);
@@ -538,7 +538,7 @@ app.get('/u/:user/purchases', async (req, res) => {
         'Cache-Control': 'must-revalidate, max-age=30',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
-      res.send(resp);
+      res.send(respStr);
     })
     .catch((err) => {
       utils.error('Failed to get items bought by user ' + user);
@@ -590,7 +590,7 @@ app.get('/u/:user/sales', async (req, res) => {
         'Cache-Control': 'must-revalidate, max-age=30',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
-      res.send(resp);
+      res.send(respStr);
     })
     .catch((err) => {
       utils.error('Failed to get items sold by user ' + user);
@@ -860,7 +860,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Failed to get leaderboard');
     utils.error(err);
@@ -895,7 +895,7 @@ app.get('/titles', async (req, res) => {
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get titles', err);
@@ -933,7 +933,7 @@ app.get('/collections', async (req, res) => {
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get collection names', err);
@@ -1013,7 +1013,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Failed to get pending txns of user ' + user);
     utils.error(err);
@@ -1701,14 +1701,38 @@ async function waitForMissedTxn(user, payload) {
     try {
       const isUpdated = await db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(txnDocRef);
-        const status = txnDoc.get('status');
-        if (status === 'pending') {
+        const buyer = txnDoc.get('buyer');
+        const seller = txnDoc.get('seller');
+
+        const buyerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(buyer)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const sellerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(seller)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const buyerTxnDoc = await txn.get(buyerTxnRef);
+        const sellerTxnDoc = await txn.get(sellerTxnRef);
+
+        const buyerStatus = buyerTxnDoc.get('status');
+        const sellerStatus = sellerTxnDoc.get('status');
+        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
           // orig txn confirmed
           utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-          await txn.update(txnDocRef, { status: updatedStatus, txnData });
+          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
           return txnSuceeded;
         } else {
           return false;
@@ -1790,7 +1814,7 @@ async function waitForMissedTxn(user, payload) {
           );
 
           // commit batch
-          utils.log('Updating purchase and sale data for missed txn', txnHash, ' in firestore');
+          utils.log('Updating purchase and sale data for missed txn', txnHash, 'in firestore');
           batch
             .commit()
             .then((resp) => {
@@ -1800,7 +1824,7 @@ async function waitForMissedTxn(user, payload) {
               utils.error('Failed updating purchase and sale data for missed txn', txnHash);
               utils.error(err);
             });
-        } 
+        }
       }
     } catch (err) {
       utils.error('Error updating missed txn status in firestore');
@@ -2177,8 +2201,7 @@ function getOrdersResponse(data) {
     count: listings.length,
     listings
   };
-  const respStr = utils.jsonString(resp);
-  return respStr;
+  return utils.jsonString(resp);
 }
 
 async function fetchAssetsOfUser(req, res) {
