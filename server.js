@@ -1346,7 +1346,7 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
     const txnHash = payload.txnHash.trim(); // preserve case
 
     // check if valid nftc txn
-    const { isValid, from, buyer, seller, value, timestamp } = await getTxnData(txnHash, actionType);
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       res.sendStatus(500);
@@ -1372,14 +1372,14 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
         // we write to firestore
         utils.log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
         const batch = db.batch();
-        const valueInEth = ethers.utils.parseEther(value + '');
+        const valueInEth = +ethers.utils.formatEther('' + value);
 
         const txnPayload = {
           txnHash,
           status: 'pending',
           salePriceInEth: valueInEth,
           actionType,
-          createdAt: timestamp,
+          createdAt: Date.now(),
           buyer,
           seller
         };
@@ -1427,9 +1427,11 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
           .catch((err) => {
             utils.error('Failed to commit non-existent valid txn', txnHash, ' batch');
             utils.error(err);
+            res.sendStatus(500);
           });
       }
     }
+    res.sendStatus(200);
   } catch (err) {
     utils.error('Error saving pending txn');
     utils.error(err);
@@ -1447,10 +1449,8 @@ async function getTxnData(txnHash, actionType) {
   let buyer = '';
   let seller = '';
   let value = bn(0);
-  let timestamp = 0;
   const txn = await ethersProvider.getTransaction(txnHash);
   if (txn) {
-    timestamp = txn.timestamp;
     from = txn.from ? txn.from.trim().toLowerCase() : '';
     const to = txn.to;
     const chainId = txn.chainId;
@@ -1502,7 +1502,7 @@ async function getTxnData(txnHash, actionType) {
   } else {
     isValid = false;
   }
-  return { isValid, from, buyer, seller, value, timestamp };
+  return { isValid, from, buyer, seller, value };
 }
 
 async function isValidNftcTxn(txnHash, actionType) {
@@ -1594,7 +1594,7 @@ async function waitForTxn(user, payload) {
         const status = txnDoc.get('status');
         if (status === 'pending') {
           // orig txn confirmed
-          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
+          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
@@ -1704,7 +1704,7 @@ async function waitForMissedTxn(user, payload) {
         const status = txnDoc.get('status');
         if (status === 'pending') {
           // orig txn confirmed
-          utils.log('Txn: ' + txnHash + ' confirmed after ' + confirms + ' block(s)');
+          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
