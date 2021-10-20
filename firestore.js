@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { readFile } = require('fs').promises;
-const { writeFileSync } = require('fs');
+const { writeFileSync, appendFileSync } = require('fs');
 const { promisify } = require('util');
 const parse = promisify(require('csv-parse'));
 
@@ -11,6 +11,8 @@ firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
 });
+
+const types = require('./types');
 
 if (process.argv.length < 3) {
   console.error('Please include a path to a csv file');
@@ -170,8 +172,9 @@ async function main(csvFileName) {
       console.log('totalListings', totalListings);
       return;
     }
+    console.log('============================================================================');
     console.log('num recurses', ++numRecurses);
-    
+
     const fileContents = await readFile(csvFileName, 'utf8');
     // @ts-ignore
     const records = await parse(fileContents, { columns: false });
@@ -190,6 +193,174 @@ async function main(csvFileName) {
   }
 }
 
-main(process.argv[2]).catch((e) => console.error(e));
+let totalUsers = 0;
+let thresholdUsers = 0;
+let nonThresholdUsers = 0;
+let thresholdDiff = 0;
+// eslint-disable-next-line no-unused-vars
+async function calcUserStats(csvFileName) {
+  try {
+    const limit = 1000;
+
+    if (readComplete) {
+      console.log('totalUsers', totalUsers);
+      console.log('thresholdUsers', thresholdUsers);
+      console.log('nonThresholdUsers', nonThresholdUsers);
+      console.log('thresholdDiff', thresholdDiff);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await calcUserStatsHelper(+startAfterCreatedAt, limit);
+    await calcUserStats(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function calcUserStatsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const snapshot = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .orderBy('rewardCalculatedAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit)
+    .get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalUsers += snapshot.docs.length;
+  console.log('totalUsers so far', totalUsers);
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const payload = doc.data();
+    const openseaVol = payload.openseaVol;
+    const rewardTier = getUserRewardTier(openseaVol);
+    const threshold = rewardTier.threshold;
+
+    const userStats = { ...getEmptyUserInfo(), ...payload };
+    const profileInfo = { ...getEmptyUserInfo().profileInfo, ...payload.profileInfo };
+
+    const email = profileInfo.email.address;
+    const verified = profileInfo.email.verified;
+    const subscribed = profileInfo.email.subscribed;
+
+    const salesTotalNumeric = userStats.salesTotalNumeric;
+    const purchasesTotalNumeric = userStats.purchasesTotalNumeric;
+    const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
+
+    let diff = threshold - doneSoFar;
+    if (diff <= 0) {
+      thresholdUsers++;
+      diff = 0;
+    } else {
+      nonThresholdUsers++;
+      thresholdDiff += diff;
+      appendFileSync(
+        './nonThresholdUsers',
+        `${doc.id},${threshold},${doneSoFar},${diff},${email},${verified},${subscribed}\n`
+      );
+    }
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${payload.rewardCalculatedAt}\n`);
+    }
+  }
+  console.log('thresholdUsers so far', thresholdUsers);
+  console.log('nonThresholdUsers so far', nonThresholdUsers);
+  console.log('thresholdDiff so far', thresholdDiff);
+}
+
+// ===================================================== MAINS ==========================================================
+
+// main(process.argv[2]).catch((e) => console.error(e));
 
 // importCsv(process.argv[2]).catch((e) => console.error(e));
+
+calcUserStats(process.argv[2]).catch((e) => console.error(e));
+
+// =================================================== HELPERS ===========================================================
+
+function getUserRewardTier(userVol) {
+  const rewardTiers = types.RewardTiers;
+
+  if (userVol >= rewardTiers.t1.min && userVol < rewardTiers.t1.max) {
+    return rewardTiers.t1;
+  } else if (userVol >= rewardTiers.t2.min && userVol < rewardTiers.t2.max) {
+    return rewardTiers.t2;
+  } else if (userVol >= rewardTiers.t3.min && userVol < rewardTiers.t3.max) {
+    return rewardTiers.t3;
+  } else if (userVol >= rewardTiers.t4.min && userVol < rewardTiers.t4.max) {
+    return rewardTiers.t4;
+  } else if (userVol >= rewardTiers.t5.min && userVol < rewardTiers.t5.max) {
+    return rewardTiers.t5;
+  } else {
+    return null;
+  }
+}
+
+function getEmptyUserInfo() {
+  return {
+    numListings: '0',
+    numBonusListings: '0',
+    numOffers: '0',
+    numBonusOffers: '0',
+    numPurchases: '0',
+    numSales: '0',
+    salesTotal: '0',
+    salesFeesTotal: '0',
+    purchasesTotal: '0',
+    purchasesFeesTotal: '0',
+    salesTotalNumeric: 0,
+    salesFeesTotalNumeric: 0,
+    purchasesTotalNumeric: 0,
+    purchasesFeesTotalNumeric: 0,
+    salesAndPurchasesTotalNumeric: 0,
+    rewardsInfo: getEmptyUserRewardInfo(),
+    profileInfo: {
+      email: {
+        address: '',
+        verified: false,
+        subscribed: false
+      }
+    }
+  };
+}
+
+function getEmptyUserRewardInfo() {
+  return {
+    share: '0',
+    bonusShare: '0',
+    salesShare: '0',
+    purchasesShare: '0',
+    rewardDebt: '0',
+    bonusRewardDebt: '0',
+    saleRewardDebt: '0',
+    purchaseRewardDebt: '0',
+    pending: '0',
+    bonusPending: '0',
+    salePending: '0',
+    purchasePending: '0',
+    grossReward: '0',
+    netReward: '0',
+    grossRewardNumeric: 0,
+    netRewardNumeric: 0,
+    openseaVol: 0,
+    rewardCalculatedAt: Date.now()
+  };
+}
