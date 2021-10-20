@@ -36,17 +36,6 @@ const RewardTiers = {
   }
 };
 
-const listingsByCollCache = {
-  numPreFetchPages: 10,
-  numPages: 200,
-  pageSize: 10,
-  cacheTimeoutMs: 10 * 60 * 1000,
-  pageNum: {
-    updatedAt: 0,
-    listings: []
-  }
-};
-
 const UsPersonAnswer = {
   yes: 'YES',
   no: 'NO',
@@ -57,6 +46,5 @@ const UsPersonAnswer = {
 module.exports = {
   OrderSide,
   RewardTiers,
-  UsPersonAnswer,
-  listingsByCollCache
+  UsPersonAnswer
 };
