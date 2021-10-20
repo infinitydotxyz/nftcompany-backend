@@ -52,6 +52,7 @@ module.exports = {
     ROOT_COLL: testRoot,
     OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
+    COLLECTION_LISTINGS_COLL: 'collectionListings',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
     VERIFIED_COLLECTIONS_COLL: 'verifiedCollections',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
@@ -62,7 +63,7 @@ module.exports = {
     PURCHASES_COLL: 'purchases',
     SALES_COLL: 'sales',
     TXNS_COLL: 'txns',
-	MISSED_TXNS_COLL: 'missedTxns'
+    MISSED_TXNS_COLL: 'missedTxns'
   },
 
   auth: {

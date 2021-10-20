@@ -33,7 +33,7 @@ const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
-const listingsByCollCache = types.listingsByCollCache;
+// const listingsByCollCache = types.listingsByCollCache;
 
 // init server
 const PORT = process.env.PORT || 9090;
@@ -107,7 +107,6 @@ app.get('/listings', async (req, res) => {
   // @ts-ignore
   const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
   // @ts-ignore
-  const pageNum = +(req.query.lastItemPageNum || 0);
 
   let priceMin = +(req.query.priceMin || 0);
   let priceMax = +(req.query.priceMax || 0);
@@ -171,7 +170,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, pageNum);
+    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -204,141 +203,175 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   }
 }
 
-async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
-  let resp = getCachedData(startAfterBlueCheck, startAfterSearchCollectionName, pageNum);
-  if (resp) {
-    return utils.jsonString(resp);
-  }
-
-  // if cache expired or not present
-  utils.log('Fetching listings by collection from firestore as cache expired or does not exist for page', pageNum);
-  const listings = await getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum);
-  // set cache for this page
-  if (pageNum < listingsByCollCache.numPages) {
-    if (!listingsByCollCache[pageNum]) {
-      listingsByCollCache[pageNum] = { updatedAt: 0, listings: [] };
+async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
+  const listings = [];
+  try {
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
     }
-    listingsByCollCache[pageNum].updatedAt = Date.now();
-    listingsByCollCache[pageNum].listings = listings;
-  }
 
-  // prefetch next page async
-  const lastListing = listings[listings.length - 1];
-  preFetchNextPages(lastListing, pageNum);
+    const snapshot = await db
+      .collectionGroup(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName)
+      .limit(limit)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const listing = doc.data();
+      listing.id = doc.id;
+      listings.push(listing);
+    }
+  } catch (err) {
+    utils.error('Failed to get listings by collection from firestore');
+    utils.error(err);
+  }
 
   // return response
-  resp = {
+  const resp = {
     count: listings.length,
     listings
   };
   return utils.jsonString(resp);
 }
 
-function getCachedData(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
-  let resp;
-  if (pageNum < listingsByCollCache.numPages) {
-    // if cache exists
-    if (listingsByCollCache[pageNum]) {
-      const cacheTimeoutMs = listingsByCollCache.cacheTimeoutMs;
-      const cacheTimeRemaining = Date.now() - listingsByCollCache[pageNum].updatedAt;
-      if (cacheTimeRemaining < cacheTimeoutMs) {
-        utils.log('Fetching listings by collection from server cache for page', pageNum);
-        resp = {
-          count: listingsByCollCache[pageNum].listings.length,
-          listings: listingsByCollCache[pageNum].listings
-        };
-      }
+// async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
+//   let resp = getCachedData(startAfterBlueCheck, startAfterSearchCollectionName, pageNum);
+//   if (resp) {
+//     return utils.jsonString(resp);
+//   }
 
-      // prefetch if elapsed time is close async
-      if (Math.floor(cacheTimeoutMs / 2) < cacheTimeRemaining) {
-        utils.log('Prefetching listings by collection since cache expiry is close for page', pageNum);
-        getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum).then(
-          (preFetchedListings) => {
-            listingsByCollCache[pageNum].updatedAt = Date.now();
-            listingsByCollCache[pageNum].listings = preFetchedListings;
-          }
-        );
-      }
+//   // if cache expired or not present
+//   utils.log('Fetching listings by collection from firestore as cache expired or does not exist for page', pageNum);
+//   const listings = await getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum);
+//   // set cache for this page
+//   if (pageNum < listingsByCollCache.numPages) {
+//     if (!listingsByCollCache[pageNum]) {
+//       listingsByCollCache[pageNum] = { updatedAt: 0, listings: [] };
+//     }
+//     listingsByCollCache[pageNum].updatedAt = Date.now();
+//     listingsByCollCache[pageNum].listings = listings;
+//   }
 
-      // prefetch next page if not already exists in cache async
-      const nextPageNum = pageNum + 1;
-      if (nextPageNum < listingsByCollCache.numPages) {
-        const nextCache = listingsByCollCache[nextPageNum];
-        if (!nextCache) {
-          const listings = listingsByCollCache[pageNum].listings;
-          const lastListing = listings[listings.length - 1];
-          preFetchNextPages(lastListing, pageNum);
-        }
-      }
-    }
-  }
-  return resp;
-}
+//   // prefetch next page async
+//   const lastListing = listings[listings.length - 1];
+//   preFetchNextPages(lastListing, pageNum);
 
-async function preFetchNextPages(lastListing, pageNum) {
-  const numPages = listingsByCollCache.numPreFetchPages;
-  for (let i = 1; i <= numPages; i++) {
-    const nextPageNum = pageNum + i;
-    if (nextPageNum < listingsByCollCache.numPages) {
-      utils.log('Prefetching next page for listings by collection with pageNum', nextPageNum);
-      const nextCache = listingsByCollCache[nextPageNum];
-      if (nextCache) {
-        lastListing = nextCache.listings[nextCache.listings.length - 1];
-      } else {
-        if (lastListing && lastListing.metadata && lastListing.metadata.asset) {
-          // eslint-disable-next-line no-unneeded-ternary
-          const newStartAfterBlueCheck = lastListing.metadata.hasBlueCheck;
-          const newStartAfterSearchCollectionName = lastListing.metadata.asset.searchCollectionName;
-          const preFetchedListings = await getListingsByCollFromFirestore(
-            newStartAfterBlueCheck,
-            newStartAfterSearchCollectionName,
-            nextPageNum
-          );
-          utils.log('Updating cache with prefetched next page data for page num', nextPageNum);
-          listingsByCollCache[nextPageNum] = { updatedAt: 0, listings: [] };
-          listingsByCollCache[nextPageNum].updatedAt = Date.now();
-          listingsByCollCache[nextPageNum].listings = preFetchedListings;
-          lastListing = preFetchedListings[preFetchedListings.length - 1];
-        }
-      }
-    }
-  }
-}
+//   // return response
+//   resp = {
+//     count: listings.length,
+//     listings
+//   };
+//   return utils.jsonString(resp);
+// }
 
-async function getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
-  const listings = [];
-  const pageSize = listingsByCollCache.pageSize;
-  let startAfterBlueCheckBool = true;
-  if (startAfterBlueCheck !== undefined) {
-    startAfterBlueCheckBool = startAfterBlueCheck === 'true';
-  }
-  try {
-    for (let i = 0; i < pageSize; i++) {
-      const query = db
-        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-        .orderBy('metadata.hasBlueCheck', 'desc')
-        .orderBy('metadata.asset.searchCollectionName', 'asc')
-        .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName);
+// function getCachedData(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
+//   let resp;
+//   if (pageNum < listingsByCollCache.numPages) {
+//     // if cache exists
+//     if (listingsByCollCache[pageNum]) {
+//       const cacheTimeoutMs = listingsByCollCache.cacheTimeoutMs;
+//       const cacheTimeRemaining = Date.now() - listingsByCollCache[pageNum].updatedAt;
+//       if (cacheTimeRemaining < cacheTimeoutMs) {
+//         utils.log('Fetching listings by collection from server cache for page', pageNum);
+//         resp = {
+//           count: listingsByCollCache[pageNum].listings.length,
+//           listings: listingsByCollCache[pageNum].listings
+//         };
+//       }
 
-      const snapshot = await query.limit(1).get();
-      if (snapshot.docs.length > 0) {
-        const listing = snapshot.docs[0].data();
-        if (listing && listing.metadata && listing.metadata.asset) {
-          listing.id = snapshot.docs[0].id;
-          listing.metadata.pageNum = pageNum + 1; // next page
-          // eslint-disable-next-line no-unneeded-ternary
-          startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
-          startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName;
-          listings.push(listing);
-        }
-      }
-    }
-    return listings;
-  } catch (err) {
-    utils.error('Failed to get listings by collection from firestore');
-    utils.error(err);
-  }
-}
+//       // prefetch if elapsed time is close async
+//       if (Math.floor(cacheTimeoutMs / 2) < cacheTimeRemaining) {
+//         utils.log('Prefetching listings by collection since cache expiry is close for page', pageNum);
+//         getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum).then(
+//           (preFetchedListings) => {
+//             listingsByCollCache[pageNum].updatedAt = Date.now();
+//             listingsByCollCache[pageNum].listings = preFetchedListings;
+//           }
+//         );
+//       }
+
+//       // prefetch next page if not already exists in cache async
+//       const nextPageNum = pageNum + 1;
+//       if (nextPageNum < listingsByCollCache.numPages) {
+//         const nextCache = listingsByCollCache[nextPageNum];
+//         if (!nextCache) {
+//           const listings = listingsByCollCache[pageNum].listings;
+//           const lastListing = listings[listings.length - 1];
+//           preFetchNextPages(lastListing, pageNum);
+//         }
+//       }
+//     }
+//   }
+//   return resp;
+// }
+
+// async function preFetchNextPages(lastListing, pageNum) {
+//   const numPages = listingsByCollCache.numPreFetchPages;
+//   for (let i = 1; i <= numPages; i++) {
+//     const nextPageNum = pageNum + i;
+//     if (nextPageNum < listingsByCollCache.numPages) {
+//       utils.log('Prefetching next page for listings by collection with pageNum', nextPageNum);
+//       const nextCache = listingsByCollCache[nextPageNum];
+//       if (nextCache) {
+//         lastListing = nextCache.listings[nextCache.listings.length - 1];
+//       } else {
+//         if (lastListing && lastListing.metadata && lastListing.metadata.asset) {
+//           // eslint-disable-next-line no-unneeded-ternary
+//           const newStartAfterBlueCheck = lastListing.metadata.hasBlueCheck;
+//           const newStartAfterSearchCollectionName = lastListing.metadata.asset.searchCollectionName;
+//           const preFetchedListings = await getListingsByCollFromFirestore(
+//             newStartAfterBlueCheck,
+//             newStartAfterSearchCollectionName,
+//             nextPageNum
+//           );
+//           utils.log('Updating cache with prefetched next page data for page num', nextPageNum);
+//           listingsByCollCache[nextPageNum] = { updatedAt: 0, listings: [] };
+//           listingsByCollCache[nextPageNum].updatedAt = Date.now();
+//           listingsByCollCache[nextPageNum].listings = preFetchedListings;
+//           lastListing = preFetchedListings[preFetchedListings.length - 1];
+//         }
+//       }
+//     }
+//   }
+// }
+
+// async function getListingsByCollFromFirestore(startAfterBlueCheck, startAfterSearchCollectionName, pageNum) {
+//   const listings = [];
+//   const pageSize = listingsByCollCache.pageSize;
+//   let startAfterBlueCheckBool = true;
+//   if (startAfterBlueCheck !== undefined) {
+//     startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+//   }
+//   try {
+//     for (let i = 0; i < pageSize; i++) {
+//       const query = db
+//         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+//         .orderBy('metadata.hasBlueCheck', 'desc')
+//         .orderBy('metadata.asset.searchCollectionName', 'asc')
+//         .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName);
+
+//       const snapshot = await query.limit(1).get();
+//       if (snapshot.docs.length > 0) {
+//         const listing = snapshot.docs[0].data();
+//         if (listing && listing.metadata && listing.metadata.asset) {
+//           listing.id = snapshot.docs[0].id;
+//           listing.metadata.pageNum = pageNum + 1; // next page
+//           // eslint-disable-next-line no-unneeded-ternary
+//           startAfterBlueCheckBool = listing.metadata.hasBlueCheck ? true : false;
+//           startAfterSearchCollectionName = listing.metadata.asset.searchCollectionName;
+//           listings.push(listing);
+//         }
+//       }
+//     }
+//     return listings;
+//   } catch (err) {
+//     utils.error('Failed to get listings by collection from firestore');
+//     utils.error(err);
+//   }
+// }
 
 async function getListingsByCollectionNameAndPrice(
   collectionName,
@@ -2130,6 +2163,33 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 
   batch.set(listingRef, payload, { merge: true });
 
+  // update collection listings
+  try {
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set(
+        {
+          numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+          metadata: {
+            hasBlueCheck: payload.metadata.hasBlueCheck,
+            schema: payload.metadata.schema,
+            asset: {
+              address: tokenAddress,
+              collectionName: payload.metadata.asset.collectionName,
+              searchCollectionName: payload.metadata.asset.searchCollectionName,
+              description: payload.metadata.asset.description,
+              image: payload.metadata.asset.image,
+              imagePreview: payload.metadata.asset.imagePreview
+            }
+          }
+        },
+        { merge: true }
+      );
+  } catch (err) {
+    utils.error('Error updating root collection data on post listing');
+    utils.error(err);
+  }
+
   // update num user listings
   updateNumOrders(batch, maker, numOrders, hasBonus, 1);
 }
@@ -2422,6 +2482,16 @@ async function deleteListing(batch, docRef) {
   // delete listing
   batch.delete(doc.ref);
 
+  // update num collection listings
+  try {
+    const tokenAddress = doc.data().metadata.asset.address;
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
+  } catch (err) {
+    utils.error('Error updating root collection data on delete listing');
+    utils.error(err);
+  }
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
 }
