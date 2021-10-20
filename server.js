@@ -33,6 +33,8 @@ const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
+// const listingsByCollCache = types.listingsByCollCache;
+
 // init server
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
@@ -75,7 +77,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=3600',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Error in checking whether token: ' + tokenAddress + ' is verified or has bonus');
     utils.error(err);
@@ -104,6 +106,8 @@ app.get('/listings', async (req, res) => {
   const startAfterBlueCheck = req.query.startAfterBlueCheck;
   // @ts-ignore
   const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
+  // @ts-ignore
+
   let priceMin = +(req.query.priceMin || 0);
   let priceMax = +(req.query.priceMax || 0);
   // @ts-ignore
@@ -166,7 +170,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -197,6 +201,40 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
     utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
     utils.error(err);
   }
+}
+
+async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
+  const listings = [];
+  try {
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+    }
+
+    const snapshot = await db
+      .collectionGroup(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName)
+      .limit(limit)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const listing = doc.data();
+      listing.id = doc.id;
+      listings.push(listing);
+    }
+  } catch (err) {
+    utils.error('Failed to get listings by collection from firestore');
+    utils.error(err);
+  }
+
+  // return response
+  const resp = {
+    count: listings.length,
+    listings
+  };
+  return utils.jsonString(resp);
 }
 
 async function getListingsByCollectionNameAndPrice(
@@ -280,6 +318,7 @@ async function getListingsStartingWithText(
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit) {
   utils.log('Getting all listings');
 
@@ -396,7 +435,7 @@ app.get('/u/:user/purchases', async (req, res) => {
         'Cache-Control': 'must-revalidate, max-age=30',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
-      res.send(resp);
+      res.send(respStr);
     })
     .catch((err) => {
       utils.error('Failed to get items bought by user ' + user);
@@ -448,7 +487,7 @@ app.get('/u/:user/sales', async (req, res) => {
         'Cache-Control': 'must-revalidate, max-age=30',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
-      res.send(resp);
+      res.send(respStr);
     })
     .catch((err) => {
       utils.error('Failed to get items sold by user ' + user);
@@ -710,7 +749,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
     const resp = {
       count: saleLeaders.length + buyLeaders.length,
-      results: {saleLeaders, buyLeaders}
+      results: { saleLeaders, buyLeaders }
     };
     const respStr = utils.jsonString(resp);
     // to enable cdn cache
@@ -718,7 +757,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Failed to get leaderboard');
     utils.error(err);
@@ -753,7 +792,7 @@ app.get('/titles', async (req, res) => {
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get titles', err);
@@ -791,7 +830,7 @@ app.get('/collections', async (req, res) => {
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get collection names', err);
@@ -830,6 +869,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .limit(limit)
       .get();
 
+    const missedTxnSnapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.MISSED_TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .startAfter(startAfterMillis)
+      .limit(limit)
+      .get();
+
     const txns = [];
     for (const doc of snapshot.docs) {
       const txn = doc.data();
@@ -840,6 +890,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
         waitForTxn(user, txn);
       }
     }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      txn.id = doc.id;
+      txns.push(txn);
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
+      }
+    }
+
     const resp = {
       count: txns.length,
       listings: txns
@@ -849,13 +910,15 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Failed to get pending txns of user ' + user);
     utils.error(err);
     res.sendStatus(500);
   }
 });
+
+// =============================================== POSTS =====================================================================
 
 app.post('/verifiedTokens', async (req, res) => {
   const { startAfterName, limit } = req.body;
@@ -900,7 +963,44 @@ app.post('/verifiedTokens', async (req, res) => {
   }
 });
 
-// =============================================== POSTS =====================================================================
+app.post('/verifiedCollections', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
+  try {
+    let query = db.collection(fstrCnstnts.VERIFIED_COLLECTIONS_COLL).orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
 
 // post a listing or make offer
 app.post('/u/:user/wyvern/v1/orders', utils.postUserRateLimit, async (req, res) => {
@@ -1103,9 +1203,204 @@ app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) =>
   }
 });
 
+// check txn
+app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, res) => {
+  try {
+    const payload = req.body;
+
+    if (Object.keys(payload).length === 0) {
+      utils.error('Invalid input - payload empty');
+      res.sendStatus(500);
+      return;
+    }
+
+    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    if (!user) {
+      utils.error('Invalid input - no user');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.txnHash || !payload.txnHash.trim()) {
+      utils.error('Invalid input - no txn hash');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.actionType) {
+      utils.error('Invalid input - no action type');
+      res.sendStatus(500);
+      return;
+    }
+
+    const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
+    if (actionType !== 'fulfill' && actionType !== 'cancel') {
+      utils.error('Invalid action type', actionType);
+      res.sendStatus(500);
+      return;
+    }
+
+    const txnHash = payload.txnHash.trim(); // preserve case
+
+    // check if valid nftc txn
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      res.sendStatus(500);
+      return;
+    } else {
+      // check if doc exists
+      const docRef = db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(from)
+        .collection(fstrCnstnts.TXNS_COLL)
+        .doc(txnHash);
+
+      const doc = await docRef.get();
+      if (doc.exists) {
+        // listen for txn mined or not mined
+        waitForTxn(user, doc.data());
+        res.sendStatus(200);
+        return;
+      } else {
+        // txn is valid but it doesn't exist in firestore
+        // we write to firestore
+        utils.log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
+        const batch = db.batch();
+        const valueInEth = +ethers.utils.formatEther('' + value);
+
+        const txnPayload = {
+          txnHash,
+          status: 'pending',
+          salePriceInEth: valueInEth,
+          actionType,
+          createdAt: Date.now(),
+          buyer,
+          seller
+        };
+
+        // if cancel order
+        if (actionType === 'cancel') {
+          const cancelTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(from)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(cancelTxnRef, txnPayload, { merge: true });
+        } else if (actionType === 'fulfill') {
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(buyerTxnRef, txnPayload, { merge: true });
+
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(sellerTxnRef, txnPayload, { merge: true });
+        }
+
+        // commit batch
+        utils.log('Committing the non-existent valid txn', txnHash, ' batch to firestore');
+        batch
+          .commit()
+          .then((resp) => {
+            // no op
+          })
+          .catch((err) => {
+            utils.error('Failed to commit non-existent valid txn', txnHash, ' batch');
+            utils.error(err);
+            res.sendStatus(500);
+          });
+      }
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    utils.error('Error saving pending txn');
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
 // ====================================================== Write helpers ==========================================================
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
+
+async function getTxnData(txnHash, actionType) {
+  let isValid = true;
+  let from = '';
+  let buyer = '';
+  let seller = '';
+  let value = bn(0);
+  const txn = await ethersProvider.getTransaction(txnHash);
+  if (txn) {
+    from = txn.from ? txn.from.trim().toLowerCase() : '';
+    const to = txn.to;
+    const chainId = txn.chainId;
+    const data = txn.data;
+    value = txn.value;
+    const openseaIface = new ethers.utils.Interface(openseaAbi);
+    const decodedData = openseaIface.parseTransaction({ data, value });
+    const functionName = decodedData.name;
+    const args = decodedData.args;
+
+    // checks
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+    if (actionType === 'cancel' && functionName !== constants.WYVERN_CANCEL_ORDER_FUNCTION) {
+      isValid = false;
+    }
+
+    if (args && args.length > 0) {
+      const addresses = args[0];
+      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
+        buyer = addresses[1] ? addresses[1].trim().toLowerCase() : '';
+        seller = addresses[8] ? addresses[8].trim().toLowerCase() : '';
+        const buyFeeRecipient = addresses[3];
+        const sellFeeRecipient = addresses[10];
+        if (
+          buyFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase() &&
+          sellFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()
+        ) {
+          isValid = false;
+        }
+      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
+        const feeRecipient = addresses[3];
+        if (feeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+          isValid = false;
+        }
+      } else {
+        isValid = false;
+      }
+    } else {
+      isValid = false;
+    }
+  } else {
+    isValid = false;
+  }
+  return { isValid, from, buyer, seller, value };
+}
 
 async function isValidNftcTxn(txnHash, actionType) {
   let isValid = true;
@@ -1180,14 +1475,14 @@ async function waitForTxn(user, payload) {
   const confirms = 1;
 
   try {
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
-
     // check if valid nftc txn
     const isValid = await isValidNftcTxn(origTxnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
+
+    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
@@ -1196,7 +1491,7 @@ async function waitForTxn(user, payload) {
         const status = txnDoc.get('status');
         if (status === 'pending') {
           // orig txn confirmed
-          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
+          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
@@ -1272,6 +1567,172 @@ async function waitForTxn(user, payload) {
     });
 }
 
+async function waitForMissedTxn(user, payload) {
+  user = user.trim().toLowerCase();
+  const actionType = payload.actionType.trim().toLowerCase();
+  const txnHash = payload.txnHash.trim();
+
+  utils.log('Waiting for missed txn', txnHash);
+  const batch = db.batch();
+  const userTxnCollRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.MISSED_TXNS_COLL);
+
+  const txnDocRef = userTxnCollRef.doc(txnHash);
+  const confirms = 1;
+
+  try {
+    // check if valid nftc txn
+    const isValid = await isValidNftcTxn(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      return;
+    }
+
+    const receipt = await ethersProvider.waitForTransaction(txnHash, confirms);
+
+    // check if txn status is not already updated in firestore by another call
+    try {
+      const isUpdated = await db.runTransaction(async (txn) => {
+        const txnDoc = await txn.get(txnDocRef);
+        const buyer = txnDoc.get('buyer');
+        const seller = txnDoc.get('seller');
+
+        const buyerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(buyer)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const sellerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(seller)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const buyerTxnDoc = await txn.get(buyerTxnRef);
+        const sellerTxnDoc = await txn.get(sellerTxnRef);
+
+        const buyerStatus = buyerTxnDoc.get('status');
+        const sellerStatus = sellerTxnDoc.get('status');
+        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
+          // orig txn confirmed
+          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+          const txnData = JSON.parse(utils.jsonString(receipt));
+          const txnSuceeded = txnData.status === 1;
+          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+          return txnSuceeded;
+        } else {
+          return false;
+        }
+      });
+
+      if (isUpdated) {
+        if (actionType === 'fulfill') {
+          const numOrders = 1;
+          const buyer = payload.buyer.trim().toLowerCase();
+          const seller = payload.seller.trim().toLowerCase();
+          const valueInEth = payload.salePriceInEth;
+
+          const buyerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer);
+
+          const sellerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller);
+
+          const buyerInfoRef = await buyerRef.get();
+          let buyerInfo = getEmptyUserInfo();
+          if (buyerInfoRef.exists) {
+            buyerInfo = { ...buyerInfo, ...buyerInfoRef.data() };
+          }
+
+          const sellerInfoRef = await sellerRef.get();
+          let sellerInfo = getEmptyUserInfo();
+          if (sellerInfoRef.exists) {
+            sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
+          }
+
+          // update user txn stats
+          // @ts-ignore
+          const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const purchasesTotalNumeric = toFixed5(purchasesTotal);
+
+          // update user txn stats
+          // @ts-ignore
+          const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const salesTotalNumeric = toFixed5(salesTotal);
+
+          utils.trace(
+            'purchases total',
+            purchasesTotal,
+            'purchases total numeric',
+            purchasesTotalNumeric,
+            'sales total',
+            salesTotal,
+            'sales total numeric',
+            salesTotalNumeric
+          );
+
+          batch.set(
+            buyerRef,
+            {
+              numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              purchasesTotal,
+              purchasesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          batch.set(
+            sellerRef,
+            {
+              numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              salesTotal,
+              salesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          // commit batch
+          utils.log('Updating purchase and sale data for missed txn', txnHash, 'in firestore');
+          batch
+            .commit()
+            .then((resp) => {
+              // no op
+            })
+            .catch((err) => {
+              utils.error('Failed updating purchase and sale data for missed txn', txnHash);
+              utils.error(err);
+            });
+        }
+      }
+    } catch (err) {
+      utils.error('Error updating missed txn status in firestore');
+      utils.error(err);
+    }
+  } catch (err) {
+    utils.error('Error waiting for missed txn');
+    utils.error(err);
+  }
+}
+
 // order fulfill
 async function fulfillOrder(user, batch, payload) {
   // user is the taker of the order - either bought now or accepted offer
@@ -1308,6 +1769,25 @@ async function fulfillOrder(user, batch, payload) {
       utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
+
+    // record txn for maker
+    const txnPayload = {
+      txnHash,
+      status: 'confirmed',
+      salePriceInEth,
+      actionType: payload.actionType.trim().toLowerCase(),
+      createdAt: Date.now()
+    };
+
+    const makerTxnRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(fstrCnstnts.TXNS_COLL)
+      .doc(txnHash);
+
+    batch.set(makerTxnRef, txnPayload, { merge: true });
 
     if (side === 0) {
       // taker accepted offerReceived, maker is the buyer
@@ -1547,6 +2027,33 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 
   batch.set(listingRef, payload, { merge: true });
 
+  // update collection listings
+  try {
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set(
+        {
+          numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+          metadata: {
+            hasBlueCheck: payload.metadata.hasBlueCheck,
+            schema: payload.metadata.schema,
+            asset: {
+              address: tokenAddress,
+              collectionName: payload.metadata.asset.collectionName,
+              searchCollectionName: payload.metadata.asset.searchCollectionName,
+              description: payload.metadata.asset.description,
+              image: payload.metadata.asset.image,
+              imagePreview: payload.metadata.asset.imagePreview
+            }
+          }
+        },
+        { merge: true }
+      );
+  } catch (err) {
+    utils.error('Error updating root collection data on post listing');
+    utils.error(err);
+  }
+
   // update num user listings
   updateNumOrders(batch, maker, numOrders, hasBonus, 1);
 }
@@ -1618,8 +2125,7 @@ function getOrdersResponse(data) {
     count: listings.length,
     listings
   };
-  const respStr = utils.jsonString(resp);
-  return respStr;
+  return utils.jsonString(resp);
 }
 
 async function fetchAssetsOfUser(req, res) {
@@ -1840,6 +2346,16 @@ async function deleteListing(batch, docRef) {
   // delete listing
   batch.delete(doc.ref);
 
+  // update num collection listings
+  try {
+    const tokenAddress = doc.data().metadata.asset.address;
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
+  } catch (err) {
+    utils.error('Error updating root collection data on delete listing');
+    utils.error(err);
+  }
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
 }
