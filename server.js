@@ -2402,6 +2402,9 @@ async function getReward(user) {
 
   const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
+  // initiate refresh pending txns
+  refreshPendingTxns(user);
+
   const resp = {
     numSales: numSales.toString(),
     numPurchases: numPurchases.toString(),
@@ -2459,6 +2462,51 @@ function getUserRewardTier(userVol) {
     return rewardTiers.t5;
   } else {
     return null;
+  }
+}
+
+async function refreshPendingTxns(user) {
+  try {
+    const limit = 50;
+
+    const snapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+
+    const missedTxnSnapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.MISSED_TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const txn = doc.data();
+      // check status
+      if (txn.status === 'pending') {
+        waitForTxn(user, txn);
+      }
+    }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
+      }
+    }
+  } catch (err) {
+    utils.error('Error refreshing pending txns');
+    utils.error(err);
   }
 }
 
