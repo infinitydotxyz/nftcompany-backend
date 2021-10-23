@@ -1157,7 +1157,7 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
       const doc = await docRef.get();
       if (doc.exists) {
         // listen for txn mined or not mined
-        waitForTxn(user, doc.data());
+        waitForTxn(from, doc.data());
         res.sendStatus(200);
         return;
       } else {
