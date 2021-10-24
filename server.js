@@ -1451,7 +1451,7 @@ async function waitForTxn(user, payload) {
   }
 
   // commit batch
-  utils.log('Committing the big `wait for txn` batch to firestore');
+  utils.log('Committing the big `wait for txn`', origTxnHash, 'batch to firestore');
   batch
     .commit()
     .then((resp) => {
@@ -1576,6 +1576,10 @@ async function waitForMissedTxn(user, payload) {
           const salesTotalNumeric = toFixed5(salesTotal);
 
           utils.trace(
+            'Buyer',
+            buyer,
+            'Seller',
+            seller,
             'purchases total',
             purchasesTotal,
             'purchases total numeric',
@@ -1801,6 +1805,8 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User purchases total',
     purchasesTotal,
     'purchases fees total',
@@ -1866,6 +1872,8 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User sales total',
     salesTotal,
     'sales fees total',
