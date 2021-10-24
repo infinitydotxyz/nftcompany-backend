@@ -94,7 +94,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId } = req.query;
+  const { tokenId, listType } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -161,7 +161,8 @@ app.get('/listings', async (req, res) => {
       sortByPriceDirection,
       startAfterPrice,
       startAfterMillis,
-      limit
+      limit,
+      listType
     );
     if (resp) {
       res.set({
@@ -244,7 +245,8 @@ async function getListingsByCollectionNameAndPrice(
   sortByPriceDirection,
   startAfterPrice,
   startAfterMillis,
-  limit
+  limit,
+  listType
 ) {
   try {
     utils.log('Getting listings of a collection');
@@ -253,6 +255,15 @@ async function getListingsByCollectionNameAndPrice(
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.basePriceInEth', '>=', +priceMin)
       .where('metadata.basePriceInEth', '<=', +priceMax);
+
+    if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
+      const buyNowToken = '0x0000000000000000000000000000000000000000';
+      queryRef = queryRef.where(
+        'paymentToken',
+        '==',
+        listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
+      );
+    }
     if (collectionName) {
       queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
     }
