@@ -43,8 +43,14 @@ const UsPersonAnswer = {
   answeredAt: 0
 };
 
+const ListType = {
+  BuyNow: 'BUY_NOW', // values must be the same as UI's values.
+  Auction: 'AUCTION'
+};
+
 module.exports = {
   OrderSide,
   RewardTiers,
-  UsPersonAnswer
+  UsPersonAnswer,
+  ListType
 };
