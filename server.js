@@ -257,7 +257,7 @@ async function getListingsByCollectionNameAndPrice(
       .where('metadata.basePriceInEth', '<=', +priceMax);
 
     if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
-      const buyNowToken = '0x0000000000000000000000000000000000000000';
+      const buyNowToken = constants.NULL_ADDRESS;
       queryRef = queryRef.where(
         'paymentToken',
         '==',
