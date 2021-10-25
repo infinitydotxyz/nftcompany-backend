@@ -268,6 +268,10 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
     if (diff <= 0) {
       thresholdUsers++;
       diff = 0;
+      appendFileSync(
+        './thresholdUsers',
+        `${doc.id},${threshold},${doneSoFar},${diff},${email},${verified},${subscribed}\n`
+      );
     } else {
       nonThresholdUsers++;
       thresholdDiff += diff;

@@ -114,3 +114,8 @@ creds/
 /firebase-ty.json
 
 pnpm-lock.yaml
+
+# localfiles for stats
+lastItem
+nonThresholdUsers
+thresholdUsers
