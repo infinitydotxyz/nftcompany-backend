@@ -159,6 +159,7 @@ app.get('/listings', async (req, res) => {
       priceMin,
       priceMax,
       sortByPriceDirection,
+      startAfterBlueCheck,
       startAfterPrice,
       startAfterMillis,
       limit,
@@ -243,6 +244,7 @@ async function getListingsByCollectionNameAndPrice(
   priceMin,
   priceMax,
   sortByPriceDirection,
+  startAfterBlueCheck,
   startAfterPrice,
   startAfterMillis,
   limit,
@@ -251,7 +253,12 @@ async function getListingsByCollectionNameAndPrice(
   try {
     utils.log('Getting listings of a collection');
 
-    const runQuery = ({ hasBlueCheckValue }) => {
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+    }
+
+    const runQuery = ({ hasBlueCheckValue, startAfterPrice, startAfterMillis, limit }) => {
       let queryRef = db
         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
@@ -277,12 +284,22 @@ async function getListingsByCollectionNameAndPrice(
 
       return queryRef.get();
     };
-    let data = await runQuery({ hasBlueCheckValue: true });
-    if (data.size === 0) {
-      data = await runQuery({ hasBlueCheckValue: false });
+
+    let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });
+    let results = data.docs;
+    if (data.size < limit) {
+      const newStartAfterPrice = sortByPriceDirection === 'asc' ? 0 : DEFAULT_MAX_ETH;
+      const newLimit = limit - data.size;
+      data = await runQuery({
+        hasBlueCheckValue: false,
+        startAfterPrice: newStartAfterPrice,
+        startAfterMillis: Date.now(),
+        limit: newLimit
+      });
+      results = results.concat(data.docs);
     }
 
-    return getOrdersResponse(data);
+    return getOrdersResponseFromArray(results);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
     utils.error(err);
@@ -2033,8 +2050,12 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 // ================================================= Read helpers =================================================
 
 function getOrdersResponse(data) {
+  return getOrdersResponseFromArray(data.docs);
+}
+
+function getOrdersResponseFromArray(docs) {
   const listings = [];
-  for (const doc of data.docs) {
+  for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
     if (!isExpired) {
