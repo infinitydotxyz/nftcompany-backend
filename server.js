@@ -251,29 +251,37 @@ async function getListingsByCollectionNameAndPrice(
   try {
     utils.log('Getting listings of a collection');
 
-    let queryRef = db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('metadata.basePriceInEth', '>=', +priceMin)
-      .where('metadata.basePriceInEth', '<=', +priceMax);
+    const runQuery = ({ hasBlueCheckValue }) => {
+      let queryRef = db
+        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
+        .where('metadata.basePriceInEth', '>=', +priceMin)
+        .where('metadata.basePriceInEth', '<=', +priceMax);
 
-    if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
-      const buyNowToken = constants.NULL_ADDRESS;
-      queryRef = queryRef.where(
-        'paymentToken',
-        '==',
-        listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
-      );
-    }
-    if (collectionName) {
-      queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
-    }
-    queryRef = queryRef
-      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterPrice, startAfterMillis)
-      .limit(limit);
+      if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
+        const buyNowToken = constants.NULL_ADDRESS;
+        queryRef = queryRef.where(
+          'paymentToken',
+          '==',
+          listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
+        );
+      }
+      if (collectionName) {
+        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+      }
+      queryRef = queryRef
+        .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+        .orderBy('metadata.createdAt', 'desc')
+        .startAfter(startAfterPrice, startAfterMillis)
+        .limit(limit);
 
-    const data = await queryRef.get();
+      return queryRef.get();
+    };
+    let data = await runQuery({ hasBlueCheckValue: true });
+    if (data.size === 0) {
+      data = await runQuery({ hasBlueCheckValue: false });
+    }
+
     return getOrdersResponse(data);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
