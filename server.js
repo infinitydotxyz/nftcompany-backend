@@ -33,8 +33,6 @@ const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
-// const listingsByCollCache = types.listingsByCollCache;
-
 // init server
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
