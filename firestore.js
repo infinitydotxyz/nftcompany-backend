@@ -30,12 +30,34 @@ async function importCsv(csvFileName) {
   const records = await parse(fileContents, { columns: false });
   try {
     // await updateBlueCheck(records);
-    await writeToFirestore(records);
+    // await writeToFirestore(records);
+    // await updateVerifiedCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
   }
   console.log(`Processed ${records.length} records`);
+}
+
+// eslint-disable-next-line no-unused-vars
+function updateVerifiedCollections(records) {
+  const batchCommits = [];
+  let batch = db.batch();
+  records.forEach((record, i) => {
+    const [name, address] = record;
+    const obj = { name, address: address.trim().toLowerCase() };
+    if (name && address) {
+      const docRef = db.collection('root').doc('info').collection('verifiedTokens').doc(address.trim().toLowerCase());
+      batch.set(docRef, obj, { merge: true });
+      if ((i + 1) % 500 === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  });
+  batchCommits.push(batch.commit());
+  return Promise.all(batchCommits);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -45,7 +67,6 @@ function writeToFirestore(records) {
   records.forEach((record, i) => {
     const [name, openseaUrl, address, description, cardImage, bannerImage] = record;
     const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, cardImage, bannerImage };
-    console.log(obj);
     if (name && openseaUrl && address && description && cardImage && bannerImage) {
       const docRef = db.collection('featuredCollections').doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
@@ -268,6 +289,10 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
     if (diff <= 0) {
       thresholdUsers++;
       diff = 0;
+      appendFileSync(
+        './thresholdUsers',
+        `${doc.id},${threshold},${doneSoFar},${diff},${email},${verified},${subscribed}\n`
+      );
     } else {
       nonThresholdUsers++;
       thresholdDiff += diff;
@@ -290,9 +315,9 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-// importCsv(process.argv[2]).catch((e) => console.error(e));
+importCsv(process.argv[2]).catch((e) => console.error(e));
 
-calcUserStats(process.argv[2]).catch((e) => console.error(e));
+// calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 

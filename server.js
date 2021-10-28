@@ -33,8 +33,6 @@ const DEFAULT_MIN_ETH = 0.0000001;
 const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
-// const listingsByCollCache = types.listingsByCollCache;
-
 // init server
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
@@ -94,7 +92,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId } = req.query;
+  const { tokenId, listType } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -159,9 +157,11 @@ app.get('/listings', async (req, res) => {
       priceMin,
       priceMax,
       sortByPriceDirection,
+      startAfterBlueCheck,
       startAfterPrice,
       startAfterMillis,
-      limit
+      limit,
+      listType
     );
     if (resp) {
       res.set({
@@ -242,28 +242,62 @@ async function getListingsByCollectionNameAndPrice(
   priceMin,
   priceMax,
   sortByPriceDirection,
+  startAfterBlueCheck,
   startAfterPrice,
   startAfterMillis,
-  limit
+  limit,
+  listType
 ) {
   try {
     utils.log('Getting listings of a collection');
 
-    let queryRef = db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('metadata.basePriceInEth', '>=', +priceMin)
-      .where('metadata.basePriceInEth', '<=', +priceMax);
-    if (collectionName) {
-      queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
     }
-    queryRef = queryRef
-      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterPrice, startAfterMillis)
-      .limit(limit);
 
-    const data = await queryRef.get();
-    return getOrdersResponse(data);
+    const runQuery = ({ hasBlueCheckValue, startAfterPrice, startAfterMillis, limit }) => {
+      let queryRef = db
+        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
+        .where('metadata.basePriceInEth', '>=', +priceMin)
+        .where('metadata.basePriceInEth', '<=', +priceMax);
+
+      if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
+        const buyNowToken = constants.NULL_ADDRESS;
+        queryRef = queryRef.where(
+          'paymentToken',
+          '==',
+          listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
+        );
+      }
+      if (collectionName) {
+        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+      }
+      queryRef = queryRef
+        .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+        .orderBy('metadata.createdAt', 'desc')
+        .startAfter(startAfterPrice, startAfterMillis)
+        .limit(limit);
+
+      return queryRef.get();
+    };
+
+    let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });
+    let results = data.docs;
+    if (data.size < limit) {
+      const newStartAfterPrice = sortByPriceDirection === 'asc' ? 0 : DEFAULT_MAX_ETH;
+      const newLimit = limit - data.size;
+      data = await runQuery({
+        hasBlueCheckValue: false,
+        startAfterPrice: newStartAfterPrice,
+        startAfterMillis: Date.now(),
+        limit: newLimit
+      });
+      results = results.concat(data.docs);
+    }
+
+    return getOrdersResponseFromArray(results);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
     utils.error(err);
@@ -1451,7 +1485,7 @@ async function waitForTxn(user, payload) {
   }
 
   // commit batch
-  utils.log('Committing the big `wait for txn` batch to firestore');
+  utils.log('Committing the big `wait for txn`', origTxnHash, 'batch to firestore');
   batch
     .commit()
     .then((resp) => {
@@ -1576,6 +1610,10 @@ async function waitForMissedTxn(user, payload) {
           const salesTotalNumeric = toFixed5(salesTotal);
 
           utils.trace(
+            'Buyer',
+            buyer,
+            'Seller',
+            seller,
             'purchases total',
             purchasesTotal,
             'purchases total numeric',
@@ -1801,6 +1839,8 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User purchases total',
     purchasesTotal,
     'purchases fees total',
@@ -1866,6 +1906,8 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User sales total',
     salesTotal,
     'sales fees total',
@@ -2006,8 +2048,12 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 // ================================================= Read helpers =================================================
 
 function getOrdersResponse(data) {
+  return getOrdersResponseFromArray(data.docs);
+}
+
+function getOrdersResponseFromArray(docs) {
   const listings = [];
-  for (const doc of data.docs) {
+  for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
     if (!isExpired) {
