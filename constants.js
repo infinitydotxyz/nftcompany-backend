@@ -63,7 +63,8 @@ module.exports = {
     PURCHASES_COLL: 'purchases',
     SALES_COLL: 'sales',
     TXNS_COLL: 'txns',
-    MISSED_TXNS_COLL: 'missedTxns'
+    MISSED_TXNS_COLL: 'missedTxns',
+    FEATURED_COLL: 'featuredCollections'
   },
 
   auth: {
@@ -82,5 +83,6 @@ module.exports = {
   NFTC_FEE_ADDRESS: '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57',
   NULL_HASH: '0x0000000000000000000000000000000000000000000000000000000000000000',
   NULL_ADDRESS: '0x0000000000000000000000000000000000000000',
-  WETH_ADDRESS: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+  WETH_ADDRESS: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  FEATURED_LIMIT: 4 // number of featured collections
 };
