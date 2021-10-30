@@ -30,7 +30,7 @@ async function importCsv(csvFileName) {
   const records = await parse(fileContents, { columns: false });
   try {
     // await updateBlueCheck(records);
-    // await writeToFirestore(records);
+    // await updateFeaturedCollections(records);
     // await updateVerifiedCollections(records);
   } catch (e) {
     console.error(e);
@@ -61,7 +61,7 @@ function updateVerifiedCollections(records) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function writeToFirestore(records) {
+function updateFeaturedCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {

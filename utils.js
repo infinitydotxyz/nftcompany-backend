@@ -145,7 +145,7 @@ module.exports = {
     }
   }),
 
-  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.)
   lowRateLimit: rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // limit each user's address to 5 requests per windowMs
@@ -154,6 +154,21 @@ module.exports = {
       return req.params.user ? req.params.user.trim().toLowerCase() : '';
     }
   }),
+
+  docsToArray: function (dbDocs) {
+    if (!dbDocs) {
+      return { results: [], count: 0 };
+    }
+    const results = [];
+    for (const doc of dbDocs) {
+      const item = doc.data();
+      if (doc.id) {
+        item.id = doc.id;
+      }
+      results.push(item);
+    }
+    return { results, count: results.length };
+  },
 
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
