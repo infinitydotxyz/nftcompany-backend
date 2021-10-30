@@ -65,9 +65,9 @@ function updateFeaturedCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, openseaUrl, address, description, cardImage, bannerImage] = record;
-    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, cardImage, bannerImage };
-    if (name && openseaUrl && address && description && cardImage && bannerImage) {
+    const [name, openseaUrl, address, description, profileImage, bannerImage] = record;
+    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, profileImage, bannerImage };
+    if (name && openseaUrl && address && description && profileImage && bannerImage) {
       const docRef = db.collection('featuredCollections').doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
