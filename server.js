@@ -760,15 +760,17 @@ app.get('/collections', async (req, res) => {
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.hasBlueCheck')
+      .select('metadata.asset.address', 'metadata.asset.collectionName', 'metadata.hasBlueCheck')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
         let resp = data.docs.map((doc) => {
+          const docData = doc.data();
           return {
-            collectionName: doc.data().metadata.asset.collectionName,
-            hasBlueCheck: doc.data().metadata.hasBlueCheck
+            address: docData.metadata.asset.address,
+            collectionName: docData.metadata.asset.collectionName,
+            hasBlueCheck: docData.metadata.hasBlueCheck
           };
         });
         // remove duplicates and take only the first 10 results
