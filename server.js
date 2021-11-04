@@ -393,10 +393,7 @@ app.get('/u/:user/assets', async (req, res) => {
 app.get('/featured-collections', async (req, res) => {
   utils.log('fetch list of Featured Collections');
   try {
-    const result = await db
-      .collection(fstrCnstnts.FEATURED_COLL)
-      .limit(constants.FEATURED_LIMIT)
-      .get();
+    const result = await db.collection(fstrCnstnts.FEATURED_COLL).limit(constants.FEATURED_LIMIT).get();
 
     if (result.docs) {
       const { results: collections, count } = utils.docsToArray(result.docs);
@@ -790,6 +787,44 @@ app.get('/collections', async (req, res) => {
   } else {
     res.send(utils.jsonString([]));
   }
+});
+
+// get traits & their values of a collection
+app.get('/collections/:id/traits', async (req, res) => {
+  utils.log('Fetching traits from NFT contract address.');
+  const { id } = req.params;
+  let ret = [];
+  let traitMap = {}; // { name: { {info) }} }
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    utils.trace(url);
+    const { data } = await axios.get(url, options);
+    // console.log('data', data);
+    data.assets.forEach((item) => {
+      item.traits.forEach((trait) => {
+        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+        traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
+        if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+          traitMap[trait.trait_type].values.push(trait.value);
+        }
+      });
+    });
+
+    ret = {
+      traits: traitMap
+    };
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+
+  res.send(utils.jsonString(ret));
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
@@ -2176,9 +2211,8 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
-  const apiBase = 'https://api.opensea.io/api/v1/assets/';
   const authKey = process.env.openseaKey;
-  const url = apiBase + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API_ASSETS + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
