@@ -164,7 +164,7 @@ module.exports = {
     return endCode;
   },
 
-  // get and parse req.query fields, return a map of { fieldName: numberValue,... }
+  // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
   parseQueryFields: (res, req, fieldArr, defaultValues) => {
     const numberFields = {};
     try {

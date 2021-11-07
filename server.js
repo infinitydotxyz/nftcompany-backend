@@ -274,6 +274,18 @@ async function getListingsByCollectionNameAndPrice(
       if (collectionName) {
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }
+
+      // // TODO: filter by trait & value. NOTE: this matches exact object.
+      // // - clean up DB data & setting logic to use: 'array-contains', { trait_type, value }
+      // queryRef = queryRef.where('metadata.asset.rawData.traits', 'array-contains', {
+      //   display_type: null,
+      //   max_value: null,
+      //   order: null,
+      //   trait_count: 283,
+      //   trait_type: 'eyes',
+      //   value: 'Pink'
+      // });
+
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
         .orderBy('metadata.createdAt', 'desc')
@@ -393,10 +405,7 @@ app.get('/u/:user/assets', async (req, res) => {
 app.get('/featured-collections', async (req, res) => {
   utils.log('fetch list of Featured Collections');
   try {
-    const result = await db
-      .collection(fstrCnstnts.FEATURED_COLL)
-      .limit(constants.FEATURED_LIMIT)
-      .get();
+    const result = await db.collection(fstrCnstnts.FEATURED_COLL).limit(constants.FEATURED_LIMIT).get();
 
     if (result.docs) {
       const { results: collections, count } = utils.docsToArray(result.docs);
@@ -763,15 +772,17 @@ app.get('/collections', async (req, res) => {
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.hasBlueCheck')
+      .select('metadata.asset.address', 'metadata.asset.collectionName', 'metadata.hasBlueCheck')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
         let resp = data.docs.map((doc) => {
+          const docData = doc.data();
           return {
-            collectionName: doc.data().metadata.asset.collectionName,
-            hasBlueCheck: doc.data().metadata.hasBlueCheck
+            address: docData.metadata.asset.address,
+            collectionName: docData.metadata.asset.collectionName,
+            hasBlueCheck: docData.metadata.hasBlueCheck
           };
         });
         // remove duplicates and take only the first 10 results
@@ -790,6 +801,48 @@ app.get('/collections', async (req, res) => {
   } else {
     res.send(utils.jsonString([]));
   }
+});
+
+// get traits & their values of a collection
+app.get('/collections/:id/traits', async (req, res) => {
+  utils.log('Fetching traits from NFT contract address.');
+  const { id } = req.params;
+  let ret = [];
+  let traitMap = {}; // { name: { {info) }} }
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    utils.trace(url);
+    const { data } = await axios.get(url, options);
+    // console.log('data', data);
+    data.assets.forEach((item) => {
+      item.traits.forEach((trait) => {
+        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+        traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
+        if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+          traitMap[trait.trait_type].values.push(trait.value);
+        }
+      });
+    });
+    const traits = [];
+    Object.keys(traitMap).forEach((traitName) => {
+      traits.push(traitMap[traitName]);
+    });
+
+    ret = {
+      traits
+    };
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+
+  res.send(utils.jsonString(ret));
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
@@ -2176,9 +2229,8 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
-  const apiBase = 'https://api.opensea.io/api/v1/assets/';
   const authKey = process.env.openseaKey;
-  const url = apiBase + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API_ASSETS + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
