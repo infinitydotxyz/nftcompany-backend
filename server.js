@@ -274,6 +274,18 @@ async function getListingsByCollectionNameAndPrice(
       if (collectionName) {
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }
+
+      // // TODO: filter by trait & value. NOTE: this matches exact object.
+      // // - clean up DB data & setting logic to use: 'array-contains', { trait_type, value }
+      // queryRef = queryRef.where('metadata.asset.rawData.traits', 'array-contains', {
+      //   display_type: null,
+      //   max_value: null,
+      //   order: null,
+      //   trait_count: 283,
+      //   trait_type: 'eyes',
+      //   value: 'Pink'
+      // });
+
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
         .orderBy('metadata.createdAt', 'desc')
@@ -817,9 +829,13 @@ app.get('/collections/:id/traits', async (req, res) => {
         }
       });
     });
+    const traits = [];
+    Object.keys(traitMap).forEach((traitName) => {
+      traits.push(traitMap[traitName]);
+    });
 
     ret = {
-      traits: traitMap
+      traits
     };
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
