@@ -808,7 +808,7 @@ app.get('/collections/:id/traits', async (req, res) => {
   utils.log('Fetching traits from NFT contract address.');
   const { id } = req.params;
   let ret = [];
-  let traitMap = {}; // { name: { {info) }} }
+  const traitMap = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
   const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
   const options = {
