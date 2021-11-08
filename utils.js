@@ -109,16 +109,25 @@ module.exports = {
     return false;
   },
 
-  rateLimit: rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 40, // limit each user's address to 40 requests per windowMs
+  postUserRateLimit: rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 200, // limit each user's address to 200 requests per windowMs
     keyGenerator: function (req, res) {
       // uses user's address as key for rate limiting
       return req.params.user ? req.params.user.trim().toLowerCase() : '';
     }
   }),
 
-  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.) 
+  getUserRateLimit: rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    max: 200, // limit each user's address to 200 requests per windowMs
+    keyGenerator: function (req, res) {
+      // uses user's address as key for rate limiting
+      return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    }
+  }),
+
+  // rate limit for lower frequent calls (setEmail, subscribeEmail, etc.)
   lowRateLimit: rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 5, // limit each user's address to 5 requests per windowMs
@@ -127,6 +136,21 @@ module.exports = {
       return req.params.user ? req.params.user.trim().toLowerCase() : '';
     }
   }),
+
+  docsToArray: function (dbDocs) {
+    if (!dbDocs) {
+      return { results: [], count: 0 };
+    }
+    const results = [];
+    for (const doc of dbDocs) {
+      const item = doc.data();
+      if (doc.id) {
+        item.id = doc.id;
+      }
+      results.push(item);
+    }
+    return { results, count: results.length };
+  },
 
   getEndCode: function (searchTerm) {
     // Firebase doesn't have a clean way of doing starts with so this boilerplate code helps prep the query
@@ -137,7 +161,7 @@ module.exports = {
     return endCode;
   },
 
-  // get and parse req.query fields, return a map of { fieldName: numberValue,... }
+  // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
   parseQueryFields: (res, req, fieldArr, defaultValues) => {
     const numberFields = {};
     try {

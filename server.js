@@ -22,15 +22,6 @@ const fstrCnstnts = constants.firestore;
 const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
-const { Pool } = require('pg');
-const pool = new Pool({
-  user: process.env.PG_USER,
-  host: process.env.PG_HOST,
-  database: process.env.PG_DB_NAME,
-  password: process.env.PG_PASS,
-  port: parseInt(process.env.PG_PORT)
-});
-
 const nftDataSources = {
   0: 'nftc',
   1: 'opensea',
@@ -39,7 +30,7 @@ const nftDataSources = {
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
 const DEFAULT_MIN_ETH = 0.0000001;
-const DEFAULT_MAX_ETH = 10000; // for listings
+const DEFAULT_MAX_ETH = 1000000; // for listings
 const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 
 // init server
@@ -84,7 +75,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=3600',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Error in checking whether token: ' + tokenAddress + ' is verified or has bonus');
     utils.error(err);
@@ -101,7 +92,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId } = req.query;
+  const { tokenId, listType } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -110,8 +101,11 @@ app.get('/listings', async (req, res) => {
   const text = (req.query.text || '').trim(); // preserve case
   // @ts-ignore
   const startAfterSearchTitle = (req.query.startAfterSearchTitle || '').trim();
+  const startAfterBlueCheck = req.query.startAfterBlueCheck;
   // @ts-ignore
   const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
+  // @ts-ignore
+
   let priceMin = +(req.query.priceMin || 0);
   let priceMax = +(req.query.priceMax || 0);
   // @ts-ignore
@@ -136,12 +130,14 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else if (text) {
-    resp = await getListingsContainText(
+    resp = await getListingsStartingWithText(
       text,
       limit,
       startAfterSearchTitle,
       startAfterSearchCollectionName,
-      startAfterMillis
+      startAfterMillis,
+      startAfterPrice,
+      sortByPriceDirection
     );
     if (resp) {
       res.set({
@@ -161,9 +157,11 @@ app.get('/listings', async (req, res) => {
       priceMin,
       priceMax,
       sortByPriceDirection,
+      startAfterBlueCheck,
       startAfterPrice,
       startAfterMillis,
-      limit
+      limit,
+      listType
     );
     if (resp) {
       res.set({
@@ -172,7 +170,7 @@ app.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -205,48 +203,130 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   }
 }
 
+async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
+  const listings = [];
+  try {
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+    }
+
+    const snapshot = await db
+      .collectionGroup(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName)
+      .limit(limit)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const listing = doc.data();
+      listing.id = doc.id;
+      listings.push(listing);
+    }
+  } catch (err) {
+    utils.error('Failed to get listings by collection from firestore');
+    utils.error(err);
+  }
+
+  // return response
+  const resp = {
+    count: listings.length,
+    listings
+  };
+  return utils.jsonString(resp);
+}
+
 async function getListingsByCollectionNameAndPrice(
   collectionName,
   priceMin,
   priceMax,
   sortByPriceDirection,
+  startAfterBlueCheck,
   startAfterPrice,
   startAfterMillis,
-  limit
+  limit,
+  listType
 ) {
   try {
     utils.log('Getting listings of a collection');
 
-    let queryRef = db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .where('metadata.basePriceInEth', '>=', +priceMin)
-      .where('metadata.basePriceInEth', '<=', +priceMax);
-    if (collectionName) {
-      queryRef = queryRef.where('metadata.asset.collectionName', '==', collectionName);
+    let startAfterBlueCheckBool = true;
+    if (startAfterBlueCheck !== undefined) {
+      startAfterBlueCheckBool = startAfterBlueCheck === 'true';
     }
-    queryRef = queryRef
-      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterPrice, startAfterMillis)
-      .limit(limit);
 
-    const data = await queryRef.get();
-    return getOrdersResponse(data);
+    const runQuery = ({ hasBlueCheckValue, startAfterPrice, startAfterMillis, limit }) => {
+      let queryRef = db
+        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
+        .where('metadata.basePriceInEth', '>=', +priceMin)
+        .where('metadata.basePriceInEth', '<=', +priceMax);
+
+      if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
+        const buyNowToken = constants.NULL_ADDRESS;
+        queryRef = queryRef.where(
+          'paymentToken',
+          '==',
+          listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
+        );
+      }
+      if (collectionName) {
+        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+      }
+
+      // // TODO: filter by trait & value. NOTE: this matches exact object.
+      // // - clean up DB data & setting logic to use: 'array-contains', { trait_type, value }
+      // queryRef = queryRef.where('metadata.asset.rawData.traits', 'array-contains', {
+      //   display_type: null,
+      //   max_value: null,
+      //   order: null,
+      //   trait_count: 283,
+      //   trait_type: 'eyes',
+      //   value: 'Pink'
+      // });
+
+      queryRef = queryRef
+        .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+        .orderBy('metadata.createdAt', 'desc')
+        .startAfter(startAfterPrice, startAfterMillis)
+        .limit(limit);
+
+      return queryRef.get();
+    };
+
+    let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });
+    let results = data.docs;
+    if (data.size < limit) {
+      const newStartAfterPrice = sortByPriceDirection === 'asc' ? 0 : DEFAULT_MAX_ETH;
+      const newLimit = limit - data.size;
+      data = await runQuery({
+        hasBlueCheckValue: false,
+        startAfterPrice: newStartAfterPrice,
+        startAfterMillis: Date.now(),
+        limit: newLimit
+      });
+      results = results.concat(data.docs);
+    }
+
+    return getOrdersResponseFromArray(results);
   } catch (err) {
     utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
     utils.error(err);
   }
 }
 
-async function getListingsContainText(
+async function getListingsStartingWithText(
   text,
   limit,
   startAfterSearchTitle,
   startAfterSearchCollectionName,
-  startAfterMillis
+  startAfterMillis,
+  startAfterPrice,
+  sortByPriceDirection
 ) {
   try {
-    utils.log('Getting listings match with text:', text);
+    utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
     const startsWith = getSearchFriendlyString(text);
@@ -258,8 +338,9 @@ async function getListingsContainText(
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchTitle', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterSearchTitle, startAfterMillis)
+      .startAfter(startAfterSearchTitle, startAfterPrice, startAfterMillis)
       .limit(limit1);
     const resultByTitle = await queryRef1.get();
 
@@ -269,8 +350,9 @@ async function getListingsContainText(
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith))
       .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterSearchCollectionName, startAfterMillis)
+      .startAfter(startAfterSearchCollectionName, startAfterPrice, startAfterMillis)
       .limit(limit2);
     const resultByCollectionName = await queryRef2.get();
 
@@ -282,17 +364,25 @@ async function getListingsContainText(
   }
 }
 
-async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, limit) {
+// eslint-disable-next-line no-unused-vars
+async function getAllListings(sortByPriceDirection, startAfterPrice, startAfterMillis, startAfterBlueCheck, limit) {
   utils.log('Getting all listings');
 
   try {
-    const data = await db
+    let query = db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
-      .startAfter(startAfterPrice, startAfterMillis)
-      .limit(limit)
-      .get();
+      .orderBy('metadata.createdAt', 'desc');
+
+    if (startAfterBlueCheck === undefined) {
+      query = query.startAfter(true, startAfterPrice, startAfterMillis);
+    } else {
+      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+      query = query.startAfter(startAfterBlueCheckBool, startAfterPrice, startAfterMillis);
+    }
+
+    const data = await query.limit(limit).get();
 
     return getOrdersResponse(data);
   } catch (err) {
@@ -309,6 +399,24 @@ app.get('/p/u/:user/assets', async (req, res) => {
 // fetch assets of user
 app.get('/u/:user/assets', async (req, res) => {
   fetchAssetsOfUser(req, res);
+});
+
+// get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
+app.get('/featured-collections', async (req, res) => {
+  utils.log('fetch list of Featured Collections');
+  try {
+    const result = await db.collection(fstrCnstnts.FEATURED_COLL).limit(constants.FEATURED_LIMIT).get();
+
+    if (result.docs) {
+      const { results: collections, count } = utils.docsToArray(result.docs);
+      res.send({ collections, count });
+    } else {
+      res.sendStatus(404);
+    }
+  } catch (err) {
+    utils.error('Error fetching featured collections.');
+    utils.error(err);
+  }
 });
 
 // fetch listings of user
@@ -343,110 +451,6 @@ app.get('/u/:user/listings', async (req, res) => {
     })
     .catch((err) => {
       utils.error('Failed to get user listings for user ' + user);
-      utils.error(err);
-      res.sendStatus(500);
-    });
-});
-
-// fetch items bought by user
-app.get('/u/:user/purchases', async (req, res) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { limit, startAfterMillis, error } = utils.parseQueryFields(
-    res,
-    req,
-    ['limit', 'startAfterMillis'],
-    ['50', `${Date.now()}`]
-  );
-  if (error) {
-    return;
-  }
-  if (!user) {
-    utils.error('Empty user');
-    res.sendStatus(500);
-    return;
-  }
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.PURCHASES_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterMillis)
-    .limit(limit)
-    .get()
-    .then((data) => {
-      const purchases = [];
-      for (const doc of data.docs) {
-        const purchase = doc.data();
-        purchase.id = doc.id;
-        purchases.push(purchase);
-      }
-      const resp = {
-        count: purchases.length,
-        purchases: purchases
-      };
-      const respStr = utils.jsonString(resp);
-      // to enable cdn cache
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=30',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get items bought by user ' + user);
-      utils.error(err);
-      res.sendStatus(500);
-    });
-});
-
-// fetch items sold by user
-app.get('/u/:user/sales', async (req, res) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { limit, startAfterMillis, error } = utils.parseQueryFields(
-    res,
-    req,
-    ['limit', 'startAfterMillis'],
-    ['50', `${Date.now()}`]
-  );
-  if (error) {
-    return;
-  }
-  if (!user) {
-    utils.error('Empty user');
-    res.sendStatus(500);
-    return;
-  }
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .collection(fstrCnstnts.SALES_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterMillis)
-    .limit(limit)
-    .get()
-    .then((data) => {
-      const sales = [];
-      for (const doc of data.docs) {
-        const sale = doc.data();
-        sale.id = doc.id;
-        sales.push(sale);
-      }
-      const resp = {
-        count: sales.length,
-        sales: sales
-      };
-      const respStr = utils.jsonString(resp);
-      // to enable cdn cache
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=30',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get items sold by user ' + user);
       utils.error(err);
       res.sendStatus(500);
     });
@@ -648,7 +652,7 @@ async function getOrders(maker, tokenAddress, tokenId, side) {
 }
 
 // fetch user reward
-app.get('/u/:user/reward', async (req, res) => {
+app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     utils.error('Invalid input');
@@ -657,12 +661,6 @@ app.get('/u/:user/reward', async (req, res) => {
   }
   try {
     const resp = await getReward(user);
-    const respStr = utils.jsonString(resp);
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
-    });
     res.send(resp);
   } catch (err) {
     utils.error(err);
@@ -672,36 +670,59 @@ app.get('/u/:user/reward', async (req, res) => {
 
 // fetch rewards leaderboard
 app.get('/rewards/leaderboard', async (req, res) => {
-  db.collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .orderBy('rewardsInfo.netRewardNumeric', 'desc')
-    .limit(10)
-    .get()
-    .then((data) => {
-      const results = [];
-      for (const doc of data.docs) {
-        const result = doc.data();
-        result.id = doc.id;
-        results.push(result);
-      }
-      const resp = {
-        count: results.length,
-        results: results
+  try {
+    const sales = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .orderBy('salesTotalNumeric', 'desc')
+      .limit(10)
+      .get();
+
+    const saleLeaders = [];
+    for (const doc of sales.docs) {
+      const docData = doc.data();
+      const result = {
+        id: doc.id,
+        total: docData.salesTotalNumeric
       };
-      const respStr = utils.jsonString(resp);
-      // to enable cdn cache
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=600',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
-      });
-      res.send(resp);
-    })
-    .catch((err) => {
-      utils.error('Failed to get leaderboard');
-      utils.error(err);
-      res.sendStatus(500);
+      saleLeaders.push(result);
+    }
+
+    const buys = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .orderBy('purchasesTotalNumeric', 'desc')
+      .limit(10)
+      .get();
+
+    const buyLeaders = [];
+    for (const doc of buys.docs) {
+      const docData = doc.data();
+      const result = {
+        id: doc.id,
+        total: docData.purchasesTotalNumeric
+      };
+      buyLeaders.push(result);
+    }
+
+    const resp = {
+      count: saleLeaders.length + buyLeaders.length,
+      results: { saleLeaders, buyLeaders }
+    };
+    const respStr = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
+    res.send(respStr);
+  } catch (err) {
+    utils.error('Failed to get leaderboard');
+    utils.error(err);
+    res.sendStatus(500);
+  }
 });
 
 app.get('/titles', async (req, res) => {
@@ -731,7 +752,7 @@ app.get('/titles', async (req, res) => {
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
 
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get titles', err);
@@ -751,15 +772,17 @@ app.get('/collections', async (req, res) => {
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.hasBlueCheck')
+      .select('metadata.asset.address', 'metadata.asset.collectionName', 'metadata.hasBlueCheck')
       .limit(10)
       .get()
       .then((data) => {
         // to enable cdn cache
         let resp = data.docs.map((doc) => {
+          const docData = doc.data();
           return {
-            collectionName: doc.data().metadata.asset.collectionName,
-            hasBlueCheck: doc.data().metadata.hasBlueCheck
+            address: docData.metadata.asset.address,
+            collectionName: docData.metadata.asset.collectionName,
+            hasBlueCheck: docData.metadata.hasBlueCheck
           };
         });
         // remove duplicates and take only the first 10 results
@@ -769,7 +792,7 @@ app.get('/collections', async (req, res) => {
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
         });
-        res.send(resp);
+        res.send(respStr);
       })
       .catch((err) => {
         utils.error('Failed to get collection names', err);
@@ -778,6 +801,48 @@ app.get('/collections', async (req, res) => {
   } else {
     res.send(utils.jsonString([]));
   }
+});
+
+// get traits & their values of a collection
+app.get('/collections/:id/traits', async (req, res) => {
+  utils.log('Fetching traits from NFT contract address.');
+  const { id } = req.params;
+  let ret = [];
+  const traitMap = {}; // { name: { {info) }} }
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    utils.trace(url);
+    const { data } = await axios.get(url, options);
+    // console.log('data', data);
+    data.assets.forEach((item) => {
+      item.traits.forEach((trait) => {
+        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+        traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
+        if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+          traitMap[trait.trait_type].values.push(trait.value);
+        }
+      });
+    });
+    const traits = [];
+    Object.keys(traitMap).forEach((traitName) => {
+      traits.push(traitMap[traitName]);
+    });
+
+    ret = {
+      traits
+    };
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+
+  res.send(utils.jsonString(ret));
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
@@ -808,6 +873,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       .limit(limit)
       .get();
 
+    const missedTxnSnapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.MISSED_TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .startAfter(startAfterMillis)
+      .limit(limit)
+      .get();
+
     const txns = [];
     for (const doc of snapshot.docs) {
       const txn = doc.data();
@@ -818,6 +894,17 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
         waitForTxn(user, txn);
       }
     }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      txn.id = doc.id;
+      txns.push(txn);
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
+      }
+    }
+
     const resp = {
       count: txns.length,
       listings: txns
@@ -827,7 +914,7 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
     });
-    res.send(resp);
+    res.send(respStr);
   } catch (err) {
     utils.error('Failed to get pending txns of user ' + user);
     utils.error(err);
@@ -837,8 +924,90 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // =============================================== POSTS =====================================================================
 
+app.post('/verifiedTokens', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
+  try {
+    let query = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+      .orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+app.post('/verifiedCollections', async (req, res) => {
+  const { startAfterName, limit } = req.body;
+
+  try {
+    let query = db.collection(fstrCnstnts.VERIFIED_COLLECTIONS_COLL).orderBy('name', 'asc');
+
+    if (startAfterName) {
+      query = query.startAfter(startAfterName);
+    }
+
+    const data = await query.limit(limit).get();
+
+    const collections = [];
+    for (const doc of data.docs) {
+      const data = doc.data();
+
+      data.id = doc.id;
+      collections.push(data);
+    }
+
+    const dataObj = {
+      count: collections.length,
+      collections
+    };
+
+    const resp = utils.jsonString(dataObj);
+
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=30',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
+    });
+    res.send(resp);
+  } catch (err) {
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
 // post a listing or make offer
-app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/orders', utils.postUserRateLimit, async (req, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -929,7 +1098,7 @@ app.post('/u/:user/wyvern/v1/orders', utils.rateLimit, async (req, res) => {
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
+app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) => {
   try {
     const payload = req.body;
 
@@ -998,16 +1167,6 @@ app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
       return;
     }
 
-    // check if valid nftc txn
-    // txn would be null for recently sent txns
-    // taking optimistic approach of assuming this would be a valid txn
-    const isValid = await isValidNftcTxn(txnHash, actionType, true);
-    if (!isValid) {
-      utils.error('Invalid txn', txnHash);
-      res.status(500).send('Invalid txn: ' + txnHash);
-      return;
-    }
-
     // check if already exists
     const docRef = db
       .collection(fstrCnstnts.ROOT_COLL)
@@ -1048,11 +1207,206 @@ app.post('/u/:user/wyvern/v1/txns', utils.rateLimit, async (req, res) => {
   }
 });
 
+// check txn
+app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, res) => {
+  try {
+    const payload = req.body;
+
+    if (Object.keys(payload).length === 0) {
+      utils.error('Invalid input - payload empty');
+      res.sendStatus(500);
+      return;
+    }
+
+    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    if (!user) {
+      utils.error('Invalid input - no user');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.txnHash || !payload.txnHash.trim()) {
+      utils.error('Invalid input - no txn hash');
+      res.sendStatus(500);
+      return;
+    }
+
+    if (!payload.actionType) {
+      utils.error('Invalid input - no action type');
+      res.sendStatus(500);
+      return;
+    }
+
+    const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
+    if (actionType !== 'fulfill' && actionType !== 'cancel') {
+      utils.error('Invalid action type', actionType);
+      res.sendStatus(500);
+      return;
+    }
+
+    const txnHash = payload.txnHash.trim(); // preserve case
+
+    // check if valid nftc txn
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      res.sendStatus(500);
+      return;
+    } else {
+      // check if doc exists
+      const docRef = db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(from)
+        .collection(fstrCnstnts.TXNS_COLL)
+        .doc(txnHash);
+
+      const doc = await docRef.get();
+      if (doc.exists) {
+        // listen for txn mined or not mined
+        waitForTxn(from, doc.data());
+        res.sendStatus(200);
+        return;
+      } else {
+        // txn is valid but it doesn't exist in firestore
+        // we write to firestore
+        utils.log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
+        const batch = db.batch();
+        const valueInEth = +ethers.utils.formatEther('' + value);
+
+        const txnPayload = {
+          txnHash,
+          status: 'pending',
+          salePriceInEth: valueInEth,
+          actionType,
+          createdAt: Date.now(),
+          buyer,
+          seller
+        };
+
+        // if cancel order
+        if (actionType === 'cancel') {
+          const cancelTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(from)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(cancelTxnRef, txnPayload, { merge: true });
+        } else if (actionType === 'fulfill') {
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(buyerTxnRef, txnPayload, { merge: true });
+
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          batch.set(sellerTxnRef, txnPayload, { merge: true });
+        }
+
+        // commit batch
+        utils.log('Committing the non-existent valid txn', txnHash, ' batch to firestore');
+        batch
+          .commit()
+          .then((resp) => {
+            // no op
+          })
+          .catch((err) => {
+            utils.error('Failed to commit non-existent valid txn', txnHash, ' batch');
+            utils.error(err);
+            res.sendStatus(500);
+          });
+      }
+    }
+    res.sendStatus(200);
+  } catch (err) {
+    utils.error('Error saving pending txn');
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
 // ====================================================== Write helpers ==========================================================
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
 
-async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
+async function getTxnData(txnHash, actionType) {
+  let isValid = true;
+  let from = '';
+  let buyer = '';
+  let seller = '';
+  let value = bn(0);
+  const txn = await ethersProvider.getTransaction(txnHash);
+  if (txn) {
+    from = txn.from ? txn.from.trim().toLowerCase() : '';
+    const to = txn.to;
+    const chainId = txn.chainId;
+    const data = txn.data;
+    value = txn.value;
+    const openseaIface = new ethers.utils.Interface(openseaAbi);
+    const decodedData = openseaIface.parseTransaction({ data, value });
+    const functionName = decodedData.name;
+    const args = decodedData.args;
+
+    // checks
+    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+      isValid = false;
+    }
+    if (chainId !== constants.ETH_CHAIN_ID) {
+      isValid = false;
+    }
+    if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
+      isValid = false;
+    }
+    if (actionType === 'cancel' && functionName !== constants.WYVERN_CANCEL_ORDER_FUNCTION) {
+      isValid = false;
+    }
+
+    if (args && args.length > 0) {
+      const addresses = args[0];
+      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
+        buyer = addresses[1] ? addresses[1].trim().toLowerCase() : '';
+        seller = addresses[8] ? addresses[8].trim().toLowerCase() : '';
+        const buyFeeRecipient = addresses[3];
+        const sellFeeRecipient = addresses[10];
+        if (
+          buyFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase() &&
+          sellFeeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()
+        ) {
+          isValid = false;
+        }
+      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
+        const feeRecipient = addresses[3];
+        if (feeRecipient.toLowerCase() !== constants.NFTC_FEE_ADDRESS.toLowerCase()) {
+          isValid = false;
+        }
+      } else {
+        isValid = false;
+      }
+    } else {
+      isValid = false;
+    }
+  } else {
+    isValid = false;
+  }
+  return { isValid, from, buyer, seller, value };
+}
+
+async function isValidNftcTxn(txnHash, actionType) {
   let isValid = true;
   const txn = await ethersProvider.getTransaction(txnHash);
   if (txn) {
@@ -1102,7 +1456,7 @@ async function isValidNftcTxn(txnHash, actionType, isOptimistic) {
       isValid = false;
     }
   } else {
-    isValid = isOptimistic;
+    isValid = false;
   }
   return isValid;
 }
@@ -1125,14 +1479,14 @@ async function waitForTxn(user, payload) {
   const confirms = 1;
 
   try {
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
-
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(origTxnHash, actionType, false);
+    const isValid = await isValidNftcTxn(origTxnHash, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
+
+    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
@@ -1141,7 +1495,7 @@ async function waitForTxn(user, payload) {
         const status = txnDoc.get('status');
         if (status === 'pending') {
           // orig txn confirmed
-          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + confirms + ' block(s)');
+          utils.log('Txn: ' + origTxnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
           const txnData = JSON.parse(utils.jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
@@ -1205,7 +1559,7 @@ async function waitForTxn(user, payload) {
   }
 
   // commit batch
-  utils.log('Committing the big `wait for txn` batch to firestore');
+  utils.log('Committing the big `wait for txn`', origTxnHash, 'batch to firestore');
   batch
     .commit()
     .then((resp) => {
@@ -1215,6 +1569,176 @@ async function waitForTxn(user, payload) {
       utils.error('Failed to commit pending txn batch');
       utils.error(err);
     });
+}
+
+async function waitForMissedTxn(user, payload) {
+  user = user.trim().toLowerCase();
+  const actionType = payload.actionType.trim().toLowerCase();
+  const txnHash = payload.txnHash.trim();
+
+  utils.log('Waiting for missed txn', txnHash);
+  const batch = db.batch();
+  const userTxnCollRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .collection(fstrCnstnts.MISSED_TXNS_COLL);
+
+  const txnDocRef = userTxnCollRef.doc(txnHash);
+  const confirms = 1;
+
+  try {
+    // check if valid nftc txn
+    const isValid = await isValidNftcTxn(txnHash, actionType);
+    if (!isValid) {
+      utils.error('Invalid NFTC txn', txnHash);
+      return;
+    }
+
+    const receipt = await ethersProvider.waitForTransaction(txnHash, confirms);
+
+    // check if txn status is not already updated in firestore by another call
+    try {
+      const isUpdated = await db.runTransaction(async (txn) => {
+        const txnDoc = await txn.get(txnDocRef);
+        const buyer = txnDoc.get('buyer');
+        const seller = txnDoc.get('seller');
+
+        const buyerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(buyer)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const sellerTxnRef = db
+          .collection(fstrCnstnts.ROOT_COLL)
+          .doc(fstrCnstnts.INFO_DOC)
+          .collection(fstrCnstnts.USERS_COLL)
+          .doc(seller)
+          .collection(fstrCnstnts.MISSED_TXNS_COLL)
+          .doc(txnHash);
+
+        const buyerTxnDoc = await txn.get(buyerTxnRef);
+        const sellerTxnDoc = await txn.get(sellerTxnRef);
+
+        const buyerStatus = buyerTxnDoc.get('status');
+        const sellerStatus = sellerTxnDoc.get('status');
+        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
+          // orig txn confirmed
+          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+          const txnData = JSON.parse(utils.jsonString(receipt));
+          const txnSuceeded = txnData.status === 1;
+          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+          return txnSuceeded;
+        } else {
+          return false;
+        }
+      });
+
+      if (isUpdated) {
+        if (actionType === 'fulfill') {
+          const numOrders = 1;
+          const buyer = payload.buyer.trim().toLowerCase();
+          const seller = payload.seller.trim().toLowerCase();
+          const valueInEth = payload.salePriceInEth;
+
+          const buyerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer);
+
+          const sellerRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller);
+
+          const buyerInfoRef = await buyerRef.get();
+          let buyerInfo = getEmptyUserInfo();
+          if (buyerInfoRef.exists) {
+            buyerInfo = { ...buyerInfo, ...buyerInfoRef.data() };
+          }
+
+          const sellerInfoRef = await sellerRef.get();
+          let sellerInfo = getEmptyUserInfo();
+          if (sellerInfoRef.exists) {
+            sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
+          }
+
+          // update user txn stats
+          // @ts-ignore
+          const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const purchasesTotalNumeric = toFixed5(purchasesTotal);
+
+          // update user txn stats
+          // @ts-ignore
+          const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
+          // @ts-ignore
+          const salesTotalNumeric = toFixed5(salesTotal);
+
+          utils.trace(
+            'Buyer',
+            buyer,
+            'Seller',
+            seller,
+            'purchases total',
+            purchasesTotal,
+            'purchases total numeric',
+            purchasesTotalNumeric,
+            'sales total',
+            salesTotal,
+            'sales total numeric',
+            salesTotalNumeric
+          );
+
+          batch.set(
+            buyerRef,
+            {
+              numPurchases: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              purchasesTotal,
+              purchasesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          batch.set(
+            sellerRef,
+            {
+              numSales: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+              salesTotal,
+              salesTotalNumeric
+            },
+            { merge: true }
+          );
+
+          // commit batch
+          utils.log('Updating purchase and sale data for missed txn', txnHash, 'in firestore');
+          batch
+            .commit()
+            .then((resp) => {
+              // no op
+            })
+            .catch((err) => {
+              utils.error('Failed updating purchase and sale data for missed txn', txnHash);
+              utils.error(err);
+            });
+        }
+      }
+    } catch (err) {
+      utils.error('Error updating missed txn status in firestore');
+      utils.error(err);
+    }
+  } catch (err) {
+    utils.error('Error waiting for missed txn');
+    utils.error(err);
+  }
 }
 
 // order fulfill
@@ -1253,6 +1777,25 @@ async function fulfillOrder(user, batch, payload) {
       utils.error('Unknown order side ' + side + ' , not fulfilling it');
       return;
     }
+
+    // record txn for maker
+    const txnPayload = {
+      txnHash,
+      status: 'confirmed',
+      salePriceInEth,
+      actionType: payload.actionType.trim().toLowerCase(),
+      createdAt: Date.now()
+    };
+
+    const makerTxnRef = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(maker)
+      .collection(fstrCnstnts.TXNS_COLL)
+      .doc(txnHash);
+
+    batch.set(makerTxnRef, txnPayload, { merge: true });
 
     if (side === 0) {
       // taker accepted offerReceived, maker is the buyer
@@ -1352,16 +1895,13 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const purchaseFees = fees.div(constants.SALE_FEES_TO_PURCHASE_FEES_RATIO);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
 
-  // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdateUserRewards(
-    user,
-    false,
-    numOrders,
-    purchaseFees,
-    salePriceInEth,
-    true,
-    'purchase'
-  );
+  const userInfoRef = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .get();
+  const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
 
   // update user txn stats
   // @ts-ignore
@@ -1370,8 +1910,11 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
   const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
+  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User purchases total',
     purchasesTotal,
     'purchases fees total',
@@ -1379,7 +1922,9 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
     'purchases total numeric',
     purchasesTotalNumeric,
     'purchases fees total numeric',
-    purchasesFeesTotalNumeric
+    purchasesFeesTotalNumeric,
+    'salesAndPurchasesTotalNumeric',
+    salesAndPurchasesTotalNumeric
   );
 
   const userDocRef = db
@@ -1395,7 +1940,8 @@ async function saveBoughtOrder(user, order, batch, numOrders) {
       purchasesTotal,
       purchasesFeesTotal,
       purchasesTotalNumeric,
-      purchasesFeesTotalNumeric
+      purchasesFeesTotalNumeric,
+      salesAndPurchasesTotalNumeric
     },
     { merge: true }
   );
@@ -1415,16 +1961,14 @@ async function saveSoldOrder(user, order, batch, numOrders) {
 
   const feesInEth = bn(order.metadata.feesInEth);
   const salePriceInEth = bn(order.metadata.salePriceInEth);
-  // update rewards first; before stats
-  const userInfo = await getUserInfoAndUpdateUserRewards(
-    user,
-    false,
-    numOrders,
-    feesInEth,
-    salePriceInEth,
-    true,
-    'sale'
-  );
+
+  const userInfoRef = await db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .get();
+  const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
 
   // update user txn stats
   // @ts-ignore
@@ -1433,8 +1977,11 @@ async function saveSoldOrder(user, order, batch, numOrders) {
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
+  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
 
   utils.trace(
+    'User',
+    user,
     'User sales total',
     salesTotal,
     'sales fees total',
@@ -1442,7 +1989,9 @@ async function saveSoldOrder(user, order, batch, numOrders) {
     'sales total numeric',
     salesTotalNumeric,
     'sales fees total numeric',
-    salesFeesTotalNumeric
+    salesFeesTotalNumeric,
+    'salesAndPurchasesTotalNumeric',
+    salesAndPurchasesTotalNumeric
   );
 
   const userDocRef = db
@@ -1458,7 +2007,8 @@ async function saveSoldOrder(user, order, batch, numOrders) {
       salesTotal,
       salesFeesTotal,
       salesTotalNumeric,
-      salesFeesTotalNumeric
+      salesFeesTotalNumeric,
+      salesAndPurchasesTotalNumeric
     },
     { merge: true }
   );
@@ -1478,9 +2028,6 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
   payload.metadata.hasBlueCheck = blueCheck;
   payload.metadata.createdAt = Date.now();
 
-  // update rewards
-  getUserInfoAndUpdateUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'list');
-
   // write listing
   const listingRef = db
     .collection(fstrCnstnts.ROOT_COLL)
@@ -1491,6 +2038,33 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .doc(getDocId({ tokenAddress, tokenId, basePrice }));
 
   batch.set(listingRef, payload, { merge: true });
+
+  // update collection listings
+  try {
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set(
+        {
+          numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders),
+          metadata: {
+            hasBlueCheck: payload.metadata.hasBlueCheck,
+            schema: payload.metadata.schema,
+            asset: {
+              address: tokenAddress,
+              collectionName: payload.metadata.asset.collectionName,
+              searchCollectionName: payload.metadata.asset.searchCollectionName,
+              description: payload.metadata.asset.description,
+              image: payload.metadata.asset.image,
+              imagePreview: payload.metadata.asset.imagePreview
+            }
+          }
+        },
+        { merge: true }
+      );
+  } catch (err) {
+    utils.error('Error updating root collection data on post listing');
+    utils.error(err);
+  }
 
   // update num user listings
   updateNumOrders(batch, maker, numOrders, hasBonus, 1);
@@ -1503,9 +2077,6 @@ async function postOffer(maker, payload, batch, numOrders, hasBonus) {
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
   payload.metadata.createdAt = Date.now();
-
-  // update rewards
-  getUserInfoAndUpdateUserRewards(maker, hasBonus, numOrders, 0, 0, true, 'offer');
 
   // store data in offers of maker
   const offerRef = db
@@ -1551,8 +2122,12 @@ function updateNumOrders(batch, user, num, hasBonus, side) {
 // ================================================= Read helpers =================================================
 
 function getOrdersResponse(data) {
+  return getOrdersResponseFromArray(data.docs);
+}
+
+function getOrdersResponseFromArray(docs) {
   const listings = [];
-  for (const doc of data.docs) {
+  for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
     if (!isExpired) {
@@ -1566,8 +2141,7 @@ function getOrdersResponse(data) {
     count: listings.length,
     listings
   };
-  const respStr = utils.jsonString(resp);
-  return respStr;
+  return utils.jsonString(resp);
 }
 
 async function fetchAssetsOfUser(req, res) {
@@ -1655,9 +2229,8 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
-  const apiBase = 'https://api.opensea.io/api/v1/assets/';
   const authKey = process.env.openseaKey;
-  const url = apiBase + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API_ASSETS + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
@@ -1785,11 +2358,19 @@ async function deleteListing(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  getUserInfoAndUpdateUserRewards(user, hasBonus, numOrders, 0, 0, false, 'list');
-
   // delete listing
   batch.delete(doc.ref);
 
+  // update num collection listings
+  try {
+    const tokenAddress = doc.data().metadata.asset.address;
+    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .doc(tokenAddress)
+      .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
+  } catch (err) {
+    utils.error('Error updating root collection data on delete listing');
+    utils.error(err);
+  }
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
 }
@@ -1818,8 +2399,6 @@ async function deleteOffer(batch, docRef) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  getUserInfoAndUpdateUserRewards(user, hasBonus, numOrders, 0, 0, false, 'offer');
-
   // delete offer
   batch.delete(doc.ref);
 
@@ -1837,66 +2416,6 @@ async function hasBonusReward(address) {
     .doc(address)
     .get();
   return doc.exists;
-}
-
-async function getUserInfoAndUpdateUserRewards(
-  user,
-  hasBonus,
-  numOrders,
-  feesInEth,
-  salePriceInEth,
-  isIncrease,
-  actionType
-) {
-  utils.log('Getting UserInfo and updated reward for user', user);
-
-  const userInfoRef = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .get();
-  const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
-  userInfo.rewardsInfo = {
-    ...getEmptyUserRewardInfo(),
-    ...userInfo.rewardsInfo
-  };
-
-  updateRewards(user, hasBonus, numOrders, bn(feesInEth), bn(salePriceInEth), isIncrease, actionType);
-
-  return userInfo;
-}
-
-function getEmptyGlobalInfo() {
-  return {
-    totalListings: '0',
-    totalBonusListings: '0',
-    totalOffers: '0',
-    totalBonusOffers: '0',
-    totalSales: '0',
-    totalFees: '0',
-    totalVolume: '0',
-    rewardsInfo: {
-      totalShare: '0',
-      totalBonusShare: '0',
-      totalFeesShare: '0',
-      accRewardPerShare: '0',
-      accBonusRewardPerShare: '0',
-      accSaleRewardPerShare: '0',
-      accPurchaseRewardPerShare: '0',
-      rewardPerBlock: '0',
-      bonusRewardPerBlock: '0',
-      saleRewardPerBlock: '0',
-      purchaseRewardPerBlock: '0',
-      totalRewardPaid: '0',
-      totalBonusRewardPaid: '0',
-      totalSaleRewardPaid: '0',
-      totalPurchaseRewardPaid: '0',
-      lastRewardBlock: '0',
-      penaltyActivated: true,
-      penaltyRatio: '0.99'
-    }
-  };
 }
 
 function getEmptyUserProfileInfo() {
@@ -1925,6 +2444,7 @@ function getEmptyUserInfo() {
     salesFeesTotalNumeric: 0,
     purchasesTotalNumeric: 0,
     purchasesFeesTotalNumeric: 0,
+    salesAndPurchasesTotalNumeric: 0,
     rewardsInfo: getEmptyUserRewardInfo()
   };
 }
@@ -1947,390 +2467,40 @@ function getEmptyUserRewardInfo() {
     netReward: '0',
     grossRewardNumeric: 0,
     netRewardNumeric: 0,
+    openseaVol: 0,
     rewardCalculatedAt: Date.now()
   };
-}
-
-// updates totalRewardPaid, totalBonusRewardPaid, totalSaleRewardPaid, totalPurchaseRewardPaid and returns updated user rewards
-async function updateRewards(user, hasBonus, numOrders, feesInEth, salePriceInEth, isIncrease, actionType) {
-  try {
-    const client = await pool.connect();
-    const currentBlock = await getCurrentBlock();
-    try {
-      // run txn
-      await client.query('BEGIN');
-      const table = process.env.PG_REWARDS_TABLE;
-      const globalInfoId = 'globalInfo';
-
-      const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
-      const insertQuery = 'INSERT INTO ' + table + '(id, data) VALUES($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2';
-
-      let globalInfo = {};
-      const res = await client.query(selectQuery, [globalInfoId]);
-      if (res.rowCount === 1) {
-        globalInfo = res.rows[0].data;
-      }
-      globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
-      globalInfo.rewardsInfo = {
-        ...getEmptyGlobalInfo().rewardsInfo,
-        ...globalInfo.rewardsInfo
-      };
-
-      let userInfo = {};
-      const result = await client.query(selectQuery, [user]);
-      if (result.rowCount === 1) {
-        userInfo = result.rows[0].data;
-      }
-      userInfo = { ...getEmptyUserInfo(), ...userInfo };
-      userInfo.rewardsInfo = {
-        ...getEmptyUserInfo().rewardsInfo,
-        ...userInfo.rewardsInfo
-      };
-
-      // updating rewards
-      utils.log(
-        'Updating rewards in increasing mode',
-        isIncrease,
-        'with hasBonus',
-        hasBonus,
-        'numOrders',
-        numOrders,
-        'fees',
-        feesInEth,
-        'salePrice',
-        salePriceInEth,
-        'actionType',
-        actionType
-      );
-
-      let userShare = bn(userInfo.rewardsInfo.share);
-      let userBonusShare = bn(userInfo.rewardsInfo.bonusShare);
-      let salesShare = bn(userInfo.rewardsInfo.salesShare);
-      let purchasesShare = bn(userInfo.rewardsInfo.purchasesShare);
-
-      const rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
-      const bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
-      const saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
-      const purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
-
-      let pending = bn(0);
-      let bonusPending = bn(0);
-      let salePending = bn(0);
-      let purchasePending = bn(0);
-
-      const isOrder = actionType === 'offer' || actionType === 'list';
-      const isSale = actionType === 'sale';
-      const isPurchase = actionType === 'purchase';
-
-      const totalShare = bn(globalInfo.rewardsInfo.totalShare);
-      const totalBonusShare = bn(globalInfo.rewardsInfo.totalBonusShare);
-      const totalFeesShare = bn(globalInfo.rewardsInfo.totalFeesShare);
-
-      const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
-      const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
-      const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
-      const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
-
-      let accRewardPerShare = bn(globalInfo.rewardsInfo.accRewardPerShare);
-      let accBonusRewardPerShare = bn(globalInfo.rewardsInfo.accBonusRewardPerShare);
-      let accSaleRewardPerShare = bn(globalInfo.rewardsInfo.accSaleRewardPerShare);
-      let accPurchaseRewardPerShare = bn(globalInfo.rewardsInfo.accPurchaseRewardPerShare);
-
-      let updatedGlobalRewards = {};
-      let updatedGlobalInfo = {};
-
-      // update acc reward per shares only once per block
-      const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
-      if (currentBlock.lte(lastRewardBlock)) {
-        utils.log(
-          'Not updating acc reward per shares since current block:',
-          currentBlock.toString(),
-          '<= lastRewardBlock:',
-          lastRewardBlock.toString()
-        );
-      } else {
-        updatedGlobalRewards.lastRewardBlock = currentBlock.toString();
-
-        const multiplier = currentBlock.minus(lastRewardBlock);
-        utils.trace('Reward multiplier:', multiplier);
-        if (totalShare.gt(0)) {
-          const reward = multiplier.times(rewardPerBlock);
-          accRewardPerShare = accRewardPerShare.plus(reward.div(totalShare));
-          updatedGlobalRewards.accRewardPerShare = accRewardPerShare.toString();
-
-          utils.trace('Total share:', totalShare.toString());
-          utils.trace('Updated accRewardPerShare to:', accRewardPerShare.toString());
-        }
-        if (totalBonusShare.gt(0)) {
-          const bonusReward = multiplier.times(bonusRewardPerBlock);
-          accBonusRewardPerShare = accBonusRewardPerShare.plus(bonusReward.div(totalBonusShare));
-          updatedGlobalRewards.accBonusRewardPerShare = accBonusRewardPerShare.toString();
-
-          utils.trace('Total bonus share:', totalBonusShare.toString());
-          utils.trace('Updated accBonusRewardPerShare to:', accBonusRewardPerShare.toString());
-        }
-        if (totalFeesShare.gt(0)) {
-          const saleReward = multiplier.times(saleRewardPerBlock);
-          accSaleRewardPerShare = accSaleRewardPerShare.plus(saleReward.div(totalFeesShare));
-          updatedGlobalRewards.accSaleRewardPerShare = accSaleRewardPerShare.toString();
-
-          const purchaseReward = multiplier.times(purchaseRewardPerBlock);
-          accPurchaseRewardPerShare = accPurchaseRewardPerShare.plus(purchaseReward.div(totalFeesShare));
-          updatedGlobalRewards.accPurchaseRewardPerShare = accPurchaseRewardPerShare.toString();
-
-          utils.trace('Total fees share:', totalFeesShare.toString());
-          utils.trace('Updated accSaleRewardPerShare to:', accSaleRewardPerShare.toString());
-          utils.trace('Updated accPurchaseRewardPerShare to:', accPurchaseRewardPerShare.toString());
-        }
-      }
-
-      utils.log('Updating user pending and reward debts');
-      let userRewardsInfo = {};
-      if (!isIncrease) {
-        // update for making an order
-        if (isOrder && userShare.gte(numOrders)) {
-          pending = userShare.times(accRewardPerShare).minus(rewardDebt);
-          // decrease before reward debt calc
-          userShare = userShare.minus(numOrders);
-        }
-        // update for making a sale
-        if (isSale && salesShare.gte(feesInEth)) {
-          salePending = salesShare.times(accSaleRewardPerShare).minus(saleRewardDebt);
-          // decrease before reward debt calc
-          salesShare = salesShare.minus(feesInEth);
-        }
-        // update for making a purchase
-        if (isPurchase && purchasesShare.gte(feesInEth)) {
-          purchasePending = purchasesShare.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
-          // decrease before reward debt calc
-          purchasesShare = purchasesShare.minus(feesInEth);
-        }
-      } else {
-        if (isOrder && userShare.gt(0)) {
-          pending = userShare.times(accRewardPerShare).minus(rewardDebt);
-        }
-        if (isSale && salesShare.gt(0)) {
-          salePending = salesShare.times(accSaleRewardPerShare).minus(saleRewardDebt);
-        }
-        if (isPurchase && purchasesShare.gt(0)) {
-          purchasePending = purchasesShare.times(accPurchaseRewardPerShare).minus(purchaseRewardDebt);
-        }
-        // increase before reward debt calc
-        if (isOrder) {
-          userShare = userShare.plus(numOrders);
-        }
-        if (isSale) {
-          salesShare = salesShare.plus(feesInEth);
-        }
-        if (isPurchase) {
-          purchasesShare = purchasesShare.plus(feesInEth);
-        }
-      }
-
-      if (isOrder) {
-        userRewardsInfo.share = userShare.toString();
-        userRewardsInfo.rewardDebt = userShare.times(accRewardPerShare).toString();
-        userRewardsInfo.pending = pending.plus(userInfo.rewardsInfo.pending).toString();
-      }
-      if (isSale) {
-        userRewardsInfo.salesShare = salesShare.toString();
-        userRewardsInfo.saleRewardDebt = salesShare.times(accSaleRewardPerShare).toString();
-        userRewardsInfo.salePending = salePending.plus(userInfo.rewardsInfo.salePending).toString();
-      }
-      if (isPurchase) {
-        userRewardsInfo.purchasesShare = purchasesShare.toString();
-        userRewardsInfo.purchaseRewardDebt = purchasesShare.times(accPurchaseRewardPerShare).toString();
-        userRewardsInfo.purchasePending = purchasePending.plus(userInfo.rewardsInfo.purchasePending).toString();
-      }
-
-      if (isOrder && hasBonus) {
-        if (!isIncrease) {
-          if (userBonusShare.gte(numOrders)) {
-            bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
-            // decrease userShare before rewardDebt calc
-            userBonusShare = userBonusShare.minus(numOrders);
-          }
-        } else {
-          if (userBonusShare.gt(0)) {
-            bonusPending = userBonusShare.times(accBonusRewardPerShare).minus(bonusRewardDebt);
-          }
-          // add current value before reward debt calc
-          userBonusShare = userBonusShare.plus(numOrders);
-        }
-        userRewardsInfo.userBonusShare = userBonusShare.toString();
-        userRewardsInfo.bonusRewardDebt = userBonusShare.times(accBonusRewardPerShare).toString();
-        userRewardsInfo.bonusPending = bonusPending.plus(userInfo.rewardsInfo.bonusPending).toString();
-      }
-
-      // store updated user rewards
-      utils.trace('Updated user rewards: ' + utils.jsonString(userRewardsInfo));
-      if (userRewardsInfo) {
-        utils.log('Storing updated user rewards');
-        userRewardsInfo = { ...userInfo.rewardsInfo, ...userRewardsInfo };
-        const updateData = {
-          rewardsInfo: userRewardsInfo,
-          updatedAt: Date.now()
-        };
-        utils.trace('Storing updated user rewards:', utils.jsonString(updateData));
-        await client.query(insertQuery, [user, updateData]);
-      } else {
-        utils.log('Not updated user rewards as there are no updates');
-      }
-
-      // update global rewards info
-      utils.log('Updating global rewards');
-      const delta = isIncrease ? numOrders : -1 * numOrders;
-
-      if (isOrder) {
-        updatedGlobalRewards.totalShare = totalShare.plus(delta).toString();
-      }
-      if (isOrder && hasBonus) {
-        updatedGlobalRewards.totalBonusShare = totalBonusShare.plus(delta).toString();
-      }
-      if (actionType === 'purchase' || actionType === 'sale') {
-        updatedGlobalRewards.totalFeesShare = totalFeesShare.plus(feesInEth).toString();
-      }
-      updatedGlobalRewards.totalRewardPaid = pending.plus(globalInfo.rewardsInfo.totalRewardPaid).toString();
-      updatedGlobalRewards.totalBonusRewardPaid = bonusPending
-        .plus(globalInfo.rewardsInfo.totalBonusRewardPaid)
-        .toString();
-      updatedGlobalRewards.totalSaleRewardPaid = salePending
-        .plus(globalInfo.rewardsInfo.totalSaleRewardPaid)
-        .toString();
-      updatedGlobalRewards.totalPurchaseRewardPaid = purchasePending
-        .plus(globalInfo.rewardsInfo.totalPurchaseRewardPaid)
-        .toString();
-
-      utils.log('Updating global stats');
-      if (actionType === 'offer') {
-        updatedGlobalInfo.totalOffers = bn(globalInfo.totalOffers).plus(delta).toString();
-        if (hasBonus) {
-          updatedGlobalInfo.totalBonusOffers = bn(globalInfo.totalBonusOffers).plus(delta).toString();
-        }
-      }
-      if (actionType === 'list') {
-        updatedGlobalInfo.totalListings = bn(globalInfo.totalListings).plus(delta).toString();
-        if (hasBonus) {
-          updatedGlobalInfo.totalBonusListings = bn(globalInfo.totalBonusListings).plus(delta).toString();
-        }
-      }
-      if (actionType === 'purchase' || actionType === 'sale') {
-        updatedGlobalInfo.totalFees = bn(globalInfo.totalFees).plus(feesInEth).toString();
-        updatedGlobalInfo.totalVolume = bn(globalInfo.totalVolume).plus(salePriceInEth).toString();
-        updatedGlobalInfo.totalSales = bn(globalInfo.totalSales).plus(numOrders).toString();
-      }
-
-      updatedGlobalRewards = { ...globalInfo.rewardsInfo, ...updatedGlobalRewards };
-      updatedGlobalInfo = { ...globalInfo, ...updatedGlobalInfo };
-      const updateData = {
-        ...updatedGlobalInfo,
-        rewardsInfo: updatedGlobalRewards,
-        updatedAt: Date.now()
-      };
-      utils.trace('Storing global info:', utils.jsonString(updateData));
-      await client.query(insertQuery, [globalInfoId, updateData]);
-
-      // commit txn
-      await client.query('COMMIT');
-    } catch (err) {
-      utils.error('Failed updating global rewards info in pg');
-      utils.error(err);
-      await client.query('ROLLBACK');
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    utils.error('Failed updating user and global rewards info in pg');
-    utils.error(err);
-  }
-}
-
-async function getCurrentBlock() {
-  const provider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
-  const currentBlock = await provider.getBlockNumber();
-  utils.log('Current eth block: ' + currentBlock);
-  return bn(currentBlock);
 }
 
 async function getReward(user) {
   utils.log('Getting reward for user', user);
 
-  let globalInfo = {};
-  let userInfo = {};
-
-  const client = await pool.connect();
-  try {
-    const table = process.env.PG_REWARDS_TABLE;
-    const globalInfoId = 'globalInfo';
-    const selectQuery = 'SELECT data FROM ' + table + ' WHERE id = $1';
-    const res = await client.query(selectQuery, [globalInfoId]);
-    if (res.rowCount === 1) {
-      globalInfo = res.rows[0].data;
-    }
-
-    const result = await client.query(selectQuery, [user]);
-    if (result.rowCount === 1) {
-      userInfo = result.rows[0].data;
-    }
-  } catch (err) {
-    utils.error('Error getting reward for user', user);
-    utils.error(err);
-    return;
-  } finally {
-    client.release();
-  }
-
-  globalInfo = { ...getEmptyGlobalInfo(), ...globalInfo };
-  globalInfo.rewardsInfo = {
-    ...getEmptyGlobalInfo().rewardsInfo,
-    ...globalInfo.rewardsInfo
-  };
-
-  userInfo = { ...getEmptyUserInfo(), ...userInfo };
-  userInfo.rewardsInfo = {
-    ...getEmptyUserInfo().rewardsInfo,
-    ...userInfo.rewardsInfo
-  };
-
-  const userStatsRef = await db
+  const userRef = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
     .get();
 
-  let userStats = userStatsRef.data();
+  const userOpenseaRef = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(user).get();
+
+  let openseaVol = 0;
+  let rewardTier = {};
+  let hasAirdrop = false;
+  if (userOpenseaRef.exists) {
+    openseaVol = userOpenseaRef.get('totalVolUSD');
+    rewardTier = getUserRewardTier(openseaVol);
+    hasAirdrop = true;
+  }
+
+  let userStats = userRef.data();
   userStats = { ...getEmptyUserInfo(), ...userStats };
 
-  const currentBlock = await getCurrentBlock();
-
-  const totalOrders = bn(globalInfo.totalListings).plus(globalInfo.totalOffers);
-  const totalBonusOrders = bn(globalInfo.totalBonusListings).plus(globalInfo.totalBonusOffers);
-  const totalListings = bn(globalInfo.totalListings);
-  const totalBonusListings = bn(globalInfo.totalBonusListings);
-  const totalOffers = bn(globalInfo.totalOffers);
-  const totalBonusOffers = bn(globalInfo.totalBonusOffers);
-  const totalFees = bn(globalInfo.totalFees);
-  const totalVolume = bn(globalInfo.totalVolume);
-  const totalSales = bn(globalInfo.totalSales);
-
-  const totalRewardPaid = bn(globalInfo.rewardsInfo.totalRewardPaid)
-    .plus(globalInfo.rewardsInfo.totalBonusRewardPaid)
-    .plus(globalInfo.rewardsInfo.totalSaleRewardPaid)
-    .plus(globalInfo.rewardsInfo.totalPurchaseRewardPaid);
-
-  const penaltyActivated = globalInfo.rewardsInfo.penaltyActivated;
-  const penaltyRatio = bn(globalInfo.rewardsInfo.penaltyRatio);
-  const rewardPerBlock = bn(globalInfo.rewardsInfo.rewardPerBlock);
-  const bonusRewardPerBlock = bn(globalInfo.rewardsInfo.bonusRewardPerBlock);
-  const saleRewardPerBlock = bn(globalInfo.rewardsInfo.saleRewardPerBlock);
-  const purchaseRewardPerBlock = bn(globalInfo.rewardsInfo.purchaseRewardPerBlock);
-
-  const lastRewardBlock = bn(globalInfo.rewardsInfo.lastRewardBlock);
-  let _accRewardPerShare = bn(globalInfo.rewardsInfo.accRewardPerShare);
-  let _accBonusRewardPerShare = bn(globalInfo.rewardsInfo.accBonusRewardPerShare);
-  let _accSaleRewardPerShare = bn(globalInfo.rewardsInfo.accSaleRewardPerShare);
-  let _accPurchaseRewardPerShare = bn(globalInfo.rewardsInfo.accPurchaseRewardPerShare);
+  let usPerson = types.UsPersonAnswer.none;
+  const userProfile = userStats.profileInfo;
+  if (userProfile && userProfile.usResidentStatus) {
+    usPerson = userProfile.usResidentStatus.usPerson;
+  }
 
   const numListings = bn(userStats.numListings);
   const numBonusListings = bn(userStats.numBonusListings);
@@ -2349,74 +2519,12 @@ async function getReward(user) {
   const purchasesTotalNumeric = userStats.purchasesTotalNumeric;
   const purchasesFeesTotalNumeric = userStats.purchasesFeesTotalNumeric;
 
-  const share = bn(userInfo.rewardsInfo.share);
-  const bonusShare = bn(userInfo.rewardsInfo.bonusShare);
-  const salesShare = bn(userInfo.rewardsInfo.salesShare);
-  const purchasesShare = bn(userInfo.rewardsInfo.purchasesShare);
+  const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
-  const rewardDebt = bn(userInfo.rewardsInfo.rewardDebt);
-  const bonusRewardDebt = bn(userInfo.rewardsInfo.bonusRewardDebt);
-  const saleRewardDebt = bn(userInfo.rewardsInfo.saleRewardDebt);
-  const purchaseRewardDebt = bn(userInfo.rewardsInfo.purchaseRewardDebt);
-
-  const pending = bn(userInfo.rewardsInfo.pending);
-  const bonusPending = bn(userInfo.rewardsInfo.bonusPending);
-  const salePending = bn(userInfo.rewardsInfo.salePending);
-  const purchasePending = bn(userInfo.rewardsInfo.purchasePending);
-
-  const multiplier = currentBlock.minus(lastRewardBlock);
-  if (currentBlock.gt(lastRewardBlock) && !totalOrders.eq(0)) {
-    const reward = multiplier.times(rewardPerBlock);
-    _accRewardPerShare = _accRewardPerShare.plus(reward.div(totalOrders));
-  }
-  if (currentBlock.gt(lastRewardBlock) && !totalBonusOrders.eq(0)) {
-    const bonusReward = multiplier.times(bonusRewardPerBlock);
-    _accBonusRewardPerShare = _accBonusRewardPerShare.plus(bonusReward.div(totalBonusOrders));
-  }
-  if (currentBlock.gt(lastRewardBlock) && !totalFees.eq(0)) {
-    const saleReward = multiplier.times(saleRewardPerBlock);
-    const purchaseReward = multiplier.times(purchaseRewardPerBlock);
-    _accSaleRewardPerShare = _accSaleRewardPerShare.plus(saleReward.div(totalFees));
-    _accPurchaseRewardPerShare = _accPurchaseRewardPerShare.plus(purchaseReward.div(totalFees));
-  }
-
-  const reward = share.times(_accRewardPerShare).minus(rewardDebt).abs();
-  const bonusReward = bonusShare.times(_accBonusRewardPerShare).minus(bonusRewardDebt).abs();
-  const saleReward = salesShare.times(_accSaleRewardPerShare).minus(saleRewardDebt).abs();
-  const purchaseReward = purchasesShare.times(_accPurchaseRewardPerShare).minus(purchaseRewardDebt).abs();
-
-  const grossReward = reward
-    .plus(bonusReward)
-    .plus(saleReward)
-    .plus(purchaseReward)
-    .plus(pending)
-    .plus(bonusPending)
-    .plus(salePending)
-    .plus(purchasePending);
-
-  const grossRewardNumeric = toFixed5(grossReward);
+  // initiate refresh pending txns
+  refreshPendingTxns(user);
 
   const resp = {
-    currentBlock: currentBlock.toString(),
-    totalListings: totalListings.toString(),
-    totalBonusListings: totalBonusListings.toString(),
-    totalOffers: totalOffers.toString(),
-    totalBonusOffers: totalBonusOffers.toString(),
-    totalFees: totalFees.toString(),
-    totalVolume: totalVolume.toString(),
-    totalSales: totalSales.toString(),
-    reward: reward.toString(),
-    bonusReward: bonusReward.toString(),
-    saleReward: saleReward.toString(),
-    purchaseReward: purchaseReward.toString(),
-    grossReward: grossReward.toString(),
-    grossRewardNumeric,
-    penaltyActivated,
-    penaltyRatio: penaltyRatio.toString(),
-    rewardPerBlock: rewardPerBlock.toString(),
-    bonusRewardPerBlock: bonusRewardPerBlock.toString(),
-    saleRewardPerBlock: saleRewardPerBlock.toString(),
-    purchaseRewardPerBlock: purchaseRewardPerBlock.toString(),
     numSales: numSales.toString(),
     numPurchases: numPurchases.toString(),
     salesTotal: salesTotal.toString(),
@@ -2431,54 +2539,94 @@ async function getReward(user) {
     numBonusListings: numBonusListings.toString(),
     numOffers: numOffers.toString(),
     numBonusOffers: numBonusOffers.toString(),
-    totalRewardPaid
+    hasAirdrop,
+    openseaVol,
+    rewardTier,
+    doneSoFar,
+    usPerson
   };
 
-  let netReward = grossReward;
-  let penalty = bn(0);
-  if (penaltyActivated && !netReward.eq(0)) {
-    let numTotalOrders = numListings.plus(numBonusListings).plus(numOffers).plus(numBonusOffers);
-    const numTotalFulfills = numSales.plus(numPurchases);
-    // special case where user only made purchases without placing any orders;
-    // also handles the case where numTotalFulfills = 0 to avoid div by 0
-    // this code should never be executed after the netReward > 0 check above
-    // also takes care of ratio > 1 case
-    // but im paranoid
-    numTotalOrders = numTotalOrders.eq(0) ? (numTotalFulfills.eq(0) ? 1 : numTotalFulfills) : numTotalOrders;
-    const salesRatio = numTotalFulfills.div(numTotalOrders);
-    penalty = penaltyRatio.minus(salesRatio).times(netReward);
-    // the edge case where all orders are fulfilled
-    if (penalty.lt(0)) {
-      penalty = bn(0);
-    }
-    netReward = netReward.minus(penalty);
-  }
-  resp.penalty = penalty.toString();
-  resp.netReward = netReward.toString();
-  resp.netRewardNumeric = toFixed5(netReward);
-
   // write net reward to firestore async for leaderboard purpose
-  // will fail if user doesn't exist
   db.collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user)
-    .update({
-      'rewardsInfo.netReward': netReward.toString(),
-      'rewardsInfo.netRewardNumeric': toFixed5(netReward),
-      'rewardsInfo.grossReward': grossReward.toString(),
-      'rewardsInfo.grossRewardNumeric': grossRewardNumeric,
-      'rewardsInfo.rewardCalculatedAt': Date.now()
-    })
-    .then(() => {
-      // nothing to do
-    })
+    .set(
+      {
+        openseaVol: openseaVol,
+        rewardCalculatedAt: Date.now()
+      },
+      { merge: true }
+    )
     .catch((err) => {
-      utils.error('Error updating net reward for user ' + user);
+      utils.error('Error updating reward info for user ' + user);
       utils.error(err);
     });
 
   return resp;
+}
+
+function getUserRewardTier(userVol) {
+  const rewardTiers = types.RewardTiers;
+
+  if (userVol >= rewardTiers.t1.min && userVol < rewardTiers.t1.max) {
+    return rewardTiers.t1;
+  } else if (userVol >= rewardTiers.t2.min && userVol < rewardTiers.t2.max) {
+    return rewardTiers.t2;
+  } else if (userVol >= rewardTiers.t3.min && userVol < rewardTiers.t3.max) {
+    return rewardTiers.t3;
+  } else if (userVol >= rewardTiers.t4.min && userVol < rewardTiers.t4.max) {
+    return rewardTiers.t4;
+  } else if (userVol >= rewardTiers.t5.min && userVol < rewardTiers.t5.max) {
+    return rewardTiers.t5;
+  } else {
+    return null;
+  }
+}
+
+async function refreshPendingTxns(user) {
+  try {
+    const limit = 50;
+
+    const snapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+
+    const missedTxnSnapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.USERS_COLL)
+      .doc(user)
+      .collection(fstrCnstnts.MISSED_TXNS_COLL)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+
+    for (const doc of snapshot.docs) {
+      const txn = doc.data();
+      // check status
+      if (txn.status === 'pending') {
+        waitForTxn(user, txn);
+      }
+    }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
+      }
+    }
+  } catch (err) {
+    utils.error('Error refreshing pending txns');
+    utils.error(err);
+  }
 }
 
 // ==================================================== Email ==============================================================
@@ -2733,14 +2881,57 @@ function sendEmail(to, subject, html) {
   });
 }
 
+// =========================================================== Profile ==================================================
+
+app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
+  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const { usPerson } = req.body;
+
+  let usPersonValue = '';
+  if (usPerson) {
+    usPersonValue = types.UsPersonAnswer[usPerson];
+  }
+
+  if (!user || !usPersonValue) {
+    utils.error('Invalid input');
+    res.sendStatus(500);
+    return;
+  }
+
+  db.collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.USERS_COLL)
+    .doc(user)
+    .set(
+      {
+        profileInfo: {
+          usResidentStatus: {
+            usPerson: usPersonValue,
+            answeredAt: Date.now()
+          }
+        }
+      },
+      { merge: true }
+    )
+    .then(() => {
+      res.send({ usPerson: usPersonValue });
+    })
+    .catch((err) => {
+      utils.error('Setting US person status failed');
+      utils.error(err);
+      res.sendStatus(500);
+    });
+});
+
 // ============================================================ Misc ======================================================
 
 async function isTokenVerified(address) {
+  const tokenAddress = address.trim().toLowerCase();
   const doc = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .doc(address)
+    .doc(tokenAddress)
     .get();
   return doc.exists;
 }
@@ -2754,7 +2945,7 @@ function toFixed5(num) {
   // @ts-ignore
   // eslint-disable-next-line no-undef
   // console.log(__line);
-  return bn(num).toFixed(5);
+  return +bn(num).toFixed(5);
   // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 

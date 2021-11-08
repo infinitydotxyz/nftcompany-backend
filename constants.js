@@ -3,29 +3,6 @@
 Data structure in firestore
 	- rootColl
 		- infoDoc
-			- totalListings: string
-			- totalBonusListings: string
-			- totalOffers: string
-			- totalBonusOffers: string
-			- totalSales: string
-			- totalFees: string
-			- totalVolume: string
-			- rewardsInfo
-				- accRewardPerShare: string
-				- accBonusRewardPerShare: string
-                - accSaleRewardPerShare: string
-				- accPurchaseRewardPerShare: string
-				- totalRewardPaid: string
-				- totalBonusRewardPaid: string
-                - totalSaleRewardPaid: string
-				- totalPurchaseRewardPaid: string
-				- lastRewardBlock: string
-				- rewardPerBlock: string
-				- bonusRewardPerBlock: string
-                - saleRewardPerBlock: string
-				- purchaseRewardPerBlock: string
-				- penaltyActivated: boolean
-                - penaltyRatio: string
 			- usersColl
 				- userDoc
 					- numListings: number
@@ -42,6 +19,7 @@ Data structure in firestore
 					- purchasesFeesTotal: string
 					- purchasesTotalNumeric: number
 					- purchasesFeesTotalNumeric: number
+					- salesAndPurchasesTotalNumeric: number
 					- profileInfo
 						- ens
 						- email
@@ -50,18 +28,7 @@ Data structure in firestore
 							- subscribed
 							- verificationGuid
 					- rewardsInfo
-						- rewardDebt: string
-						- bonusRewardDebt: string
-                        - saleRewardDebt: string
-						- purchaseRewardDebt: string
-                        - pending: string
-                        - bonusPending: string
-                        - salePending: string
-						- purchasePending: string
-						- grossReward: string
-						- grossRewardNumeric: numeric
-						- netReward: string
-						- netRewardNumeric: numeric
+						- openseaVol: numeric
 						- rewardCalculatedAt: numeric millis since epoch utc
 					- assetsColl
 					- listingsColl
@@ -83,8 +50,11 @@ const testRoot = process.env.firestoreTestRoot || 'testRoot';
 module.exports = {
   firestore: {
     ROOT_COLL: testRoot,
+    OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
+    COLLECTION_LISTINGS_COLL: 'collectionListings',
     VERIFIED_TOKENS_COLL: 'verifiedTokens',
+    VERIFIED_COLLECTIONS_COLL: 'verifiedCollections',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
     USERS_COLL: 'users',
     LISTINGS_COLL: 'listings',
@@ -92,7 +62,9 @@ module.exports = {
     ASSETS_COLL: 'assets',
     PURCHASES_COLL: 'purchases',
     SALES_COLL: 'sales',
-    TXNS_COLL: 'txns'
+    TXNS_COLL: 'txns',
+    MISSED_TXNS_COLL: 'missedTxns',
+    FEATURED_COLL: 'featuredCollections'
   },
 
   auth: {
@@ -107,5 +79,11 @@ module.exports = {
   WYVERN_EXCHANGE_ADDRESS: '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b',
   WYVERN_ATOMIC_MATCH_FUNCTION: 'atomicMatch_',
   WYVERN_CANCEL_ORDER_FUNCTION: 'cancelOrder_',
-  NFTC_FEE_ADDRESS: '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57'
+  NFTC_FEE_ADDRESS: '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57',
+  NULL_HASH: '0x0000000000000000000000000000000000000000000000000000000000000000',
+  NULL_ADDRESS: '0x0000000000000000000000000000000000000000',
+  WETH_ADDRESS: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+  FEATURED_LIMIT: 4, // number of featured collections
+
+  OPENSEA_API_ASSETS: 'https://api.opensea.io/api/v1/assets/'
 };
