@@ -36,7 +36,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    // await updateVerifiedCollections(records);
+     await updateVerifiedCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -49,10 +49,10 @@ function updateVerifiedCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, address] = record;
-    const obj = { name, address: address.trim().toLowerCase() };
-    if (name && address) {
-      const docRef = db.collection('root').doc('info').collection('verifiedTokens').doc(address.trim().toLowerCase());
+    const [name, openseaUrl, address, description, profileImage, bannerImage] = record;
+    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, profileImage, bannerImage };
+    if (name && openseaUrl && address && description && profileImage && bannerImage) {
+      const docRef = db.collection('verifiedCollections').doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -494,13 +494,13 @@ async function pruneStaleNonERC721Listings(fileName) {
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-// importCsv(process.argv[2]).catch((e) => console.error(e));
+importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
+// pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
