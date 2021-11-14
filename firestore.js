@@ -353,7 +353,11 @@ async function pruneStaleListings(csvFileName) {
 async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
   console.log('starting after', startAfterCreatedAt);
 
-  const query = db.collectionGroup('listings').orderBy('metadata.createdAt', 'desc').startAfter(startAfterCreatedAt).limit(limit);
+  const query = db
+    .collectionGroup('listings')
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
   const snapshot = await query.get();
   const nullAddress = '0x0000000000000000000000000000000000000000';
   const erc721Abi = require('./abi/erc721.json');
@@ -422,27 +426,40 @@ async function pruneStaleNonERC721Listings(fileName) {
   const authKey = process.env.openseaKey;
   const limit = 1;
   const offset = 0;
-  const url = apiBase + '?limit=' + limit + '&offset=' + offset;
+  const url = apiBase;
   const nullAddress = '0x0000000000000000000000000000000000000000';
+  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
   let pruned = 0;
 
   for (const [address, ids] of Object.entries(json)) {
-    let tokenIds = '';
-    for (const id of ids) {
-      tokenIds += 'token_ids=' + id + '&';
+    if (address === openseaSharedStore || ids.length > 30) {
+      continue;
     }
+
+    let tokenIds = '';
+    const idsMap = {};
+    for (const id of ids) {
+      const exisingId = idsMap[id];
+      if (!exisingId) {
+        idsMap[id] = id;
+        tokenIds += 'token_ids=' + id + '&';
+      }
+    }
+
+    tokenIds = tokenIds.substr(0, tokenIds.length - 1);
+    console.log(tokenIds);
 
     const options = {
       headers: {
         'X-API-KEY': authKey
-      },
-      params: {
-        asset_contract_address: address,
-        token_ids: tokenIds
       }
     };
+
     try {
-      const resp = await axios.get(url, options);
+      // const resp = await axios.get(url, options);
+      const resp = await axios.get(
+        url + '?asset_contract_address=' + address + '&limit=' + limit + '&offset=' + offset + '&' + tokenIds
+      );
       for (const asset of resp.data.assets) {
         const owner = asset.owner.address.trim().toLowerCase();
 
@@ -483,7 +500,7 @@ async function pruneStaleNonERC721Listings(fileName) {
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-// pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
+pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
