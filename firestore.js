@@ -1,8 +1,13 @@
+/* eslint-disable no-unused-vars */
 require('dotenv').config();
+const { ethers } = require('ethers');
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+
 const { readFile } = require('fs').promises;
 const { writeFileSync, appendFileSync } = require('fs');
 const { promisify } = require('util');
 const parse = promisify(require('csv-parse'));
+const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
@@ -311,13 +316,174 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdDiff so far', thresholdDiff);
 }
 
+let prunedListings = 0;
+let openseaSharedStoreListings = 0;
+let nonErc721Listings = 0;
+const nonErc721Addresses = {};
+async function pruneStaleListings(csvFileName) {
+  try {
+    const limit = 100;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      console.log('prunedListings', prunedListings);
+      console.log('openseaSharedStoreListings', openseaSharedStoreListings);
+      console.log('nonErc721Listings so far', nonErc721Listings);
+      writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses));
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await pruneStaleListingsHelper(+startAfterCreatedAt, limit);
+    await pruneStaleListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+
+  const query = db.collectionGroup('listings').orderBy('metadata.createdAt', 'desc').startAfter(startAfterCreatedAt).limit(limit);
+  const snapshot = await query.get();
+  const nullAddress = '0x0000000000000000000000000000000000000000';
+  const erc721Abi = require('./abi/erc721.json');
+  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+  console.log('prunedListings so far', prunedListings);
+  console.log('openseaSharedStoreListings so far', openseaSharedStoreListings);
+  console.log('nonErc721Listings so far', nonErc721Listings);
+  writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses, null, 2));
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const ref = doc.ref;
+    const data = doc.data();
+    const maker = data.maker;
+    const address = data.metadata.asset.address;
+    const id = data.metadata.asset.id;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+    }
+
+    // get current owner
+
+    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+    try {
+      let owner = await contract.ownerOf(id);
+      owner = owner.trim().toLowerCase();
+      if (owner !== nullAddress && owner !== maker) {
+        console.log('stale', maker, owner);
+        ref
+          .delete()
+          .then((res) => {
+            prunedListings++;
+            console.log('pruned', doc.id, maker);
+          })
+          .catch((err) => {
+            console.error('Error deleting', doc.id, maker, err);
+          });
+      }
+    } catch (err) {
+      const ids = nonErc721Addresses[address];
+      if (!ids) {
+        nonErc721Addresses[address] = [];
+      }
+      nonErc721Addresses[address].push(id);
+      if (address === openseaSharedStore) {
+        openseaSharedStoreListings++;
+      } else {
+        nonErc721Listings++;
+      }
+    }
+  }
+}
+
+async function pruneStaleNonERC721Listings(fileName) {
+  const fileContents = await readFile(fileName, 'utf8');
+  const json = JSON.parse(fileContents);
+  const apiBase = 'https://api.opensea.io/api/v1/assets/';
+  const authKey = process.env.openseaKey;
+  const limit = 1;
+  const offset = 0;
+  const url = apiBase + '?limit=' + limit + '&offset=' + offset;
+  const nullAddress = '0x0000000000000000000000000000000000000000';
+  let pruned = 0;
+
+  for (const [address, ids] of Object.entries(json)) {
+    let tokenIds = '';
+    for (const id of ids) {
+      tokenIds += 'token_ids=' + id + '&';
+    }
+
+    const options = {
+      headers: {
+        'X-API-KEY': authKey
+      },
+      params: {
+        asset_contract_address: address,
+        token_ids: tokenIds
+      }
+    };
+    try {
+      const resp = await axios.get(url, options);
+      for (const asset of resp.data.assets) {
+        const owner = asset.owner.address.trim().toLowerCase();
+
+        const query = await db
+          .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+          .where('metadata.asset.id', '==', asset.token_id)
+          .where('metadata.asset.address', '==', address)
+          .limit(limit)
+          .get();
+
+        const doc = query.docs[0];
+
+        if (owner !== nullAddress && owner !== doc.data().maker) {
+          console.log('stale', doc.id, doc.data().maker, owner);
+          doc.ref
+            .delete()
+            .then((res) => {
+              console.log(++pruned);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, doc.data().maker, err);
+            });
+        }
+      }
+    } catch (err) {
+      console.log(err.message);
+    }
+  }
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-importCsv(process.argv[2]).catch((e) => console.error(e));
+// importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
+
+// pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
+
+// pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
