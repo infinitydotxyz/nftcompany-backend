@@ -36,7 +36,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-     await updateVerifiedCollections(records);
+    await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -45,14 +45,27 @@ async function importCsv(csvFileName) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function updateVerifiedCollections(records) {
+function updateAllCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, openseaUrl, address, description, profileImage, bannerImage] = record;
-    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, profileImage, bannerImage };
+    const [name, openseaUrl, address, description, profileImage, bannerImage, verified] = record;
+    let verifiedBool = false;
+    if (verified && verified.trim().toLowerCase() === 'true') {
+      verifiedBool = true;
+    }
+    const obj = {
+      name,
+      openseaUrl,
+      address: address.trim().toLowerCase(),
+      description,
+      profileImage,
+      bannerImage,
+      hasBlueCheck: verifiedBool
+    };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
-      const docRef = db.collection('verifiedCollections').doc(address.trim().toLowerCase());
+      obj.searchCollectionName = name.replace(/\s/g, '').toLowerCase();
+      const docRef = db.collection('allCollections').doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
