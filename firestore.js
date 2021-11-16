@@ -34,9 +34,9 @@ async function importCsv(csvFileName) {
   // @ts-ignore
   const records = await parse(fileContents, { columns: false });
   try {
-    // await updateBlueCheck(records);
+    await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    await updateAllCollections(records);
+    // await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -102,16 +102,21 @@ function updateFeaturedCollections(records) {
 // eslint-disable-next-line no-unused-vars
 async function updateBlueCheck(records) {
   records.forEach((record, i) => {
-    const address = record[1].trim().toLowerCase();
+    const address = record[2].trim().toLowerCase();
     console.log(address);
     const queryRef = db.collectionGroup(fstrCnstnts.LISTINGS_COLL).where('metadata.asset.address', '==', address);
 
     db.runTransaction(async (txn) => {
       const results = await txn.get(queryRef);
-      console.log('length', results.docs.length);
-      for (const doc of results.docs) {
-        const docRef = doc.ref;
-        txn.update(docRef, { 'metadata.hasBlueCheck': true });
+      const doc = results.docs[0];
+      if (doc) {
+        console.log(doc.data().metadata.asset.address + ' ' + results.docs.length);
+      }
+      if (results.docs.length < 500) {
+        for (const doc of results.docs) {
+          const docRef = doc.ref;
+          txn.update(docRef, { 'metadata.hasBlueCheck': true });
+        }
       }
     });
   });
