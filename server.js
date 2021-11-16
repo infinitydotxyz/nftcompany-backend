@@ -145,7 +145,7 @@ app.get('/listings', async (req, res) => {
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
     }
-  } else if (collectionName || priceMin || priceMax) {
+  } else if (collectionName || priceMin || priceMax || listType) {
     if (!priceMin) {
       priceMin = DEFAULT_MIN_ETH;
     }
