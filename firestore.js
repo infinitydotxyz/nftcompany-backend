@@ -1,8 +1,13 @@
+/* eslint-disable no-unused-vars */
 require('dotenv').config();
+const { ethers } = require('ethers');
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+
 const { readFile } = require('fs').promises;
 const { writeFileSync, appendFileSync } = require('fs');
 const { promisify } = require('util');
 const parse = promisify(require('csv-parse'));
+const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
@@ -31,7 +36,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    // await updateVerifiedCollections(records);
+    await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -40,14 +45,28 @@ async function importCsv(csvFileName) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function updateVerifiedCollections(records) {
+function updateAllCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, address] = record;
-    const obj = { name, address: address.trim().toLowerCase() };
-    if (name && address) {
-      const docRef = db.collection('root').doc('info').collection('verifiedTokens').doc(address.trim().toLowerCase());
+    const [name, openseaUrl, address, description, profileImage, bannerImage, verified] = record;
+    let verifiedBool = false;
+    if (verified && verified.trim().toLowerCase() === 'true') {
+      verifiedBool = true;
+    }
+    const obj = {
+      name,
+      openseaUrl,
+      address: address.trim().toLowerCase(),
+      description,
+      profileImage,
+      bannerImage,
+      cardImage: bannerImage,
+      hasBlueCheck: verifiedBool
+    };
+    if (name && openseaUrl && address && description && profileImage && bannerImage) {
+      obj.searchCollectionName = name.replace(/\s/g, '').toLowerCase();
+      const docRef = db.collection('allCollections').doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -84,16 +103,21 @@ function updateFeaturedCollections(records) {
 // eslint-disable-next-line no-unused-vars
 async function updateBlueCheck(records) {
   records.forEach((record, i) => {
-    const address = record[1].trim().toLowerCase();
+    const address = record[2].trim().toLowerCase();
     console.log(address);
     const queryRef = db.collectionGroup(fstrCnstnts.LISTINGS_COLL).where('metadata.asset.address', '==', address);
 
     db.runTransaction(async (txn) => {
       const results = await txn.get(queryRef);
-      console.log('length', results.docs.length);
-      for (const doc of results.docs) {
-        const docRef = doc.ref;
-        txn.update(docRef, { 'metadata.hasBlueCheck': true });
+      const doc = results.docs[0];
+      if (doc) {
+        console.log(doc.data().metadata.asset.address + ' ' + results.docs.length);
+      }
+      if (results.docs.length < 500) {
+        for (const doc of results.docs) {
+          const docRef = doc.ref;
+          txn.update(docRef, { 'metadata.hasBlueCheck': true });
+        }
       }
     });
   });
@@ -311,6 +335,180 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdDiff so far', thresholdDiff);
 }
 
+let prunedListings = 0;
+let openseaSharedStoreListings = 0;
+let nonErc721Listings = 0;
+const nonErc721Addresses = {};
+async function pruneStaleListings(csvFileName) {
+  try {
+    const limit = 100;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      console.log('prunedListings', prunedListings);
+      console.log('openseaSharedStoreListings', openseaSharedStoreListings);
+      console.log('nonErc721Listings so far', nonErc721Listings);
+      writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses));
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await pruneStaleListingsHelper(+startAfterCreatedAt, limit);
+    await pruneStaleListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+
+  const query = db
+    .collectionGroup('listings')
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+  const nullAddress = '0x0000000000000000000000000000000000000000';
+  const erc721Abi = require('./abi/erc721.json');
+  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
+
+  if (snapshot.docs.length < limit || startAfterCreatedAt < 1637165014887) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+  console.log('prunedListings so far', prunedListings);
+  console.log('openseaSharedStoreListings so far', openseaSharedStoreListings);
+  console.log('nonErc721Listings so far', nonErc721Listings);
+  writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses, null, 2));
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const ref = doc.ref;
+    const data = doc.data();
+    const maker = data.maker;
+    const address = data.metadata.asset.address;
+    const id = data.metadata.asset.id;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+    }
+
+    // get current owner
+
+    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+    try {
+      let owner = await contract.ownerOf(id);
+      owner = owner.trim().toLowerCase();
+      if (owner !== nullAddress && owner !== maker) {
+        console.log('stale', maker, owner, address, id);
+        ref
+          .delete()
+          .then((res) => {
+            prunedListings++;
+            console.log('pruned', doc.id, maker, owner, address, id);
+          })
+          .catch((err) => {
+            console.error('Error deleting', doc.id, maker, err);
+          });
+      }
+    } catch (err) {
+      const ids = nonErc721Addresses[address];
+      if (!ids) {
+        nonErc721Addresses[address] = [];
+      }
+      nonErc721Addresses[address].push(id);
+      if (address === openseaSharedStore) {
+        openseaSharedStoreListings++;
+      } else {
+        nonErc721Listings++;
+      }
+    }
+  }
+}
+
+async function pruneStaleNonERC721Listings(fileName) {
+  const fileContents = await readFile(fileName, 'utf8');
+  const json = JSON.parse(fileContents);
+  const apiBase = 'https://api.opensea.io/api/v1/assets/';
+  const authKey = process.env.openseaKey;
+  const limit = 1;
+  const offset = 0;
+  const url = apiBase;
+  const nullAddress = '0x0000000000000000000000000000000000000000';
+  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
+  let pruned = 0;
+
+  for (const [address, ids] of Object.entries(json)) {
+    if (address === openseaSharedStore || ids.length > 30) {
+      continue;
+    }
+
+    let tokenIds = '';
+    const idsMap = {};
+    for (const id of ids) {
+      const exisingId = idsMap[id];
+      if (!exisingId) {
+        idsMap[id] = id;
+        tokenIds += 'token_ids=' + id + '&';
+      }
+    }
+
+    tokenIds = tokenIds.substr(0, tokenIds.length - 1);
+    console.log(tokenIds);
+
+    const options = {
+      headers: {
+        'X-API-KEY': authKey
+      }
+    };
+
+    try {
+      // const resp = await axios.get(url, options);
+      const resp = await axios.get(
+        url + '?asset_contract_address=' + address + '&limit=' + limit + '&offset=' + offset + '&' + tokenIds
+      );
+      for (const asset of resp.data.assets) {
+        const owner = asset.owner.address.trim().toLowerCase();
+
+        const query = await db
+          .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+          .where('metadata.asset.id', '==', asset.token_id)
+          .where('metadata.asset.address', '==', address)
+          .limit(limit)
+          .get();
+
+        const doc = query.docs[0];
+
+        if (owner !== nullAddress && owner !== doc.data().maker) {
+          console.log('stale', doc.id, doc.data().maker, owner);
+          doc.ref
+            .delete()
+            .then((res) => {
+              console.log(++pruned);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, doc.data().maker, err);
+            });
+        }
+      }
+    } catch (err) {
+      console.log(err.message);
+    }
+  }
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
@@ -318,6 +516,10 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
 importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
+
+// pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
+
+// pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
