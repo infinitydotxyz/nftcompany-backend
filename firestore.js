@@ -381,7 +381,7 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
   const erc721Abi = require('./abi/erc721.json');
   const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
 
-  if (snapshot.docs.length < limit) {
+  if (snapshot.docs.length < limit || startAfterCreatedAt < 1637165014887) {
     readComplete = true;
   }
 
@@ -512,11 +512,11 @@ async function pruneStaleNonERC721Listings(fileName) {
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-importCsv(process.argv[2]).catch((e) => console.error(e));
+// importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
-// pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
+pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
 // pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 
