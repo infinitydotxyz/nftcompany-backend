@@ -34,9 +34,9 @@ async function importCsv(csvFileName) {
   // @ts-ignore
   const records = await parse(fileContents, { columns: false });
   try {
-    await updateBlueCheck(records);
+    // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    // await updateAllCollections(records);
+    await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -61,6 +61,7 @@ function updateAllCollections(records) {
       description,
       profileImage,
       bannerImage,
+      cardImage: bannerImage,
       hasBlueCheck: verifiedBool
     };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
@@ -512,11 +513,11 @@ async function pruneStaleNonERC721Listings(fileName) {
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-// importCsv(process.argv[2]).catch((e) => console.error(e));
+importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
-pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
+// pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
 // pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
 

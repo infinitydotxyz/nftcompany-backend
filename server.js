@@ -913,14 +913,14 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // =============================================== POSTS =====================================================================
 
-app.post('/verifiedTokens', async (req, res) => {
-  const { startAfterName, limit } = req.body;
+app.get('/verifiedCollections', async (req, res) => {
+  const startAfterName = req.query.startAfterName || '';
+  const limit = +(req.query.limit || 50);
 
   try {
     let query = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .where('hasBlueCheck', '==', true)
       .orderBy('name', 'asc');
 
     if (startAfterName) {
@@ -943,49 +943,9 @@ app.post('/verifiedTokens', async (req, res) => {
     };
 
     const resp = utils.jsonString(dataObj);
-
     // to enable cdn cache
     res.set({
-      'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
-    });
-    res.send(resp);
-  } catch (err) {
-    utils.error(err);
-    res.sendStatus(500);
-  }
-});
-
-app.post('/verifiedCollections', async (req, res) => {
-  const { startAfterName, limit } = req.body;
-
-  try {
-    let query = db.collection(fstrCnstnts.VERIFIED_COLLECTIONS_COLL).orderBy('name', 'asc');
-
-    if (startAfterName) {
-      query = query.startAfter(startAfterName);
-    }
-
-    const data = await query.limit(limit).get();
-
-    const collections = [];
-    for (const doc of data.docs) {
-      const data = doc.data();
-
-      data.id = doc.id;
-      collections.push(data);
-    }
-
-    const dataObj = {
-      count: collections.length,
-      collections
-    };
-
-    const resp = utils.jsonString(dataObj);
-
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=30',
+      'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp, 'utf8')
     });
     res.send(resp);
@@ -2121,7 +2081,7 @@ function getOrdersResponseFromArray(docs) {
     const isExpired = isOrderExpired(doc);
     try {
       checkOwnershipChange(doc);
-    } catch(err) {
+    } catch (err) {
       utils.error('Error checking ownership change info', err);
     }
     if (!isExpired) {
@@ -2308,14 +2268,16 @@ async function checkOwnershipChange(doc) {
   const address = order.metadata.asset.address;
   const id = order.metadata.asset.id;
   const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
-  if (side === 1) { // listing
+  if (side === 1) {
+    // listing
     const maker = order.maker;
-    if (schema && schema.trim().toLowerCase() === 'erc721') { 
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
       checkERC721Ownership(doc, contract, maker, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
       checkERC1155Ownership(doc, contract, maker, address, id);
     }
-  } else if (side === 0) { // offer
+  } else if (side === 0) {
+    // offer
     // only delete offersreceived
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
@@ -2979,10 +2941,10 @@ async function isTokenVerified(address) {
   const doc = await db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
     .doc(tokenAddress)
     .get();
-  return doc.exists;
+  return doc.get('hasBlueCheck');
 }
 
 function getSearchFriendlyString(input) {
