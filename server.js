@@ -9,6 +9,7 @@ const axios = require('axios').default;
 const crypto = require('crypto');
 const utils = require('./utils');
 const types = require('./types');
+const erc721Abi = require('./abi/erc721.json');
 
 const app = express();
 const cors = require('cors');
@@ -204,7 +205,6 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
 }
 
 async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
-  const listings = [];
   try {
     let startAfterBlueCheckBool = true;
     if (startAfterBlueCheck !== undefined) {
@@ -219,22 +219,11 @@ async function getListingsByCollection(startAfterBlueCheck, startAfterSearchColl
       .limit(limit)
       .get();
 
-    for (const doc of snapshot.docs) {
-      const listing = doc.data();
-      listing.id = doc.id;
-      listings.push(listing);
-    }
+    return getOrdersResponse(snapshot);
   } catch (err) {
     utils.error('Failed to get listings by collection from firestore');
     utils.error(err);
   }
-
-  // return response
-  const resp = {
-    count: listings.length,
-    listings
-  };
-  return utils.jsonString(resp);
 }
 
 async function getListingsByCollectionNameAndPrice(
@@ -2130,6 +2119,11 @@ function getOrdersResponseFromArray(docs) {
   for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
+    try {
+      checkOwnershipChange(doc);
+    } catch(err) {
+      utils.error('Error checking ownership change info', err);
+    }
     if (!isExpired) {
       listing.id = doc.id;
       listings.push(listing);
@@ -2305,6 +2299,61 @@ function isOrderExpired(doc) {
     return false;
   }
   return orderExpirationTime <= utcSecondsSinceEpoch;
+}
+
+async function checkOwnershipChange(doc) {
+  const order = doc.data();
+  const side = order.side;
+  const schema = order.metadata.schema;
+  const address = order.metadata.asset.address;
+  const id = order.metadata.asset.id;
+  const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+  if (side === 1) { // listing
+    const maker = order.maker;
+    if (schema && schema.trim().toLowerCase() === 'erc721') { 
+      checkERC721Ownership(doc, contract, maker, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, contract, maker, address, id);
+    }
+  } else if (side === 0) { // offer
+    // only delete offersreceived
+    const owner = order.metadata.asset.owner;
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
+      checkERC721Ownership(doc, contract, owner, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, contract, owner, address, id);
+    }
+  }
+}
+
+async function checkERC721Ownership(doc, contract, owner, address, id) {
+  let newOwner = await contract.ownerOf(id);
+  newOwner = newOwner.trim().toLowerCase();
+  if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
+    doc.ref
+      .delete()
+      .then(() => {
+        utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
+      })
+      .catch((err) => {
+        utils.error('Error deleting stale order', doc.id, owner, err);
+      });
+  }
+}
+
+async function checkERC1155Ownership(doc, contract, owner, address, id) {
+  const balance = await contract.balanceOf(owner, id);
+  if (owner !== constants.NULL_ADDRESS && balance === 0) {
+    console.log('stale', owner, owner, address, id);
+    doc.ref
+      .delete()
+      .then(() => {
+        console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
+      })
+      .catch((err) => {
+        console.error('Error deleting', doc.id, owner, err);
+      });
+  }
 }
 
 async function deleteExpiredOrder(doc) {

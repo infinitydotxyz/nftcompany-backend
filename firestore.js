@@ -411,12 +411,12 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
       let owner = await contract.ownerOf(id);
       owner = owner.trim().toLowerCase();
       if (owner !== nullAddress && owner !== maker) {
-        console.log('stale', maker, owner);
+        console.log('stale', maker, owner, address, id);
         ref
           .delete()
           .then((res) => {
             prunedListings++;
-            console.log('pruned', doc.id, maker);
+            console.log('pruned', doc.id, maker, owner, address, id);
           })
           .catch((err) => {
             console.error('Error deleting', doc.id, maker, err);
