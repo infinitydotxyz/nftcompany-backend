@@ -2289,6 +2289,7 @@ async function checkOwnershipChange(doc) {
 }
 
 async function checkERC721Ownership(doc, contract, owner, address, id) {
+  try {
   let newOwner = await contract.ownerOf(id);
   newOwner = newOwner.trim().toLowerCase();
   if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
@@ -2300,6 +2301,18 @@ async function checkERC721Ownership(doc, contract, owner, address, id) {
       .catch((err) => {
         utils.error('Error deleting stale order', doc.id, owner, err);
       });
+  }} catch(err) {
+    utils.error('Checking ERC721 Ownership failed', err);
+    if (err.reason.indexOf('nonexistent token') > 0) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after token id non existent', doc.id, owner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting nonexistent token id order', doc.id, owner, err);
+        });
+    }
   }
 }
 

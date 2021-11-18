@@ -28,6 +28,9 @@ const db = firebaseAdmin.firestore();
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
 
+const erc721Abi = require('./abi/erc721.json');
+const erc1155Abi = require('./abi/erc1155.json');
+
 // eslint-disable-next-line no-unused-vars
 async function importCsv(csvFileName) {
   const fileContents = await readFile(csvFileName, 'utf8');
@@ -36,7 +39,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    await updateAllCollections(records);
+    // await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -336,9 +339,6 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
 }
 
 let prunedListings = 0;
-let openseaSharedStoreListings = 0;
-let nonErc721Listings = 0;
-const nonErc721Addresses = {};
 async function pruneStaleListings(csvFileName) {
   try {
     const limit = 100;
@@ -346,9 +346,6 @@ async function pruneStaleListings(csvFileName) {
     if (readComplete) {
       console.log('totalListings', totalListings);
       console.log('prunedListings', prunedListings);
-      console.log('openseaSharedStoreListings', openseaSharedStoreListings);
-      console.log('nonErc721Listings so far', nonErc721Listings);
-      writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses));
       return;
     }
     console.log('============================================================================');
@@ -379,19 +376,14 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
     .limit(limit);
   const snapshot = await query.get();
   const nullAddress = '0x0000000000000000000000000000000000000000';
-  const erc721Abi = require('./abi/erc721.json');
-  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
 
-  if (snapshot.docs.length < limit || startAfterCreatedAt < 1637165014887) {
+  if (snapshot.docs.length < limit) {
     readComplete = true;
   }
 
   totalListings += snapshot.docs.length;
   console.log('totalListings so far', totalListings);
   console.log('prunedListings so far', prunedListings);
-  console.log('openseaSharedStoreListings so far', openseaSharedStoreListings);
-  console.log('nonErc721Listings so far', nonErc721Listings);
-  writeFileSync('./nonErc721Addresses', JSON.stringify(nonErc721Addresses, null, 2));
 
   for (let i = 0; i < snapshot.docs.length; i++) {
     const doc = snapshot.docs[i];
@@ -400,111 +392,225 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
     const maker = data.maker;
     const address = data.metadata.asset.address;
     const id = data.metadata.asset.id;
+    const schema = data.metadata.schema;
 
     if ((i + 1) % limit === 0) {
       writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
     }
 
-    // get current owner
-
-    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
     try {
-      let owner = await contract.ownerOf(id);
-      owner = owner.trim().toLowerCase();
-      if (owner !== nullAddress && owner !== maker) {
-        console.log('stale', maker, owner, address, id);
-        ref
-          .delete()
-          .then((res) => {
-            prunedListings++;
-            console.log('pruned', doc.id, maker, owner, address, id);
-          })
-          .catch((err) => {
-            console.error('Error deleting', doc.id, maker, err);
-          });
+      if (schema && schema.trim().toLowerCase() === 'erc721') {
+        const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+        let owner = await contract.ownerOf(id);
+        owner = owner.trim().toLowerCase();
+        if (owner !== nullAddress && owner !== maker) {
+          console.log('stale', maker, owner, address, id);
+          ref
+            .delete()
+            .then(() => {
+              prunedListings++;
+              console.log('pruned erc721', doc.id, maker, owner, address, id);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, maker, err);
+            });
+        }
+      } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+        const contract = new ethers.Contract(address, erc1155Abi, ethersProvider);
+        const balance = await contract.balanceOf(maker, id);
+
+        if (maker !== nullAddress && balance === 0) {
+          console.log('stale', maker, maker, address, id);
+          ref
+            .delete()
+            .then(() => {
+              prunedListings++;
+              console.log('pruned erc1155', doc.id, maker, maker, address, id, balance);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, maker, err);
+            });
+        }
       }
     } catch (err) {
-      const ids = nonErc721Addresses[address];
-      if (!ids) {
-        nonErc721Addresses[address] = [];
-      }
-      nonErc721Addresses[address].push(id);
-      if (address === openseaSharedStore) {
-        openseaSharedStoreListings++;
-      } else {
-        nonErc721Listings++;
+      console.error(err);
+      console.error('=================MSG=============');
+      console.error(err.message);
+      console.error('=================REASON=============');
+      console.error(err.reason);
+      if (err.reason.indexOf('nonexistent token') > 0) {
+        doc.ref
+          .delete()
+          .then(() => {
+            console.log('pruned erc721 after token id non existent', doc.id, address, id);
+          })
+          .catch((err) => {
+            console.error('Error deleting nonexistent token id order', doc.id, err);
+          });
       }
     }
   }
 }
 
-async function pruneStaleNonERC721Listings(fileName) {
-  const fileContents = await readFile(fileName, 'utf8');
-  const json = JSON.parse(fileContents);
-  const apiBase = 'https://api.opensea.io/api/v1/assets/';
-  const authKey = process.env.openseaKey;
-  const limit = 1;
-  const offset = 0;
-  const url = apiBase;
+// async function pruneStaleNonERC721Listings(fileName) {
+//   const fileContents = await readFile(fileName, 'utf8');
+//   const json = JSON.parse(fileContents);
+//   const apiBase = 'https://api.opensea.io/api/v1/assets/';
+//   const authKey = process.env.openseaKey;
+//   const limit = 1;
+//   const offset = 0;
+//   const url = apiBase;
+//   const nullAddress = '0x0000000000000000000000000000000000000000';
+//   const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
+//   let pruned = 0;
+
+//   for (const [address, ids] of Object.entries(json)) {
+//     if (address === openseaSharedStore || ids.length > 30) {
+//       continue;
+//     }
+
+//     let tokenIds = '';
+//     const idsMap = {};
+//     for (const id of ids) {
+//       const exisingId = idsMap[id];
+//       if (!exisingId) {
+//         idsMap[id] = id;
+//         tokenIds += 'token_ids=' + id + '&';
+//       }
+//     }
+
+//     tokenIds = tokenIds.substr(0, tokenIds.length - 1);
+//     console.log(tokenIds);
+
+//     const options = {
+//       headers: {
+//         'X-API-KEY': authKey
+//       }
+//     };
+
+//     try {
+//       // const resp = await axios.get(url, options);
+//       const resp = await axios.get(
+//         url + '?asset_contract_address=' + address + '&limit=' + limit + '&offset=' + offset + '&' + tokenIds
+//       );
+//       for (const asset of resp.data.assets) {
+//         const owner = asset.owner.address.trim().toLowerCase();
+
+//         const query = await db
+//           .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+//           .where('metadata.asset.id', '==', asset.token_id)
+//           .where('metadata.asset.address', '==', address)
+//           .limit(limit)
+//           .get();
+
+//         const doc = query.docs[0];
+
+//         if (owner !== nullAddress && owner !== doc.data().maker) {
+//           console.log('stale', doc.id, doc.data().maker, owner);
+//           doc.ref
+//             .delete()
+//             .then((res) => {
+//               console.log(++pruned);
+//             })
+//             .catch((err) => {
+//               console.error('Error deleting', doc.id, doc.data().maker, err);
+//             });
+//         }
+//       }
+//     } catch (err) {
+//       console.log(err.message);
+//     }
+//   }
+// }
+
+const numTraitsUpdated = 0;
+async function updateTraits(csvFileName) {
+  try {
+    const limit = 100;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      console.log('numTraitsUpdated', numTraitsUpdated);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateTraitsHelper(+startAfterCreatedAt, limit);
+    await updateTraits(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateTraitsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collectionGroup('listings')
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
   const nullAddress = '0x0000000000000000000000000000000000000000';
-  const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
-  let pruned = 0;
 
-  for (const [address, ids] of Object.entries(json)) {
-    if (address === openseaSharedStore || ids.length > 30) {
-      continue;
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+  console.log('numTraitsUpdated so far', numTraitsUpdated);
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const ref = doc.ref;
+    const data = doc.data();
+    const traits = data.metadata.rawData.traits;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
     }
-
-    let tokenIds = '';
-    const idsMap = {};
-    for (const id of ids) {
-      const exisingId = idsMap[id];
-      if (!exisingId) {
-        idsMap[id] = id;
-        tokenIds += 'token_ids=' + id + '&';
-      }
-    }
-
-    tokenIds = tokenIds.substr(0, tokenIds.length - 1);
-    console.log(tokenIds);
-
-    const options = {
-      headers: {
-        'X-API-KEY': authKey
-      }
-    };
 
     try {
-      // const resp = await axios.get(url, options);
-      const resp = await axios.get(
-        url + '?asset_contract_address=' + address + '&limit=' + limit + '&offset=' + offset + '&' + tokenIds
-      );
-      for (const asset of resp.data.assets) {
-        const owner = asset.owner.address.trim().toLowerCase();
+      const numTraits = traits.length;
+      const traitTypes = [];
+      const traitValues = [];
+      for (const trait of traits) {
+        traitTypes.push(trait.trait_type);
+        traitValues.push(trait.value);
+      };
 
-        const query = await db
-          .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-          .where('metadata.asset.id', '==', asset.token_id)
-          .where('metadata.asset.address', '==', address)
-          .limit(limit)
-          .get();
-
-        const doc = query.docs[0];
-
-        if (owner !== nullAddress && owner !== doc.data().maker) {
-          console.log('stale', doc.id, doc.data().maker, owner);
-          doc.ref
-            .delete()
-            .then((res) => {
-              console.log(++pruned);
-            })
-            .catch((err) => {
-              console.error('Error deleting', doc.id, doc.data().maker, err);
-            });
+      const obj = {
+        metadata: {
+          asset: {
+            traits,
+            numTraits,
+            traitTypes,
+            traitValues
+          }
         }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % 500 === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
       }
     } catch (err) {
-      console.log(err.message);
+      console.error(err);
     }
   }
 }
@@ -513,13 +619,13 @@ async function pruneStaleNonERC721Listings(fileName) {
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-importCsv(process.argv[2]).catch((e) => console.error(e));
+// importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-// pruneStaleNonERC721Listings(process.argv[2]).catch((e) => console.error(e));
+// updateTraits(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
