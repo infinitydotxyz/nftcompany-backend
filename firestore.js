@@ -434,8 +434,6 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
       }
     } catch (err) {
       console.error(err);
-      console.error('=================MSG=============');
-      console.error(err.message);
       console.error('=================REASON=============');
       console.error(err.reason);
       if (err.reason.indexOf('nonexistent token') > 0) {
@@ -523,14 +521,12 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
 //   }
 // }
 
-const numTraitsUpdated = 0;
 async function updateTraits(csvFileName) {
   try {
-    const limit = 100;
+    const limit = 500;
 
     if (readComplete) {
       console.log('totalListings', totalListings);
-      console.log('numTraitsUpdated', numTraitsUpdated);
       return;
     }
     console.log('============================================================================');
@@ -562,7 +558,6 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
     .startAfter(startAfterCreatedAt)
     .limit(limit);
   const snapshot = await query.get();
-  const nullAddress = '0x0000000000000000000000000000000000000000';
 
   if (snapshot.docs.length < limit) {
     readComplete = true;
@@ -570,26 +565,24 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
 
   totalListings += snapshot.docs.length;
   console.log('totalListings so far', totalListings);
-  console.log('numTraitsUpdated so far', numTraitsUpdated);
 
-  for (let i = 0; i < snapshot.docs.length; i++) {
-    const doc = snapshot.docs[i];
-    const ref = doc.ref;
-    const data = doc.data();
-    const traits = data.metadata.rawData.traits;
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+      const traits = data.metadata.asset.rawData.traits;
 
-    if ((i + 1) % limit === 0) {
-      writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
-    }
-
-    try {
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+      }
       const numTraits = traits.length;
       const traitTypes = [];
       const traitValues = [];
       for (const trait of traits) {
         traitTypes.push(trait.trait_type);
         traitValues.push(trait.value);
-      };
+      }
 
       const obj = {
         metadata: {
@@ -609,10 +602,12 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
         batchCommits.push(batch.commit());
         batch = db.batch();
       }
-    } catch (err) {
-      console.error(err);
     }
+  } catch (err) {
+    console.error(err);
   }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
 }
 
 // ===================================================== MAINS ==========================================================
