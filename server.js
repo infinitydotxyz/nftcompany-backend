@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const utils = require('./utils');
 const types = require('./types');
 const erc721Abi = require('./abi/erc721.json');
+const erc1155Abi = require('./abi/erc1155.json');
 
 const app = express();
 const cors = require('cors');
@@ -2267,41 +2268,41 @@ async function checkOwnershipChange(doc) {
   const schema = order.metadata.schema;
   const address = order.metadata.asset.address;
   const id = order.metadata.asset.id;
-  const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
   if (side === 1) {
     // listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, contract, maker, address, id);
+      checkERC721Ownership(doc, maker, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, contract, maker, address, id);
+      checkERC1155Ownership(doc, maker, address, id);
     }
   } else if (side === 0) {
     // offer
-    // only delete offersreceived
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, contract, owner, address, id);
+      checkERC721Ownership(doc, owner, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, contract, owner, address, id);
+      checkERC1155Ownership(doc, owner, address, id);
     }
   }
 }
 
-async function checkERC721Ownership(doc, contract, owner, address, id) {
+async function checkERC721Ownership(doc, owner, address, id) {
   try {
-  let newOwner = await contract.ownerOf(id);
-  newOwner = newOwner.trim().toLowerCase();
-  if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
-    doc.ref
-      .delete()
-      .then(() => {
-        utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
-      })
-      .catch((err) => {
-        utils.error('Error deleting stale order', doc.id, owner, err);
-      });
-  }} catch(err) {
+    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+    let newOwner = await contract.ownerOf(id);
+    newOwner = newOwner.trim().toLowerCase();
+    if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting stale order', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
     utils.error('Checking ERC721 Ownership failed', err);
     if (err.reason.indexOf('nonexistent token') > 0) {
       doc.ref
@@ -2316,18 +2317,23 @@ async function checkERC721Ownership(doc, contract, owner, address, id) {
   }
 }
 
-async function checkERC1155Ownership(doc, contract, owner, address, id) {
-  const balance = await contract.balanceOf(owner, id);
-  if (owner !== constants.NULL_ADDRESS && balance === 0) {
-    console.log('stale', owner, owner, address, id);
-    doc.ref
-      .delete()
-      .then(() => {
-        console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
-      })
-      .catch((err) => {
-        console.error('Error deleting', doc.id, owner, err);
-      });
+async function checkERC1155Ownership(doc, owner, address, id) {
+  try {
+    const contract = new ethers.Contract(address, erc1155Abi, ethersProvider);
+    const balance = await contract.balanceOf(owner, id);
+    if (owner !== constants.NULL_ADDRESS && balance === 0) {
+      console.log('stale', owner, owner, address, id);
+      doc.ref
+        .delete()
+        .then(() => {
+          console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
+        })
+        .catch((err) => {
+          console.error('Error deleting', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
+    utils.error('Checking ERC1155 Ownership failed', err);
   }
 }
 
