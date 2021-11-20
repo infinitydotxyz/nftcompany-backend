@@ -6,6 +6,7 @@ const BigNumber = require('bignumber.js');
 const express = require('express');
 const helmet = require('helmet');
 const axios = require('axios').default;
+const qs = require('qs');
 const crypto = require('crypto');
 const utils = require('./utils');
 const types = require('./types');
@@ -409,6 +410,26 @@ app.get('/featured-collections', async (req, res) => {
   }
 });
 
+// transaction events (for a collection or a token)
+app.get('/events', async (req, res) => {
+  const queryStr = decodeURIComponent(qs.stringify(req.query)).slice(0, -1); // remove the last "?" char.
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + `events?${queryStr}`;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    utils.trace(url);
+    const { data } = await axios.get(url, options);
+    res.send(data);
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+});
+
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
@@ -800,7 +821,7 @@ app.get('/collections/:id/traits', async (req, res) => {
   let ret = [];
   const traitMap = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const url = constants.OPENSEA_API + `assets/?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
   const options = {
     headers: {
       'X-API-KEY': authKey
@@ -2185,7 +2206,7 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API_ASSETS + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
