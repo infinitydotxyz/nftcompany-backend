@@ -2330,7 +2330,7 @@ async function checkERC721Ownership(doc, owner, address, id) {
     }
   } catch (err) {
     utils.error('Checking ERC721 Ownership failed', err);
-    if (err.indexOf('nonexistent token') > 0) {
+    if (err && err.message && err.message.indexOf('nonexistent token') > 0) {
       doc.ref
         .delete()
         .then(() => {
