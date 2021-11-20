@@ -412,7 +412,7 @@ app.get('/featured-collections', async (req, res) => {
 
 // transaction events (for a collection or a token)
 app.get('/events', async (req, res) => {
-  const queryStr = decodeURIComponent(qs.stringify(req.query)).slice(0, -1); // remove the last "?" char.
+  const queryStr = decodeURIComponent(qs.stringify(req.query));
   const authKey = process.env.openseaKey;
   const url = constants.OPENSEA_API + `events?${queryStr}`;
   const options = {
