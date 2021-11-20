@@ -69,7 +69,7 @@ function updateAllCollections(records) {
     };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
       obj.searchCollectionName = name.replace(/\s/g, '').toLowerCase();
-      const docRef = db.collection('allCollections').doc(address.trim().toLowerCase());
+      const docRef = db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -90,7 +90,7 @@ function updateFeaturedCollections(records) {
     const [name, openseaUrl, address, description, profileImage, bannerImage] = record;
     const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, profileImage, bannerImage };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
-      const docRef = db.collection('featuredCollections').doc(address.trim().toLowerCase());
+      const docRef = db.collection(fstrCnstnts.FEATURED_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -370,7 +370,7 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
   console.log('starting after', startAfterCreatedAt);
 
   const query = db
-    .collectionGroup('listings')
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
@@ -553,7 +553,7 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
   let batch = db.batch();
 
   const query = db
-    .collectionGroup('listings')
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
     .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
