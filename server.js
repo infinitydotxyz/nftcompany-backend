@@ -2963,7 +2963,13 @@ async function isTokenVerified(address) {
     .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
     .doc(tokenAddress)
     .get();
-  return doc.get('hasBlueCheck');
+  if (doc.exists) {
+    const hasBlueCheck = doc.get('hasBlueCheck');
+    if (hasBlueCheck) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getSearchFriendlyString(input) {
