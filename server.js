@@ -421,11 +421,16 @@ app.get('/events', async (req, res) => {
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
-    res.send(data);
+    const respStr = utils.jsonString(data);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
   } catch (err) {
-    utils.error('Error occured while fetching assets from opensea');
+    utils.error('Error occured while fetching events from opensea');
     utils.error(err);
   }
 });
