@@ -571,26 +571,22 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
       const doc = snapshot.docs[i];
       const ref = doc.ref;
       const data = doc.data();
-      const traits = data.metadata.asset.rawData.traits;
+      const rawTraits = data.metadata.asset.rawData.traits;
 
       if ((i + 1) % limit === 0) {
         writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
       }
-      const numTraits = traits.length;
-      const traitTypes = [];
-      const traitValues = [];
-      for (const trait of traits) {
-        traitTypes.push(trait.trait_type);
-        traitValues.push(trait.value);
+      const numTraits = rawTraits.length;
+      const traits = [];
+      for (const rawTrait of rawTraits) {
+        traits.push({traitType: rawTrait.trait_type, traitValue: rawTrait.value});
       }
 
       const obj = {
         metadata: {
           asset: {
-            traits,
             numTraits,
-            traitTypes,
-            traitValues
+            traits
           }
         }
       };
@@ -620,7 +616,7 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-// updateTraits(process.argv[2]).catch((e) => console.error(e));
+updateTraits(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
