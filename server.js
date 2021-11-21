@@ -192,18 +192,153 @@ app.get('/listings', async (req, res) => {
 async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   utils.log('Getting listings of token id and token address');
   try {
-    const data = await db
+    let resp = '';
+    const snapshot = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.id', '==', tokenId)
       .where('metadata.asset.address', '==', tokenAddress)
-      .limit(limit) // should only be one but to catch errors
+      .limit(limit)
       .get();
 
-    return getOrdersResponse(data);
+    if (snapshot.docs.length === 0) {
+      // get from db
+      resp = await fetchAssetAsListingFromDb(tokenId, tokenAddress, limit);
+    } else {
+      resp = getOrdersResponse(snapshot);
+    }
+    return resp;
   } catch (err) {
     utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
     utils.error(err);
   }
+}
+
+async function fetchAssetAsListingFromDb(tokenId, tokenAddress, limit) {
+  utils.log('Getting asset as listing from db');
+  try {
+    let resp = '';
+    const snapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .where('metadata.asset.id', '==', tokenId)
+      .where('metadata.asset.address', '==', tokenAddress)
+      .limit(limit)
+      .get();
+
+    if (snapshot.docs.length === 0) {
+      // get from opensea
+      resp = await fetchAssetFromOpensea(tokenId, tokenAddress);
+    } else {
+      resp = await getAssetsAsListings(snapshot);
+    }
+    return resp;
+  } catch (err) {
+    utils.error('Failed to get asset from db', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function fetchAssetFromOpensea(tokenId, tokenAddress) {
+  utils.log('Getting asset from Opensea');
+  try {
+    const url = constants.OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
+    const authKey = process.env.openseaKey;
+    const options = {
+      headers: {
+        'X-API-KEY': authKey
+      }
+    };
+    const { data } = await axios.get(url, options);
+    // store asset for future use
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc();
+    const assetData = {};
+    const marshalledData = await assetDataToListing(data);
+    assetData.metadata = marshalledData;
+    assetData.rawData = data;
+    await newDoc.set(assetData);
+
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function getAssetsAsListings(snapshot) {
+  utils.log('Converting assets to listings');
+  try {
+    const listings = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const listing = data;
+      listing.id = doc.id;
+      listings.push(listing);
+    }
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
+  } catch (err) {
+    utils.error('Failed to convert assets to listings');
+    utils.error(err);
+  }
+}
+
+async function getAssetAsListing(docId, data) {
+  utils.log('Converting asset to listing');
+  try {
+    const listings = [];
+    const listing = data;
+    listing.id = docId;
+    listings.push(listing);
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
+  } catch (err) {
+    utils.error('Failed to convert asset to listing');
+    utils.error(err);
+  }
+}
+
+async function assetDataToListing(data) {
+  const assetContract = data.asset_contract;
+  let tokenAddress = '';
+  let schema = '';
+  let description = data.description;
+  let collectionName = '';
+  if (assetContract) {
+    tokenAddress = assetContract.address;
+    schema = assetContract.schema_name;
+    collectionName = assetContract.name;
+    if (assetContract.description) {
+      description = assetContract.description;
+    }
+  }
+  const listing = {
+      isListing: false,
+      hasBlueCheck: await isTokenVerified(tokenAddress),
+      schema,
+      asset: {
+        address: tokenAddress,
+        id: data.token_id,
+        collectionName,
+        description,
+        image: data.image_url,
+        imagePreview: data.image_preview_url,
+        searchCollectionName: getSearchFriendlyString(collectionName),
+        searchTitle: getSearchFriendlyString(data.name),
+        title: data.name
+      }
+  };
+  return listing;
 }
 
 async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
@@ -833,7 +968,6 @@ app.get('/collections/:id/traits', async (req, res) => {
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
     // console.log('data', data);
     data.assets.forEach((item) => {
@@ -2218,7 +2352,6 @@ async function getAssetsFromOpensea(address, limit, offset) {
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
     return data;
   } catch (err) {
