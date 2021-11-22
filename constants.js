@@ -1,49 +1,3 @@
-/*
-
-Data structure in firestore
-	- rootColl
-		- infoDoc
-			- usersColl
-				- userDoc
-					- numListings: number
-					- numOffers: number
-					- numBonusListings: number
-					- numBonusOffers: number
-					- numPurchases: number
-					- numSales: number
-    				- salesTotal: string
-					- salesFeesTotal: string
-					- salesTotalNumeric: number
-					- salesFeesTotalNumeric: number
-					- purchasesTotal: string
-					- purchasesFeesTotal: string
-					- purchasesTotalNumeric: number
-					- purchasesFeesTotalNumeric: number
-					- salesAndPurchasesTotalNumeric: number
-					- profileInfo
-						- ens
-						- email
-							- address
-							- verified
-							- subscribed
-							- verificationGuid
-					- rewardsInfo
-						- openseaVol: numeric
-						- rewardCalculatedAt: numeric millis since epoch utc
-					- assetsColl
-					- listingsColl
-					- offersColl
-					- purchasesColl
-					- salesColl
-					- txnsColl
-			- bonusRewardTokensColl
-				- tokenDoc
-					- name
-			- verifiedTokensColl
-				- tokenDoc
-					- name
-*/
-
 require('dotenv').config();
 const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
@@ -84,5 +38,5 @@ module.exports = {
   WETH_ADDRESS: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
   FEATURED_LIMIT: 4, // number of featured collections
 
-  OPENSEA_API_ASSETS: 'https://api.opensea.io/api/v1/assets/'
+  OPENSEA_API: 'https://api.opensea.io/api/v1/'
 };

@@ -6,10 +6,12 @@ const BigNumber = require('bignumber.js');
 const express = require('express');
 const helmet = require('helmet');
 const axios = require('axios').default;
+const qs = require('qs');
 const crypto = require('crypto');
 const utils = require('./utils');
 const types = require('./types');
 const erc721Abi = require('./abi/erc721.json');
+const erc1155Abi = require('./abi/erc1155.json');
 
 const app = express();
 const cors = require('cors');
@@ -93,7 +95,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId, listType } = req.query;
+  const { tokenId, listType, traitType, traitValue } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -162,7 +164,9 @@ app.get('/listings', async (req, res) => {
       startAfterPrice,
       startAfterMillis,
       limit,
-      listType
+      listType,
+      traitType,
+      traitValue
     );
     if (resp) {
       res.set({
@@ -190,18 +194,153 @@ app.get('/listings', async (req, res) => {
 async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   utils.log('Getting listings of token id and token address');
   try {
-    const data = await db
+    let resp = '';
+    const snapshot = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.id', '==', tokenId)
       .where('metadata.asset.address', '==', tokenAddress)
-      .limit(limit) // should only be one but to catch errors
+      .limit(limit)
       .get();
 
-    return getOrdersResponse(data);
+    if (snapshot.docs.length === 0) {
+      // get from db
+      resp = await fetchAssetAsListingFromDb(tokenId, tokenAddress, limit);
+    } else {
+      resp = getOrdersResponse(snapshot);
+    }
+    return resp;
   } catch (err) {
     utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
     utils.error(err);
   }
+}
+
+async function fetchAssetAsListingFromDb(tokenId, tokenAddress, limit) {
+  utils.log('Getting asset as listing from db');
+  try {
+    let resp = '';
+    const snapshot = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .where('metadata.asset.id', '==', tokenId)
+      .where('metadata.asset.address', '==', tokenAddress)
+      .limit(limit)
+      .get();
+
+    if (snapshot.docs.length === 0) {
+      // get from opensea
+      resp = await fetchAssetFromOpensea(tokenId, tokenAddress);
+    } else {
+      resp = await getAssetsAsListings(snapshot);
+    }
+    return resp;
+  } catch (err) {
+    utils.error('Failed to get asset from db', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function fetchAssetFromOpensea(tokenId, tokenAddress) {
+  utils.log('Getting asset from Opensea');
+  try {
+    const url = constants.OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
+    const authKey = process.env.openseaKey;
+    const options = {
+      headers: {
+        'X-API-KEY': authKey
+      }
+    };
+    const { data } = await axios.get(url, options);
+    // store asset for future use
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc();
+    const assetData = {};
+    const marshalledData = await assetDataToListing(data);
+    assetData.metadata = marshalledData;
+    assetData.rawData = data;
+    await newDoc.set(assetData);
+
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function getAssetsAsListings(snapshot) {
+  utils.log('Converting assets to listings');
+  try {
+    const listings = [];
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const listing = data;
+      listing.id = doc.id;
+      listings.push(listing);
+    }
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
+  } catch (err) {
+    utils.error('Failed to convert assets to listings');
+    utils.error(err);
+  }
+}
+
+async function getAssetAsListing(docId, data) {
+  utils.log('Converting asset to listing');
+  try {
+    const listings = [];
+    const listing = data;
+    listing.id = docId;
+    listings.push(listing);
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
+  } catch (err) {
+    utils.error('Failed to convert asset to listing');
+    utils.error(err);
+  }
+}
+
+async function assetDataToListing(data) {
+  const assetContract = data.asset_contract;
+  let tokenAddress = '';
+  let schema = '';
+  let description = data.description;
+  let collectionName = '';
+  if (assetContract) {
+    tokenAddress = assetContract.address;
+    schema = assetContract.schema_name;
+    collectionName = assetContract.name;
+    if (assetContract.description) {
+      description = assetContract.description;
+    }
+  }
+  const listing = {
+    isListing: false,
+    hasBlueCheck: await isTokenVerified(tokenAddress),
+    schema,
+    asset: {
+      address: tokenAddress,
+      id: data.token_id,
+      collectionName,
+      description,
+      image: data.image_url,
+      imagePreview: data.image_preview_url,
+      searchCollectionName: getSearchFriendlyString(collectionName),
+      searchTitle: getSearchFriendlyString(data.name),
+      title: data.name
+    }
+  };
+  return listing;
 }
 
 async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
@@ -235,7 +374,9 @@ async function getListingsByCollectionNameAndPrice(
   startAfterPrice,
   startAfterMillis,
   limit,
-  listType
+  listType,
+  traitType,
+  traitValue
 ) {
   try {
     utils.log('Getting listings of a collection');
@@ -264,16 +405,12 @@ async function getListingsByCollectionNameAndPrice(
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }
 
-      // // TODO: filter by trait & value. NOTE: this matches exact object.
-      // // - clean up DB data & setting logic to use: 'array-contains', { trait_type, value }
-      // queryRef = queryRef.where('metadata.asset.rawData.traits', 'array-contains', {
-      //   display_type: null,
-      //   max_value: null,
-      //   order: null,
-      //   trait_count: 283,
-      //   trait_type: 'eyes',
-      //   value: 'Pink'
-      // });
+      if (traitType && traitValue) {
+        queryRef = queryRef.where('metadata.asset.traits', 'array-contains', {
+          traitType,
+          traitValue
+        });
+      }
 
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
@@ -404,6 +541,31 @@ app.get('/featured-collections', async (req, res) => {
     }
   } catch (err) {
     utils.error('Error fetching featured collections.');
+    utils.error(err);
+  }
+});
+
+// transaction events (for a collection or a token)
+app.get('/events', async (req, res) => {
+  const queryStr = decodeURIComponent(qs.stringify(req.query));
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + `events?${queryStr}`;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    const { data } = await axios.get(url, options);
+    const respStr = utils.jsonString(data);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
+  } catch (err) {
+    utils.error('Error occured while fetching events from opensea');
     utils.error(err);
   }
 });
@@ -799,14 +961,13 @@ app.get('/collections/:id/traits', async (req, res) => {
   let ret = [];
   const traitMap = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API_ASSETS + `?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const url = constants.OPENSEA_API + `assets/?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
   const options = {
     headers: {
       'X-API-KEY': authKey
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
     // console.log('data', data);
     data.assets.forEach((item) => {
@@ -1551,42 +1712,67 @@ async function waitForMissedTxn(user, payload) {
     try {
       const isUpdated = await db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(txnDocRef);
-        const buyer = txnDoc.get('buyer');
-        const seller = txnDoc.get('seller');
+        if (actionType === 'fulfill') {
+          const buyer = txnDoc.get('buyer');
+          const seller = txnDoc.get('seller');
 
-        const buyerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(buyer)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const sellerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(seller)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const buyerTxnDoc = await txn.get(buyerTxnRef);
-        const sellerTxnDoc = await txn.get(sellerTxnRef);
+          const buyerTxnDoc = await txn.get(buyerTxnRef);
+          const sellerTxnDoc = await txn.get(sellerTxnRef);
 
-        const buyerStatus = buyerTxnDoc.get('status');
-        const sellerStatus = sellerTxnDoc.get('status');
-        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
-          // orig txn confirmed
-          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
-          const txnData = JSON.parse(utils.jsonString(receipt));
-          const txnSuceeded = txnData.status === 1;
-          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
-          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
-          return txnSuceeded;
-        } else {
-          return false;
+          const buyerStatus = buyerTxnDoc.get('status');
+          const sellerStatus = sellerTxnDoc.get('status');
+          if (buyerStatus === 'pending' && sellerStatus === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed fulfill txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+            await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
+        } else if (actionType === 'cancel') {
+          const docRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(user)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          const doc = await txn.get(docRef);
+          const status = doc.get('status');
+          if (status === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed cancel txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(docRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
         }
+        return false;
       });
 
       if (isUpdated) {
@@ -2184,14 +2370,13 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API_ASSETS + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
     return data;
   } catch (err) {
@@ -2267,54 +2452,72 @@ async function checkOwnershipChange(doc) {
   const schema = order.metadata.schema;
   const address = order.metadata.asset.address;
   const id = order.metadata.asset.id;
-  const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
   if (side === 1) {
     // listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, contract, maker, address, id);
+      checkERC721Ownership(doc, maker, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, contract, maker, address, id);
+      checkERC1155Ownership(doc, maker, address, id);
     }
   } else if (side === 0) {
     // offer
-    // only delete offersreceived
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, contract, owner, address, id);
+      checkERC721Ownership(doc, owner, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, contract, owner, address, id);
+      checkERC1155Ownership(doc, owner, address, id);
     }
   }
 }
 
-async function checkERC721Ownership(doc, contract, owner, address, id) {
-  let newOwner = await contract.ownerOf(id);
-  newOwner = newOwner.trim().toLowerCase();
-  if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
-    doc.ref
-      .delete()
-      .then(() => {
-        utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
-      })
-      .catch((err) => {
-        utils.error('Error deleting stale order', doc.id, owner, err);
-      });
+async function checkERC721Ownership(doc, owner, address, id) {
+  try {
+    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+    let newOwner = await contract.ownerOf(id);
+    newOwner = newOwner.trim().toLowerCase();
+    if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting stale order', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
+    utils.error('Checking ERC721 Ownership failed', err);
+    if (err && err.message && err.message.indexOf('nonexistent token') > 0) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after token id non existent', doc.id, owner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting nonexistent token id order', doc.id, owner, err);
+        });
+    }
   }
 }
 
-async function checkERC1155Ownership(doc, contract, owner, address, id) {
-  const balance = await contract.balanceOf(owner, id);
-  if (owner !== constants.NULL_ADDRESS && balance === 0) {
-    console.log('stale', owner, owner, address, id);
-    doc.ref
-      .delete()
-      .then(() => {
-        console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
-      })
-      .catch((err) => {
-        console.error('Error deleting', doc.id, owner, err);
-      });
+async function checkERC1155Ownership(doc, owner, address, id) {
+  try {
+    const contract = new ethers.Contract(address, erc1155Abi, ethersProvider);
+    const balance = await contract.balanceOf(owner, id);
+    if (owner !== constants.NULL_ADDRESS && balance === 0) {
+      console.log('stale', owner, owner, address, id);
+      doc.ref
+        .delete()
+        .then(() => {
+          console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
+        })
+        .catch((err) => {
+          console.error('Error deleting', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
+    utils.error('Checking ERC1155 Ownership failed', err);
   }
 }
 
