@@ -323,20 +323,20 @@ async function assetDataToListing(data) {
     }
   }
   const listing = {
-      isListing: false,
-      hasBlueCheck: await isTokenVerified(tokenAddress),
-      schema,
-      asset: {
-        address: tokenAddress,
-        id: data.token_id,
-        collectionName,
-        description,
-        image: data.image_url,
-        imagePreview: data.image_preview_url,
-        searchCollectionName: getSearchFriendlyString(collectionName),
-        searchTitle: getSearchFriendlyString(data.name),
-        title: data.name
-      }
+    isListing: false,
+    hasBlueCheck: await isTokenVerified(tokenAddress),
+    schema,
+    asset: {
+      address: tokenAddress,
+      id: data.token_id,
+      collectionName,
+      description,
+      image: data.image_url,
+      imagePreview: data.image_preview_url,
+      searchCollectionName: getSearchFriendlyString(collectionName),
+      searchTitle: getSearchFriendlyString(data.name),
+      title: data.name
+    }
   };
   return listing;
 }
@@ -1712,42 +1712,67 @@ async function waitForMissedTxn(user, payload) {
     try {
       const isUpdated = await db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(txnDocRef);
-        const buyer = txnDoc.get('buyer');
-        const seller = txnDoc.get('seller');
+        if (actionType === 'fulfill') {
+          const buyer = txnDoc.get('buyer');
+          const seller = txnDoc.get('seller');
 
-        const buyerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(buyer)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const sellerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(seller)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const buyerTxnDoc = await txn.get(buyerTxnRef);
-        const sellerTxnDoc = await txn.get(sellerTxnRef);
+          const buyerTxnDoc = await txn.get(buyerTxnRef);
+          const sellerTxnDoc = await txn.get(sellerTxnRef);
 
-        const buyerStatus = buyerTxnDoc.get('status');
-        const sellerStatus = sellerTxnDoc.get('status');
-        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
-          // orig txn confirmed
-          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
-          const txnData = JSON.parse(utils.jsonString(receipt));
-          const txnSuceeded = txnData.status === 1;
-          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
-          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
-          return txnSuceeded;
-        } else {
-          return false;
+          const buyerStatus = buyerTxnDoc.get('status');
+          const sellerStatus = sellerTxnDoc.get('status');
+          if (buyerStatus === 'pending' && sellerStatus === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed fulfill txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+            await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
+        } else if (actionType === 'cancel') {
+          const docRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(user)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          const doc = await txn.get(docRef);
+          const status = doc.get('status');
+          if (status === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed cancel txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(docRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
         }
+        return false;
       });
 
       if (isUpdated) {
