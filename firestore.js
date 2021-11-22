@@ -579,7 +579,7 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
       const numTraits = rawTraits.length;
       const traits = [];
       for (const rawTrait of rawTraits) {
-        traits.push({traitType: rawTrait.trait_type, traitValue: rawTrait.value});
+        traits.push({traitType: rawTrait.trait_type, traitValue: String(rawTrait.value)});
       }
 
       const obj = {
