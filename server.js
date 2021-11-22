@@ -95,7 +95,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId, listType } = req.query;
+  const { tokenId, listType, traitType, traitValue } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -164,7 +164,9 @@ app.get('/listings', async (req, res) => {
       startAfterPrice,
       startAfterMillis,
       limit,
-      listType
+      listType,
+      traitType,
+      traitValue
     );
     if (resp) {
       res.set({
@@ -372,7 +374,9 @@ async function getListingsByCollectionNameAndPrice(
   startAfterPrice,
   startAfterMillis,
   limit,
-  listType
+  listType,
+  traitType,
+  traitValue
 ) {
   try {
     utils.log('Getting listings of a collection');
@@ -401,16 +405,12 @@ async function getListingsByCollectionNameAndPrice(
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }
 
-      // // TODO: filter by trait & value. NOTE: this matches exact object.
-      // // - clean up DB data & setting logic to use: 'array-contains', { trait_type, value }
-      // queryRef = queryRef.where('metadata.asset.rawData.traits', 'array-contains', {
-      //   display_type: null,
-      //   max_value: null,
-      //   order: null,
-      //   trait_count: 283,
-      //   trait_type: 'eyes',
-      //   value: 'Pink'
-      // });
+      if (traitType && traitValue) {
+        queryRef = queryRef.where('metadata.asset.traits', 'array-contains', {
+          traitType,
+          traitValue
+        });
+      }
 
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
