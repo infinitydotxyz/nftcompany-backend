@@ -2938,13 +2938,14 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
 
 async function isTokenVerified(address) {
   const tokenAddress = address.trim().toLowerCase();
-  const doc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(tokenAddress)
-    .get();
-  return doc.get('hasBlueCheck');
+  const doc = await db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(tokenAddress).get();
+  if (doc.exists) {
+    const hasBlueCheck = doc.get('hasBlueCheck');
+    if (hasBlueCheck) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function getSearchFriendlyString(input) {
