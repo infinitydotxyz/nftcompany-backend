@@ -125,11 +125,11 @@ app.get('/listings', async (req, res) => {
 
   if (
     listType &&
-    (listType !== types.ListType.FIXED_PRICE &&
-      listType !== types.ListType.DUTCH_AUCTION &&
-      listType !== types.ListType.ENGLISH_AUCTION)
+    listType !== types.ListType.FIXED_PRICE &&
+    listType !== types.ListType.DUTCH_AUCTION &&
+    listType !== types.ListType.ENGLISH_AUCTION
   ) {
-    utils.error('Input error - invalid list type')
+    utils.error('Input error - invalid list type');
     res.sendStatus(500);
     return;
   }
@@ -539,13 +539,19 @@ app.get('/featured-collections', async (req, res) => {
 
     if (result.docs) {
       const { results: collections, count } = utils.docsToArray(result.docs);
-      res.send({ collections, count });
+      const respStr = utils.jsonString({ collections, count });
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
     } else {
       res.sendStatus(404);
     }
   } catch (err) {
     utils.error('Error fetching featured collections.');
     utils.error(err);
+    res.sendStatus(500);
   }
 });
 
@@ -571,6 +577,7 @@ app.get('/events', async (req, res) => {
   } catch (err) {
     utils.error('Error occured while fetching events from opensea');
     utils.error(err);
+    res.sendStatus(500);
   }
 });
 
@@ -962,7 +969,7 @@ app.get('/collections', async (req, res) => {
 app.get('/collections/:id/traits', async (req, res) => {
   utils.log('Fetching traits from NFT contract address.');
   const { id } = req.params;
-  let ret = [];
+  let resp = {};
   const traitMap = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
   const url = constants.OPENSEA_API + `assets/?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
@@ -974,29 +981,36 @@ app.get('/collections/:id/traits', async (req, res) => {
   try {
     const { data } = await axios.get(url, options);
     // console.log('data', data);
-    data.assets.forEach((item) => {
-      item.traits.forEach((trait) => {
-        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
-        traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
-        if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
-          traitMap[trait.trait_type].values.push(trait.value);
-        }
-      });
-    });
     const traits = [];
-    Object.keys(traitMap).forEach((traitName) => {
-      traits.push(traitMap[traitName]);
-    });
+    if (data && data.assets) {
+      data.assets.forEach((item) => {
+        item.traits.forEach((trait) => {
+          traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+          traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
+          if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+            traitMap[trait.trait_type].values.push(trait.value);
+          }
+        });
+      });
+      Object.keys(traitMap).forEach((traitName) => {
+        traits.push(traitMap[traitName]);
+      });
+    }
 
-    ret = {
+    resp = {
       traits
     };
+    const respStr = utils.jsonString(resp);
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=300',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
+    res.sendStatus(500);
   }
-
-  res.send(utils.jsonString(ret));
 });
 
 app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
