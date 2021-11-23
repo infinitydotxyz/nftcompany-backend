@@ -123,6 +123,17 @@ app.get('/listings', async (req, res) => {
     return;
   }
 
+  if (
+    listType &&
+    (listType !== types.ListType.FIXED_PRICE &&
+      listType !== types.ListType.DUTCH_AUCTION &&
+      listType !== types.ListType.ENGLISH_AUCTION)
+  ) {
+    utils.error('Input error - invalid list type')
+    res.sendStatus(500);
+    return;
+  }
+
   let resp;
   if (tokenAddress && tokenId) {
     resp = await getListingByTokenAddressAndId(tokenId, tokenAddress, limit);
@@ -391,16 +402,9 @@ async function getListingsByCollectionNameAndPrice(
         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
-        .where('metadata.basePriceInEth', '<=', +priceMax);
+        .where('metadata.basePriceInEth', '<=', +priceMax)
+        .where('metadata.listingType', '==', listType);
 
-      if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
-        const buyNowToken = constants.NULL_ADDRESS;
-        queryRef = queryRef.where(
-          'paymentToken',
-          '==',
-          listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
-        );
-      }
       if (collectionName) {
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }

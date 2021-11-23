@@ -184,7 +184,7 @@ async function populateCollectionListings(startAfterSearchCollectionName, startA
 
       batch.set(docRef, obj, { merge: true });
 
-      if ((i + 1) % 500 === 0) {
+      if ((i + 1) % limit === 0) {
         console.log(`Writing record ${i + 1}`);
         batchCommits.push(batch.commit());
         batch = db.batch();
@@ -579,7 +579,7 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
       const numTraits = rawTraits.length;
       const traits = [];
       for (const rawTrait of rawTraits) {
-        traits.push({traitType: rawTrait.trait_type, traitValue: String(rawTrait.value)});
+        traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
       }
 
       const obj = {
@@ -593,7 +593,90 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
 
       batch.set(ref, obj, { merge: true });
 
-      if ((i + 1) % 500 === 0) {
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
+async function updateListingType(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateListingTypeHelper(+startAfterCreatedAt, limit);
+    await updateListingType(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateListingTypeHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+      }
+
+      let listingType = 'fixedPrice';
+      if (data.englishAuctionReservePrice !== undefined) {
+        listingType = 'englishAuction';
+      } else if (data.saleKind === 1) {
+        listingType = 'dutchAuction';
+      }
+
+      const obj = {
+        metadata: {
+          listingType
+        }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
         console.log(`Writing record ${i + 1}`);
         batchCommits.push(batch.commit());
         batch = db.batch();
@@ -616,7 +699,9 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-updateTraits(process.argv[2]).catch((e) => console.error(e));
+// updateTraits(process.argv[2]).catch((e) => console.error(e));
+
+updateListingType(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
