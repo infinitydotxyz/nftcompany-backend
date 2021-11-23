@@ -968,7 +968,7 @@ app.get('/collections', async (req, res) => {
 // get traits & their values of a collection
 app.get('/collections/:id/traits', async (req, res) => {
   utils.log('Fetching traits from NFT contract address.');
-  const { id } = req.params;
+  const id = req.params.id.trim().toLowerCase();
   let resp = {};
   const traitMap = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
@@ -1000,6 +1000,10 @@ app.get('/collections/:id/traits', async (req, res) => {
     resp = {
       traits
     };
+    // store in firestore for future use
+    db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(id).set(resp, { merge: true });
+
+    // return response
     const respStr = utils.jsonString(resp);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=300',
@@ -2191,6 +2195,15 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .doc(getDocId({ tokenAddress, tokenId, basePrice }));
 
   batch.set(listingRef, payload, { merge: true });
+
+  // store as asset for future use
+  const listingAsAssetRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.ASSETS_COLL)
+    .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
+
+  batch.set(listingAsAssetRef, payload, { merge: true });
 
   // update collection listings
   try {
