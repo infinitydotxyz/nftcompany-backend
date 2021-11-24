@@ -97,7 +97,7 @@ app.get("/opensea-listings", async (req, res) => {
   const assetContractAddress = tokenAddress;
   const assetContractAddresses = tokenAddresses;
   const resp = await fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection);
-  const parsedResp = resp.map((asset) => {
+  const parsedResp = (resp || []).map((asset) => {
     try {
       return JSON.parse(asset);
     } catch (e) {
@@ -110,6 +110,7 @@ app.get("/opensea-listings", async (req, res) => {
       'Cache-Control': 'must-revalidate, max-age=60',
     });
   }
+
   if (parsedResp) {
     res.send(parsedResp);
   } else {
@@ -2462,7 +2463,8 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
   const orderDirectionQuery = orderDirection ? { order_direction: orderDirection } : { order_direction: defaultOrderDirection };
 
   const offsetQuery = offset ? { offset } : { offset: 0 };
-  const limitQuery = limit ? { limit } : { limit: 50 };
+  // limit is capped at 50
+  const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
   const collectionQuery = collection ? { collection } : {};
 
   const options = {
