@@ -3183,8 +3183,12 @@ async function isTokenVerified(address) {
 }
 
 function getSearchFriendlyString(input) {
-  const noSpace = input.replace(/\s/g, '');
-  return noSpace.toLowerCase();
+  if (!input) {
+    return '';
+  }
+  // remove spaces, dashes and underscores only
+  const output = input.replace(/[\s-_]/g, '');
+  return output.toLowerCase();
 }
 
 function toFixed5(num) {
