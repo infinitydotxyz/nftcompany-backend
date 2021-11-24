@@ -42,6 +42,8 @@ app.listen(PORT, () => {
   utils.log(`Server listening on port ${PORT}...`);
 });
 
+
+
 app.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
     req.path,
@@ -56,6 +58,12 @@ app.all('/u/*', async (req, res, next) => {
 });
 
 // ================================================ GETS ===================================================================
+
+app.get("/test", async (req, res) => {
+  const data =await  getAssetsFromOpenseaByOwner('0x60e4d786628fea6478f785a6d7e704777c86a7c6', 50, 0)
+  console.log(data);
+  res.send(200)
+})
 
 // check if token is verified or has bonus reward
 app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
@@ -2367,7 +2375,7 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
       data = await getAssetsFromUnmarshal(address, limit, offset);
       break;
     case 'opensea':
-      data = await getAssetsFromOpensea(address, limit, offset);
+      data = await getAssetsFromOpenseaByOwner(address, limit, offset);
       break;
     default:
       utils.log('Invalid data source for fetching nft data of wallet');
@@ -2398,19 +2406,73 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
   }
 }
 
-async function getAssetsFromOpensea(address, limit, offset) {
+function getAssetsFromOpenseaByOwner(address, limit, offset) {
+  return getAssetsFromOpensea(address, undefined, undefined, undefined, undefined, undefined, offset, limit, undefined);
+}
+
+/**
+ *
+ * @param owner The address of the owner of the assets
+ * @param tokenIds An array of token IDs to search for
+ * @param assetContractAddress The NFT contract address for the assets
+ * @param assetContractAddresses An array of contract addresses to search for
+ * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price, total_price) defaults to total_price
+ * @param orderDirection asc or desc
+ * @param offset
+ * @param limit
+ * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
+ * @returns {Promise<void>}
+ */
+async function getAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection) {
   utils.log('Fetching assets from opensea');
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API + 'assets/';
+  const ownerQuery = owner ? { owner } : {};
+  const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
+  const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress} : {};
+  const assetContractAddressesQuery = (assetContractAddresses || []).length > 0 ? {asset_contract_addresses: assetContractAddresses} : {};
+
+  const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price', 'total_price'].includes(orderBy);
+  const defaultOrderBy = 'total_price';
+  if(orderBy && !isValidOrderByOption){
+    utils.error(`Invalid order by option passed while fetching assets from opensea`);
+    orderBy = defaultOrderBy;
+  }
+  const orderByQuery = orderBy ? { order_buy: orderBy }: { order_buy: defaultOrderBy};
+
+  const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
+  const defaultOrderDirection = 'desc';
+  if(orderDirection && !isValidOrderDirection) {
+    utils.error(`Invalid order direction option passed while fetching assets from opensea`);
+    orderDirection = defaultOrderDirection;
+  }
+  const orderDirectionQuery = orderDirection ? {order_direction: orderDirection} : {order_direction: defaultOrderDirection};
+
+  const offsetQuery = offset ? { offset } : { offset: 0};
+  const limitQuery = limit ? {limit} : { limit: 50 };
+  const collectionQuery = collection ? { collection } : {};
+
   const options = {
     headers: {
       'X-API-KEY': authKey
+    },
+    query: {
+      ...ownerQuery,
+      ...tokenIdsQuery,
+      ...assetContractAddressQuery,
+      ...assetContractAddressesQuery,
+      ...orderByQuery,
+      ...orderDirectionQuery,
+      ...offsetQuery,
+      ...limitQuery,
+      ...collectionQuery
     }
   };
-  try {
+
+  try{
     const { data } = await axios.get(url, options);
     return data;
-  } catch (err) {
+  } catch(err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
   }
@@ -3214,3 +3276,4 @@ function getDocId({ tokenAddress, tokenId, basePrice }) {
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
 }
+
