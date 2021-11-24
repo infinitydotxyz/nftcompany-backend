@@ -68,7 +68,7 @@ function updateAllCollections(records) {
       hasBlueCheck: verifiedBool
     };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
-      obj.searchCollectionName = name.replace(/\s/g, '').toLowerCase();
+      obj.searchCollectionName = name.replace(/[\s-_]/g, '').toLowerCase();
       const docRef = db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
