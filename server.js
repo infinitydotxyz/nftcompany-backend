@@ -431,8 +431,11 @@ async function getListingsByCollectionNameAndPrice(
         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
-        .where('metadata.basePriceInEth', '<=', +priceMax)
-        .where('metadata.listingType', '==', listType);
+        .where('metadata.basePriceInEth', '<=', +priceMax);
+
+      if (listType) {
+        queryRef = queryRef.where('metadata.listingType', '==', listType);
+      }
 
       if (collectionName) {
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
