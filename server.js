@@ -43,6 +43,8 @@ app.listen(PORT, () => {
   utils.log(`Server listening on port ${PORT}...`);
 });
 
+
+
 app.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
     req.path,
@@ -86,6 +88,35 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+// fetch listings from opensea api
+/**
+ * supports queries 
+ * - query owner, tokenAddresses or tokenAddress, tokenIds, 
+ * - query tokenAddress, tokenIds
+ * - query tokenAddresses, tokenIds
+ * - query collection
+ * - filters: offset, limit (max 50)
+ * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
+ */
+app.get("/opensea/listings", async (req, res) => {
+
+  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } = req.query;
+
+  const assetContractAddress = tokenAddress;
+  const assetContractAddresses = tokenAddresses;
+  const resp = await fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection);
+  const stringifiedResp = utils.jsonString(resp);
+  if (stringifiedResp) {
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+    });
+    res.send(stringifiedResp);
+  } else {
+    res.sendStatus(500);
+  }
+})
 
 // fetch listings (for Explore page)
 /*
@@ -265,18 +296,7 @@ async function fetchAssetFromOpensea(tokenId, tokenAddress) {
     };
     const { data } = await axios.get(url, options);
     // store asset for future use
-    const newDoc = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.ASSETS_COLL)
-      .doc();
-    const assetData = {};
-    const marshalledData = await assetDataToListing(data);
-    assetData.metadata = marshalledData;
-    assetData.rawData = data;
-    await newDoc.set(assetData);
-
-    return getAssetAsListing(newDoc.id, assetData);
+    return saveRawOpenseaAssetInDatabase(data);
   } catch (err) {
     utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
     utils.error(err);
@@ -2370,7 +2390,7 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
       data = await getAssetsFromUnmarshal(address, limit, offset);
       break;
     case 'opensea':
-      data = await getAssetsFromOpensea(address, limit, offset);
+      data = await getAssetsFromOpenseaByOwner(address, limit, offset);
       break;
     case 'covalent':
       data = await getAssetsFromCovalent(address, limit, offset);
@@ -2428,23 +2448,112 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
   }
 }
 
-async function getAssetsFromOpensea(address, limit, offset) {
+function getAssetsFromOpenseaByOwner(address, limit, offset) {
+  return fetchAssetsFromOpensea(address, undefined, undefined, undefined, undefined, undefined, offset, limit, undefined);
+}
+
+/**
+ *
+ * @param owner The address of the owner of the assets
+ * @param tokenIds An array of token IDs to search for
+ * @param assetContractAddress The NFT contract address for the assets
+ * @param assetContractAddresses An array of contract addresses to search for
+ * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price) defaults to sale_price
+ * @param orderDirection asc or desc
+ * @param offset
+ * @param limit
+ * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
+ */
+async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection) {
   utils.log('Fetching assets from opensea');
   const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API + 'assets/';
+  const ownerQuery = owner ? { owner } : {};
+
+  const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
+  const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
+  const assetContractAddressesQuery = (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
+
+
+  const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
+  const defaultOrderBy = 'sale_price';
+  if (orderBy && !isValidOrderByOption) {
+    utils.error(`Invalid order by option passed while fetching assets from opensea`);
+    orderBy = defaultOrderBy;
+  }
+  const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
+
+  const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
+  const defaultOrderDirection = 'desc';
+  if (orderDirection && !isValidOrderDirection) {
+    utils.error(`Invalid order direction option passed while fetching assets from opensea`);
+    orderDirection = defaultOrderDirection;
+  }
+  const orderDirectionQuery = orderDirection ? { order_direction: orderDirection } : { order_direction: defaultOrderDirection };
+
+  const offsetQuery = offset ? { offset } : { offset: 0 };
+  // limit is capped at 50
+  const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
+  const collectionQuery = collection ? { collection } : {};
+
   const options = {
     headers: {
       'X-API-KEY': authKey
+    },
+    params: {
+      ...ownerQuery,
+      ...tokenIdsQuery,
+      ...assetContractAddressQuery,
+      ...assetContractAddressesQuery,
+      ...orderByQuery,
+      ...orderDirectionQuery,
+      ...offsetQuery,
+      ...limitQuery,
+      ...collectionQuery,
+
+    },
+    paramsSerializer: params => {
+      return qs.stringify(params, { arrayFormat: 'repeat' })
     }
   };
+
   try {
     const { data } = await axios.get(url, options);
-    return data;
+    const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
+      return JSON.parse(await saveRawOpenseaAssetInDatabase(rawAssetData));
+    });
+
+    const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
+    const assetListings = assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value);
+
+    return assetListings;
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
   }
 }
+
+
+async function saveRawOpenseaAssetInDatabase(rawAssetData) {
+  try {
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc();
+    const assetData = {};
+
+    const marshalledData = await assetDataToListing(rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+    await newDoc.set(assetData);
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Error occured while saving asset data in database');
+    utils.error(err);
+  }
+}
+
 
 // ============================================= Delete helpers ==========================================================
 
@@ -3244,3 +3353,4 @@ function getDocId({ tokenAddress, tokenId, basePrice }) {
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
 }
+
