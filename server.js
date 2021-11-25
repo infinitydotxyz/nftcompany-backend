@@ -109,7 +109,7 @@ app.get("/opensea-listings", async (req, res) => {
     try {
       return JSON.parse(asset);
     } catch (e) {
-      return
+      return undefined;
     }
   }).filter(asset => asset !== undefined);
 
@@ -2497,7 +2497,7 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
   };
 
   try {
-    const { data, request } = await axios.get(url, options);
+    const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
       return saveRawOpenseaAssetInDatabase(rawAssetData);
     });
