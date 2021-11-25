@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // polymain
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
@@ -29,7 +29,8 @@ const nftDataSources = {
   0: 'nftc',
   1: 'opensea',
   2: 'unmarshal',
-  3: 'alchemy'
+  3: 'alchemy',
+  4: 'covalent'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
 const DEFAULT_MIN_ETH = 0.0000001;
@@ -1498,6 +1499,7 @@ async function getTxnData(txnHash, actionType) {
     if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
       isValid = false;
     }
+    // polymain
     if (chainId !== constants.ETH_CHAIN_ID) {
       isValid = false;
     }
@@ -1555,6 +1557,7 @@ async function isValidNftcTxn(txnHash, actionType) {
     if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
       isValid = false;
     }
+    // polymain
     if (chainId !== constants.ETH_CHAIN_ID) {
       isValid = false;
     }
@@ -2369,6 +2372,9 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
     case 'opensea':
       data = await getAssetsFromOpensea(address, limit, offset);
       break;
+    case 'covalent':
+      data = await getAssetsFromCovalent(address, limit, offset);
+      break;
     default:
       utils.log('Invalid data source for fetching nft data of wallet');
   }
@@ -2381,6 +2387,30 @@ async function getAssetsFromNftc(address, limit, offset) {
 
 async function getAssetsFromAlchemy(address, limit, offset) {
   utils.log('Fetching assets from alchemy');
+}
+
+async function getAssetsFromCovalent(address, limit, offset) {
+  utils.log('Fetching assets from covalent');
+  const apiBase = 'https://api.covalenthq.com/v1/';
+  const chain = '137';
+  const authKey = process.env.covalentKey;
+  const url = apiBase + chain + '/address/' + address + '/balances_v2/?nft=true&no-nft-fetch=false&key=' + authKey;
+  try {
+    const { data } = await axios.get(url);
+    const items = data.data.items;
+    const resp = { count: 0, assets: [] };
+    for (const item of items) {
+      const type = item.type;
+      if (type === 'nft') {
+        resp.count++;
+        resp.assets.push(item);
+      }
+    }
+    return resp;
+  } catch (err) {
+    utils.error('Error occured while fetching assets from covalent');
+    utils.error(err);
+  }
 }
 
 async function getAssetsFromUnmarshal(address, limit, offset) {
