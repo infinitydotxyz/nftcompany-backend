@@ -89,7 +89,15 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 });
 
 // fetch listings from opensea api
-// TODO document queries
+/**
+ * supports queries 
+ * - query owner, tokenAddresses or tokenAddress, tokenIds, 
+ * - query tokenAddress, tokenIds
+ * - query tokenAddresses, tokenIds
+ * - query collection
+ * - filters: offset, limit (max 50)
+ * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
+ */
 app.get("/opensea-listings", async (req, res) => {
 
   const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } = req.query;
@@ -2429,7 +2437,7 @@ function getAssetsFromOpenseaByOwner(address, limit, offset) {
  * @param tokenIds An array of token IDs to search for
  * @param assetContractAddress The NFT contract address for the assets
  * @param assetContractAddresses An array of contract addresses to search for
- * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price) defaults to total_price
+ * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price) defaults to sale_price
  * @param orderDirection asc or desc
  * @param offset
  * @param limit
