@@ -43,8 +43,6 @@ app.listen(PORT, () => {
   utils.log(`Server listening on port ${PORT}...`);
 });
 
-
-
 app.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
     req.path,
@@ -91,21 +89,31 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 
 // fetch listings from opensea api
 /**
- * supports queries 
- * - query owner, tokenAddresses or tokenAddress, tokenIds, 
+ * supports queries
+ * - query owner, tokenAddresses or tokenAddress, tokenIds,
  * - query tokenAddress, tokenIds
  * - query tokenAddresses, tokenIds
  * - query collection
  * - filters: offset, limit (max 50)
  * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
  */
-app.get("/opensea/listings", async (req, res) => {
-
-  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } = req.query;
+app.get('/opensea/listings', async (req, res) => {
+  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } =
+    req.query;
 
   const assetContractAddress = tokenAddress;
   const assetContractAddresses = tokenAddresses;
-  const resp = await fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection);
+  const resp = await fetchAssetsFromOpensea(
+    owner,
+    tokenIds,
+    assetContractAddress,
+    assetContractAddresses,
+    orderBy,
+    orderDirection,
+    offset,
+    limit,
+    collection
+  );
   const stringifiedResp = utils.jsonString(resp);
   if (stringifiedResp) {
     res.set({
@@ -116,7 +124,7 @@ app.get("/opensea/listings", async (req, res) => {
   } else {
     res.sendStatus(500);
   }
-})
+});
 
 // fetch listings (for Explore page)
 /*
@@ -2449,7 +2457,17 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 }
 
 function getAssetsFromOpenseaByOwner(address, limit, offset) {
-  return fetchAssetsFromOpensea(address, undefined, undefined, undefined, undefined, undefined, offset, limit, undefined);
+  return fetchAssetsFromOpensea(
+    address,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    offset,
+    limit,
+    undefined
+  );
 }
 
 /**
@@ -2464,7 +2482,17 @@ function getAssetsFromOpenseaByOwner(address, limit, offset) {
  * @param limit
  * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
  */
-async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection) {
+async function fetchAssetsFromOpensea(
+  owner,
+  tokenIds,
+  assetContractAddress,
+  assetContractAddresses,
+  orderBy,
+  orderDirection,
+  offset,
+  limit,
+  collection
+) {
   utils.log('Fetching assets from opensea');
   const authKey = process.env.openseaKey;
   const url = constants.OPENSEA_API + 'assets/';
@@ -2472,8 +2500,8 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
 
   const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
   const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
-  const assetContractAddressesQuery = (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
-
+  const assetContractAddressesQuery =
+    (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
 
   const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
   const defaultOrderBy = 'sale_price';
@@ -2489,7 +2517,9 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
     utils.error(`Invalid order direction option passed while fetching assets from opensea`);
     orderDirection = defaultOrderDirection;
   }
-  const orderDirectionQuery = orderDirection ? { order_direction: orderDirection } : { order_direction: defaultOrderDirection };
+  const orderDirectionQuery = orderDirection
+    ? { order_direction: orderDirection }
+    : { order_direction: defaultOrderDirection };
 
   const offsetQuery = offset ? { offset } : { offset: 0 };
   // limit is capped at 50
@@ -2509,22 +2539,23 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
       ...orderDirectionQuery,
       ...offsetQuery,
       ...limitQuery,
-      ...collectionQuery,
-
+      ...collectionQuery
     },
-    paramsSerializer: params => {
-      return qs.stringify(params, { arrayFormat: 'repeat' })
+    paramsSerializer: (params) => {
+      return qs.stringify(params, { arrayFormat: 'repeat' });
     }
   };
 
   try {
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      return JSON.parse(await saveRawOpenseaAssetInDatabase(rawAssetData));
+      return await saveRawOpenseaAssetInDatabase(rawAssetData);
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-    const assetListings = assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value);
+    const assetListings = assetListingPromiseResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((fulfilledResult) => fulfilledResult.value);
 
     return assetListings;
   } catch (err) {
@@ -2533,19 +2564,20 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
   }
 }
 
-
 async function saveRawOpenseaAssetInDatabase(rawAssetData) {
   try {
+    const assetData = {};
+    const marshalledData = await assetDataToListing(rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+
+    const tokenAddress = marshalledData.asset.address.toLowerCase();
+    const tokenId = marshalledData.asset.id;
     const newDoc = db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .doc();
-    const assetData = {};
-
-    const marshalledData = await assetDataToListing(rawAssetData);
-    assetData.metadata = marshalledData;
-    assetData.rawData = rawAssetData;
+      .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {
@@ -2553,7 +2585,6 @@ async function saveRawOpenseaAssetInDatabase(rawAssetData) {
     utils.error(err);
   }
 }
-
 
 // ============================================= Delete helpers ==========================================================
 
@@ -3353,4 +3384,3 @@ function getDocId({ tokenAddress, tokenId, basePrice }) {
   utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
   return id;
 }
-
