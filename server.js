@@ -105,13 +105,13 @@ app.get("/opensea/listings", async (req, res) => {
   const assetContractAddress = tokenAddress;
   const assetContractAddresses = tokenAddresses;
   const resp = await fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection);
-
-  if (resp) {
+  const stringifiedResp = utils.jsonString(resp);
+  if (stringifiedResp) {
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
     });
-    res.send(resp);
+    res.send(stringifiedResp);
   } else {
     res.sendStatus(500);
   }
@@ -2494,7 +2494,7 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-    const assetListings = utils.jsonString(assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value));
+    const assetListings = assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value);
 
     return assetListings;
   } catch (err) {
