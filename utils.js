@@ -1,6 +1,7 @@
 const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
 const rateLimit = require('express-rate-limit');
+const { uniqBy } = require('lodash');
 
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
@@ -184,13 +185,6 @@ module.exports = {
   },
 
   getUniqueItemsByProperties: function (items, propNames) {
-    const propNamesArray = Array.from(propNames);
-    const isPropValuesEqual = (subject, target, propNames) => {
-      return propNames.every((propName) => subject[propName] === target[propName]);
-    };
-    return items.filter(
-      (item, index, array) =>
-        index === array.findIndex((foundItem) => isPropValuesEqual(foundItem, item, propNamesArray))
-    );
+    return uniqBy(items, 'address');
   }
 };
