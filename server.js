@@ -304,7 +304,7 @@ async function fetchAssetFromOpensea(tokenId, tokenAddress) {
     };
     const { data } = await axios.get(url, options);
     // store asset for future use
-    return saveRawOpenseaAssetInDatabase(data);
+    return await saveRawOpenseaAssetInDatabase(data);
   } catch (err) {
     utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
     utils.error(err);
@@ -2549,7 +2549,7 @@ async function fetchAssetsFromOpensea(
   try {
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      return await saveRawOpenseaAssetInDatabase(rawAssetData);
+      return JSON.parse(await saveRawOpenseaAssetInDatabase(rawAssetData));
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
