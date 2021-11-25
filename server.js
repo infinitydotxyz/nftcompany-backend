@@ -2449,9 +2449,9 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
   const url = constants.OPENSEA_API + 'assets/';
   const ownerQuery = owner ? { owner } : {};
 
-  const tokenIdsQuery = tokenIds?.length > 0 ? { token_ids: tokenIds } : {};
+  const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
   const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
-  const assetContractAddressesQuery = assetContractAddresses?.length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
+  const assetContractAddressesQuery = (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
 
 
   const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
