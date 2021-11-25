@@ -2552,7 +2552,13 @@ async function fetchAssetsFromOpensea(
   try {
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      return JSON.parse(await saveRawOpenseaAssetInDatabase(rawAssetData));
+      const assetData = {};
+      const marshalledData = await assetDataToListing(rawAssetData);
+      assetData.metadata = marshalledData;
+      assetData.rawData = rawAssetData;
+      const tokenAddress = marshalledData.asset.address.toLowerCase();
+      const tokenId = marshalledData.asset.id;
+      return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
@@ -2560,9 +2566,40 @@ async function fetchAssetsFromOpensea(
       .filter((result) => result.status === 'fulfilled')
       .map((fulfilledResult) => fulfilledResult.value);
 
+    // async store in db
+    saveRawOpenseaAssetBatchInDatabase(assetListings);
     return assetListings;
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+}
+
+async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
+  try {
+    const batch = db.batch();
+
+    for (const al of assetListings) {
+      const listing = al.listings[0];
+      const tokenAddress = listing.metadata.asset.address.toLowerCase();
+      const tokenId = listing.metadata.asset.id;
+
+      const newDoc = db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.ASSETS_COLL)
+        .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
+
+      batch.set(newDoc, listing, { merge: true });
+    }
+
+    // commit batch
+    batch.commit().catch((err) => {
+      utils.error('Error occured while batch saving asset data in database');
+      utils.error(err);
+    });
+  } catch (err) {
+    utils.error('Error occured while batch saving asset data in database');
     utils.error(err);
   }
 }
