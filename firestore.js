@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // polymain
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
 
 const { readFile } = require('fs').promises;
 const { writeFileSync, appendFileSync } = require('fs');

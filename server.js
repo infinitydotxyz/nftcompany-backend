@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // polymain
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
@@ -1530,7 +1530,7 @@ async function getTxnData(txnHash, actionType) {
     if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
       isValid = false;
     }
-    // polymain
+    // todo: adi polymain; do not remove this comment
     if (chainId !== constants.ETH_CHAIN_ID) {
       isValid = false;
     }
@@ -1588,7 +1588,7 @@ async function isValidNftcTxn(txnHash, actionType) {
     if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
       isValid = false;
     }
-    // polymain
+    // todo: adi polymain; do not remove this comment
     if (chainId !== constants.ETH_CHAIN_ID) {
       isValid = false;
     }
