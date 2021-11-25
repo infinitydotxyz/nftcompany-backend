@@ -98,29 +98,20 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
  * - filters: offset, limit (max 50)
  * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
  */
-app.get("/opensea-listings", async (req, res) => {
+app.get("/opensea/listings", async (req, res) => {
 
   const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } = req.query;
 
   const assetContractAddress = tokenAddress;
   const assetContractAddresses = tokenAddresses;
   const resp = await fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, assetContractAddresses, orderBy, orderDirection, offset, limit, collection);
-  const parsedResp = (resp || []).map((asset) => {
-    try {
-      return JSON.parse(asset);
-    } catch (e) {
-      return undefined;
-    }
-  }).filter(asset => asset !== undefined);
 
-  if (parsedResp) {
+  if (resp) {
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(resp, 'utf8')
     });
-  }
-
-  if (parsedResp) {
-    res.send(parsedResp);
+    res.send(resp);
   } else {
     res.sendStatus(500);
   }
@@ -2499,11 +2490,11 @@ async function fetchAssetsFromOpensea(owner, tokenIds, assetContractAddress, ass
   try {
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      return saveRawOpenseaAssetInDatabase(rawAssetData);
+      return JSON.parse(await saveRawOpenseaAssetInDatabase(rawAssetData));
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-    const assetListings = assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value);
+    const assetListings = utils.jsonString(assetListingPromiseResults.filter((result) => result.status === 'fulfilled').map((fulfilledResult) => fulfilledResult.value));
 
     return assetListings;
   } catch (err) {
