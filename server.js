@@ -970,7 +970,6 @@ app.get('/collections', async (req, res) => {
       .limit(10)
       .get()
       .then((data) => {
-        // to enable cdn cache
         let resp = data.docs.map((doc) => {
           const docData = doc.data();
           return {
@@ -982,6 +981,7 @@ app.get('/collections', async (req, res) => {
         // remove duplicates and take only the first 10 results
         resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
         const respStr = utils.jsonString(resp);
+        // to enable cdn cache
         res.set({
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -995,6 +995,31 @@ app.get('/collections', async (req, res) => {
   } else {
     res.send(utils.jsonString([]));
   }
+});
+
+app.get('/collections/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  utils.log('Fetching collection info for', slug);
+  db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    .where('searchCollectionName', '==', slug)
+    .limit(1)
+    .get()
+    .then((data) => {
+      const resp = data.docs.map((doc) => {
+        return doc.data();
+      });
+      const respStr = utils.jsonString(resp);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
+    })
+    .catch((err) => {
+      utils.error('Failed to get collection info for', slug, err);
+      res.sendStatus(500);
+    });
 });
 
 // get traits & their values of a collection
