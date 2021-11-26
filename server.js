@@ -98,12 +98,17 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
  * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
  */
 app.get('/opensea/listings', async (req, res) => {
-  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } =
-    req.query;
-
+  const { limit, tokenId, tokenAddress, sortByPriceDirection } = req.query;
+  const owner = undefined;
+  const collection = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
   const assetContractAddress = tokenAddress;
-  const assetContractAddresses = tokenAddresses;
-  const resp = await fetchAssetsFromOpensea(
+  const tokenIds = [tokenId].filter((item) => item);
+  const orderBy = 'sale_price';
+  const assetContractAddresses = undefined;
+  const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
+  const offset = 0;
+  // const assetContractAddresses = tokenAddresses;
+  const fetchResp = await fetchAssetsFromOpensea(
     owner,
     tokenIds,
     assetContractAddress,
@@ -114,6 +119,19 @@ app.get('/opensea/listings', async (req, res) => {
     limit,
     collection
   );
+  let resp;
+  if (fetchResp) {
+    resp = fetchResp.reduce(
+      (acc, item) => {
+        if (item && item.listings) {
+          acc.count += 1;
+          acc.listings = [...acc.listings, ...item.listings];
+        }
+        return acc;
+      },
+      { count: 0, listings: [] }
+    );
+  }
   const stringifiedResp = utils.jsonString(resp);
   if (stringifiedResp) {
     res.set({
