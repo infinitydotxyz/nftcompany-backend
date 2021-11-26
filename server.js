@@ -90,24 +90,21 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 // fetch listings from opensea api
 /**
  * supports queries
- * - query owner, tokenAddresses or tokenAddress, tokenIds,
- * - query tokenAddress, tokenIds
- * - query tokenAddresses, tokenIds
- * - query collection
+ * - query tokenAddress
+ * - query tokenAddress, tokenId
  * - filters: offset, limit (max 50)
- * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
+ * - sorting: sortByPriceDirection: 'asc' | 'desc' orderBy: 'sale_date' | 'sale_count' | 'sale_price'
  */
 app.get('/opensea/listings', async (req, res) => {
-  const { limit, tokenId, tokenAddress, sortByPriceDirection } = req.query;
+  const { limit, tokenId, tokenAddress, sortByPriceDirection, orderBy } = req.query;
   const owner = undefined;
   const collection = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
   const assetContractAddress = tokenAddress;
   const tokenIds = [tokenId].filter((item) => item);
-  const orderBy = 'sale_price';
   const assetContractAddresses = undefined;
   const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
   const offset = 0;
-  // const assetContractAddresses = tokenAddresses;
+
   const fetchResp = await fetchAssetsFromOpensea(
     owner,
     tokenIds,
@@ -988,7 +985,6 @@ app.get('/collections', async (req, res) => {
       .limit(10)
       .get()
       .then((data) => {
-        // to enable cdn cache
         let resp = data.docs.map((doc) => {
           const docData = doc.data();
           return {
@@ -1000,6 +996,7 @@ app.get('/collections', async (req, res) => {
         // remove duplicates and take only the first 10 results
         resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
         const respStr = utils.jsonString(resp);
+        // to enable cdn cache
         res.set({
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -1013,6 +1010,31 @@ app.get('/collections', async (req, res) => {
   } else {
     res.send(utils.jsonString([]));
   }
+});
+
+app.get('/collections/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  utils.log('Fetching collection info for', slug);
+  db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    .where('searchCollectionName', '==', slug)
+    .limit(1)
+    .get()
+    .then((data) => {
+      const resp = data.docs.map((doc) => {
+        return doc.data();
+      });
+      const respStr = utils.jsonString(resp);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
+    })
+    .catch((err) => {
+      utils.error('Failed to get collection info for', slug, err);
+      res.sendStatus(500);
+    });
 });
 
 // get traits & their values of a collection
@@ -2525,7 +2547,7 @@ async function fetchAssetsFromOpensea(
     (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
 
   const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
-  const defaultOrderBy = 'sale_price';
+  const defaultOrderBy = 'sale_date';
   if (orderBy && !isValidOrderByOption) {
     utils.error(`Invalid order by option passed while fetching assets from opensea`);
     orderBy = defaultOrderBy;
@@ -2533,7 +2555,7 @@ async function fetchAssetsFromOpensea(
   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
 
   const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
-  const defaultOrderDirection = 'desc';
+  const defaultOrderDirection = 'asc';
   if (orderDirection && !isValidOrderDirection) {
     utils.error(`Invalid order direction option passed while fetching assets from opensea`);
     orderDirection = defaultOrderDirection;
