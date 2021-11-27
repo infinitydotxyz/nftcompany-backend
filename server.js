@@ -2506,7 +2506,7 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
       data = await getAssetsFromUnmarshal(address, limit, offset);
       break;
     case 'opensea':
-      data = await getAssetsFromOpenseaByOwner(address, limit, offset);
+      data = await getAssetsFromOpensea(address, limit, offset);
       break;
     case 'covalent':
       data = await getAssetsFromCovalent(address, limit, offset);
@@ -2564,18 +2564,22 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
   }
 }
 
-function getAssetsFromOpenseaByOwner(address, limit, offset) {
-  return fetchAssetsFromOpensea(
-    address,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    offset,
-    limit,
-    undefined
-  );
+async function getAssetsFromOpensea(address, limit, offset) {
+  utils.log('Fetching assets from opensea');
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    const { data } = await axios.get(url, options);
+    return data;
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
 }
 
 /**
