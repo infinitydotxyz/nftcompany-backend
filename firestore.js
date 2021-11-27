@@ -1003,6 +1003,83 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
   await Promise.all(batchCommits);
 }
 
+async function updateChainIdInAllCollListings(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterSearchCollectionName = records[0][1];
+    if (!startAfterSearchCollectionName) {
+      startAfterSearchCollectionName = '';
+    }
+    await updateChainIdInAllCollListingsHelper(startAfterSearchCollectionName, limit);
+    await updateChainIdInAllCollListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateChainIdInAllCollListingsHelper(startAfterSearchCollectionName, limit) {
+  console.log('starting after', startAfterSearchCollectionName);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+    .orderBy('metadata.asset.searchCollectionName', 'asc')
+    .startAfter(startAfterSearchCollectionName)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.searchCollectionName}\n`);
+      }
+
+      const obj = {
+        metadata: {
+          chainId: '1',
+          chain: 'Ethereum'
+        }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
@@ -1023,7 +1100,9 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
 
 // updateChainIdInAllColls(process.argv[2]).catch((e) => console.error(e));
 
-updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
+// updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
+
+updateChainIdInAllCollListings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 

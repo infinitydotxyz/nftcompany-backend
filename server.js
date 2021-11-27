@@ -617,6 +617,9 @@ app.get('/events', async (req, res) => {
         }
       };
       const { data } = await axios.get(url, options);
+      for (const event of data.result_events) {
+        event.chainId = '1'; // assuming OS is not used for polygon, mark: polymain
+      }
       respStr = utils.jsonString(data);
     }
     // to enable cdn cache
@@ -679,6 +682,7 @@ async function fetchOffersFromOSAndInfinity(req) {
       obj.from_account.address = order.maker;
       obj.bid_amount = order.basePrice;
       obj.offerSource = 'Infinity';
+      obj.chainId = order.metadata.chainId;
       result.asset_events.push(obj);
     }
 
@@ -693,6 +697,7 @@ async function fetchOffersFromOSAndInfinity(req) {
       obj.from_account.address = order.maker.address;
       obj.bid_amount = order.base_price;
       obj.offerSource = 'OpenSea';
+      obj.chainId = '1'; // assuming opensea is not used for polygon; mark: polymain
       result.asset_events.push(obj);
     }
 
@@ -2386,6 +2391,8 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
           metadata: {
             hasBlueCheck: payload.metadata.hasBlueCheck,
             schema: payload.metadata.schema,
+            chainId: payload.metadata.chainId,
+            chain: payload.metadata.chain,
             asset: {
               address: tokenAddress,
               collectionName: payload.metadata.asset.collectionName,
