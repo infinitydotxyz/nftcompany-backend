@@ -96,14 +96,22 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
  * - sorting: sortByPriceDirection: 'asc' | 'desc' orderBy: 'sale_date' | 'sale_count' | 'sale_price'
  */
 app.get('/opensea/listings', async (req, res) => {
-  const { limit, tokenId, tokenAddress, sortByPriceDirection, orderBy } = req.query;
+  const { limit, tokenId, tokenAddress, tokenAddresses, sortByPriceDirection, orderBy, offset } = req.query;
   const owner = undefined;
   const collection = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
   const assetContractAddress = tokenAddress;
   const tokenIds = [tokenId].filter((item) => item);
-  const assetContractAddresses = undefined;
+  const assetContractAddresses = tokenAddresses;
   const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
-  const offset = 0;
+  if (
+    !owner &&
+    !assetContractAddress &&
+    (!assetContractAddresses || assetContractAddresses.length === 0) &&
+    !collection
+  ) {
+    res.sendStatus(500);
+    return;
+  }
 
   const fetchResp = await fetchAssetsFromOpensea(
     owner,
