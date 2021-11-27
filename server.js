@@ -136,7 +136,7 @@ app.get('/opensea/listings', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId, listType, traitType, traitValue } = req.query;
+  const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -200,7 +200,7 @@ app.get('/listings', async (req, res) => {
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
     }
-  } else if (collectionName || priceMin || priceMax || listType) {
+  } else if (collectionName || priceMin || priceMax || listType || collectionIds) {
     if (!priceMin) {
       priceMin = DEFAULT_MIN_ETH;
     }
@@ -218,7 +218,8 @@ app.get('/listings', async (req, res) => {
       limit,
       listType,
       traitType,
-      traitValue
+      traitValue,
+      collectionIds
     );
     if (resp) {
       res.set({
@@ -419,7 +420,8 @@ async function getListingsByCollectionNameAndPrice(
   limit,
   listType,
   traitType,
-  traitValue
+  traitValue,
+  collectionIds
 ) {
   try {
     utils.log('Getting listings of a collection');
@@ -442,6 +444,11 @@ async function getListingsByCollectionNameAndPrice(
 
       if (collectionName) {
         queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+      }
+
+      if (collectionIds) {
+        const collectionIdsArr = collectionIds.split(',');
+        queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
       }
 
       if (traitType && traitValue) {
