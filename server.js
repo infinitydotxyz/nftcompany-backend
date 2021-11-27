@@ -590,16 +590,25 @@ app.get('/featured-collections', async (req, res) => {
 // transaction events (for a collection or a token)
 app.get('/events', async (req, res) => {
   const queryStr = decodeURIComponent(qs.stringify(req.query));
-  const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API + `events?${queryStr}`;
-  const options = {
-    headers: {
-      'X-API-KEY': authKey
-    }
-  };
+  const tokenId = req.query.token_id;
+  const eventType = req.query.event_type;
+  let respStr = '';
   try {
-    const { data } = await axios.get(url, options);
-    const respStr = utils.jsonString(data);
+    // have to fetch order data from a diff end point if token id is supplied
+    if (eventType === 'bid_entered' && tokenId) {
+      const data = await fetchOffersFromOSAndInfinity(req);
+      respStr = utils.jsonString(data);
+    } else {
+      const authKey = process.env.openseaKey;
+      const url = constants.OPENSEA_API + `events?${queryStr}`;
+      const options = {
+        headers: {
+          'X-API-KEY': authKey
+        }
+      };
+      const { data } = await axios.get(url, options);
+      respStr = utils.jsonString(data);
+    }
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
@@ -612,6 +621,77 @@ app.get('/events', async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+// fetches offers from both OS and Infinity
+async function fetchOffersFromOSAndInfinity(req) {
+  const tokenAddress = req.query.asset_contract_address || '';
+  const tokenId = req.query.token_id;
+  const limit = +req.query.limit;
+  const offset = req.query.offset;
+  const authKey = process.env.openseaKey;
+  const url = 'https://api.opensea.io/wyvern/v1/orders';
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    },
+    params: {
+      side: 0,
+      asset_contract_address: tokenAddress,
+      limit,
+      offset
+    }
+  };
+  if (tokenId) {
+    options.params.token_id = tokenId;
+  }
+
+  try {
+    const result = {
+      asset_events: []
+    };
+
+    // infinity offers
+    let query = db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
+    if (tokenId) {
+      query = query.where('metadata.asset.id', '==', tokenId);
+    }
+    query = query.orderBy('metadata.basePriceInEth', 'desc').limit(limit);
+
+    const snapshot = await query.get();
+
+    for (const offer of snapshot.docs) {
+      const order = offer.data();
+      const obj = { asset: {}, from_account: {} };
+      obj.asset.token_id = order.metadata.asset.id;
+      obj.asset.image_thumbnail_url = order.metadata.asset.image;
+      obj.asset.name = order.metadata.asset.title;
+      obj.created_date = order.listingTime * 1000;
+      obj.from_account.address = order.maker;
+      obj.bid_amount = order.basePrice;
+      obj.offerSource = 'Infinity';
+      result.asset_events.push(obj);
+    }
+
+    // opensea offers
+    const { data } = await axios.get(url, options);
+    for (const order of data.orders) {
+      const obj = { asset: {}, from_account: {} };
+      obj.asset.token_id = order.asset.token_id;
+      obj.asset.image_thumbnail_url = order.asset.image_thumbnail_url;
+      obj.asset.name = order.asset.name;
+      obj.created_date = order.listing_time * 1000;
+      obj.from_account.address = order.maker.address;
+      obj.bid_amount = order.base_price;
+      obj.offerSource = 'OpenSea';
+      result.asset_events.push(obj);
+    }
+
+    return result;
+  } catch (err) {
+    utils.error('Error occured while fetching events from opensea');
+    utils.error(err);
+  }
+}
 
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
