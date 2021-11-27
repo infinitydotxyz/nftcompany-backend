@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvide = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
+const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
@@ -350,7 +351,7 @@ async function getAssetAsListing(docId, data) {
   }
 }
 
-async function assetDataToListing(data) {
+async function openseaAssetDataToListing(data) {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
@@ -368,6 +369,8 @@ async function assetDataToListing(data) {
     isListing: false,
     hasBlueCheck: await isTokenVerified(tokenAddress),
     schema,
+    chainId: '1', // Assuming opensea api is only used in mainnet
+    chain: 'Ethereum',
     asset: {
       address: tokenAddress,
       id: data.token_id,
@@ -1384,7 +1387,7 @@ app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) =>
       return;
     }
 
-    if (!payload.actionType || !payload.txnHash || !payload.orderId || !payload.maker) {
+    if (!payload.actionType || !payload.txnHash || !payload.orderId || !payload.maker || !payload.chainId) {
       utils.error('Invalid input');
       res.sendStatus(500);
       return;
@@ -1506,6 +1509,12 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
       return;
     }
 
+    if (!payload.chainId) {
+      utils.error('Invalid input - no chainId');
+      res.sendStatus(500);
+      return;
+    }
+
     const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
     if (actionType !== 'fulfill' && actionType !== 'cancel') {
       utils.error('Invalid action type', actionType);
@@ -1514,9 +1523,10 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
     }
 
     const txnHash = payload.txnHash.trim(); // preserve case
+    const chainId = payload.chainId;
 
     // check if valid nftc txn
-    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       res.sendStatus(500);
@@ -1549,6 +1559,7 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
           status: 'pending',
           salePriceInEth: valueInEth,
           actionType,
+          chainId,
           createdAt: Date.now(),
           buyer,
           seller
@@ -1613,17 +1624,18 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
 
-async function getTxnData(txnHash, actionType) {
+async function getTxnData(txnHash, chainId, actionType) {
   let isValid = true;
   let from = '';
   let buyer = '';
   let seller = '';
   let value = bn(0);
-  const txn = await ethersProvider.getTransaction(txnHash);
+  const provider = getProvider(chainId);
+  const txn = provider ? await provider.getTransaction(txnHash) : null;
   if (txn) {
     from = txn.from ? txn.from.trim().toLowerCase() : '';
     const to = txn.to;
-    const chainId = txn.chainId;
+    const txnChainId = txn.chainId;
     const data = txn.data;
     value = txn.value;
     const openseaIface = new ethers.utils.Interface(openseaAbi);
@@ -1632,11 +1644,11 @@ async function getTxnData(txnHash, actionType) {
     const args = decodedData.args;
 
     // checks
-    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+    const exchangeAddress = getExchangeAddress(chainId);
+    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
       isValid = false;
     }
-    // todo: adi polymain; do not remove this comment
-    if (chainId !== constants.ETH_CHAIN_ID) {
+    if (txnChainId !== +chainId) {
       isValid = false;
     }
     if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
@@ -1676,12 +1688,13 @@ async function getTxnData(txnHash, actionType) {
   return { isValid, from, buyer, seller, value };
 }
 
-async function isValidNftcTxn(txnHash, actionType) {
+async function isValidNftcTxn(txnHash, chainId, actionType) {
   let isValid = true;
-  const txn = await ethersProvider.getTransaction(txnHash);
+  const provider = getProvider(chainId);
+  const txn = provider ? await provider.getTransaction(txnHash) : null;
   if (txn) {
     const to = txn.to;
-    const chainId = txn.chainId;
+    const txnChainId = txn.chainId;
     const data = txn.data;
     const value = txn.value;
     const openseaIface = new ethers.utils.Interface(openseaAbi);
@@ -1690,11 +1703,11 @@ async function isValidNftcTxn(txnHash, actionType) {
     const args = decodedData.args;
 
     // checks
-    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+    const exchangeAddress = getExchangeAddress(chainId);
+    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
       isValid = false;
     }
-    // todo: adi polymain; do not remove this comment
-    if (chainId !== constants.ETH_CHAIN_ID) {
+    if (txnChainId !== +chainId) {
       isValid = false;
     }
     if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
@@ -1736,6 +1749,7 @@ async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
+  const chainId = payload.chainId;
 
   utils.log('Waiting for txn', origTxnHash);
   const batch = db.batch();
@@ -1751,13 +1765,18 @@ async function waitForTxn(user, payload) {
 
   try {
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(origTxnHash, actionType);
+    const isValid = await isValidNftcTxn(origTxnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
 
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Not waiting for txn since provider is null');
+      return;
+    }
+    const receipt = await provider.waitForTransaction(origTxnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
@@ -1846,6 +1865,7 @@ async function waitForMissedTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const txnHash = payload.txnHash.trim();
+  const chainId = payload.chainId;
 
   utils.log('Waiting for missed txn', txnHash);
   const batch = db.batch();
@@ -1861,13 +1881,18 @@ async function waitForMissedTxn(user, payload) {
 
   try {
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(txnHash, actionType);
+    const isValid = await isValidNftcTxn(txnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       return;
     }
 
-    const receipt = await ethersProvider.waitForTransaction(txnHash, confirms);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Not waiting for txn since provider is null');
+      return;
+    }
+    const receipt = await provider.waitForTransaction(txnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call
     try {
@@ -2662,7 +2687,7 @@ async function fetchAssetsFromOpensea(
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
       const assetData = {};
-      const marshalledData = await assetDataToListing(rawAssetData);
+      const marshalledData = await openseaAssetDataToListing(rawAssetData);
       assetData.metadata = marshalledData;
       assetData.rawData = rawAssetData;
       const tokenAddress = marshalledData.asset.address.toLowerCase();
@@ -2716,7 +2741,7 @@ async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
 async function saveRawOpenseaAssetInDatabase(rawAssetData) {
   try {
     const assetData = {};
-    const marshalledData = await assetDataToListing(rawAssetData);
+    const marshalledData = await openseaAssetDataToListing(rawAssetData);
     assetData.metadata = marshalledData;
     assetData.rawData = rawAssetData;
 
@@ -2802,28 +2827,34 @@ async function checkOwnershipChange(doc) {
   const schema = order.metadata.schema;
   const address = order.metadata.asset.address;
   const id = order.metadata.asset.id;
+  const chainId = order.metadata.chainId;
   if (side === 1) {
     // listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, maker, address, id);
+      checkERC721Ownership(doc, chainId, maker, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, maker, address, id);
+      checkERC1155Ownership(doc, chainId, maker, address, id);
     }
   } else if (side === 0) {
     // offer
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, owner, address, id);
+      checkERC721Ownership(doc, chainId, owner, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, owner, address, id);
+      checkERC1155Ownership(doc, chainId, owner, address, id);
     }
   }
 }
 
-async function checkERC721Ownership(doc, owner, address, id) {
+async function checkERC721Ownership(doc, chainId, owner, address, id) {
   try {
-    const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Cannot check ERC721 ownership as provider is null');
+      return;
+    }
+    const contract = new ethers.Contract(address, erc721Abi, provider);
     let newOwner = await contract.ownerOf(id);
     newOwner = newOwner.trim().toLowerCase();
     if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
@@ -2851,9 +2882,14 @@ async function checkERC721Ownership(doc, owner, address, id) {
   }
 }
 
-async function checkERC1155Ownership(doc, owner, address, id) {
+async function checkERC1155Ownership(doc, chainId, owner, address, id) {
   try {
-    const contract = new ethers.Contract(address, erc1155Abi, ethersProvider);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Cannot check ERC1155 ownership as provider is null');
+      return;
+    }
+    const contract = new ethers.Contract(address, erc1155Abi, provider);
     const balance = await contract.balanceOf(owner, id);
     if (owner !== constants.NULL_ADDRESS && balance === 0) {
       console.log('stale', owner, owner, address, id);
@@ -3488,6 +3524,24 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
 });
 
 // ============================================================ Misc ======================================================
+
+function getProvider(chainId) {
+  if (chainId === '1') {
+    return ethProvider;
+  } else if (chainId === '137') {
+    return polygonProvider;
+  }
+  return null;
+}
+
+function getExchangeAddress(chainId) {
+  if (chainId === '1') {
+    return constants.WYVERN_EXCHANGE_ADDRESS;
+  } else if (chainId === '137') {
+    return constants.POLYGON_WYVERN_EXCHANGE_ADDRESS;
+  }
+  return null;
+}
 
 async function isTokenVerified(address) {
   const tokenAddress = address.trim().toLowerCase();
