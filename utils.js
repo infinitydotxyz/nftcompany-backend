@@ -99,7 +99,6 @@ module.exports = {
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {
-      trace('Authorizing ' + userId + ' for ' + path);
       // verify signature
       const sign = JSON.parse(signature);
       const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
