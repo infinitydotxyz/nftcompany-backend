@@ -1034,7 +1034,7 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
 
   const query = db
     .collectionGroup(fstrCnstnts.OFFERS_COLL)
-    .orderBy('createdAt', 'desc')
+    .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
   const snapshot = await query.get();
@@ -1053,7 +1053,7 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
       const data = doc.data();
 
       if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.createdAt}\n`);
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
       }
 
       const obj = {
