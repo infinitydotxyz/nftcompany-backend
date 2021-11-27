@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
+const ethersProvide = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
@@ -1050,7 +1050,7 @@ app.get('/collections', async (req, res) => {
       .limit(10)
       .get()
       .then((data) => {
-        let resp = data.docs.map((doc) => {
+        const resp = data.docs.map((doc) => {
           const docData = doc.data();
           return {
             address: docData.metadata.asset.address,
@@ -1059,8 +1059,8 @@ app.get('/collections', async (req, res) => {
           };
         });
         // remove duplicates and take only the first 10 results
-        resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
-        const respStr = utils.jsonString(resp);
+        const deDupresp = utils.getUniqueItemsByProperties(resp, 'collectionName');
+        const respStr = utils.jsonString(deDupresp);
         // to enable cdn cache
         res.set({
           'Cache-Control': 'must-revalidate, max-age=60',
