@@ -68,7 +68,7 @@ function updateAllCollections(records) {
       hasBlueCheck: verifiedBool
     };
     if (name && openseaUrl && address && description && profileImage && bannerImage) {
-      obj.searchCollectionName = name.replace(/[\s-_]/g, '').toLowerCase();
+      obj.searchCollectionName = getSearchFriendlyString(name);
       const docRef = db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
@@ -747,8 +747,8 @@ async function updateSearchTitleAndCollNameHelper(startAfterCreatedAt, limit) {
       let searchTitle = data.metadata.asset.searchTitle;
       let searchCollectionName = data.metadata.asset.searchCollectionName;
 
-      searchTitle = searchTitle && searchTitle.replace(/[\s-_]/g, '').toLowerCase();
-      searchCollectionName = searchCollectionName && searchCollectionName.replace(/[\s-_]/g, '').toLowerCase();
+      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
+      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
 
       const obj = {
         metadata: {
@@ -851,7 +851,7 @@ async function updateChainIdInListingsHelper(startAfterCreatedAt, limit) {
 }
 
 let totalColls = 0;
-async function updateChainIdInAllColls(csvFileName) {
+async function updateChainIdInAndSearchCollNameAllColls(csvFileName) {
   try {
     const limit = 500;
 
@@ -869,15 +869,15 @@ async function updateChainIdInAllColls(csvFileName) {
     if (!startAfterName) {
       startAfterName = '';
     }
-    await updateChainIdInAllCollsHelper(startAfterName, limit);
-    await updateChainIdInAllColls(csvFileName);
+    await updateChainIdInAndSearchCollNameAllCollsHelper(startAfterName, limit);
+    await updateChainIdInAndSearchCollNameAllColls(csvFileName);
   } catch (e) {
     console.error(e);
     process.exit(1);
   }
 }
 
-async function updateChainIdInAllCollsHelper(startAfterName, limit) {
+async function updateChainIdInAndSearchCollNameAllCollsHelper(startAfterName, limit) {
   console.log('starting after', startAfterName);
   const batchCommits = [];
   let batch = db.batch();
@@ -907,7 +907,8 @@ async function updateChainIdInAllCollsHelper(startAfterName, limit) {
       }
 
       const obj = {
-        chainId: '1'
+        chainId: '1',
+        searchCollectionName: getSearchFriendlyString(data.searchCollectionName)
       };
 
       batch.set(ref, obj, { merge: true });
@@ -1089,17 +1090,26 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
 
 // updateListingType(process.argv[2]).catch((e) => console.error(e));
 
-// updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
+ updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInListings(process.argv[2]).catch((e) => console.error(e));
 
-// updateChainIdInAllColls(process.argv[2]).catch((e) => console.error(e));
+// updateChainIdInAndSearchCollNameAllColls(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
 
-updateChainIdInOffers(process.argv[2]).catch((e) => console.error(e));
+// updateChainIdInOffers(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
+
+function getSearchFriendlyString(input) {
+  if (!input) {
+    return '';
+  }
+  // remove spaces, dashes and underscores only
+  const output = input.replace(/[\s-_]/g, '');
+  return output.toLowerCase();
+}
 
 function getUserRewardTier(userVol) {
   const rewardTiers = types.RewardTiers;
