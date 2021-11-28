@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
 const utils = require('./utils');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet); // todo: adi polymain; do not remove this comment
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
 
 async function run() {
   const txnHash = '0xf0ac6805ecc5da569b204e6f7fa589f2ff4d70dca27016d364b141f391c5868f';
