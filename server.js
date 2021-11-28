@@ -27,7 +27,7 @@ const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
 const nftDataSources = {
-  0: 'nftc',
+  0: 'infinity',
   1: 'opensea',
   2: 'unmarshal',
   3: 'alchemy',
