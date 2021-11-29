@@ -391,6 +391,7 @@ async function openseaAssetDataToListing(data) {
       id: data.token_id,
       collectionName,
       description,
+      owner: data.owner.address,
       image: data.image_url,
       imagePreview: data.image_preview_url,
       searchCollectionName: getSearchFriendlyString(collectionName),
