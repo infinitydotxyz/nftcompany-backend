@@ -104,15 +104,6 @@ app.get('/opensea/listings', async (req, res) => {
   const tokenIds = [tokenId].filter((item) => item);
   const assetContractAddresses = tokenAddresses;
   const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
-  if (
-    !owner &&
-    !assetContractAddress &&
-    (!assetContractAddresses || assetContractAddresses.length === 0) &&
-    !collection
-  ) {
-    res.sendStatus(500);
-    return;
-  }
 
   const fetchResp = await fetchAssetsFromOpensea(
     owner,
@@ -2661,8 +2652,7 @@ async function fetchAssetsFromOpensea(
   collection
 ) {
   utils.log('Fetching assets from opensea');
-  const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API + 'assets/';
+
   const ownerQuery = owner ? { owner } : {};
 
   const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
@@ -2679,7 +2669,7 @@ async function fetchAssetsFromOpensea(
   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
 
   const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
-  const defaultOrderDirection = 'asc';
+  const defaultOrderDirection = 'desc';
   if (orderDirection && !isValidOrderDirection) {
     utils.error(`Invalid order direction option passed while fetching assets from opensea`);
     orderDirection = defaultOrderDirection;
@@ -2693,6 +2683,8 @@ async function fetchAssetsFromOpensea(
   const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
   const collectionQuery = collection ? { collection } : {};
 
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + 'assets/';
   const options = {
     headers: {
       'X-API-KEY': authKey
