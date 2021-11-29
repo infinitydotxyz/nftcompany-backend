@@ -1,3 +1,5 @@
+const nfts = require('./dist/nfts/index').default;
+
 require('dotenv').config();
 const { ethers } = require('ethers');
 const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
@@ -9,6 +11,7 @@ const helmet = require('helmet');
 const axios = require('axios').default;
 const qs = require('qs');
 const crypto = require('crypto');
+
 const utils = require('./utils');
 const types = require('./types');
 const erc721Abi = require('./abi/erc721.json');
@@ -19,6 +22,9 @@ const cors = require('cors');
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
+
+// other routes
+app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
@@ -379,8 +385,8 @@ async function openseaAssetDataToListing(data) {
       description,
       image: data.image_url,
       imagePreview: data.image_preview_url,
-      searchCollectionName: getSearchFriendlyString(collectionName),
-      searchTitle: getSearchFriendlyString(data.name),
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      searchTitle: utils.getSearchFriendlyString(data.name),
       title: data.name
     }
   };
@@ -443,7 +449,7 @@ async function getListingsByCollectionNameAndPrice(
       }
 
       if (collectionName) {
-        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', utils.getSearchFriendlyString(collectionName));
       }
 
       if (collectionIds) {
@@ -501,7 +507,7 @@ async function getListingsStartingWithText(
     utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
-    const startsWith = getSearchFriendlyString(text);
+    const startsWith = utils.getSearchFriendlyString(text);
     const limit1 = Math.ceil(limit / 2);
     const limit2 = limit - limit1;
 
@@ -1011,7 +1017,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
 app.get('/titles', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -1049,7 +1055,7 @@ app.get('/titles', async (req, res) => {
 
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -3560,15 +3566,6 @@ async function isTokenVerified(address) {
     }
   }
   return false;
-}
-
-function getSearchFriendlyString(input) {
-  if (!input) {
-    return '';
-  }
-  // remove spaces, dashes and underscores only
-  const output = input.replace(/[\s-_]/g, '');
-  return output.toLowerCase();
 }
 
 function toFixed5(num) {
