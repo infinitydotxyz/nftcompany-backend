@@ -2731,7 +2731,7 @@ async function fetchAssetsFromOpensea(
       let openseaListings = [];
 
       if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
-        openseaListings = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder);
+        openseaListings = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
         value.listings[0].openseaListings = openseaListings;
       }
       return value;
@@ -2744,7 +2744,7 @@ async function fetchAssetsFromOpensea(
 
 function openseaOrderToInfinityOrder(order) {
   try {
-    const chainId = order.payment_token_contract.symbol === 'ETH' ? '1' : '';
+    const chainId = '1';
     const infinityOrder = {
       id: order.order_hash,
       blueCheck: false,
