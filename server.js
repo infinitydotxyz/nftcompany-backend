@@ -2728,15 +2728,91 @@ async function fetchAssetsFromOpensea(
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
     const assetListings = assetListingPromiseResults
       .filter((result) => result.status === 'fulfilled')
-      .map((fulfilledResult) => fulfilledResult.value);
+      .map((fulfilledResult) => {
+        return fulfilledResult.value;
+      });
 
     // async store in db
-    saveRawOpenseaAssetBatchInDatabase(assetListings);
-    return assetListings;
+    saveRawOpenseaAssetBatchInDatabase(utils.deepCopy(assetListings));
+    return assetListings.map((value) => {
+      const listing = value.listings[0];
+      let openseaListings = [];
+
+      if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
+        openseaListings = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder);
+        value.listings[0].openseaListings = openseaListings;
+      }
+      return value;
+    });
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
   }
+}
+
+function openseaOrderToInfinityOrder(order) {
+  try {
+    const chainId = order.payment_token_contract.symbol === 'ETH' ? '1' : '';
+    const infinityOrder = {
+      id: order.order_hash,
+      blueCheck: false,
+      howToCall: Number(order.how_to_call),
+      salt: order.salt,
+      feeRecipient: order.fee_recipient.address,
+      staticExtradata: order.static_extradata,
+      quantity: order.quantity,
+      staticTarget: order.static_target,
+      maker: order.maker.address,
+      side: Number(order.side),
+      takerProtocolFee: order.taker_protocol_fee,
+      saleKind: Number(order.sale_kind),
+      basePrice: Number(order.base_price),
+      metadata: {
+        asset: {
+          id: order.metadata.asset.id,
+          address: order.metadata.asset.address,
+          quantity: order.quantity,
+          imagePreview: '',
+          title: '',
+          description: '',
+          image: '',
+          owner: '',
+          collectionName: '',
+          searchCollectionName: '',
+          searchTitle: ''
+        },
+        hasBonusReward: false,
+        schema: order.metadata.schema,
+        hasBlueCheck: false,
+        createdAt: Number(order.created_date),
+        basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
+        listingType: '',
+        chainId
+      },
+      extra: order.extra,
+      expirationTime: order.expiration_time,
+      hasBonusReward: false, // TODO should this be the bounty ?
+      calldata: order.calldata,
+      hash: order.hash,
+      r: order.r,
+      replacementPattern: order.replacement_pattern,
+      taker: order.taker.address,
+      takerRelayerFee: order.taker_relayer_fee,
+      s: order.s,
+      makerRelayerFee: order.maker_relayer_fee,
+      listingTime: order.listing_time,
+      target: order.target,
+      v: Number(order.v),
+      makerProtocolFee: order.maker_protocol_fee,
+      paymentToken: order.payment_token,
+      feeMethod: Number(order.fee_method),
+      exchange: order.exchange,
+      makerReferrerFee: order.maker_referrer_fee,
+      paymentTokenSymbol: order.payment_token_contract.symbol,
+      chainId
+    };
+    return infinityOrder;
+  } catch (e) {}
 }
 
 async function saveRawOpenseaAssetBatchInDatabase(assetListings) {

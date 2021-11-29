@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
 
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -185,5 +186,9 @@ module.exports = {
 
   getUniqueItemsByProperties: function (items, propNames) {
     return uniqBy(items, 'address');
+  },
+
+  deepCopy: function (item) {
+    return JSON.parse(JSON.stringify(item));
   }
 };
