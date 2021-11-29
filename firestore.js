@@ -576,10 +576,12 @@ async function updateTraitsHelper(startAfterCreatedAt, limit) {
       if ((i + 1) % limit === 0) {
         writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
       }
-      const numTraits = rawTraits.length;
+      const numTraits = rawTraits ? rawTraits.length : 0;
       const traits = [];
-      for (const rawTrait of rawTraits) {
-        traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
+      if (numTraits > 0) {
+        for (const rawTrait of rawTraits) {
+          traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
+        }
       }
 
       const obj = {
@@ -1090,7 +1092,7 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
 
 // updateListingType(process.argv[2]).catch((e) => console.error(e));
 
- updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
+updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInListings(process.argv[2]).catch((e) => console.error(e));
 
