@@ -533,14 +533,37 @@ async function getListingsByCollectionNameAndPrice(
 
       if (collectionIds) {
         const collectionIdsArr = collectionIds.split(',');
-        queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
+        if (collectionIdsArr.length > 1) {
+          queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
+        } else {
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+        }
       }
 
       if (traitType && traitValue) {
-        queryRef = queryRef.where('metadata.asset.traits', 'array-contains', {
-          traitType,
-          traitValue
-        });
+        let traitQueryArr = [];
+        if (traitType.indexOf(',') > 0) {
+          // multi-trait query
+          const typesArr = traitType.split(',');
+          const valuesArr = traitValue.split(',');
+          if (typesArr.length === valuesArr.length) {
+            for (let j = 0; j < typesArr.length; j++) {
+              traitQueryArr.push({
+                traitType: typesArr[j],
+                traitValue: valuesArr[j]
+              })
+            }  
+          }
+        } else {
+          // single-trait query
+          traitQueryArr = [
+            {
+              traitType,
+              traitValue
+            }
+          ]
+        }
+        queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
       }
 
       queryRef = queryRef
