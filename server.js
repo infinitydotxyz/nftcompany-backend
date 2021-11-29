@@ -2731,6 +2731,8 @@ async function fetchAssetsFromOpensea(
       let openseaListings = [];
 
       if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
+        const assetMetadata = listing.metadata.asset;
+        const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
         openseaListings = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
         value.listings[0].openseaListings = openseaListings;
       }
@@ -2742,69 +2744,72 @@ async function fetchAssetsFromOpensea(
   }
 }
 
-function openseaOrderToInfinityOrder(order) {
-  try {
-    const chainId = '1';
-    const infinityOrder = {
-      id: order.order_hash,
-      blueCheck: false,
-      howToCall: Number(order.how_to_call),
-      salt: order.salt,
-      feeRecipient: order.fee_recipient.address,
-      staticExtradata: order.static_extradata,
-      quantity: order.quantity,
-      staticTarget: order.static_target,
-      maker: order.maker.address,
-      side: Number(order.side),
-      takerProtocolFee: order.taker_protocol_fee,
-      saleKind: Number(order.sale_kind),
-      basePrice: Number(order.base_price),
-      metadata: {
-        asset: {
-          id: order.metadata.asset.id,
-          address: order.metadata.asset.address,
-          quantity: order.quantity,
-          imagePreview: '',
-          title: '',
-          description: '',
-          image: '',
-          owner: '',
-          collectionName: '',
-          searchCollectionName: '',
-          searchTitle: ''
+function getListingType(order) {
+  switch (order.sale_kind) {
+    case 0:
+      if (order.payment_token_contract.symbol === 'ETH') {
+        return 'fixedPrice';
+      }
+      return 'englishAuction';
+    case 1:
+      return 'dutchAuction';
+  }
+}
+
+function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
+  return (order) => {
+    try {
+      const listingType = getListingType(order);
+      const chainId = '1';
+      const infinityOrder = {
+        id: order.order_hash,
+        blueCheck: false,
+        howToCall: Number(order.how_to_call),
+        salt: order.salt,
+        feeRecipient: order.fee_recipient.address,
+        staticExtradata: order.static_extradata,
+        quantity: order.quantity,
+        staticTarget: order.static_target,
+        maker: order.maker.address,
+        side: Number(order.side),
+        takerProtocolFee: order.taker_protocol_fee,
+        saleKind: Number(order.sale_kind),
+        basePrice: Number(order.base_price),
+        metadata: {
+          asset: assetMetadata,
+          hasBonusReward: false,
+          schema: order.metadata.schema,
+          hasBlueCheck: false,
+          createdAt: Number(order.created_date),
+          basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
+          listingType,
+          chainId
         },
+        extra: order.extra,
+        expirationTime: order.expiration_time,
         hasBonusReward: false,
-        schema: order.metadata.schema,
-        hasBlueCheck: false,
-        createdAt: Number(order.created_date),
-        basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
-        listingType: '',
+        calldata: order.calldata,
+        hash: order.hash,
+        r: order.r,
+        replacementPattern: order.replacement_pattern,
+        taker: order.taker.address,
+        takerRelayerFee: order.taker_relayer_fee,
+        s: order.s,
+        makerRelayerFee: order.maker_relayer_fee,
+        listingTime: order.listing_time,
+        target: order.target,
+        v: Number(order.v),
+        makerProtocolFee: order.maker_protocol_fee,
+        paymentToken: order.payment_token,
+        feeMethod: Number(order.fee_method),
+        exchange: order.exchange,
+        makerReferrerFee: order.maker_referrer_fee,
+        paymentTokenSymbol: order.payment_token_contract.symbol,
         chainId
-      },
-      extra: order.extra,
-      expirationTime: order.expiration_time,
-      hasBonusReward: false, // TODO should this be the bounty ?
-      calldata: order.calldata,
-      hash: order.hash,
-      r: order.r,
-      replacementPattern: order.replacement_pattern,
-      taker: order.taker.address,
-      takerRelayerFee: order.taker_relayer_fee,
-      s: order.s,
-      makerRelayerFee: order.maker_relayer_fee,
-      listingTime: order.listing_time,
-      target: order.target,
-      v: Number(order.v),
-      makerProtocolFee: order.maker_protocol_fee,
-      paymentToken: order.payment_token,
-      feeMethod: Number(order.fee_method),
-      exchange: order.exchange,
-      makerReferrerFee: order.maker_referrer_fee,
-      paymentTokenSymbol: order.payment_token_contract.symbol,
-      chainId
-    };
-    return infinityOrder;
-  } catch (e) {}
+      };
+      return infinityOrder;
+    } catch (e) {}
+  };
 }
 
 async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
