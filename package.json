@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "copy-files": "copyfiles utils.js constants.js dist",
-    "build": "rimraf dist && tsc && yarn copy-files"
+    "build": "npx pnpm install && rimraf dist && tsc && yarn copy-files"
   },
   "repository": {
     "type": "git",
