@@ -5,12 +5,12 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "yarn build && nodemon server.js",
-    "start": "yarn build && node server.js",
+    "dev": "npm run build && nodemon server.js",
+    "start": "npm run build && node server.js",
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "copy-files": "copyfiles utils.js constants.js dist",
-    "build": "npm install && rimraf dist && tsc && yarn copy-files"
+    "build": "npm install && rimraf dist && tsc && npm run copy-files"
   },
   "repository": {
     "type": "git",
