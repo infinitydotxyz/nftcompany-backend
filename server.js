@@ -368,13 +368,15 @@ async function openseaAssetDataToListing(data) {
       description = assetContract.description;
     }
   }
+  const hasBlueCheck = await isTokenVerified(tokenAddress);
   const listing = {
     isListing: false,
-    hasBlueCheck: await isTokenVerified(tokenAddress),
+    hasBlueCheck,
     schema,
     chainId: '1', // Assuming opensea api is only used in mainnet
     chain: 'Ethereum',
     asset: {
+      hasBlueCheck,
       address: tokenAddress,
       id: data.token_id,
       collectionName,
@@ -2916,8 +2918,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
     const listing = value.listings[0];
     let openseaOrders = [];
 
-    // TODO add optional chaining
-    if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
+    if (listing?.rawData?.sell_orders?.length > 0) {
       const assetMetadata = listing.metadata.asset;
       const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
       openseaOrders = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
@@ -2927,31 +2928,30 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
   });
 }
 
-function getListingType(order) {
-  switch (order.sale_kind) {
-    case 0:
-      if (order.payment_token_contract.symbol === 'ETH') {
-        return 'fixedPrice';
-      }
-      return 'englishAuction';
-    case 1:
-      return 'dutchAuction';
-  }
-}
-
 /**
  *
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
 function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
+  const getOpenseaOrderListingType = (order) => {
+    switch (order.sale_kind) {
+      case 0:
+        if (order.payment_token_contract.symbol === 'ETH') {
+          return 'fixedPrice';
+        }
+        return 'englishAuction';
+      case 1:
+        return 'dutchAuction';
+    }
+  };
   return (order) => {
     try {
-      const listingType = getListingType(order);
+      const listingType = getOpenseaOrderListingType(order);
       const chainId = '1';
       const infinityOrder = {
         id: order.order_hash,
-        blueCheck: false, // TODO get blueCheck from asset metadata
+        blueCheck: assetMetadata.hasBlueCheck,
         howToCall: Number(order.how_to_call),
         salt: order.salt,
         feeRecipient: order.fee_recipient.address,
@@ -2967,7 +2967,7 @@ function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
           asset: assetMetadata,
           hasBonusReward: false,
           schema: order.metadata.schema,
-          hasBlueCheck: false,
+          hasBlueCheck: assetMetadata.hasBlueCheck,
           createdAt: Number(order.created_date),
           basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
           listingType,
