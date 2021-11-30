@@ -11,7 +11,7 @@ const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -39,7 +39,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    // await updateAllCollections(records);
+    await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -1078,7 +1078,11 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
   await Promise.all(batchCommits);
 }
 
+<<<<<<< HEAD
 async function updateChainIdInAllCollListings(csvFileName) {
+=======
+async function updateListings(csvFileName) {
+>>>>>>> main
   try {
     const limit = 500;
 
@@ -1092,27 +1096,47 @@ async function updateChainIdInAllCollListings(csvFileName) {
     const fileContents = await readFile(csvFileName, 'utf8');
     // @ts-ignore
     const records = await parse(fileContents, { columns: false });
+<<<<<<< HEAD
     let startAfterSearchCollectionName = records[0][1];
     if (!startAfterSearchCollectionName) {
       startAfterSearchCollectionName = '';
     }
     await updateChainIdInAllCollListingsHelper(startAfterSearchCollectionName, limit);
     await updateChainIdInAllCollListings(csvFileName);
+=======
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateListingsHelper(+startAfterCreatedAt, limit);
+    await updateListings(csvFileName);
+>>>>>>> main
   } catch (e) {
     console.error(e);
     process.exit(1);
   }
 }
 
+<<<<<<< HEAD
 async function updateChainIdInAllCollListingsHelper(startAfterSearchCollectionName, limit) {
   console.log('starting after', startAfterSearchCollectionName);
+=======
+async function updateListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+>>>>>>> main
   const batchCommits = [];
   let batch = db.batch();
 
   const query = db
+<<<<<<< HEAD
     .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
     .orderBy('metadata.asset.searchCollectionName', 'asc')
     .startAfter(startAfterSearchCollectionName)
+=======
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+>>>>>>> main
     .limit(limit);
   const snapshot = await query.get();
 
@@ -1130,13 +1154,47 @@ async function updateChainIdInAllCollListingsHelper(startAfterSearchCollectionNa
       const data = doc.data();
 
       if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.searchCollectionName}\n`);
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
       }
+
+      // traits
+      const rawTraits = data.metadata.asset.rawData.traits;
+      const numTraits = rawTraits ? rawTraits.length : 0;
+      const traits = [];
+      if (numTraits > 0) {
+        for (const rawTrait of rawTraits) {
+          traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
+        }
+      }
+
+      // listingtype
+      let listingType = 'fixedPrice';
+      if (data.englishAuctionReservePrice !== undefined) {
+        listingType = 'englishAuction';
+      } else if (data.saleKind === 1) {
+        listingType = 'dutchAuction';
+      }
+
+      // search title and coll name
+      let searchTitle = data.metadata.asset.searchTitle;
+      let searchCollectionName = data.metadata.asset.searchCollectionName;
+
+      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
+      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
+
+      // chainId
+      const chainId = '1';
 
       const obj = {
         metadata: {
-          chainId: '1',
-          chain: 'Ethereum'
+          listingType,
+          asset: {
+            numTraits,
+            traits,
+            searchTitle,
+            searchCollectionName,
+            chainId
+          }
         }
       };
 
@@ -1165,11 +1223,11 @@ async function updateChainIdInAllCollListingsHelper(startAfterSearchCollectionNa
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-// updateTraits(process.argv[2]).catch((e) => console.error(e));
+updateTraits(process.argv[2]).catch((e) => console.error(e));
 
 // updateListingType(process.argv[2]).catch((e) => console.error(e));
 
-updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
+// updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInListings(process.argv[2]).catch((e) => console.error(e));
 
