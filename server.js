@@ -731,7 +731,7 @@ app.get('/opensea/wyvern/v1/orders', async (req, res) => {
     orderDirection
   } = req.query;
 
-  const resp = await fetchOrdersFromOpensea(
+  const fetchResponse = await fetchOrdersFromOpensea({
     assetContractAddress,
     paymentTokenAddress,
     maker,
@@ -751,8 +751,14 @@ app.get('/opensea/wyvern/v1/orders', async (req, res) => {
     offset,
     orderBy,
     orderDirection
-  );
+  });
 
+  if (fetchResponse.error) {
+    res.sendStatus(fetchResponse.error);
+    return;
+  }
+
+  const resp = fetchResponse.result;
   const stringifiedResp = utils.jsonString(resp);
   if (stringifiedResp) {
     res.set({
@@ -765,7 +771,7 @@ app.get('/opensea/wyvern/v1/orders', async (req, res) => {
   }
 });
 
-async function fetchOrdersFromOpensea(
+async function fetchOrdersFromOpensea({
   assetContractAddress,
   paymentTokenAddress,
   maker,
@@ -785,7 +791,7 @@ async function fetchOrdersFromOpensea(
   offset,
   orderBy,
   orderDirection
-) {
+}) {
   utils.log('Fetching Orders from OpenSea');
   const authKey = process.env.openseaKey;
   const url = 'https://api.opensea.io/wyvern/v1/orders/';
@@ -860,13 +866,24 @@ async function fetchOrdersFromOpensea(
     const listings = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
 
     const aggregateListingAsOrders = (listings) => {
-      listings.reduce(
-        (acc, item) => {
-          if (item && item.listings) {
-            acc.count += 1;
-            acc.orders = [...acc.orders, ...item.listings];
-          }
-          return acc;
+      return listings?.reduce(
+        (acc, listingResponse) => {
+          const listing = listingResponse?.listings?.[0];
+          const metadata = listing?.metadata;
+          const rawData = listing?.rawData;
+          const id = listing?.id;
+          const orders =
+            listing?.openseaOrders?.map((openseaOrder) => {
+              return {
+                ...openseaOrder,
+                metadata: {
+                  id,
+                  ...metadata,
+                  rawData
+                }
+              };
+            }) || [];
+          return { count: acc.count + (orders?.length || 0), orders: [...acc.orders, ...orders] };
         },
         { count: 0, orders: [] }
       );
@@ -874,10 +891,11 @@ async function fetchOrdersFromOpensea(
 
     const result = aggregateListingAsOrders(listings);
 
-    return result;
+    return { result };
   } catch (err) {
     utils.error('Error occured while fetching orders from opensea');
     utils.error(err);
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 }
 
@@ -997,24 +1015,53 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
-  if (req.query.id) {
+  if (id) {
     // @ts-ignore
     docId = req.query.id.trim(); // preserve case
   }
 
-  if (docId && docId.length > 0) {
-    return getOrdersWithDocId(res, { maker, id, side });
-  }
+  const infinityResponsePromise = getInfinityOrders({ maker, docId, side, tokenAddress, tokenId });
+  const openseaResponsePromise = fetchOrdersFromOpensea({ assetContractAddress: tokenAddress, maker, side, tokenId });
 
-  return getOrdersWithTokenId(res, { maker, tokenAddress, tokenId, side });
+  try {
+    const [infinityResponse, openseaResponse] = await Promise.all([infinityResponsePromise, openseaResponsePromise]);
+    const error = infinityResponse.error && openseaResponse.error;
+    console.log(`${infinityResponse.error} ${openseaResponse.error}`);
+    if (error) {
+      const errorCode = infinityResponse.error || openseaResponse.error;
+      utils.log(`Fetching orders failed `);
+      res.sendStatus(errorCode);
+      return;
+    }
+    const infinityCount = infinityResponse?.result?.count || 0;
+    const openseaCount = openseaResponse?.result?.count || 0;
+    const infinityOrders = infinityResponse?.result?.orders || [];
+    const openseaOrders = openseaResponse?.result?.orders || [];
+    const result = {
+      count: infinityCount + openseaCount,
+      orders: [...infinityOrders, ...openseaOrders]
+    };
+
+    res.send(result);
+  } catch (err) {
+    utils.log('Error while fetching orders');
+    utils.error(err);
+    res.sendStatus(types.StatusCode.INTERNAL_SERVER_ERROR);
+  }
 });
 
-// TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
-const getOrdersWithDocId = async (res, { maker, id, side }) => {
+async function getInfinityOrders({ maker, docId, side, tokenAddress, tokenId }) {
+  if (docId?.length > 0) {
+    return getOrdersWithDocId({ maker, docId, side });
+  }
+
+  return getOrdersWithTokenId({ maker, tokenAddress, tokenId, side });
+}
+
+const getOrdersWithDocId = async ({ maker, id, side }) => {
   if (!maker || !id || !side || (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())) {
     utils.error('Invalid input');
-    res.sendStatus(500);
-    return;
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 
   const makerStr = maker.trim().toLowerCase();
@@ -1043,19 +1090,18 @@ const getOrdersWithDocId = async (res, { maker, id, side }) => {
         count: orders.length,
         orders: orders
       };
-      res.send(resp);
+      return { result: resp };
     } else {
-      res.sendStatus(404);
-      return;
+      return { error: types.StatusCode.NOT_FOUND };
     }
   } catch (err) {
     utils.error('Error fetching order: ' + docId + ' for user ' + makerStr + ' from collection ' + collection);
     utils.error(err);
-    res.sendStatus(500);
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 };
 
-const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side }) => {
+const getOrdersWithTokenId = async ({ maker, tokenAddress, tokenId, side }) => {
   if (
     !maker ||
     !tokenAddress ||
@@ -1063,8 +1109,8 @@ const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side })
     (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())
   ) {
     utils.error('Invalid input');
-    res.sendStatus(500);
-    return;
+
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 
   const makerStr = maker.trim().toLowerCase();
@@ -1082,10 +1128,12 @@ const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side })
       count: orders.length,
       orders: orders
     };
-    res.send(resp);
-  } else {
-    res.sendStatus(404);
+    return { result: resp };
   }
+
+  return {
+    error: type.StatusCode.NOT_FOUND
+  };
 };
 
 async function getOrders(maker, tokenAddress, tokenId, side) {
@@ -2922,7 +2970,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
       const assetMetadata = listing.metadata.asset;
       const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
       openseaOrders = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
-      value.listings[0].openseaOrders = openseaOrders;
+      listing.openseaOrders = openseaOrders;
     }
     return value;
   });
@@ -2950,6 +2998,9 @@ function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
       const listingType = getOpenseaOrderListingType(order);
       const chainId = '1';
       const infinityOrder = {
+        source: 1, // opensea
+        tokenId: assetMetadata.id,
+        tokenAddress: assetMetadata.address,
         id: order.order_hash,
         blueCheck: assetMetadata.hasBlueCheck,
         howToCall: Number(order.how_to_call),
@@ -3524,6 +3575,7 @@ async function refreshPendingTxns(user) {
 
 const nodemailer = require('nodemailer');
 const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
+const { type } = require('os');
 
 const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
