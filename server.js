@@ -2495,6 +2495,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
           metadata: {
             hasBlueCheck: payload.metadata.hasBlueCheck,
             schema: payload.metadata.schema,
+            chainId,
             asset: {
               address: tokenAddress,
               collectionName: payload.metadata.asset.collectionName,
