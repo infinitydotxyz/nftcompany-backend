@@ -574,7 +574,7 @@ async function updateChainIdInAndSearchCollNameCollListingsHelper(startAfterName
       const data = doc.data();
 
       if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.searchCollectionName}\n`);
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.collectionName}\n`);
       }
 
       const obj = {
@@ -634,7 +634,7 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
   let batch = db.batch();
 
   const query = db
-    .collectionGroup(fstrCnstnts.MISSED_TXNS_COLL)
+    .collectionGroup(fstrCnstnts.TXNS_COLL)
     .orderBy('createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
