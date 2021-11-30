@@ -1,3 +1,5 @@
+const nfts = require('./dist/nfts/index').default;
+
 require('dotenv').config();
 const { ethers } = require('ethers');
 const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
@@ -9,6 +11,7 @@ const helmet = require('helmet');
 const axios = require('axios').default;
 const qs = require('qs');
 const crypto = require('crypto');
+
 const utils = require('./utils');
 const types = require('./types');
 const erc721Abi = require('./abi/erc721.json');
@@ -19,6 +22,9 @@ const cors = require('cors');
 app.use(express.json());
 app.use(cors());
 app.use(helmet());
+
+// other routes
+app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
@@ -137,6 +143,10 @@ app.get('/opensea/listings', async (req, res) => {
 */
 app.get('/listings', async (req, res) => {
   const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
+  let { chainId } = req.query;
+  if (!chainId) {
+    chainId = '1'; // default eth mainnet
+  }
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -177,7 +187,7 @@ app.get('/listings', async (req, res) => {
 
   let resp;
   if (tokenAddress && tokenId) {
-    resp = await getListingByTokenAddressAndId(tokenId, tokenAddress, limit);
+    resp = await getListingByTokenAddressAndId(chainId, tokenId, tokenAddress, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -244,7 +254,7 @@ app.get('/listings', async (req, res) => {
   }
 });
 
-async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
+async function getListingByTokenAddressAndId(chainId, tokenId, tokenAddress, limit) {
   utils.log('Getting listings of token id and token address');
   try {
     let resp = '';
@@ -257,7 +267,7 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
 
     if (snapshot.docs.length === 0) {
       // get from db
-      resp = await fetchAssetAsListingFromDb(tokenId, tokenAddress, limit);
+      resp = await fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit);
     } else {
       resp = getOrdersResponse(snapshot);
     }
@@ -268,24 +278,28 @@ async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
   }
 }
 
-async function fetchAssetAsListingFromDb(tokenId, tokenAddress, limit) {
+async function fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit) {
   utils.log('Getting asset as listing from db');
   try {
     let resp = '';
-    const snapshot = await db
+    const docId = getAssetDocId({ chainId, tokenId, tokenAddress });
+    const doc = await db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .where('metadata.asset.id', '==', tokenId)
-      .where('metadata.asset.address', '==', tokenAddress)
-      .limit(limit)
+      .doc(docId)
       .get();
 
-    if (snapshot.docs.length === 0) {
-      // get from opensea
-      resp = await fetchAssetFromOpensea(tokenId, tokenAddress);
+    if (!doc.exists) {
+      if (chainId === '1') {
+        // get from opensea
+        resp = await fetchAssetFromOpensea(chainId, tokenId, tokenAddress);
+      } else if (chainId === '137') {
+        // get from covalent
+        resp = await fetchAssetFromCovalent(chainId, tokenId, tokenAddress);
+      }
     } else {
-      resp = await getAssetsAsListings(snapshot);
+      resp = await getAssetAsListing(docId, doc.data());
     }
     return resp;
   } catch (err) {
@@ -294,7 +308,7 @@ async function fetchAssetAsListingFromDb(tokenId, tokenAddress, limit) {
   }
 }
 
-async function fetchAssetFromOpensea(tokenId, tokenAddress) {
+async function fetchAssetFromOpensea(chainId, tokenId, tokenAddress) {
   utils.log('Getting asset from Opensea');
   try {
     const url = constants.OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
@@ -306,30 +320,29 @@ async function fetchAssetFromOpensea(tokenId, tokenAddress) {
     };
     const { data } = await axios.get(url, options);
     // store asset for future use
-    return await saveRawOpenseaAssetInDatabase(data);
+    return await saveRawOpenseaAssetInDatabase(chainId, data);
   } catch (err) {
     utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
     utils.error(err);
   }
 }
 
-async function getAssetsAsListings(snapshot) {
-  utils.log('Converting assets to listings');
+async function fetchAssetFromCovalent(chainId, tokenId, tokenAddress) {
+  utils.log('Getting asset from Covalent');
+  const apiBase = 'https://api.covalenthq.com/v1/';
+  const authKey = process.env.covalentKey;
+  const url = apiBase + chainId + '/tokens/' + tokenAddress + '/nft_metadata/' + tokenId + '/&key=' + authKey;
   try {
-    const listings = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      const listing = data;
-      listing.id = doc.id;
-      listings.push(listing);
+    const { data } = await axios.get(url);
+    const items = data.data.items;
+    if (items.length > 0) {
+      // save in db for future use
+      return await saveRawCovalentAssetInDatabase(chainId, items[0]);
+    } else {
+      return '';
     }
-    const resp = {
-      count: listings.length,
-      listings
-    };
-    return utils.jsonString(resp);
   } catch (err) {
-    utils.error('Failed to convert assets to listings');
+    utils.error('Error occured while fetching assets from covalent');
     utils.error(err);
   }
 }
@@ -352,12 +365,20 @@ async function getAssetAsListing(docId, data) {
   }
 }
 
-async function openseaAssetDataToListing(data) {
+async function openseaAssetDataToListing(chainId, data) {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
   let description = data.description;
   let collectionName = '';
+  let numTraits = 0;
+  const traits = [];
+  if (data.traits && data.traits.length > 0) {
+    for (const attr of data.traits) {
+      numTraits++;
+      traits.push({ traitType: attr.trait_type, traitValue: String(attr.value) });
+    }
+  }
   if (assetContract) {
     tokenAddress = assetContract.address;
     schema = assetContract.schema_name;
@@ -370,8 +391,7 @@ async function openseaAssetDataToListing(data) {
     isListing: false,
     hasBlueCheck: await isTokenVerified(tokenAddress),
     schema,
-    chainId: '1', // Assuming opensea api is only used in mainnet
-    chain: 'Ethereum',
+    chainId,
     asset: {
       address: tokenAddress,
       id: data.token_id,
@@ -379,9 +399,70 @@ async function openseaAssetDataToListing(data) {
       description,
       image: data.image_url,
       imagePreview: data.image_preview_url,
-      searchCollectionName: getSearchFriendlyString(collectionName),
-      searchTitle: getSearchFriendlyString(data.name),
-      title: data.name
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      searchTitle: utils.getSearchFriendlyString(data.name),
+      title: data.name,
+      numTraits,
+      traits
+    }
+  };
+  return listing;
+}
+
+async function covalentAssetDataToListing(chainId, data) {
+  const address = data.contract_address;
+  const collectionName = data.contract_name;
+  let id = '';
+  let title = '';
+  let schema = '';
+  let description = '';
+  let image = '';
+  let imagePreview = '';
+  let numTraits = 0;
+  const traits = [];
+  const nftData = data.nft_data;
+  if (nftData && nftData.length > 0) {
+    const firstNftData = nftData[0];
+    id = firstNftData.token_id;
+    for (const std of firstNftData.supports_erc) {
+      if (std.trim().toLowerCase() === 'erc721') {
+        schema = 'ERC721';
+      } else if (std.trim().toLowerCase() === 'erc1155') {
+        schema = 'ERC1155';
+      }
+    }
+    const externalData = firstNftData.external_data;
+    if (externalData) {
+      title = externalData.name;
+      description = externalData.description;
+      image = externalData.image;
+      imagePreview = externalData.image_512;
+      const attrs = externalData.attributes;
+      if (attrs && attrs.length > 0) {
+        for (const attr of attrs) {
+          numTraits++;
+          traits.push({ traitType: attr.trait_type, traitValue: String(attr.value) });
+        }
+      }
+    }
+  }
+  const listing = {
+    isListing: false,
+    hasBlueCheck: await isTokenVerified(address),
+    schema,
+    chainId,
+    asset: {
+      address,
+      id,
+      collectionName,
+      description,
+      image,
+      imagePreview,
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      searchTitle: utils.getSearchFriendlyString(title),
+      title,
+      numTraits,
+      traits
     }
   };
   return listing;
@@ -443,19 +524,46 @@ async function getListingsByCollectionNameAndPrice(
       }
 
       if (collectionName) {
-        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+        queryRef = queryRef.where(
+          'metadata.asset.searchCollectionName',
+          '==',
+          utils.getSearchFriendlyString(collectionName)
+        );
       }
 
       if (collectionIds) {
         const collectionIdsArr = collectionIds.split(',');
-        queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
+        if (collectionIdsArr.length > 1) {
+          queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
+        } else {
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+        }
       }
 
       if (traitType && traitValue) {
-        queryRef = queryRef.where('metadata.asset.traits', 'array-contains', {
-          traitType,
-          traitValue
-        });
+        let traitQueryArr = [];
+        if (traitType.indexOf(',') > 0) {
+          // multi-trait query
+          const typesArr = traitType.split(',');
+          const valuesArr = traitValue.split(',');
+          if (typesArr.length === valuesArr.length) {
+            for (let j = 0; j < typesArr.length; j++) {
+              traitQueryArr.push({
+                traitType: typesArr[j],
+                traitValue: valuesArr[j]
+              })
+            }  
+          }
+        } else {
+          // single-trait query
+          traitQueryArr = [
+            {
+              traitType,
+              traitValue
+            }
+          ]
+        }
+        queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
       }
 
       queryRef = queryRef
@@ -501,7 +609,7 @@ async function getListingsStartingWithText(
     utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
-    const startsWith = getSearchFriendlyString(text);
+    const startsWith = utils.getSearchFriendlyString(text);
     const limit1 = Math.ceil(limit / 2);
     const limit2 = limit - limit1;
 
@@ -1016,7 +1124,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
 app.get('/titles', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -1054,7 +1162,7 @@ app.get('/titles', async (req, res) => {
 
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -2352,6 +2460,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
   const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
+  const chainId = payload.metadata.chainId;
 
   // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -2377,7 +2486,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.ASSETS_COLL)
-    .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
+    .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
 
   batch.set(listingAsAssetRef, payload, { merge: true });
 
@@ -2701,12 +2810,13 @@ async function fetchAssetsFromOpensea(
     const { data } = await axios.get(url, options);
     const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
       const assetData = {};
-      const marshalledData = await openseaAssetDataToListing(rawAssetData);
+      const chainId = '1'; // assuming OS api is used only for eth mainnet
+      const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
       assetData.metadata = marshalledData;
       assetData.rawData = rawAssetData;
       const tokenAddress = marshalledData.asset.address.toLowerCase();
       const tokenId = marshalledData.asset.id;
-      return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
+      return JSON.parse(await getAssetAsListing(getAssetDocId({ tokenId, tokenAddress, chainId }), assetData));
     });
 
     const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
@@ -2731,12 +2841,13 @@ async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
       const listing = al.listings[0];
       const tokenAddress = listing.metadata.asset.address.toLowerCase();
       const tokenId = listing.metadata.asset.id;
+      const chainId = listing.metadata.chainId;
 
       const newDoc = db
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.ASSETS_COLL)
-        .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
+        .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
 
       batch.set(newDoc, listing, { merge: true });
     }
@@ -2752,10 +2863,10 @@ async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
   }
 }
 
-async function saveRawOpenseaAssetInDatabase(rawAssetData) {
+async function saveRawOpenseaAssetInDatabase(chainId, rawAssetData) {
   try {
     const assetData = {};
-    const marshalledData = await openseaAssetDataToListing(rawAssetData);
+    const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
     assetData.metadata = marshalledData;
     assetData.rawData = rawAssetData;
 
@@ -2765,7 +2876,29 @@ async function saveRawOpenseaAssetInDatabase(rawAssetData) {
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(getDocId({ tokenAddress, tokenId, basePrice: '' }));
+      .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+    await newDoc.set(assetData);
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Error occured while saving asset data in database');
+    utils.error(err);
+  }
+}
+
+async function saveRawCovalentAssetInDatabase(chainId, rawAssetData) {
+  try {
+    const assetData = {};
+    const marshalledData = await covalentAssetDataToListing(chainId, rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+
+    const tokenAddress = marshalledData.asset.address.toLowerCase();
+    const tokenId = marshalledData.asset.id;
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {
@@ -3569,15 +3702,6 @@ async function isTokenVerified(address) {
   return false;
 }
 
-function getSearchFriendlyString(input) {
-  if (!input) {
-    return '';
-  }
-  // remove spaces, dashes and underscores only
-  const output = input.replace(/[\s-_]/g, '');
-  return output.toLowerCase();
-}
-
 function toFixed5(num) {
   // @ts-ignore
   // eslint-disable-next-line no-undef
@@ -3597,7 +3721,10 @@ function bn(num) {
 // eslint-disable-next-line no-unused-vars
 function getDocId({ tokenAddress, tokenId, basePrice }) {
   const data = tokenAddress.trim() + tokenId.trim() + basePrice;
-  const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
-  return id;
+  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+}
+
+function getAssetDocId({ chainId, tokenId, tokenAddress }) {
+  const data = tokenAddress.trim() + tokenId.trim() + chainId;
+  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
 }
