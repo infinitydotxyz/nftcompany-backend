@@ -1,49 +1,3 @@
-/*
-
-Data structure in firestore
-	- rootColl
-		- infoDoc
-			- usersColl
-				- userDoc
-					- numListings: number
-					- numOffers: number
-					- numBonusListings: number
-					- numBonusOffers: number
-					- numPurchases: number
-					- numSales: number
-    				- salesTotal: string
-					- salesFeesTotal: string
-					- salesTotalNumeric: number
-					- salesFeesTotalNumeric: number
-					- purchasesTotal: string
-					- purchasesFeesTotal: string
-					- purchasesTotalNumeric: number
-					- purchasesFeesTotalNumeric: number
-					- salesAndPurchasesTotalNumeric: number
-					- profileInfo
-						- ens
-						- email
-							- address
-							- verified
-							- subscribed
-							- verificationGuid
-					- rewardsInfo
-						- openseaVol: numeric
-						- rewardCalculatedAt: numeric millis since epoch utc
-					- assetsColl
-					- listingsColl
-					- offersColl
-					- purchasesColl
-					- salesColl
-					- txnsColl
-			- bonusRewardTokensColl
-				- tokenDoc
-					- name
-			- verifiedTokensColl
-				- tokenDoc
-					- name
-*/
-
 require('dotenv').config();
 
 module.exports = {
@@ -52,8 +6,7 @@ module.exports = {
     OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
     COLLECTION_LISTINGS_COLL: 'collectionListings',
-    VERIFIED_TOKENS_COLL: 'verifiedTokens',
-    VERIFIED_COLLECTIONS_COLL: 'verifiedCollections',
+    ALL_COLLECTIONS_COLL: 'allCollections',
     BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
     USERS_COLL: 'users',
     LISTINGS_COLL: 'listings',
@@ -74,13 +27,15 @@ module.exports = {
   API_BASE: 'https://sv.infinity.xyz',
   SITE_BASE: 'https://infinity.xyz',
   SALE_FEES_TO_PURCHASE_FEES_RATIO: 5,
-  ETH_CHAIN_ID: 1,
+
+  POLYGON_WYVERN_EXCHANGE_ADDRESS: '0xbfbf0bd8963fe4f5168745ad59da20bf78d6385e',
   WYVERN_EXCHANGE_ADDRESS: '0x7be8076f4ea4a4ad08075c2508e481d6c946d12b',
   WYVERN_ATOMIC_MATCH_FUNCTION: 'atomicMatch_',
   WYVERN_CANCEL_ORDER_FUNCTION: 'cancelOrder_',
   NFTC_FEE_ADDRESS: '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57',
   NULL_HASH: '0x0000000000000000000000000000000000000000000000000000000000000000',
   NULL_ADDRESS: '0x0000000000000000000000000000000000000000',
-  WETH_ADDRESS: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-  FEATURED_LIMIT: 4 // number of featured collections
+  FEATURED_LIMIT: 4, // number of featured collections
+
+  OPENSEA_API: 'https://api.opensea.io/api/v1/'
 };

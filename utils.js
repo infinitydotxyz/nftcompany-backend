@@ -1,7 +1,11 @@
-const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
-const rateLimit = require('express-rate-limit');
+const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
 
+const rateLimit = require('express-rate-limit');
+const { uniqBy } = require('lodash');
+
+const firebaseAdmin = require('firebase-admin');
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.applicationDefault()
 });
@@ -113,7 +117,6 @@ module.exports = {
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {
-      trace('Authorizing ' + userId + ' for ' + path);
       // verify signature
       const sign = JSON.parse(signature);
       const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
@@ -179,7 +182,7 @@ module.exports = {
     return endCode;
   },
 
-  // get and parse req.query fields, return a map of { fieldName: numberValue,... }
+  // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
   parseQueryFields: (res, req, fieldArr, defaultValues) => {
     const numberFields = {};
     try {
@@ -199,13 +202,24 @@ module.exports = {
   },
 
   getUniqueItemsByProperties: function (items, propNames) {
-    const propNamesArray = Array.from(propNames);
-    const isPropValuesEqual = (subject, target, propNames) => {
-      return propNames.every((propName) => subject[propName] === target[propName]);
-    };
-    return items.filter(
-      (item, index, array) =>
-        index === array.findIndex((foundItem) => isPropValuesEqual(foundItem, item, propNamesArray))
-    );
+    return uniqBy(items, 'address');
+  },
+
+  getSearchFriendlyString: function (input) {
+    if (!input) {
+      return '';
+    }
+    // remove spaces, dashes and underscores only
+    const output = input.replace(/[\s-_]/g, '');
+    return output.toLowerCase();
+  },
+
+  getChainProvider: function (chainId) {
+    if (chainId === '1') {
+      return ethProvider;
+    } else if (chainId === '137') {
+      return polygonProvider;
+    }
+    return null;
   }
 };

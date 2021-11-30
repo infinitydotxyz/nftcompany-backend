@@ -44,8 +44,9 @@ const UsPersonAnswer = {
 };
 
 const ListType = {
-  BuyNow: 'BUY_NOW', // values must be the same as UI's values.
-  Auction: 'AUCTION'
+  FIXED_PRICE: 'fixedPrice',
+  DUTCH_AUCTION: 'dutchAuction',
+  ENGLISH_AUCTION: 'englishAuction'
 };
 
 module.exports = {

@@ -1,20 +1,30 @@
+const nfts = require('./dist/nfts/index').default;
+
 require('dotenv').config();
 const { ethers } = require('ethers');
-const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
 
 const BigNumber = require('bignumber.js');
 const express = require('express');
 const helmet = require('helmet');
 const axios = require('axios').default;
+const qs = require('qs');
 const crypto = require('crypto');
+
 const utils = require('./utils');
 const types = require('./types');
+const erc721Abi = require('./abi/erc721.json');
+const erc1155Abi = require('./abi/erc1155.json');
 
 const app = express();
 const cors = require('cors');
 app.use(express.json());
 app.use(cors(utils.getAppCorsOptions()));
 app.use(helmet());
+
+// other routes
+app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
@@ -23,10 +33,11 @@ const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
 const nftDataSources = {
-  0: 'nftc',
+  0: 'infinity',
   1: 'opensea',
   2: 'unmarshal',
-  3: 'alchemy'
+  3: 'alchemy',
+  4: 'covalent'
 };
 const DEFAULT_ITEMS_PER_PAGE = 50;
 const DEFAULT_MIN_ETH = 0.0000001;
@@ -83,6 +94,45 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
   }
 });
 
+// fetch listings from opensea api
+/**
+ * supports queries
+ * - query owner, tokenAddresses or tokenAddress, tokenIds,
+ * - query tokenAddress, tokenIds
+ * - query tokenAddresses, tokenIds
+ * - query collection
+ * - filters: offset, limit (max 50)
+ * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
+ */
+app.get('/opensea/listings', async (req, res) => {
+  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } =
+    req.query;
+
+  const assetContractAddress = tokenAddress;
+  const assetContractAddresses = tokenAddresses;
+  const resp = await fetchAssetsFromOpensea(
+    owner,
+    tokenIds,
+    assetContractAddress,
+    assetContractAddresses,
+    orderBy,
+    orderDirection,
+    offset,
+    limit,
+    collection
+  );
+  const stringifiedResp = utils.jsonString(resp);
+  if (stringifiedResp) {
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+    });
+    res.send(stringifiedResp);
+  } else {
+    res.sendStatus(500);
+  }
+});
+
 // fetch listings (for Explore page)
 /*
 - supports the following queries - from most to least restrictive
@@ -92,7 +142,11 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 - support title
 */
 app.get('/listings', async (req, res) => {
-  const { tokenId, listType } = req.query;
+  const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
+  let { chainId } = req.query;
+  if (!chainId) {
+    chainId = '1'; // default eth mainnet
+  }
   // @ts-ignore
   const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
   // @ts-ignore
@@ -120,9 +174,20 @@ app.get('/listings', async (req, res) => {
     return;
   }
 
+  if (
+    listType &&
+    listType !== types.ListType.FIXED_PRICE &&
+    listType !== types.ListType.DUTCH_AUCTION &&
+    listType !== types.ListType.ENGLISH_AUCTION
+  ) {
+    utils.error('Input error - invalid list type');
+    res.sendStatus(500);
+    return;
+  }
+
   let resp;
   if (tokenAddress && tokenId) {
-    resp = await getListingByTokenAddressAndId(tokenId, tokenAddress, limit);
+    resp = await getListingByTokenAddressAndId(chainId, tokenId, tokenAddress, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -145,7 +210,7 @@ app.get('/listings', async (req, res) => {
         'Content-Length': Buffer.byteLength(resp, 'utf8')
       });
     }
-  } else if (collectionName || priceMin || priceMax) {
+  } else if (collectionName || priceMin || priceMax || listType || collectionIds) {
     if (!priceMin) {
       priceMin = DEFAULT_MIN_ETH;
     }
@@ -161,7 +226,10 @@ app.get('/listings', async (req, res) => {
       startAfterPrice,
       startAfterMillis,
       limit,
-      listType
+      listType,
+      traitType,
+      traitValue,
+      collectionIds
     );
     if (resp) {
       res.set({
@@ -186,25 +254,221 @@ app.get('/listings', async (req, res) => {
   }
 });
 
-async function getListingByTokenAddressAndId(tokenId, tokenAddress, limit) {
+async function getListingByTokenAddressAndId(chainId, tokenId, tokenAddress, limit) {
   utils.log('Getting listings of token id and token address');
   try {
-    const data = await db
+    let resp = '';
+    const snapshot = await db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.id', '==', tokenId)
       .where('metadata.asset.address', '==', tokenAddress)
-      .limit(limit) // should only be one but to catch errors
+      .limit(limit)
       .get();
 
-    return getOrdersResponse(data);
+    if (snapshot.docs.length === 0) {
+      // get from db
+      resp = await fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit);
+    } else {
+      resp = getOrdersResponse(snapshot);
+    }
+    return resp;
   } catch (err) {
     utils.error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
     utils.error(err);
   }
 }
 
+async function fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit) {
+  utils.log('Getting asset as listing from db');
+  try {
+    let resp = '';
+    const docId = getAssetDocId({ chainId, tokenId, tokenAddress });
+    const doc = await db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc(docId)
+      .get();
+
+    if (!doc.exists) {
+      if (chainId === '1') {
+        // get from opensea
+        resp = await fetchAssetFromOpensea(chainId, tokenId, tokenAddress);
+      } else if (chainId === '137') {
+        // get from covalent
+        resp = await fetchAssetFromCovalent(chainId, tokenId, tokenAddress);
+      }
+    } else {
+      resp = await getAssetAsListing(docId, doc.data());
+    }
+    return resp;
+  } catch (err) {
+    utils.error('Failed to get asset from db', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function fetchAssetFromOpensea(chainId, tokenId, tokenAddress) {
+  utils.log('Getting asset from Opensea');
+  try {
+    const url = constants.OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
+    const authKey = process.env.openseaKey;
+    const options = {
+      headers: {
+        'X-API-KEY': authKey
+      }
+    };
+    const { data } = await axios.get(url, options);
+    // store asset for future use
+    return await saveRawOpenseaAssetInDatabase(chainId, data);
+  } catch (err) {
+    utils.error('Failed to get asset from opensea', tokenAddress, tokenId);
+    utils.error(err);
+  }
+}
+
+async function fetchAssetFromCovalent(chainId, tokenId, tokenAddress) {
+  utils.log('Getting asset from Covalent');
+  const apiBase = 'https://api.covalenthq.com/v1/';
+  const authKey = process.env.covalentKey;
+  const url = apiBase + chainId + '/tokens/' + tokenAddress + '/nft_metadata/' + tokenId + '/&key=' + authKey;
+  try {
+    const { data } = await axios.get(url);
+    const items = data.data.items;
+    if (items.length > 0) {
+      // save in db for future use
+      return await saveRawCovalentAssetInDatabase(chainId, items[0]);
+    } else {
+      return '';
+    }
+  } catch (err) {
+    utils.error('Error occured while fetching assets from covalent');
+    utils.error(err);
+  }
+}
+
+async function getAssetAsListing(docId, data) {
+  utils.log('Converting asset to listing');
+  try {
+    const listings = [];
+    const listing = data;
+    listing.id = docId;
+    listings.push(listing);
+    const resp = {
+      count: listings.length,
+      listings
+    };
+    return utils.jsonString(resp);
+  } catch (err) {
+    utils.error('Failed to convert asset to listing');
+    utils.error(err);
+  }
+}
+
+async function openseaAssetDataToListing(chainId, data) {
+  const assetContract = data.asset_contract;
+  let tokenAddress = '';
+  let schema = '';
+  let description = data.description;
+  let collectionName = '';
+  let numTraits = 0;
+  const traits = [];
+  if (data.traits && data.traits.length > 0) {
+    for (const attr of data.traits) {
+      numTraits++;
+      traits.push({ traitType: attr.trait_type, traitValue: String(attr.value) });
+    }
+  }
+  if (assetContract) {
+    tokenAddress = assetContract.address;
+    schema = assetContract.schema_name;
+    collectionName = assetContract.name;
+    if (assetContract.description) {
+      description = assetContract.description;
+    }
+  }
+  const listing = {
+    isListing: false,
+    hasBlueCheck: await isTokenVerified(tokenAddress),
+    schema,
+    chainId,
+    asset: {
+      address: tokenAddress,
+      id: data.token_id,
+      collectionName,
+      description,
+      image: data.image_url,
+      imagePreview: data.image_preview_url,
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      searchTitle: utils.getSearchFriendlyString(data.name),
+      title: data.name,
+      numTraits,
+      traits
+    }
+  };
+  return listing;
+}
+
+async function covalentAssetDataToListing(chainId, data) {
+  const address = data.contract_address;
+  const collectionName = data.contract_name;
+  let id = '';
+  let title = '';
+  let schema = '';
+  let description = '';
+  let image = '';
+  let imagePreview = '';
+  let numTraits = 0;
+  const traits = [];
+  const nftData = data.nft_data;
+  if (nftData && nftData.length > 0) {
+    const firstNftData = nftData[0];
+    id = firstNftData.token_id;
+    for (const std of firstNftData.supports_erc) {
+      if (std.trim().toLowerCase() === 'erc721') {
+        schema = 'ERC721';
+      } else if (std.trim().toLowerCase() === 'erc1155') {
+        schema = 'ERC1155';
+      }
+    }
+    const externalData = firstNftData.external_data;
+    if (externalData) {
+      title = externalData.name;
+      description = externalData.description;
+      image = externalData.image;
+      imagePreview = externalData.image_512;
+      const attrs = externalData.attributes;
+      if (attrs && attrs.length > 0) {
+        for (const attr of attrs) {
+          numTraits++;
+          traits.push({ traitType: attr.trait_type, traitValue: String(attr.value) });
+        }
+      }
+    }
+  }
+  const listing = {
+    isListing: false,
+    hasBlueCheck: await isTokenVerified(address),
+    schema,
+    chainId,
+    asset: {
+      address,
+      id,
+      collectionName,
+      description,
+      image,
+      imagePreview,
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      searchTitle: utils.getSearchFriendlyString(title),
+      title,
+      numTraits,
+      traits
+    }
+  };
+  return listing;
+}
+
 async function getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit) {
-  const listings = [];
   try {
     let startAfterBlueCheckBool = true;
     if (startAfterBlueCheck !== undefined) {
@@ -219,22 +483,11 @@ async function getListingsByCollection(startAfterBlueCheck, startAfterSearchColl
       .limit(limit)
       .get();
 
-    for (const doc of snapshot.docs) {
-      const listing = doc.data();
-      listing.id = doc.id;
-      listings.push(listing);
-    }
+    return getOrdersResponse(snapshot);
   } catch (err) {
     utils.error('Failed to get listings by collection from firestore');
     utils.error(err);
   }
-
-  // return response
-  const resp = {
-    count: listings.length,
-    listings
-  };
-  return utils.jsonString(resp);
 }
 
 async function getListingsByCollectionNameAndPrice(
@@ -246,7 +499,10 @@ async function getListingsByCollectionNameAndPrice(
   startAfterPrice,
   startAfterMillis,
   limit,
-  listType
+  listType,
+  traitType,
+  traitValue,
+  collectionIds
 ) {
   try {
     utils.log('Getting listings of a collection');
@@ -263,17 +519,53 @@ async function getListingsByCollectionNameAndPrice(
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
 
-      if (listType === types.ListType.BuyNow || listType === types.ListType.Auction) {
-        const buyNowToken = constants.NULL_ADDRESS;
+      if (listType) {
+        queryRef = queryRef.where('metadata.listingType', '==', listType);
+      }
+
+      if (collectionName) {
         queryRef = queryRef.where(
-          'paymentToken',
+          'metadata.asset.searchCollectionName',
           '==',
-          listType === types.ListType.BuyNow ? buyNowToken : constants.WETH_ADDRESS
+          utils.getSearchFriendlyString(collectionName)
         );
       }
-      if (collectionName) {
-        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
+
+      if (collectionIds) {
+        const collectionIdsArr = collectionIds.split(',');
+        if (collectionIdsArr.length > 1) {
+          queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
+        } else {
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+        }
       }
+
+      if (traitType && traitValue) {
+        let traitQueryArr = [];
+        if (traitType.indexOf(',') > 0) {
+          // multi-trait query
+          const typesArr = traitType.split(',');
+          const valuesArr = traitValue.split(',');
+          if (typesArr.length === valuesArr.length) {
+            for (let j = 0; j < typesArr.length; j++) {
+              traitQueryArr.push({
+                traitType: typesArr[j],
+                traitValue: valuesArr[j]
+              })
+            }  
+          }
+        } else {
+          // single-trait query
+          traitQueryArr = [
+            {
+              traitType,
+              traitValue
+            }
+          ]
+        }
+        queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
+      }
+
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
         .orderBy('metadata.createdAt', 'desc')
@@ -317,7 +609,7 @@ async function getListingsStartingWithText(
     utils.log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
-    const startsWith = getSearchFriendlyString(text);
+    const startsWith = utils.getSearchFriendlyString(text);
     const limit1 = Math.ceil(limit / 2);
     const limit2 = limit - limit1;
 
@@ -393,22 +685,131 @@ app.get('/u/:user/assets', async (req, res) => {
 app.get('/featured-collections', async (req, res) => {
   utils.log('fetch list of Featured Collections');
   try {
-    const result = await db
-      .collection(fstrCnstnts.FEATURED_COLL)
-      .limit(constants.FEATURED_LIMIT)
-      .get();
+    const result = await db.collection(fstrCnstnts.FEATURED_COLL).limit(constants.FEATURED_LIMIT).get();
 
     if (result.docs) {
       const { results: collections, count } = utils.docsToArray(result.docs);
-      res.send({ collections, count });
+      const respStr = utils.jsonString({ collections, count });
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
     } else {
       res.sendStatus(404);
     }
   } catch (err) {
     utils.error('Error fetching featured collections.');
     utils.error(err);
+    res.sendStatus(500);
   }
 });
+
+// transaction events (for a collection or a token)
+app.get('/events', async (req, res) => {
+  const queryStr = decodeURIComponent(qs.stringify(req.query));
+  const tokenId = req.query.token_id;
+  const eventType = req.query.event_type;
+  let respStr = '';
+  try {
+    // have to fetch order data from a diff end point if token id is supplied
+    if (eventType === 'bid_entered' && tokenId) {
+      const data = await fetchOffersFromOSAndInfinity(req);
+      respStr = utils.jsonString(data);
+    } else {
+      const authKey = process.env.openseaKey;
+      const url = constants.OPENSEA_API + `events?${queryStr}`;
+      const options = {
+        headers: {
+          'X-API-KEY': authKey
+        }
+      };
+      const { data } = await axios.get(url, options);
+      respStr = utils.jsonString(data);
+    }
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
+  } catch (err) {
+    utils.error('Error occured while fetching events from opensea');
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+// fetches offers from both OS and Infinity
+async function fetchOffersFromOSAndInfinity(req) {
+  const tokenAddress = req.query.asset_contract_address || '';
+  const tokenId = req.query.token_id;
+  const limit = +req.query.limit;
+  const offset = req.query.offset;
+  const authKey = process.env.openseaKey;
+  const url = 'https://api.opensea.io/wyvern/v1/orders';
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    },
+    params: {
+      side: 0,
+      asset_contract_address: tokenAddress,
+      limit,
+      offset
+    }
+  };
+  if (tokenId) {
+    options.params.token_id = tokenId;
+  }
+
+  try {
+    const result = {
+      asset_events: []
+    };
+
+    // infinity offers
+    let query = db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
+    if (tokenId) {
+      query = query.where('metadata.asset.id', '==', tokenId);
+    }
+    query = query.orderBy('metadata.basePriceInEth', 'desc').limit(limit);
+
+    const snapshot = await query.get();
+
+    for (const offer of snapshot.docs) {
+      const order = offer.data();
+      const obj = { asset: {}, from_account: {} };
+      obj.asset.token_id = order.metadata.asset.id;
+      obj.asset.image_thumbnail_url = order.metadata.asset.image;
+      obj.asset.name = order.metadata.asset.title;
+      obj.created_date = order.listingTime * 1000;
+      obj.from_account.address = order.maker;
+      obj.bid_amount = order.basePrice;
+      obj.offerSource = 'Infinity';
+      result.asset_events.push(obj);
+    }
+
+    // opensea offers
+    const { data } = await axios.get(url, options);
+    for (const order of data.orders) {
+      const obj = { asset: {}, from_account: {} };
+      obj.asset.token_id = order.asset.token_id;
+      obj.asset.image_thumbnail_url = order.asset.image_thumbnail_url;
+      obj.asset.name = order.asset.name;
+      obj.created_date = order.listing_time * 1000;
+      obj.from_account.address = order.maker.address;
+      obj.bid_amount = order.base_price;
+      obj.offerSource = 'OpenSea';
+      result.asset_events.push(obj);
+    }
+
+    return result;
+  } catch (err) {
+    utils.error('Error occured while fetching events from opensea');
+    utils.error(err);
+  }
+}
 
 // fetch listings of user
 app.get('/u/:user/listings', async (req, res) => {
@@ -718,7 +1119,7 @@ app.get('/rewards/leaderboard', async (req, res) => {
 
 app.get('/titles', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
@@ -756,27 +1157,29 @@ app.get('/titles', async (req, res) => {
 
 app.get('/collections', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
-  const startsWith = getSearchFriendlyString(startsWithOrig);
+  const startsWith = utils.getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = utils.getEndCode(startsWith);
     db.collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', endCode)
       .orderBy('metadata.asset.searchCollectionName')
-      .select('metadata.asset.collectionName', 'metadata.hasBlueCheck')
+      .select('metadata.asset.address', 'metadata.asset.collectionName', 'metadata.hasBlueCheck')
       .limit(10)
       .get()
       .then((data) => {
-        // to enable cdn cache
-        let resp = data.docs.map((doc) => {
+        const resp = data.docs.map((doc) => {
+          const docData = doc.data();
           return {
-            collectionName: doc.data().metadata.asset.collectionName,
-            hasBlueCheck: doc.data().metadata.hasBlueCheck
+            address: docData.metadata.asset.address,
+            collectionName: docData.metadata.asset.collectionName,
+            hasBlueCheck: docData.metadata.hasBlueCheck
           };
         });
         // remove duplicates and take only the first 10 results
-        resp = utils.getUniqueItemsByProperties(resp, 'collectionName');
-        const respStr = utils.jsonString(resp);
+        const deDupresp = utils.getUniqueItemsByProperties(resp, 'collectionName');
+        const respStr = utils.jsonString(deDupresp);
+        // to enable cdn cache
         res.set({
           'Cache-Control': 'must-revalidate, max-age=60',
           'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -789,6 +1192,83 @@ app.get('/collections', async (req, res) => {
       });
   } else {
     res.send(utils.jsonString([]));
+  }
+});
+
+app.get('/collections/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  utils.log('Fetching collection info for', slug);
+  db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    .where('searchCollectionName', '==', slug)
+    .limit(1)
+    .get()
+    .then((data) => {
+      const resp = data.docs.map((doc) => {
+        return doc.data();
+      });
+      const respStr = utils.jsonString(resp);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
+    })
+    .catch((err) => {
+      utils.error('Failed to get collection info for', slug, err);
+      res.sendStatus(500);
+    });
+});
+
+// get traits & their values of a collection
+app.get('/collections/:id/traits', async (req, res) => {
+  utils.log('Fetching traits from NFT contract address.');
+  const id = req.params.id.trim().toLowerCase();
+  let resp = {};
+  const traitMap = {}; // { name: { {info) }} }
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + `assets/?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    }
+  };
+  try {
+    const { data } = await axios.get(url, options);
+    // console.log('data', data);
+    const traits = [];
+    if (data && data.assets) {
+      data.assets.forEach((item) => {
+        item.traits.forEach((trait) => {
+          traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+          traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
+          if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+            traitMap[trait.trait_type].values.push(trait.value);
+          }
+        });
+      });
+      Object.keys(traitMap).forEach((traitName) => {
+        traits.push(traitMap[traitName]);
+      });
+    }
+
+    resp = {
+      traits
+    };
+    // store in firestore for future use
+    db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(id).set(resp, { merge: true });
+
+    // return response
+    const respStr = utils.jsonString(resp);
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=300',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+    res.sendStatus(500);
   }
 });
 
@@ -871,14 +1351,14 @@ app.get('/u/:user/wyvern/v1/txns', async (req, res) => {
 
 // =============================================== POSTS =====================================================================
 
-app.post('/verifiedTokens', async (req, res) => {
-  const { startAfterName, limit } = req.body;
+app.get('/verifiedCollections', async (req, res) => {
+  const startAfterName = req.query.startAfterName || '';
+  const limit = +(req.query.limit || 50);
 
   try {
     let query = db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .where('hasBlueCheck', '==', true)
       .orderBy('name', 'asc');
 
     if (startAfterName) {
@@ -901,49 +1381,9 @@ app.post('/verifiedTokens', async (req, res) => {
     };
 
     const resp = utils.jsonString(dataObj);
-
     // to enable cdn cache
     res.set({
-      'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
-    });
-    res.send(resp);
-  } catch (err) {
-    utils.error(err);
-    res.sendStatus(500);
-  }
-});
-
-app.post('/verifiedCollections', async (req, res) => {
-  const { startAfterName, limit } = req.body;
-
-  try {
-    let query = db.collection(fstrCnstnts.VERIFIED_COLLECTIONS_COLL).orderBy('name', 'asc');
-
-    if (startAfterName) {
-      query = query.startAfter(startAfterName);
-    }
-
-    const data = await query.limit(limit).get();
-
-    const collections = [];
-    for (const doc of data.docs) {
-      const data = doc.data();
-
-      data.id = doc.id;
-      collections.push(data);
-    }
-
-    const dataObj = {
-      count: collections.length,
-      collections
-    };
-
-    const resp = utils.jsonString(dataObj);
-
-    // to enable cdn cache
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=30',
+      'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp, 'utf8')
     });
     res.send(resp);
@@ -1062,7 +1502,7 @@ app.post('/u/:user/wyvern/v1/txns', utils.postUserRateLimit, async (req, res) =>
       return;
     }
 
-    if (!payload.actionType || !payload.txnHash || !payload.orderId || !payload.maker) {
+    if (!payload.actionType || !payload.txnHash || !payload.orderId || !payload.maker || !payload.chainId) {
       utils.error('Invalid input');
       res.sendStatus(500);
       return;
@@ -1184,6 +1624,12 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
       return;
     }
 
+    if (!payload.chainId) {
+      utils.error('Invalid input - no chainId');
+      res.sendStatus(500);
+      return;
+    }
+
     const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
     if (actionType !== 'fulfill' && actionType !== 'cancel') {
       utils.error('Invalid action type', actionType);
@@ -1192,9 +1638,10 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
     }
 
     const txnHash = payload.txnHash.trim(); // preserve case
+    const chainId = payload.chainId;
 
     // check if valid nftc txn
-    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, actionType);
+    const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       res.sendStatus(500);
@@ -1227,6 +1674,7 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
           status: 'pending',
           salePriceInEth: valueInEth,
           actionType,
+          chainId,
           createdAt: Date.now(),
           buyer,
           seller
@@ -1291,17 +1739,18 @@ app.post('/u/:user/wyvern/v1/txns/check', utils.postUserRateLimit, async (req, r
 
 const openseaAbi = require('./abi/openseaExchangeContract.json');
 
-async function getTxnData(txnHash, actionType) {
+async function getTxnData(txnHash, chainId, actionType) {
   let isValid = true;
   let from = '';
   let buyer = '';
   let seller = '';
   let value = bn(0);
-  const txn = await ethersProvider.getTransaction(txnHash);
+  const provider = getProvider(chainId);
+  const txn = provider ? await provider.getTransaction(txnHash) : null;
   if (txn) {
     from = txn.from ? txn.from.trim().toLowerCase() : '';
     const to = txn.to;
-    const chainId = txn.chainId;
+    const txnChainId = txn.chainId;
     const data = txn.data;
     value = txn.value;
     const openseaIface = new ethers.utils.Interface(openseaAbi);
@@ -1310,10 +1759,11 @@ async function getTxnData(txnHash, actionType) {
     const args = decodedData.args;
 
     // checks
-    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+    const exchangeAddress = getExchangeAddress(chainId);
+    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
       isValid = false;
     }
-    if (chainId !== constants.ETH_CHAIN_ID) {
+    if (txnChainId !== +chainId) {
       isValid = false;
     }
     if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
@@ -1353,12 +1803,13 @@ async function getTxnData(txnHash, actionType) {
   return { isValid, from, buyer, seller, value };
 }
 
-async function isValidNftcTxn(txnHash, actionType) {
+async function isValidNftcTxn(txnHash, chainId, actionType) {
   let isValid = true;
-  const txn = await ethersProvider.getTransaction(txnHash);
+  const provider = getProvider(chainId);
+  const txn = provider ? await provider.getTransaction(txnHash) : null;
   if (txn) {
     const to = txn.to;
-    const chainId = txn.chainId;
+    const txnChainId = txn.chainId;
     const data = txn.data;
     const value = txn.value;
     const openseaIface = new ethers.utils.Interface(openseaAbi);
@@ -1367,10 +1818,11 @@ async function isValidNftcTxn(txnHash, actionType) {
     const args = decodedData.args;
 
     // checks
-    if (to.toLowerCase() !== constants.WYVERN_EXCHANGE_ADDRESS.toLowerCase()) {
+    const exchangeAddress = getExchangeAddress(chainId);
+    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
       isValid = false;
     }
-    if (chainId !== constants.ETH_CHAIN_ID) {
+    if (txnChainId !== +chainId) {
       isValid = false;
     }
     if (actionType === 'fulfill' && functionName !== constants.WYVERN_ATOMIC_MATCH_FUNCTION) {
@@ -1412,6 +1864,7 @@ async function waitForTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const origTxnHash = payload.txnHash.trim();
+  const chainId = payload.chainId;
 
   utils.log('Waiting for txn', origTxnHash);
   const batch = db.batch();
@@ -1427,13 +1880,18 @@ async function waitForTxn(user, payload) {
 
   try {
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(origTxnHash, actionType);
+    const isValid = await isValidNftcTxn(origTxnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', origTxnHash);
       return;
     }
 
-    const receipt = await ethersProvider.waitForTransaction(origTxnHash, confirms);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Not waiting for txn since provider is null');
+      return;
+    }
+    const receipt = await provider.waitForTransaction(origTxnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
@@ -1522,6 +1980,7 @@ async function waitForMissedTxn(user, payload) {
   user = user.trim().toLowerCase();
   const actionType = payload.actionType.trim().toLowerCase();
   const txnHash = payload.txnHash.trim();
+  const chainId = payload.chainId;
 
   utils.log('Waiting for missed txn', txnHash);
   const batch = db.batch();
@@ -1537,54 +1996,84 @@ async function waitForMissedTxn(user, payload) {
 
   try {
     // check if valid nftc txn
-    const isValid = await isValidNftcTxn(txnHash, actionType);
+    const isValid = await isValidNftcTxn(txnHash, chainId, actionType);
     if (!isValid) {
       utils.error('Invalid NFTC txn', txnHash);
       return;
     }
 
-    const receipt = await ethersProvider.waitForTransaction(txnHash, confirms);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Not waiting for txn since provider is null');
+      return;
+    }
+    const receipt = await provider.waitForTransaction(txnHash, confirms);
 
     // check if txn status is not already updated in firestore by another call
     try {
       const isUpdated = await db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(txnDocRef);
-        const buyer = txnDoc.get('buyer');
-        const seller = txnDoc.get('seller');
+        if (actionType === 'fulfill') {
+          const buyer = txnDoc.get('buyer');
+          const seller = txnDoc.get('seller');
 
-        const buyerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(buyer)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const buyerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(buyer)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const sellerTxnRef = db
-          .collection(fstrCnstnts.ROOT_COLL)
-          .doc(fstrCnstnts.INFO_DOC)
-          .collection(fstrCnstnts.USERS_COLL)
-          .doc(seller)
-          .collection(fstrCnstnts.MISSED_TXNS_COLL)
-          .doc(txnHash);
+          const sellerTxnRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(seller)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
 
-        const buyerTxnDoc = await txn.get(buyerTxnRef);
-        const sellerTxnDoc = await txn.get(sellerTxnRef);
+          const buyerTxnDoc = await txn.get(buyerTxnRef);
+          const sellerTxnDoc = await txn.get(sellerTxnRef);
 
-        const buyerStatus = buyerTxnDoc.get('status');
-        const sellerStatus = sellerTxnDoc.get('status');
-        if (buyerStatus === 'pending' && sellerStatus === 'pending') {
-          // orig txn confirmed
-          utils.log('Missed txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
-          const txnData = JSON.parse(utils.jsonString(receipt));
-          const txnSuceeded = txnData.status === 1;
-          const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-          await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
-          await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
-          return txnSuceeded;
-        } else {
-          return false;
+          const buyerStatus = buyerTxnDoc.get('status');
+          const sellerStatus = sellerTxnDoc.get('status');
+          if (buyerStatus === 'pending' && sellerStatus === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed fulfill txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+            await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
+        } else if (actionType === 'cancel') {
+          const docRef = db
+            .collection(fstrCnstnts.ROOT_COLL)
+            .doc(fstrCnstnts.INFO_DOC)
+            .collection(fstrCnstnts.USERS_COLL)
+            .doc(user)
+            .collection(fstrCnstnts.MISSED_TXNS_COLL)
+            .doc(txnHash);
+
+          const doc = await txn.get(docRef);
+          const status = doc.get('status');
+          if (status === 'pending') {
+            // orig txn confirmed
+            utils.log('Missed cancel txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            const txnData = JSON.parse(utils.jsonString(receipt));
+            const txnSuceeded = txnData.status === 1;
+            const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
+            await txn.update(docRef, { status: updatedStatus, txnData });
+            return txnSuceeded;
+          } else {
+            return false;
+          }
         }
+        return false;
       });
 
       if (isUpdated) {
@@ -1966,6 +2455,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
   const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
+  const chainId = payload.metadata.chainId;
 
   // check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
@@ -1986,6 +2476,15 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
 
   batch.set(listingRef, payload, { merge: true });
 
+  // store as asset for future use
+  const listingAsAssetRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.ASSETS_COLL)
+    .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+
+  batch.set(listingAsAssetRef, payload, { merge: true });
+
   // update collection listings
   try {
     db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
@@ -1996,6 +2495,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
           metadata: {
             hasBlueCheck: payload.metadata.hasBlueCheck,
             schema: payload.metadata.schema,
+            chainId,
             asset: {
               address: tokenAddress,
               collectionName: payload.metadata.asset.collectionName,
@@ -2077,6 +2577,11 @@ function getOrdersResponseFromArray(docs) {
   for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
+    try {
+      checkOwnershipChange(doc);
+    } catch (err) {
+      utils.error('Error checking ownership change info', err);
+    }
     if (!isExpired) {
       listing.id = doc.id;
       listings.push(listing);
@@ -2145,6 +2650,9 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
     case 'opensea':
       data = await getAssetsFromOpensea(address, limit, offset);
       break;
+    case 'covalent':
+      data = await getAssetsFromCovalent(address, limit, offset);
+      break;
     default:
       utils.log('Invalid data source for fetching nft data of wallet');
   }
@@ -2157,6 +2665,30 @@ async function getAssetsFromNftc(address, limit, offset) {
 
 async function getAssetsFromAlchemy(address, limit, offset) {
   utils.log('Fetching assets from alchemy');
+}
+
+async function getAssetsFromCovalent(address, limit, offset) {
+  utils.log('Fetching assets from covalent');
+  const apiBase = 'https://api.covalenthq.com/v1/';
+  const chain = '137';
+  const authKey = process.env.covalentKey;
+  const url = apiBase + chain + '/address/' + address + '/balances_v2/?nft=true&no-nft-fetch=false&key=' + authKey;
+  try {
+    const { data } = await axios.get(url);
+    const items = data.data.items;
+    const resp = { count: 0, assets: [] };
+    for (const item of items) {
+      const type = item.type;
+      if (type === 'nft') {
+        resp.count++;
+        resp.assets.push(item);
+      }
+    }
+    return resp;
+  } catch (err) {
+    utils.error('Error occured while fetching assets from covalent');
+    utils.error(err);
+  }
 }
 
 async function getAssetsFromUnmarshal(address, limit, offset) {
@@ -2176,20 +2708,195 @@ async function getAssetsFromUnmarshal(address, limit, offset) {
 
 async function getAssetsFromOpensea(address, limit, offset) {
   utils.log('Fetching assets from opensea');
-  const apiBase = 'https://api.opensea.io/api/v1/assets/';
   const authKey = process.env.openseaKey;
-  const url = apiBase + '?limit=' + limit + '&offset=' + offset + '&owner=' + address;
+  const url = constants.OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
   const options = {
     headers: {
       'X-API-KEY': authKey
     }
   };
   try {
-    utils.trace(url);
     const { data } = await axios.get(url, options);
     return data;
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+}
+
+/**
+ *
+ * @param owner The address of the owner of the assets
+ * @param tokenIds An array of token IDs to search for
+ * @param assetContractAddress The NFT contract address for the assets
+ * @param assetContractAddresses An array of contract addresses to search for
+ * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price) defaults to sale_price
+ * @param orderDirection asc or desc
+ * @param offset
+ * @param limit
+ * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
+ */
+async function fetchAssetsFromOpensea(
+  owner,
+  tokenIds,
+  assetContractAddress,
+  assetContractAddresses,
+  orderBy,
+  orderDirection,
+  offset,
+  limit,
+  collection
+) {
+  utils.log('Fetching assets from opensea');
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + 'assets/';
+  const ownerQuery = owner ? { owner } : {};
+
+  const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
+  const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
+  const assetContractAddressesQuery =
+    (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
+
+  const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
+  const defaultOrderBy = 'sale_price';
+  if (orderBy && !isValidOrderByOption) {
+    utils.error(`Invalid order by option passed while fetching assets from opensea`);
+    orderBy = defaultOrderBy;
+  }
+  const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
+
+  const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
+  const defaultOrderDirection = 'desc';
+  if (orderDirection && !isValidOrderDirection) {
+    utils.error(`Invalid order direction option passed while fetching assets from opensea`);
+    orderDirection = defaultOrderDirection;
+  }
+  const orderDirectionQuery = orderDirection
+    ? { order_direction: orderDirection }
+    : { order_direction: defaultOrderDirection };
+
+  const offsetQuery = offset ? { offset } : { offset: 0 };
+  // limit is capped at 50
+  const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
+  const collectionQuery = collection ? { collection } : {};
+
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    },
+    params: {
+      ...ownerQuery,
+      ...tokenIdsQuery,
+      ...assetContractAddressQuery,
+      ...assetContractAddressesQuery,
+      ...orderByQuery,
+      ...orderDirectionQuery,
+      ...offsetQuery,
+      ...limitQuery,
+      ...collectionQuery
+    },
+    paramsSerializer: (params) => {
+      return qs.stringify(params, { arrayFormat: 'repeat' });
+    }
+  };
+
+  try {
+    const { data } = await axios.get(url, options);
+    const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
+      const assetData = {};
+      const chainId = '1'; // assuming OS api is used only for eth mainnet
+      const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
+      assetData.metadata = marshalledData;
+      assetData.rawData = rawAssetData;
+      const tokenAddress = marshalledData.asset.address.toLowerCase();
+      const tokenId = marshalledData.asset.id;
+      return JSON.parse(await getAssetAsListing(getAssetDocId({ tokenId, tokenAddress, chainId }), assetData));
+    });
+
+    const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
+    const assetListings = assetListingPromiseResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((fulfilledResult) => fulfilledResult.value);
+
+    // async store in db
+    saveRawOpenseaAssetBatchInDatabase(assetListings);
+    return assetListings;
+  } catch (err) {
+    utils.error('Error occured while fetching assets from opensea');
+    utils.error(err);
+  }
+}
+
+async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
+  try {
+    const batch = db.batch();
+
+    for (const al of assetListings) {
+      const listing = al.listings[0];
+      const tokenAddress = listing.metadata.asset.address.toLowerCase();
+      const tokenId = listing.metadata.asset.id;
+      const chainId = listing.metadata.chainId;
+
+      const newDoc = db
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.ASSETS_COLL)
+        .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+
+      batch.set(newDoc, listing, { merge: true });
+    }
+
+    // commit batch
+    batch.commit().catch((err) => {
+      utils.error('Error occured while batch saving asset data in database');
+      utils.error(err);
+    });
+  } catch (err) {
+    utils.error('Error occured while batch saving asset data in database');
+    utils.error(err);
+  }
+}
+
+async function saveRawOpenseaAssetInDatabase(chainId, rawAssetData) {
+  try {
+    const assetData = {};
+    const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+
+    const tokenAddress = marshalledData.asset.address.toLowerCase();
+    const tokenId = marshalledData.asset.id;
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+    await newDoc.set(assetData);
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Error occured while saving asset data in database');
+    utils.error(err);
+  }
+}
+
+async function saveRawCovalentAssetInDatabase(chainId, rawAssetData) {
+  try {
+    const assetData = {};
+    const marshalledData = await covalentAssetDataToListing(chainId, rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+
+    const tokenAddress = marshalledData.asset.address.toLowerCase();
+    const tokenId = marshalledData.asset.id;
+    const newDoc = db
+      .collection(fstrCnstnts.ROOT_COLL)
+      .doc(fstrCnstnts.INFO_DOC)
+      .collection(fstrCnstnts.ASSETS_COLL)
+      .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+    await newDoc.set(assetData);
+    return getAssetAsListing(newDoc.id, assetData);
+  } catch (err) {
+    utils.error('Error occured while saving asset data in database');
     utils.error(err);
   }
 }
@@ -2253,6 +2960,92 @@ function isOrderExpired(doc) {
     return false;
   }
   return orderExpirationTime <= utcSecondsSinceEpoch;
+}
+
+async function checkOwnershipChange(doc) {
+  const order = doc.data();
+  const side = order.side;
+  const schema = order.metadata.schema;
+  const address = order.metadata.asset.address;
+  const id = order.metadata.asset.id;
+  const chainId = order.metadata.chainId;
+  if (side === 1) {
+    // listing
+    const maker = order.maker;
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
+      checkERC721Ownership(doc, chainId, maker, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, chainId, maker, address, id);
+    }
+  } else if (side === 0) {
+    // offer
+    const owner = order.metadata.asset.owner;
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
+      checkERC721Ownership(doc, chainId, owner, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, chainId, owner, address, id);
+    }
+  }
+}
+
+async function checkERC721Ownership(doc, chainId, owner, address, id) {
+  try {
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Cannot check ERC721 ownership as provider is null');
+      return;
+    }
+    const contract = new ethers.Contract(address, erc721Abi, provider);
+    let newOwner = await contract.ownerOf(id);
+    newOwner = newOwner.trim().toLowerCase();
+    if (newOwner !== constants.NULL_ADDRESS && newOwner !== owner) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after ownership change', doc.id, owner, newOwner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting stale order', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
+    utils.error('Checking ERC721 Ownership failed', err);
+    if (err && err.message && err.message.indexOf('nonexistent token') > 0) {
+      doc.ref
+        .delete()
+        .then(() => {
+          utils.log('pruned erc721 after token id non existent', doc.id, owner, address, id);
+        })
+        .catch((err) => {
+          utils.error('Error deleting nonexistent token id order', doc.id, owner, err);
+        });
+    }
+  }
+}
+
+async function checkERC1155Ownership(doc, chainId, owner, address, id) {
+  try {
+    const provider = getProvider(chainId);
+    if (!provider) {
+      utils.error('Cannot check ERC1155 ownership as provider is null');
+      return;
+    }
+    const contract = new ethers.Contract(address, erc1155Abi, provider);
+    const balance = await contract.balanceOf(owner, id);
+    if (owner !== constants.NULL_ADDRESS && balance === 0) {
+      console.log('stale', owner, owner, address, id);
+      doc.ref
+        .delete()
+        .then(() => {
+          console.log('pruned erc1155 after ownership change', doc.id, owner, owner, address, id, balance);
+        })
+        .catch((err) => {
+          console.error('Error deleting', doc.id, owner, err);
+        });
+    }
+  } catch (err) {
+    utils.error('Checking ERC1155 Ownership failed', err);
+  }
 }
 
 async function deleteExpiredOrder(doc) {
@@ -2873,20 +3666,34 @@ app.post('/u/:user/usperson', utils.lowRateLimit, async (req, res) => {
 
 // ============================================================ Misc ======================================================
 
-async function isTokenVerified(address) {
-  const tokenAddress = address.trim().toLowerCase();
-  const doc = await db
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.VERIFIED_TOKENS_COLL)
-    .doc(tokenAddress)
-    .get();
-  return doc.exists;
+function getProvider(chainId) {
+  if (chainId === '1') {
+    return ethProvider;
+  } else if (chainId === '137') {
+    return polygonProvider;
+  }
+  return null;
 }
 
-function getSearchFriendlyString(input) {
-  const noSpace = input.replace(/\s/g, '');
-  return noSpace.toLowerCase();
+function getExchangeAddress(chainId) {
+  if (chainId === '1') {
+    return constants.WYVERN_EXCHANGE_ADDRESS;
+  } else if (chainId === '137') {
+    return constants.POLYGON_WYVERN_EXCHANGE_ADDRESS;
+  }
+  return null;
+}
+
+async function isTokenVerified(address) {
+  const tokenAddress = address.trim().toLowerCase();
+  const doc = await db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(tokenAddress).get();
+  if (doc.exists) {
+    const hasBlueCheck = doc.get('hasBlueCheck');
+    if (hasBlueCheck) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function toFixed5(num) {
@@ -2908,7 +3715,10 @@ function bn(num) {
 // eslint-disable-next-line no-unused-vars
 function getDocId({ tokenAddress, tokenId, basePrice }) {
   const data = tokenAddress.trim() + tokenId.trim() + basePrice;
-  const id = crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  utils.log('Doc id for token address ' + tokenAddress + ' and token id ' + tokenId + ' is ' + id);
-  return id;
+  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+}
+
+function getAssetDocId({ chainId, tokenId, tokenAddress }) {
+  const data = tokenAddress.trim() + tokenId.trim() + chainId;
+  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
 }

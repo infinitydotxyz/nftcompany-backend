@@ -1,12 +1,17 @@
+/* eslint-disable no-unused-vars */
 require('dotenv').config();
+const { ethers } = require('ethers');
+const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+
 const { readFile } = require('fs').promises;
 const { writeFileSync, appendFileSync } = require('fs');
 const { promisify } = require('util');
 const parse = promisify(require('csv-parse'));
+const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -23,6 +28,9 @@ const db = firebaseAdmin.firestore();
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
 
+const erc721Abi = require('./abi/erc721.json');
+const erc1155Abi = require('./abi/erc1155.json');
+
 // eslint-disable-next-line no-unused-vars
 async function importCsv(csvFileName) {
   const fileContents = await readFile(csvFileName, 'utf8');
@@ -31,7 +39,7 @@ async function importCsv(csvFileName) {
   try {
     // await updateBlueCheck(records);
     // await updateFeaturedCollections(records);
-    // await updateVerifiedCollections(records);
+    await updateAllCollections(records);
   } catch (e) {
     console.error(e);
     process.exit(1);
@@ -40,14 +48,28 @@ async function importCsv(csvFileName) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function updateVerifiedCollections(records) {
+function updateAllCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, address] = record;
-    const obj = { name, address: address.trim().toLowerCase() };
-    if (name && address) {
-      const docRef = db.collection('root').doc('info').collection('verifiedTokens').doc(address.trim().toLowerCase());
+    const [name, openseaUrl, address, description, profileImage, bannerImage, verified] = record;
+    let verifiedBool = false;
+    if (verified && verified.trim().toLowerCase() === 'true') {
+      verifiedBool = true;
+    }
+    const obj = {
+      name,
+      openseaUrl,
+      address: address.trim().toLowerCase(),
+      description,
+      profileImage,
+      bannerImage,
+      cardImage: bannerImage,
+      hasBlueCheck: verifiedBool
+    };
+    if (name && openseaUrl && address && description && profileImage && bannerImage) {
+      obj.searchCollectionName = getSearchFriendlyString(name);
+      const docRef = db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -65,10 +87,10 @@ function updateFeaturedCollections(records) {
   const batchCommits = [];
   let batch = db.batch();
   records.forEach((record, i) => {
-    const [name, openseaUrl, address, description, cardImage, bannerImage] = record;
-    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, cardImage, bannerImage };
-    if (name && openseaUrl && address && description && cardImage && bannerImage) {
-      const docRef = db.collection('featuredCollections').doc(address.trim().toLowerCase());
+    const [name, openseaUrl, address, description, profileImage, bannerImage] = record;
+    const obj = { name, openseaUrl, address: address.trim().toLowerCase(), description, profileImage, bannerImage };
+    if (name && openseaUrl && address && description && profileImage && bannerImage) {
+      const docRef = db.collection(fstrCnstnts.FEATURED_COLL).doc(address.trim().toLowerCase());
       batch.set(docRef, obj, { merge: true });
       if ((i + 1) % 500 === 0) {
         console.log(`Writing record ${i + 1}`);
@@ -84,16 +106,21 @@ function updateFeaturedCollections(records) {
 // eslint-disable-next-line no-unused-vars
 async function updateBlueCheck(records) {
   records.forEach((record, i) => {
-    const address = record[1].trim().toLowerCase();
+    const address = record[2].trim().toLowerCase();
     console.log(address);
     const queryRef = db.collectionGroup(fstrCnstnts.LISTINGS_COLL).where('metadata.asset.address', '==', address);
 
     db.runTransaction(async (txn) => {
       const results = await txn.get(queryRef);
-      console.log('length', results.docs.length);
-      for (const doc of results.docs) {
-        const docRef = doc.ref;
-        txn.update(docRef, { 'metadata.hasBlueCheck': true });
+      const doc = results.docs[0];
+      if (doc) {
+        console.log(doc.data().metadata.asset.address + ' ' + results.docs.length);
+      }
+      if (results.docs.length < 500) {
+        for (const doc of results.docs) {
+          const docRef = doc.ref;
+          txn.update(docRef, { 'metadata.hasBlueCheck': true });
+        }
       }
     });
   });
@@ -157,7 +184,7 @@ async function populateCollectionListings(startAfterSearchCollectionName, startA
 
       batch.set(docRef, obj, { merge: true });
 
-      if ((i + 1) % 500 === 0) {
+      if ((i + 1) % limit === 0) {
         console.log(`Writing record ${i + 1}`);
         batchCommits.push(batch.commit());
         batch = db.batch();
@@ -311,15 +338,573 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdDiff so far', thresholdDiff);
 }
 
+let prunedListings = 0;
+async function pruneStaleListings(csvFileName) {
+  try {
+    const limit = 100;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      console.log('prunedListings', prunedListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await pruneStaleListingsHelper(+startAfterCreatedAt, limit);
+    await pruneStaleListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+
+  const query = db
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+  const nullAddress = '0x0000000000000000000000000000000000000000';
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+  console.log('prunedListings so far', prunedListings);
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const ref = doc.ref;
+    const data = doc.data();
+    const maker = data.maker;
+    const address = data.metadata.asset.address;
+    const id = data.metadata.asset.id;
+    const schema = data.metadata.schema;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+    }
+
+    try {
+      if (schema && schema.trim().toLowerCase() === 'erc721') {
+        const contract = new ethers.Contract(address, erc721Abi, ethersProvider);
+        let owner = await contract.ownerOf(id);
+        owner = owner.trim().toLowerCase();
+        if (owner !== nullAddress && owner !== maker) {
+          console.log('stale', maker, owner, address, id);
+          ref
+            .delete()
+            .then(() => {
+              prunedListings++;
+              console.log('pruned erc721', doc.id, maker, owner, address, id);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, maker, err);
+            });
+        }
+      } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+        const contract = new ethers.Contract(address, erc1155Abi, ethersProvider);
+        const balance = await contract.balanceOf(maker, id);
+
+        if (maker !== nullAddress && balance === 0) {
+          console.log('stale', maker, maker, address, id);
+          ref
+            .delete()
+            .then(() => {
+              prunedListings++;
+              console.log('pruned erc1155', doc.id, maker, maker, address, id, balance);
+            })
+            .catch((err) => {
+              console.error('Error deleting', doc.id, maker, err);
+            });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      console.error('=================REASON=============');
+      console.error(err.reason);
+      if (err.reason.indexOf('nonexistent token') > 0) {
+        doc.ref
+          .delete()
+          .then(() => {
+            console.log('pruned erc721 after token id non existent', doc.id, address, id);
+          })
+          .catch((err) => {
+            console.error('Error deleting nonexistent token id order', doc.id, err);
+          });
+      }
+    }
+  }
+}
+
+// async function pruneStaleNonERC721Listings(fileName) {
+//   const fileContents = await readFile(fileName, 'utf8');
+//   const json = JSON.parse(fileContents);
+//   const apiBase = 'https://api.opensea.io/api/v1/assets/';
+//   const authKey = process.env.openseaKey;
+//   const limit = 1;
+//   const offset = 0;
+//   const url = apiBase;
+//   const nullAddress = '0x0000000000000000000000000000000000000000';
+//   const openseaSharedStore = '0x495f947276749ce646f68ac8c248420045cb7b5e';
+//   let pruned = 0;
+
+//   for (const [address, ids] of Object.entries(json)) {
+//     if (address === openseaSharedStore || ids.length > 30) {
+//       continue;
+//     }
+
+//     let tokenIds = '';
+//     const idsMap = {};
+//     for (const id of ids) {
+//       const exisingId = idsMap[id];
+//       if (!exisingId) {
+//         idsMap[id] = id;
+//         tokenIds += 'token_ids=' + id + '&';
+//       }
+//     }
+
+//     tokenIds = tokenIds.substr(0, tokenIds.length - 1);
+//     console.log(tokenIds);
+
+//     const options = {
+//       headers: {
+//         'X-API-KEY': authKey
+//       }
+//     };
+
+//     try {
+//       // const resp = await axios.get(url, options);
+//       const resp = await axios.get(
+//         url + '?asset_contract_address=' + address + '&limit=' + limit + '&offset=' + offset + '&' + tokenIds
+//       );
+//       for (const asset of resp.data.assets) {
+//         const owner = asset.owner.address.trim().toLowerCase();
+
+//         const query = await db
+//           .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+//           .where('metadata.asset.id', '==', asset.token_id)
+//           .where('metadata.asset.address', '==', address)
+//           .limit(limit)
+//           .get();
+
+//         const doc = query.docs[0];
+
+//         if (owner !== nullAddress && owner !== doc.data().maker) {
+//           console.log('stale', doc.id, doc.data().maker, owner);
+//           doc.ref
+//             .delete()
+//             .then((res) => {
+//               console.log(++pruned);
+//             })
+//             .catch((err) => {
+//               console.error('Error deleting', doc.id, doc.data().maker, err);
+//             });
+//         }
+//       }
+//     } catch (err) {
+//       console.log(err.message);
+//     }
+//   }
+// }
+
+let totalColls = 0;
+async function updateChainIdInAndSearchCollNameCollListings(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalColls', totalColls);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterName = records[0][1];
+    if (!startAfterName) {
+      startAfterName = '';
+    }
+    await updateChainIdInAndSearchCollNameCollListingsHelper(startAfterName, limit);
+    await updateChainIdInAndSearchCollNameCollListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateChainIdInAndSearchCollNameCollListingsHelper(startAfterName, limit) {
+  console.log('starting after', startAfterName);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+    .orderBy('metadata.asset.collectionName', 'asc')
+    .startAfter(startAfterName)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalColls += snapshot.docs.length;
+  console.log('totalColls so far', totalColls);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.collectionName}\n`);
+      }
+
+      const obj = {
+        metadata: {
+          chainId: '1',
+          asset: {
+            searchCollectionName: getSearchFriendlyString(data.metadata.asset.collectionName)
+          }
+        }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
+let totalTxns = 0;
+async function updateChainIdInTxns(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalTxns', totalTxns);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateChainIdInTxnsHelper(+startAfterCreatedAt, limit);
+    await updateChainIdInTxns(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collectionGroup(fstrCnstnts.TXNS_COLL)
+    .orderBy('createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalTxns += snapshot.docs.length;
+  console.log('totalTxns so far', totalTxns);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.createdAt}\n`);
+      }
+
+      const obj = {
+        chainId: '1'
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
+async function updateOffers(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateOffersHelper(+startAfterCreatedAt, limit);
+    await updateOffers(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateOffersHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collectionGroup(fstrCnstnts.OFFERS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+      }
+
+      // search title and coll name
+      let searchTitle = data.metadata.asset.searchTitle;
+      let searchCollectionName = data.metadata.asset.searchCollectionName;
+
+      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
+      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
+
+      // chainId
+      const chainId = '1';
+
+      const obj = {
+        metadata: {
+          chainId,
+          asset: {
+            searchTitle,
+            searchCollectionName
+          }
+        }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
+async function updateListings(csvFileName) {
+  try {
+    const limit = 500;
+
+    if (readComplete) {
+      console.log('totalListings', totalListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await updateListingsHelper(+startAfterCreatedAt, limit);
+    await updateListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+async function updateListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const batchCommits = [];
+  let batch = db.batch();
+
+  const query = db
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('metadata.createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit);
+  const snapshot = await query.get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
+
+  try {
+    for (let i = 0; i < snapshot.docs.length; i++) {
+      const doc = snapshot.docs[i];
+      const ref = doc.ref;
+      const data = doc.data();
+
+      if ((i + 1) % limit === 0) {
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
+      }
+
+      // traits
+      const rawTraits = data.metadata.asset.rawData.traits;
+      const numTraits = rawTraits ? rawTraits.length : 0;
+      const traits = [];
+      if (numTraits > 0) {
+        for (const rawTrait of rawTraits) {
+          traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
+        }
+      }
+
+      // listingtype
+      let listingType = 'fixedPrice';
+      if (data.englishAuctionReservePrice !== undefined) {
+        listingType = 'englishAuction';
+      } else if (data.saleKind === 1) {
+        listingType = 'dutchAuction';
+      }
+
+      // search title and coll name
+      let searchTitle = data.metadata.asset.searchTitle;
+      let searchCollectionName = data.metadata.asset.searchCollectionName;
+
+      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
+      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
+
+      // chainId
+      const chainId = '1';
+
+      const obj = {
+        metadata: {
+          listingType,
+          chainId,
+          asset: {
+            numTraits,
+            traits,
+            searchTitle,
+            searchCollectionName
+          }
+        }
+      };
+
+      batch.set(ref, obj, { merge: true });
+
+      if ((i + 1) % limit === 0) {
+        console.log(`Writing record ${i + 1}`);
+        batchCommits.push(batch.commit());
+        batch = db.batch();
+      }
+    }
+  } catch (err) {
+    console.error(err);
+  }
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
 
-importCsv(process.argv[2]).catch((e) => console.error(e));
+// importCsv(process.argv[2]).catch((e) => console.error(e));
 
 // calcUserStats(process.argv[2]).catch((e) => console.error(e));
 
+// pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
+
+// updateChainIdInAndSearchCollNameCollListings(process.argv[2]).catch((e) => console.error(e));
+
+// updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
+
+// updateOffers(process.argv[2]).catch((e) => console.error(e));
+
+// updateListings(process.argv[2]).catch((e) => console.error(e));
+
 // =================================================== HELPERS ===========================================================
+
+function getSearchFriendlyString(input) {
+  if (!input) {
+    return '';
+  }
+  // remove spaces, dashes and underscores only
+  const output = input.replace(/[\s-_]/g, '');
+  return output.toLowerCase();
+}
 
 function getUserRewardTier(userVol) {
   const rewardTiers = types.RewardTiers;
