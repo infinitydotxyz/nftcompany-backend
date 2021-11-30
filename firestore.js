@@ -522,7 +522,7 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
 // }
 
 let totalColls = 0;
-async function updateChainIdInAndSearchCollNameAllColls(csvFileName) {
+async function updateChainIdInAndSearchCollNameCollListings(csvFileName) {
   try {
     const limit = 500;
 
@@ -540,22 +540,22 @@ async function updateChainIdInAndSearchCollNameAllColls(csvFileName) {
     if (!startAfterName) {
       startAfterName = '';
     }
-    await updateChainIdInAndSearchCollNameAllCollsHelper(startAfterName, limit);
-    await updateChainIdInAndSearchCollNameAllColls(csvFileName);
+    await updateChainIdInAndSearchCollNameCollListingsHelper(startAfterName, limit);
+    await updateChainIdInAndSearchCollNameCollListings(csvFileName);
   } catch (e) {
     console.error(e);
     process.exit(1);
   }
 }
 
-async function updateChainIdInAndSearchCollNameAllCollsHelper(startAfterName, limit) {
+async function updateChainIdInAndSearchCollNameCollListingsHelper(startAfterName, limit) {
   console.log('starting after', startAfterName);
   const batchCommits = [];
   let batch = db.batch();
 
   const query = db
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .orderBy('name', 'asc')
+    .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+    .orderBy('metadata.asset.collectionName', 'asc')
     .startAfter(startAfterName)
     .limit(limit);
   const snapshot = await query.get();
@@ -574,12 +574,16 @@ async function updateChainIdInAndSearchCollNameAllCollsHelper(startAfterName, li
       const data = doc.data();
 
       if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.name}\n`);
+        writeFileSync('./lastItem', `${doc.id},${data.metadata.asset.collectionName}\n`);
       }
 
       const obj = {
-        chainId: '1',
-        searchCollectionName: getSearchFriendlyString(data.searchCollectionName)
+        metadata: {
+          chainId: '1',
+          asset: {
+            searchCollectionName: getSearchFriendlyString(data.metadata.asset.collectionName)
+          }
+        }
       };
 
       batch.set(ref, obj, { merge: true });
@@ -630,7 +634,7 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
   let batch = db.batch();
 
   const query = db
-    .collectionGroup(fstrCnstnts.MISSED_TXNS_COLL)
+    .collectionGroup(fstrCnstnts.TXNS_COLL)
     .orderBy('createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
@@ -883,7 +887,7 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-// updateChainIdInAndSearchCollNameAllColls(process.argv[2]).catch((e) => console.error(e));
+// updateChainIdInAndSearchCollNameCollListings(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
 
