@@ -105,7 +105,7 @@ app.get('/opensea/listings', async (req, res) => {
   const assetContractAddresses = tokenAddresses;
   const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
 
-  const fetchResp = await fetchAssetsFromOpensea(
+  const resp = await fetchAssetsFromOpensea(
     owner,
     tokenIds,
     assetContractAddress,
@@ -116,19 +116,7 @@ app.get('/opensea/listings', async (req, res) => {
     limit,
     collection
   );
-  let resp;
-  if (fetchResp) {
-    resp = fetchResp.reduce(
-      (acc, item) => {
-        if (item && item.listings) {
-          acc.count += 1;
-          acc.listings = [...acc.listings, ...item.listings];
-        }
-        return acc;
-      },
-      { count: 0, listings: [] }
-    );
-  }
+
   const stringifiedResp = utils.jsonString(resp);
   if (stringifiedResp) {
     res.set({
@@ -714,6 +702,179 @@ async function fetchOffersFromOSAndInfinity(req) {
     return result;
   } catch (err) {
     utils.error('Error occured while fetching events from opensea');
+    utils.error(err);
+  }
+}
+
+app.get('/opensea/wyvern/v1/orders', async (req, res) => {
+  const {
+    assetContractAddress,
+    paymentTokenAddress,
+    maker,
+    taker,
+    owner,
+    isEnglish,
+    bundled,
+    includeBundled,
+    includeInvalid,
+    listedAfter,
+    listedBefore,
+    tokenId,
+    tokenIds,
+    side,
+    saleKind,
+    limit,
+    offset,
+    orderBy,
+    orderDirection
+  } = req.query;
+
+  const resp = await fetchOrdersFromOpensea(
+    assetContractAddress,
+    paymentTokenAddress,
+    maker,
+    taker,
+    owner,
+    isEnglish,
+    bundled,
+    includeBundled,
+    includeInvalid,
+    listedAfter,
+    listedBefore,
+    tokenId,
+    tokenIds,
+    side,
+    saleKind,
+    limit,
+    offset,
+    orderBy,
+    orderDirection
+  );
+
+  const stringifiedResp = utils.jsonString(resp);
+  if (stringifiedResp) {
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+    });
+    res.send(stringifiedResp);
+  } else {
+    res.sendStatus(500);
+  }
+});
+
+async function fetchOrdersFromOpensea(
+  assetContractAddress,
+  paymentTokenAddress,
+  maker,
+  taker,
+  owner,
+  isEnglish,
+  bundled,
+  includeBundled,
+  includeInvalid,
+  listedAfter,
+  listedBefore,
+  tokenId,
+  tokenIds,
+  side,
+  saleKind,
+  limit,
+  offset,
+  orderBy,
+  orderDirection
+) {
+  utils.log('Fetching Orders from OpenSea');
+  const authKey = process.env.openseaKey;
+  const url = 'https://api.opensea.io/wyvern/v1/orders/';
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    },
+    params: {
+      asset_contract_address: assetContractAddress,
+      payment_token_address: paymentTokenAddress,
+      maker,
+      taker,
+      owner,
+      is_english: isEnglish,
+      bundled,
+      include_bundled: includeBundled,
+      include_invalid: includeInvalid,
+      listed_after: listedAfter,
+      listed_before: listedBefore,
+      token_id: tokenId,
+      token_ids: tokenIds,
+      side,
+      sale_kind: saleKind,
+      limit,
+      offset,
+      order_by: orderBy,
+      order_direction: orderDirection
+    },
+    paramsSerializer: utils.openseaParamSerializer
+  };
+  try {
+    const { data } = await axios.get(url, options);
+    // reduce to one asset per contract/tokenId with a list of openseaListings
+    const assetIdToListingIndex = {};
+    const getOrderData = (listing) => {
+      const listingCopy = utils.deepCopy(listing);
+      delete listingCopy.asset;
+      return listingCopy;
+    };
+
+    const convertOpenseaOrdersToOpenseaListings = (orders) => {
+      return orders.reduce(
+        (acc, item) => {
+          if (item.asset) {
+            const id = item.asset.id;
+            if (!id) {
+              return acc;
+            }
+            let listingIndex = assetIdToListingIndex[id];
+            if (listingIndex === undefined) {
+              const asset = item.asset;
+              const listing = {
+                ...asset,
+                sell_orders: []
+              };
+              acc.listings.push(listing);
+              listingIndex = acc.listings.length - 1;
+              assetIdToListingIndex[id] = listingIndex;
+              acc.count += 1;
+            }
+            const order = getOrderData(item);
+            acc.listings[listingIndex].sell_orders.push(order);
+          }
+          return acc;
+        },
+        { count: 0, listings: [] }
+      );
+    };
+
+    const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
+
+    const listings = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
+
+    const aggregateListingAsOrders = (listings) => {
+      listings.reduce(
+        (acc, item) => {
+          if (item && item.listings) {
+            acc.count += 1;
+            acc.orders = [...acc.orders, ...item.listings];
+          }
+          return acc;
+        },
+        { count: 0, orders: [] }
+      );
+    };
+
+    const result = aggregateListingAsOrders(listings);
+
+    return result;
+  } catch (err) {
+    utils.error('Error occured while fetching orders from opensea');
     utils.error(err);
   }
 }
@@ -2701,48 +2862,69 @@ async function fetchAssetsFromOpensea(
       ...limitQuery,
       ...collectionQuery
     },
-    paramsSerializer: (params) => {
-      return qs.stringify(params, { arrayFormat: 'repeat' });
-    }
+    paramsSerializer: utils.openseaParamSerializer
   };
 
   try {
     const { data } = await axios.get(url, options);
-    const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      const assetData = {};
-      const marshalledData = await openseaAssetDataToListing(rawAssetData);
-      assetData.metadata = marshalledData;
-      assetData.rawData = rawAssetData;
-      const tokenAddress = marshalledData.asset.address.toLowerCase();
-      const tokenId = marshalledData.asset.id;
-      return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
-    });
+    const listings = await convertOpenseaListingsToInfinityListings(data.assets);
 
-    const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-    const assetListings = assetListingPromiseResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((fulfilledResult) => {
-        return fulfilledResult.value;
-      });
+    const result = listings.reduce(
+      (acc, item) => {
+        if (item && item.listings) {
+          acc.count += 1;
+          acc.listings = [...acc.listings, ...item.listings];
+        }
+        return acc;
+      },
+      { count: 0, listings: [] }
+    );
 
-    // async store in db
-    saveRawOpenseaAssetBatchInDatabase(utils.deepCopy(assetListings));
-    return assetListings.map((value) => {
-      const listing = value.listings[0];
-      let openseaListings = [];
-
-      if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
-        const assetMetadata = listing.metadata.asset;
-        const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
-        openseaListings = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
-        value.listings[0].openseaListings = openseaListings;
-      }
-      return value;
-    });
+    return result;
   } catch (err) {
     utils.error('Error occured while fetching assets from opensea');
     utils.error(err);
   }
+}
+
+/**
+ *  converts listings
+ *
+ * @param rawAssetDataArray to be converted to infinity listings
+ * @returns an array of listings following the infinity schema
+ */
+async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
+  if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
+    return [];
+  }
+  const assetListingPromises = rawAssetDataArray.map(async (rawAssetData) => {
+    const assetData = {};
+    const marshalledData = await openseaAssetDataToListing(rawAssetData);
+    assetData.metadata = marshalledData;
+    assetData.rawData = rawAssetData;
+    const tokenAddress = marshalledData.asset.address.toLowerCase();
+    const tokenId = marshalledData.asset.id;
+    return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
+  });
+
+  const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
+  const assetListings = utils.getFulfilledPromiseSettledResults(assetListingPromiseResults);
+
+  // async store in db
+  saveRawOpenseaAssetBatchInDatabase(utils.deepCopy(assetListings));
+  return assetListings.map((value) => {
+    const listing = value.listings[0];
+    let openseaOrders = [];
+
+    // TODO add optional chaining
+    if (listing && listing.rawData && listing.rawData.sell_orders && listing.rawData.sell_orders.length > 0) {
+      const assetMetadata = listing.metadata.asset;
+      const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
+      openseaOrders = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
+      value.listings[0].openseaOrders = openseaOrders;
+    }
+    return value;
+  });
 }
 
 function getListingType(order) {
@@ -2757,6 +2939,11 @@ function getListingType(order) {
   }
 }
 
+/**
+ *
+ * @param asset metadata to set in the order.metadata.asset
+ * @returns
+ */
 function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
   return (order) => {
     try {
@@ -2764,7 +2951,7 @@ function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
       const chainId = '1';
       const infinityOrder = {
         id: order.order_hash,
-        blueCheck: false,
+        blueCheck: false, // TODO get blueCheck from asset metadata
         howToCall: Number(order.how_to_call),
         salt: order.salt,
         feeRecipient: order.fee_recipient.address,
