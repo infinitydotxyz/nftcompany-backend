@@ -1158,6 +1158,9 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
       searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
       searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
 
+      // chainId
+      const chainId = '1';
+
       const obj = {
         metadata: {
           listingType,
@@ -1166,7 +1169,7 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
             traits,
             searchTitle,
             searchCollectionName,
-            chainId: '1'
+            chainId
           }
         }
       };
