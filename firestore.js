@@ -521,337 +521,6 @@ async function pruneStaleListingsHelper(startAfterCreatedAt, limit) {
 //   }
 // }
 
-async function updateTraits(csvFileName) {
-  try {
-    const limit = 500;
-
-    if (readComplete) {
-      console.log('totalListings', totalListings);
-      return;
-    }
-    console.log('============================================================================');
-    console.log('num recurses', ++numRecurses);
-
-    const fileContents = await readFile(csvFileName, 'utf8');
-    // @ts-ignore
-    const records = await parse(fileContents, { columns: false });
-    let startAfterCreatedAt = records[0][1];
-    if (!startAfterCreatedAt) {
-      startAfterCreatedAt = Date.now();
-    }
-    await updateTraitsHelper(+startAfterCreatedAt, limit);
-    await updateTraits(csvFileName);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-}
-
-async function updateTraitsHelper(startAfterCreatedAt, limit) {
-  console.log('starting after', startAfterCreatedAt);
-  const batchCommits = [];
-  let batch = db.batch();
-
-  const query = db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterCreatedAt)
-    .limit(limit);
-  const snapshot = await query.get();
-
-  if (snapshot.docs.length < limit) {
-    readComplete = true;
-  }
-
-  totalListings += snapshot.docs.length;
-  console.log('totalListings so far', totalListings);
-
-  try {
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const doc = snapshot.docs[i];
-      const ref = doc.ref;
-      const data = doc.data();
-      const rawTraits = data.metadata.asset.rawData.traits;
-
-      if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
-      }
-      const numTraits = rawTraits ? rawTraits.length : 0;
-      const traits = [];
-      if (numTraits > 0) {
-        for (const rawTrait of rawTraits) {
-          traits.push({ traitType: rawTrait.trait_type, traitValue: String(rawTrait.value) });
-        }
-      }
-
-      const obj = {
-        metadata: {
-          asset: {
-            numTraits,
-            traits
-          }
-        }
-      };
-
-      batch.set(ref, obj, { merge: true });
-
-      if ((i + 1) % limit === 0) {
-        console.log(`Writing record ${i + 1}`);
-        batchCommits.push(batch.commit());
-        batch = db.batch();
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-  batchCommits.push(batch.commit());
-  await Promise.all(batchCommits);
-}
-
-async function updateListingType(csvFileName) {
-  try {
-    const limit = 500;
-
-    if (readComplete) {
-      console.log('totalListings', totalListings);
-      return;
-    }
-    console.log('============================================================================');
-    console.log('num recurses', ++numRecurses);
-
-    const fileContents = await readFile(csvFileName, 'utf8');
-    // @ts-ignore
-    const records = await parse(fileContents, { columns: false });
-    let startAfterCreatedAt = records[0][1];
-    if (!startAfterCreatedAt) {
-      startAfterCreatedAt = Date.now();
-    }
-    await updateListingTypeHelper(+startAfterCreatedAt, limit);
-    await updateListingType(csvFileName);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-}
-
-async function updateListingTypeHelper(startAfterCreatedAt, limit) {
-  console.log('starting after', startAfterCreatedAt);
-  const batchCommits = [];
-  let batch = db.batch();
-
-  const query = db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterCreatedAt)
-    .limit(limit);
-  const snapshot = await query.get();
-
-  if (snapshot.docs.length < limit) {
-    readComplete = true;
-  }
-
-  totalListings += snapshot.docs.length;
-  console.log('totalListings so far', totalListings);
-
-  try {
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const doc = snapshot.docs[i];
-      const ref = doc.ref;
-      const data = doc.data();
-
-      if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
-      }
-
-      let listingType = 'fixedPrice';
-      if (data.englishAuctionReservePrice !== undefined) {
-        listingType = 'englishAuction';
-      } else if (data.saleKind === 1) {
-        listingType = 'dutchAuction';
-      }
-
-      const obj = {
-        metadata: {
-          listingType
-        }
-      };
-
-      batch.set(ref, obj, { merge: true });
-
-      if ((i + 1) % limit === 0) {
-        console.log(`Writing record ${i + 1}`);
-        batchCommits.push(batch.commit());
-        batch = db.batch();
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-  batchCommits.push(batch.commit());
-  await Promise.all(batchCommits);
-}
-
-async function updateSearchTitleAndCollName(csvFileName) {
-  try {
-    const limit = 500;
-
-    if (readComplete) {
-      console.log('totalListings', totalListings);
-      return;
-    }
-    console.log('============================================================================');
-    console.log('num recurses', ++numRecurses);
-
-    const fileContents = await readFile(csvFileName, 'utf8');
-    // @ts-ignore
-    const records = await parse(fileContents, { columns: false });
-    let startAfterCreatedAt = records[0][1];
-    if (!startAfterCreatedAt) {
-      startAfterCreatedAt = Date.now();
-    }
-    await updateSearchTitleAndCollNameHelper(+startAfterCreatedAt, limit);
-    await updateSearchTitleAndCollName(csvFileName);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-}
-
-async function updateSearchTitleAndCollNameHelper(startAfterCreatedAt, limit) {
-  console.log('starting after', startAfterCreatedAt);
-  const batchCommits = [];
-  let batch = db.batch();
-
-  const query = db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterCreatedAt)
-    .limit(limit);
-  const snapshot = await query.get();
-
-  if (snapshot.docs.length < limit) {
-    readComplete = true;
-  }
-
-  totalListings += snapshot.docs.length;
-  console.log('totalListings so far', totalListings);
-
-  try {
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const doc = snapshot.docs[i];
-      const ref = doc.ref;
-      const data = doc.data();
-
-      if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
-      }
-
-      let searchTitle = data.metadata.asset.searchTitle;
-      let searchCollectionName = data.metadata.asset.searchCollectionName;
-
-      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
-      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
-
-      const obj = {
-        metadata: {
-          asset: {
-            searchTitle,
-            searchCollectionName
-          }
-        }
-      };
-
-      batch.set(ref, obj, { merge: true });
-
-      if ((i + 1) % limit === 0) {
-        console.log(`Writing record ${i + 1}`);
-        batchCommits.push(batch.commit());
-        batch = db.batch();
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-  batchCommits.push(batch.commit());
-  await Promise.all(batchCommits);
-}
-
-async function updateChainIdInListings(csvFileName) {
-  try {
-    const limit = 500;
-
-    if (readComplete) {
-      console.log('totalListings', totalListings);
-      return;
-    }
-    console.log('============================================================================');
-    console.log('num recurses', ++numRecurses);
-
-    const fileContents = await readFile(csvFileName, 'utf8');
-    // @ts-ignore
-    const records = await parse(fileContents, { columns: false });
-    let startAfterCreatedAt = records[0][1];
-    if (!startAfterCreatedAt) {
-      startAfterCreatedAt = Date.now();
-    }
-    await updateChainIdInListingsHelper(+startAfterCreatedAt, limit);
-    await updateChainIdInListings(csvFileName);
-  } catch (e) {
-    console.error(e);
-    process.exit(1);
-  }
-}
-
-async function updateChainIdInListingsHelper(startAfterCreatedAt, limit) {
-  console.log('starting after', startAfterCreatedAt);
-  const batchCommits = [];
-  let batch = db.batch();
-
-  const query = db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterCreatedAt)
-    .limit(limit);
-  const snapshot = await query.get();
-
-  if (snapshot.docs.length < limit) {
-    readComplete = true;
-  }
-
-  totalListings += snapshot.docs.length;
-  console.log('totalListings so far', totalListings);
-
-  try {
-    for (let i = 0; i < snapshot.docs.length; i++) {
-      const doc = snapshot.docs[i];
-      const ref = doc.ref;
-      const data = doc.data();
-
-      if ((i + 1) % limit === 0) {
-        writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
-      }
-
-      const obj = {
-        metadata: {
-          chainId: '1'
-        }
-      };
-
-      batch.set(ref, obj, { merge: true });
-
-      if ((i + 1) % limit === 0) {
-        console.log(`Writing record ${i + 1}`);
-        batchCommits.push(batch.commit());
-        batch = db.batch();
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-  batchCommits.push(batch.commit());
-  await Promise.all(batchCommits);
-}
-
 let totalColls = 0;
 async function updateChainIdInAndSearchCollNameAllColls(csvFileName) {
   try {
@@ -1003,13 +672,12 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
   await Promise.all(batchCommits);
 }
 
-let totalOffers = 0;
-async function updateChainIdInOffers(csvFileName) {
+async function updateOffers(csvFileName) {
   try {
     const limit = 500;
 
     if (readComplete) {
-      console.log('totalOffers', totalOffers);
+      console.log('totalListings', totalListings);
       return;
     }
     console.log('============================================================================');
@@ -1022,15 +690,15 @@ async function updateChainIdInOffers(csvFileName) {
     if (!startAfterCreatedAt) {
       startAfterCreatedAt = Date.now();
     }
-    await updateChainIdInOffersHelper(+startAfterCreatedAt, limit);
-    await updateChainIdInOffers(csvFileName);
+    await updateOffersHelper(+startAfterCreatedAt, limit);
+    await updateOffers(csvFileName);
   } catch (e) {
     console.error(e);
     process.exit(1);
   }
 }
 
-async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
+async function updateOffersHelper(startAfterCreatedAt, limit) {
   console.log('starting after', startAfterCreatedAt);
   const batchCommits = [];
   let batch = db.batch();
@@ -1046,8 +714,8 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
     readComplete = true;
   }
 
-  totalOffers += snapshot.docs.length;
-  console.log('totalOffers so far', totalOffers);
+  totalListings += snapshot.docs.length;
+  console.log('totalListings so far', totalListings);
 
   try {
     for (let i = 0; i < snapshot.docs.length; i++) {
@@ -1059,8 +727,24 @@ async function updateChainIdInOffersHelper(startAfterCreatedAt, limit) {
         writeFileSync('./lastItem', `${doc.id},${data.metadata.createdAt}\n`);
       }
 
+      // search title and coll name
+      let searchTitle = data.metadata.asset.searchTitle;
+      let searchCollectionName = data.metadata.asset.searchCollectionName;
+
+      searchTitle = searchTitle && getSearchFriendlyString(searchTitle);
+      searchCollectionName = searchCollectionName && getSearchFriendlyString(searchCollectionName);
+
+      // chainId
+      const chainId = '1';
+
       const obj = {
-        chainId: '1'
+        metadata: {
+          chainId,
+          asset: {
+            searchTitle,
+            searchCollectionName
+          }
+        }
       };
 
       batch.set(ref, obj, { merge: true });
@@ -1164,12 +848,12 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
       const obj = {
         metadata: {
           listingType,
+          chainId,
           asset: {
             numTraits,
             traits,
             searchTitle,
-            searchCollectionName,
-            chainId
+            searchCollectionName
           }
         }
       };
@@ -1199,19 +883,13 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
 
 // pruneStaleListings(process.argv[2]).catch((e) => console.error(e));
 
-updateTraits(process.argv[2]).catch((e) => console.error(e));
-
-// updateListingType(process.argv[2]).catch((e) => console.error(e));
-
-// updateSearchTitleAndCollName(process.argv[2]).catch((e) => console.error(e));
-
-// updateChainIdInListings(process.argv[2]).catch((e) => console.error(e));
-
 // updateChainIdInAndSearchCollNameAllColls(process.argv[2]).catch((e) => console.error(e));
 
 // updateChainIdInTxns(process.argv[2]).catch((e) => console.error(e));
 
-// updateChainIdInOffers(process.argv[2]).catch((e) => console.error(e));
+// updateOffers(process.argv[2]).catch((e) => console.error(e));
+
+// updateListings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
