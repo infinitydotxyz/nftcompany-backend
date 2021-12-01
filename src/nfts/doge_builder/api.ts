@@ -1,4 +1,4 @@
-class Backgrounds {
+export class Backgrounds {
   static purple = 'images/doge/Backgrounds/Purple.png';
   static clouds = 'images/doge/Backgrounds/Clouds.GIF';
   static gold = 'images/doge/Backgrounds/Gold.gif';
@@ -16,7 +16,7 @@ class Backgrounds {
   static trippySwirl = 'images/doge/Backgrounds/trippy swirl.gif';
 }
 
-class Bows {
+export class Bows {
   static blackBow = 'images/doge/Bows/Black_bow.png';
   static blueBow = 'images/doge/Bows/Blue_bow.png';
   static blueCheckeredBow = 'images/doge/Bows/Blue_checkered_bow.png';
@@ -34,13 +34,13 @@ class Bows {
   static redWhiteBow = 'images/doge/Bows/Red_white_bow.png';
 }
 
-class Chains {
+export class Chains {
   static bronzeChain = 'images/doge/Chains/Bronze_chain.png';
   static goldChain = 'images/doge/Chains/Gold_chain.png';
   static silverChain = 'images/doge/Chains/Silver_chain.png';
 }
 
-class Crowns {
+export class Crowns {
   static blueFlowerCrown = 'images/doge/Crowns/Blue_flower_crown.png';
   static bronzeCrown = 'images/doge/Crowns/Bronze_crown.png';
   static goldCrown = 'images/doge/Crowns/Gold_crown.png';
@@ -56,7 +56,7 @@ class Crowns {
   static yellowFlowerCrown = 'images/doge/Crowns/Yellow_flower_crown.png';
 }
 
-class Diamonds {
+export class Diamonds {
   static blueDiamonds = 'images/doge/Diamonds/Blue_diamonds.png';
   static greenDiamonds = 'images/doge/Diamonds/Green_diamonds.png';
   static pinkDiamonds = 'images/doge/Diamonds/Pink_diamonds.png';
@@ -65,7 +65,7 @@ class Diamonds {
   static yellowGoldDiamonds = 'images/doge/Diamonds/Yellow_gold_diamonds.png';
 }
 
-class Glasses {
+export class Glasses {
   static blackShades = 'images/doge/Glasses/Black_shades.png';
   static darkBlueShades = 'images/doge/Glasses/Dark_blue_shades.png';
   static eyePatch = 'images/doge/Glasses/Eye_patch.png';
@@ -84,7 +84,7 @@ class Glasses {
   static yellowShades = 'images/doge/Glasses/Yellow_shades.png';
 }
 
-class Hats {
+export class Hats {
   static whiteCap = 'images/doge/Hats/White_cap.png';
   static blackCap = 'images/doge/Hats/Black_cap.png';
   static blackTopHat = 'images/doge/Hats/Black_top_hat.png';
@@ -116,7 +116,7 @@ class Hats {
   static yellowCap = 'images/doge/Hats/Yellow_cap.png';
 }
 
-class Hearts {
+export class Hearts {
   static blueHearts = 'images/doge/Hearts/Blue_hearts.png';
   static cyanHearts = 'images/doge/Hearts/Cyan_hearts.png';
   static greenHearts = 'images/doge/Hearts/Green_hearts.png';
@@ -129,7 +129,7 @@ class Hearts {
   static yellowHearts = 'images/doge/Hearts/Yellow_hearts.png';
 }
 
-class Lasers {
+export class Lasers {
   static blueLasers = 'images/doge/Lasers/Blue_lasers.png';
   static greenLasers = 'images/doge/Lasers/Green_lasers.png';
   static purplelasers = 'images/doge/Lasers/Purplelasers.png';
@@ -141,7 +141,7 @@ class Mouth {
   static mustache = 'images/doge/Mouth/Mustache.png';
 }
 
-class Stars {
+export class Stars {
   static blueStars = 'images/doge/Stars/Blue_stars.png';
   static cyanStars = 'images/doge/Stars/Cyan_stars.png';
   static greenStars = 'images/doge/Stars/Green_stars.png';
@@ -154,6 +154,6 @@ class Stars {
   static yellowStars = 'images/doge/Stars/Yellow_stars.png';
 }
 
-class Doge {
+export class Doge {
   static doge = 'images/doge/Doge.png';
 }

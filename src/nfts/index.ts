@@ -11,7 +11,7 @@ const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUtils';
-import { uploadSourceImages } from './doge_builder/images';
+import { uploadSourceImages, testUpload } from './doge_builder/images';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
@@ -21,7 +21,8 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/setup', async (req, res) => {
-  uploadSourceImages();
+  // uploadSourceImages();
+  testUpload();
 
   res.send('setup');
 });
