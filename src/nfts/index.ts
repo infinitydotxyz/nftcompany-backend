@@ -11,12 +11,19 @@ const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUtils';
+import { uploadSourceImages } from './images';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
 
 router.get('/', async (req, res) => {
   res.send('nfts');
+});
+
+router.get('/setup', async (req, res) => {
+  uploadSourceImages();
+
+  res.send('setup');
 });
 
 // api to get metadata
@@ -50,9 +57,9 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
       .where('metadata.asset.id', '==', tokenId)
       .where('metadata.chainId', '==', chainId)
       .get();
-      if (snapshot.docs.length > 0) {
-
-      }
+    if (snapshot.docs.length > 0) {
+      // TODO
+    }
     const metadataJson = generateDoge2048NftMetadata(score, numPlays, dogBalance);
   } catch (err) {
     utils.error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
