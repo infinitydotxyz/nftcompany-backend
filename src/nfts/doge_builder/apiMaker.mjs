@@ -45,7 +45,7 @@ readFile('./images.json', (err, data) => {
 
   let output = '';
   for (const key of Object.keys(converted)) {
-    output += `class ${toTitleCase(key)} {\n`;
+    output += `export class ${toTitleCase(key)} {\n`;
 
     const obj = converted[key];
 
