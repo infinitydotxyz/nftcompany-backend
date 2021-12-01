@@ -866,7 +866,7 @@ async function fetchOrdersFromOpensea({
     const listings = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
 
     const aggregateListingAsOrders = (listings) => {
-      return listings?.reduce(
+      return listings?.reduce?.(
         (acc, listingResponse) => {
           const listing = listingResponse?.listings?.[0];
           const metadata = listing?.metadata;
@@ -1026,7 +1026,6 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   try {
     const [infinityResponse, openseaResponse] = await Promise.all([infinityResponsePromise, openseaResponsePromise]);
     const error = infinityResponse.error && openseaResponse.error;
-    console.log(`${infinityResponse.error} ${openseaResponse.error}`);
     if (error) {
       const errorCode = infinityResponse.error || openseaResponse.error;
       utils.log(`Fetching orders failed `);
@@ -2840,6 +2839,216 @@ async function getAssetsFromOpensea(address, limit, offset) {
   }
 }
 
+// /**
+//  *
+//  * @param owner The address of the owner of the assets
+//  * @param tokenIds An array of token IDs to search for
+//  * @param assetContractAddress The NFT contract address for the assets
+//  * @param assetContractAddresses An array of contract addresses to search for
+//  * @param orderBy How to order the assets returned (sale_date, sale_count, sale_price) defaults to sale_price
+//  * @param orderDirection asc or desc
+//  * @param offset
+//  * @param limit
+//  * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
+//  */
+// async function fetchAssetsFromOpensea(
+//   owner,
+//   tokenIds,
+//   assetContractAddress,
+//   assetContractAddresses,
+//   orderBy,
+//   orderDirection,
+//   offset,
+//   limit,
+//   collection
+// ) {
+//   utils.log('Fetching assets from opensea');
+
+//   const ownerQuery = owner ? { owner } : {};
+
+//   const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
+//   const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
+//   const assetContractAddressesQuery =
+//     (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
+
+//   const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
+//   const defaultOrderBy = 'sale_date';
+//   if (orderBy && !isValidOrderByOption) {
+//     utils.error(`Invalid order by option passed while fetching assets from opensea`);
+//     orderBy = defaultOrderBy;
+//   }
+//   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
+
+//   const isValidOrderDirection = ['asc', 'desc'].includes(orderDirection);
+//   const defaultOrderDirection = 'desc';
+//   if (orderDirection && !isValidOrderDirection) {
+//     utils.error(`Invalid order direction option passed while fetching assets from opensea`);
+//     orderDirection = defaultOrderDirection;
+//   }
+//   const orderDirectionQuery = orderDirection
+//     ? { order_direction: orderDirection }
+//     : { order_direction: defaultOrderDirection };
+
+//   const offsetQuery = offset ? { offset } : { offset: 0 };
+//   // limit is capped at 50
+//   const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
+//   const collectionQuery = collection ? { collection } : {};
+
+//   const authKey = process.env.openseaKey;
+//   const url = constants.OPENSEA_API + 'assets/';
+//   const options = {
+//     headers: {
+//       'X-API-KEY': authKey
+//     },
+//     params: {
+//       ...ownerQuery,
+//       ...tokenIdsQuery,
+//       ...assetContractAddressQuery,
+//       ...assetContractAddressesQuery,
+//       ...orderByQuery,
+//       ...orderDirectionQuery,
+//       ...offsetQuery,
+//       ...limitQuery,
+//       ...collectionQuery
+//     },
+//     paramsSerializer: utils.openseaParamSerializer
+//   };
+
+//   try {
+//     const { data } = await axios.get(url, options);
+//     const listings = await convertOpenseaListingsToInfinityListings(data.assets);
+
+//     const result = listings.reduce(
+//       (acc, item) => {
+//         if (item && item.listings) {
+//           acc.count += 1;
+//           acc.listings = [...acc.listings, ...item.listings];
+//         }
+//         return acc;
+//       },
+//       { count: 0, listings: [] }
+//     );
+
+//     return result;
+//   } catch (err) {
+//     utils.error('Error occured while fetching assets from opensea');
+//     utils.error(err);
+//   }
+// }
+
+// /**
+//  *  converts listings
+//  *
+//  * @param rawAssetDataArray to be converted to infinity listings
+//  * @returns an array of listings following the infinity schema
+//  */
+// async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
+//   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
+//     return [];
+//   }
+//   const assetListingPromises = rawAssetDataArray.map(async (rawAssetData) => {
+//     const assetData = {};
+//     const marshalledData = await openseaAssetDataToListing(rawAssetData);
+//     assetData.metadata = marshalledData;
+//     assetData.rawData = rawAssetData;
+//     const tokenAddress = marshalledData.asset.address.toLowerCase();
+//     const tokenId = marshalledData.asset.id;
+//     return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
+//   });
+
+//   const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
+//   const assetListings = utils.getFulfilledPromiseSettledResults(assetListingPromiseResults);
+
+//   // async store in db
+//   saveRawOpenseaAssetBatchInDatabase(utils.deepCopy(assetListings));
+//   return assetListings.map((value) => {
+//     const listing = value.listings[0];
+//     let openseaOrders = [];
+
+//     if (listing?.rawData?.sell_orders?.length > 0) {
+//       const assetMetadata = listing.metadata.asset;
+//       const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
+//       openseaOrders = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
+//       listing.openseaOrders = openseaOrders;
+//     }
+//     return value;
+//   });
+// }
+
+// /**
+//  *
+//  * @param asset metadata to set in the order.metadata.asset
+//  * @returns
+//  */
+// function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
+//   const getOpenseaOrderListingType = (order) => {
+//     switch (order.sale_kind) {
+//       case 0:
+//         if (order.payment_token_contract.symbol === 'ETH') {
+//           return 'fixedPrice';
+//         }
+//         return 'englishAuction';
+//       case 1:
+//         return 'dutchAuction';
+//     }
+//   };
+//   return (order) => {
+//     try {
+//       const listingType = getOpenseaOrderListingType(order);
+//       const chainId = '1';
+//       const infinityOrder = {
+//         source: 1, // opensea
+//         tokenId: assetMetadata.id,
+//         tokenAddress: assetMetadata.address,
+//         id: order.order_hash,
+//         blueCheck: assetMetadata.hasBlueCheck,
+//         howToCall: Number(order.how_to_call),
+//         salt: order.salt,
+//         feeRecipient: order.fee_recipient.address,
+//         staticExtradata: order.static_extradata,
+//         quantity: order.quantity,
+//         staticTarget: order.static_target,
+//         maker: order.maker.address,
+//         side: Number(order.side),
+//         takerProtocolFee: order.taker_protocol_fee,
+//         saleKind: Number(order.sale_kind),
+//         basePrice: Number(order.base_price),
+//         metadata: {
+//           asset: assetMetadata,
+//           hasBonusReward: false,
+//           schema: order.metadata.schema,
+//           hasBlueCheck: assetMetadata.hasBlueCheck,
+//           createdAt: Number(order.created_date),
+//           basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
+//           listingType,
+//           chainId
+//         },
+//         extra: order.extra,
+//         expirationTime: order.expiration_time,
+//         hasBonusReward: false,
+//         calldata: order.calldata,
+//         hash: order.hash,
+//         r: order.r,
+//         replacementPattern: order.replacement_pattern,
+//         taker: order.taker.address,
+//         takerRelayerFee: order.taker_relayer_fee,
+//         s: order.s,
+//         makerRelayerFee: order.maker_relayer_fee,
+//         listingTime: order.listing_time,
+//         target: order.target,
+//         v: Number(order.v),
+//         makerProtocolFee: order.maker_protocol_fee,
+//         paymentToken: order.payment_token,
+//         feeMethod: Number(order.fee_method),
+//         exchange: order.exchange,
+//         makerReferrerFee: order.maker_referrer_fee,
+//         paymentTokenSymbol: order.payment_token_contract.symbol,
+//         chainId
+//       };
+//       return infinityOrder;
+//     } catch (e) {}
+//   };
+// }
 /**
  *
  * @param owner The address of the owner of the assets
@@ -2919,21 +3128,10 @@ async function fetchAssetsFromOpensea(
     const { data } = await axios.get(url, options);
     const listings = await convertOpenseaListingsToInfinityListings(data.assets);
 
-    const result = listings.reduce(
-      (acc, item) => {
-        if (item && item.listings) {
-          acc.count += 1;
-          acc.listings = [...acc.listings, ...item.listings];
-        }
-        return acc;
-      },
-      { count: 0, listings: [] }
-    );
-
-    return result;
-  } catch (err) {
+    return listings;
+  } catch (error) {
     utils.error('Error occured while fetching assets from opensea');
-    utils.error(err);
+    utils.error(error);
   }
 }
 
@@ -2943,36 +3141,151 @@ async function fetchAssetsFromOpensea(
  * @param rawAssetDataArray to be converted to infinity listings
  * @returns an array of listings following the infinity schema
  */
-async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
+async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: RawAssetData[] */) {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
     return [];
   }
-  const assetListingPromises = rawAssetDataArray.map(async (rawAssetData) => {
-    const assetData = {};
-    const marshalledData = await openseaAssetDataToListing(rawAssetData);
-    assetData.metadata = marshalledData;
-    assetData.rawData = rawAssetData;
-    const tokenAddress = marshalledData.asset.address.toLowerCase();
-    const tokenId = marshalledData.asset.id;
-    return JSON.parse(await getAssetAsListing(getDocId({ tokenId, tokenAddress, basePrice: '' }), assetData));
-  });
+  const listingMetadataPromises /*: Promise<ListingMetadata>[] */ = rawAssetDataArray.map(
+    async (rawAssetData /*: RawAssetData */) => {
+      const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
+      return listingMetadata;
+    }
+  );
 
-  const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-  const assetListings = utils.getFulfilledPromiseSettledResults(assetListingPromiseResults);
+  const listingMetadataPromiseResults = await Promise.allSettled(listingMetadataPromises);
+  const listingMetadataArray /*: ListingMetadata[] */ =
+    utils.getFulfilledPromiseSettledResults(listingMetadataPromiseResults);
+
+  const assetListings = listingMetadataArray.reduce((assetListings, listingMetadata) => {
+    const tokenAddress = listingMetadata.asset.address.toLowerCase();
+    const tokenId = listingMetadata.asset.id;
+    const docId = getDocId({ tokenId, tokenAddress, basePrice: '' });
+    try {
+      const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })); /* as {
+            count: number;
+            listings: ListingMetadata & { id: string };
+        }; */
+      return [...assetListings, assetListing];
+    } catch {
+      return assetListings;
+    }
+  }, []);
 
   // async store in db
-  saveRawOpenseaAssetBatchInDatabase(utils.deepCopy(assetListings));
-  return assetListings.map((value) => {
-    const listing = value.listings[0];
-    let openseaOrders = [];
+  saveRawOpenseaAssetBatchInDatabase(assetListings);
 
-    if (listing?.rawData?.sell_orders?.length > 0) {
-      const assetMetadata = listing.metadata.asset;
-      const openseaOrderToInfinityOrder = thunkedOpenseaOrderToInfinityOrder(assetMetadata);
-      openseaOrders = listing.rawData.sell_orders.map(openseaOrderToInfinityOrder).filter((item) => item);
-      listing.openseaOrders = openseaOrders;
+  const listings /*: Listing[] */ = listingMetadataArray.reduce((listings, listingMetadata) => {
+    const rawSellOrders = listingMetadata.asset.rawData?.sell_orders;
+    const tokenAddress = listingMetadata.asset.address.toLowerCase();
+    const tokenId = listingMetadata.asset.id;
+    const id = getDocId({ tokenId, tokenAddress, basePrice: '' });
+
+    if (rawSellOrders?.length > 0) {
+      const rawOrderToInfinityOrder = thunkedRawSellOrderToInfinityOrder(
+        listingMetadata.asset,
+        listingMetadata.hasBlueCheck
+      );
+
+      const infinityListingsWithOrders /*: ListingWithOrder[] */ = rawSellOrders.reduce((listings, rawSellOrder) => {
+        const infinityOrder = rawOrderToInfinityOrder(rawSellOrder);
+        if (infinityOrder) {
+          const infinityListing /*: ListingWithOrder */ = {
+            id,
+            metadata: listingMetadata,
+            ...infinityOrder
+          };
+          return [...listings, infinityListing];
+        }
+        return listings;
+      }, []);
+
+      return [...listings, ...infinityListingsWithOrders];
+    } else {
+      const listing /*: ListingWithoutOrder */ = {
+        metadata: listingMetadata,
+        id
+      };
+      return [...listings, listing];
     }
-    return value;
+  }, []);
+
+  return {
+    count: listings.length,
+    listings: listings || []
+  };
+}
+
+const getOrderTypeFromRawSellOrder = (order /*: RawSellOrder */) => {
+  switch (order?.sale_kind) {
+    case 0:
+      if (order?.payment_token_contract?.symbol === 'ETH') {
+        return 'fixedPrice';
+      }
+      return 'englishAuction';
+    case 1:
+      return 'dutchAuction';
+    default:
+  }
+};
+
+async function rawAssetDataToListingMetadata(data /*: RawAssetData */) /*: Promise<ListingMetadata> */ {
+  const assetContract = data.asset_contract;
+  let tokenAddress = '';
+  let schema = '';
+  let description = data.description;
+  let collectionName = '';
+  if (assetContract) {
+    tokenAddress = assetContract.address;
+    schema = assetContract.schema_name;
+    collectionName = assetContract.name;
+    if (assetContract.description) {
+      description = assetContract.description;
+    }
+  }
+  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const traits = convertRawTraitsToInfinityTraits(data.traits);
+  const rawSellOrder = data.sell_orders?.[0];
+  const basePriceInWei = rawSellOrder?.base_price;
+
+  const basePriceInEth = basePriceInWei ? Number(ethers.utils.formatEther(basePriceInWei)) : undefined;
+  const listingType = getOrderTypeFromRawSellOrder(rawSellOrder);
+
+  const listing /*: ListingMetadata */ = {
+    hasBonusReward: false,
+    createdAt: new Date(assetContract.created_date).getTime(),
+    basePriceInEth: basePriceInEth,
+    listingType,
+    schema,
+    hasBlueCheck,
+    chainId: '1', // Assuming opensea api is only used in mainnet
+    chain: 'Ethereum',
+    asset: {
+      title: data?.name,
+      traits,
+      searchTitle: getSearchFriendlyString(data.name),
+      traitValues: traits?.map(({ traitValue }) => traitValue),
+      numTraits: traits?.length,
+      rawData: data,
+      collectionName,
+      id: data.token_id,
+      description,
+      image: data.image_url,
+      searchCollectionName: getSearchFriendlyString(collectionName),
+      address: tokenAddress,
+      imagePreview: data.image_preview_url,
+      traitTypes: traits?.map(({ traitType }) => traitType)
+    }
+  };
+  return listing;
+}
+
+function convertRawTraitsToInfinityTraits(traits /*: RawTrait[] */) /*: Trait[] */ {
+  // eslint-disable-next-line camelcase
+  return traits?.map(({ trait_type, value }) => {
+    return {
+      traitType: trait_type,
+      traitValue: value
+    };
   });
 }
 
@@ -2981,28 +3294,13 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray) {
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
-function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
-  const getOpenseaOrderListingType = (order) => {
-    switch (order.sale_kind) {
-      case 0:
-        if (order.payment_token_contract.symbol === 'ETH') {
-          return 'fixedPrice';
-        }
-        return 'englishAuction';
-      case 1:
-        return 'dutchAuction';
-    }
-  };
-  return (order) => {
+function thunkedRawSellOrderToInfinityOrder(asset /*: Asset */, hasBlueCheck /*: boolean */) {
+  return (order /*: RawSellOrder */) /*: Order */ => {
     try {
-      const listingType = getOpenseaOrderListingType(order);
+      // const listingType = getOrderTypeFromRawSellOrder(order);
       const chainId = '1';
-      const infinityOrder = {
-        source: 1, // opensea
-        tokenId: assetMetadata.id,
-        tokenAddress: assetMetadata.address,
-        id: order.order_hash,
-        blueCheck: assetMetadata.hasBlueCheck,
+
+      const baseOrder = {
         howToCall: Number(order.how_to_call),
         salt: order.salt,
         feeRecipient: order.fee_recipient.address,
@@ -3013,41 +3311,39 @@ function thunkedOpenseaOrderToInfinityOrder(assetMetadata) {
         side: Number(order.side),
         takerProtocolFee: order.taker_protocol_fee,
         saleKind: Number(order.sale_kind),
-        basePrice: Number(order.base_price),
-        metadata: {
-          asset: assetMetadata,
-          hasBonusReward: false,
-          schema: order.metadata.schema,
-          hasBlueCheck: assetMetadata.hasBlueCheck,
-          createdAt: Number(order.created_date),
-          basePriceInEth: Number(ethers.utils.formatEther(order.base_price)),
-          listingType,
-          chainId
-        },
+        basePrice: order.base_price,
         extra: order.extra,
-        expirationTime: order.expiration_time,
-        hasBonusReward: false,
+        expirationTime: order.expiration_time?.toString?.(),
         calldata: order.calldata,
-        hash: order.hash,
+        hash: order.order_hash,
         r: order.r,
         replacementPattern: order.replacement_pattern,
         taker: order.taker.address,
         takerRelayerFee: order.taker_relayer_fee,
         s: order.s,
         makerRelayerFee: order.maker_relayer_fee,
-        listingTime: order.listing_time,
+        listingTime: order.listing_time?.toString?.(),
         target: order.target,
         v: Number(order.v),
         makerProtocolFee: order.maker_protocol_fee,
         paymentToken: order.payment_token,
         feeMethod: Number(order.fee_method),
         exchange: order.exchange,
-        makerReferrerFee: order.maker_referrer_fee,
-        paymentTokenSymbol: order.payment_token_contract.symbol,
-        chainId
+        makerReferrerFee: order.maker_referrer_fee
+      };
+      const infinityOrder /*: Order */ = {
+        source: 1, // opensea
+        tokenId: asset.id,
+        tokenAddress: asset.address,
+        hasBlueCheck: hasBlueCheck,
+        title: asset.title,
+        chainId,
+        hasBonusReward: false,
+        order: baseOrder,
+        ...baseOrder
       };
       return infinityOrder;
-    } catch (e) {}
+    } catch {}
   };
 }
 
