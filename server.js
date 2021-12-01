@@ -863,33 +863,24 @@ async function fetchOrdersFromOpensea({
 
     const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
 
-    const listings = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
+    const listingsResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
 
     const aggregateListingAsOrders = (listings) => {
       return listings?.reduce?.(
-        (acc, listingResponse) => {
-          const listing = listingResponse?.listings?.[0];
-          const metadata = listing?.metadata;
-          const rawData = listing?.rawData;
-          const id = listing?.id;
-          const orders =
-            listing?.openseaOrders?.map((openseaOrder) => {
-              return {
-                ...openseaOrder,
-                metadata: {
-                  id,
-                  ...metadata,
-                  rawData
-                }
-              };
-            }) || [];
-          return { count: acc.count + (orders?.length || 0), orders: [...acc.orders, ...orders] };
+        (acc, listing) => {
+          if (listing) {
+            const order = {
+              ...listing
+            };
+            return { count: acc.count + 1, orders: [...acc.orders, order] };
+          }
+          return acc;
         },
         { count: 0, orders: [] }
       );
     };
 
-    const result = aggregateListingAsOrders(listings);
+    const result = aggregateListingAsOrders(listingsResponse.listings);
 
     return { result };
   } catch (err) {
@@ -1036,6 +1027,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
     const openseaCount = openseaResponse?.result?.count || 0;
     const infinityOrders = infinityResponse?.result?.orders || [];
     const openseaOrders = openseaResponse?.result?.orders || [];
+
     const result = {
       count: infinityCount + openseaCount,
       orders: [...infinityOrders, ...openseaOrders]
@@ -2420,7 +2412,7 @@ async function fulfillOrder(user, batch, payload) {
       // write to sold by maker; multiple items possible
       await saveSoldOrder(maker, doc, batch, numOrders);
 
-      // delete listing from maker
+      // delete listing from makerX
       await deleteListingWithId(docId, maker, batch);
 
       // send email to maker that the item is purchased
@@ -3180,19 +3172,17 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: Ra
     const tokenId = listingMetadata.asset.id;
     const id = getDocId({ tokenId, tokenAddress, basePrice: '' });
 
+    const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
     if (rawSellOrders?.length > 0) {
-      const rawOrderToInfinityOrder = thunkedRawSellOrderToInfinityOrder(
-        listingMetadata.asset,
-        listingMetadata.hasBlueCheck
-      );
-
       const infinityListingsWithOrders /*: ListingWithOrder[] */ = rawSellOrders.reduce((listings, rawSellOrder) => {
-        const infinityOrder = rawOrderToInfinityOrder(rawSellOrder);
-        if (infinityOrder) {
+        const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
+        if (baseOrder) {
           const infinityListing /*: ListingWithOrder */ = {
             id,
             metadata: listingMetadata,
-            ...infinityOrder
+            order: baseOrder,
+            ...baseOrder,
+            ...infinityOrderData
           };
           return [...listings, infinityListing];
         }
@@ -3203,7 +3193,8 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: Ra
     } else {
       const listing /*: ListingWithoutOrder */ = {
         metadata: listingMetadata,
-        id
+        id,
+        ...infinityOrderData
       };
       return [...listings, listing];
     }
@@ -3289,62 +3280,60 @@ function convertRawTraitsToInfinityTraits(traits /*: RawTrait[] */) /*: Trait[] 
   });
 }
 
+function getInfinityOrderData(asset /*: Asset */, hasBlueCheck /*: boolean */) {
+  const chainId = '1';
+  const infinityOrder /*: InfinityOrderData */ = {
+    source: 1, // opensea
+    tokenId: asset.id,
+    tokenAddress: asset.address,
+    hasBlueCheck: hasBlueCheck,
+    title: asset.title,
+    chainId,
+    hasBonusReward: false
+  };
+  return infinityOrder;
+}
+
 /**
  *
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
-function thunkedRawSellOrderToInfinityOrder(asset /*: Asset */, hasBlueCheck /*: boolean */) {
-  return (order /*: RawSellOrder */) /*: Order */ => {
-    try {
-      // const listingType = getOrderTypeFromRawSellOrder(order);
-      const chainId = '1';
-
-      const baseOrder = {
-        howToCall: Number(order.how_to_call),
-        salt: order.salt,
-        feeRecipient: order.fee_recipient.address,
-        staticExtradata: order.static_extradata,
-        quantity: order.quantity,
-        staticTarget: order.static_target,
-        maker: order.maker.address,
-        side: Number(order.side),
-        takerProtocolFee: order.taker_protocol_fee,
-        saleKind: Number(order.sale_kind),
-        basePrice: order.base_price,
-        extra: order.extra,
-        expirationTime: order.expiration_time?.toString?.(),
-        calldata: order.calldata,
-        hash: order.order_hash,
-        r: order.r,
-        replacementPattern: order.replacement_pattern,
-        taker: order.taker.address,
-        takerRelayerFee: order.taker_relayer_fee,
-        s: order.s,
-        makerRelayerFee: order.maker_relayer_fee,
-        listingTime: order.listing_time?.toString?.(),
-        target: order.target,
-        v: Number(order.v),
-        makerProtocolFee: order.maker_protocol_fee,
-        paymentToken: order.payment_token,
-        feeMethod: Number(order.fee_method),
-        exchange: order.exchange,
-        makerReferrerFee: order.maker_referrer_fee
-      };
-      const infinityOrder /*: Order */ = {
-        source: 1, // opensea
-        tokenId: asset.id,
-        tokenAddress: asset.address,
-        hasBlueCheck: hasBlueCheck,
-        title: asset.title,
-        chainId,
-        hasBonusReward: false,
-        order: baseOrder,
-        ...baseOrder
-      };
-      return infinityOrder;
-    } catch {}
-  };
+function rawSellOrderToBaseOrder(order /* : RawSellOrder */) /*: BaseOrder */ {
+  try {
+    const baseOrder = {
+      howToCall: Number(order.how_to_call),
+      salt: order.salt,
+      feeRecipient: order.fee_recipient.address,
+      staticExtradata: order.static_extradata,
+      quantity: order.quantity,
+      staticTarget: order.static_target,
+      maker: order.maker.address,
+      side: Number(order.side),
+      takerProtocolFee: order.taker_protocol_fee,
+      saleKind: Number(order.sale_kind),
+      basePrice: order.base_price,
+      extra: order.extra,
+      expirationTime: order.expiration_time?.toString?.(),
+      calldata: order.calldata,
+      hash: order.order_hash,
+      r: order.r,
+      replacementPattern: order.replacement_pattern,
+      taker: order.taker.address,
+      takerRelayerFee: order.taker_relayer_fee,
+      s: order.s,
+      makerRelayerFee: order.maker_relayer_fee,
+      listingTime: order.listing_time?.toString?.(),
+      target: order.target,
+      v: Number(order.v),
+      makerProtocolFee: order.maker_protocol_fee,
+      paymentToken: order.payment_token,
+      feeMethod: Number(order.fee_method),
+      exchange: order.exchange,
+      makerReferrerFee: order.maker_referrer_fee
+    };
+    return baseOrder;
+  } catch {}
 }
 
 async function saveRawOpenseaAssetBatchInDatabase(assetListings) {

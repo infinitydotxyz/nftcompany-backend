@@ -1,7 +1,6 @@
 /**
  * putting these here for whoever converts the server to TypeScript to use
  */
-
 import { RawAssetData } from './RawAssetData';
 
 export interface ListingResponse {
@@ -11,15 +10,12 @@ export interface ListingResponse {
 
 export type Listing = ListingWithOrder | ListingWithoutOrder;
 
-export type ListingWithOrder = Order & ListingWithoutOrder;
+export type ListingWithOrder = BaseOrder & ListingWithoutOrder;
 
-export interface ListingWithoutOrder {
+export interface ListingWithoutOrder extends InfinityOrderData {
   id: string;
-
   metadata: ListingMetadata;
 }
-
-export type Order = InfinityOrderData & BaseOrder;
 
 export interface InfinityOrderData {
   title: string;
