@@ -1238,7 +1238,7 @@ const getOrdersWithTokenId = async ({ maker, tokenAddress, tokenId, side }) => {
   }
 
   return {
-    error: type.StatusCode.NOT_FOUND
+    error: types.StatusCode.NOT_FOUND
   };
 };
 
@@ -2527,7 +2527,7 @@ async function fulfillOrder(user, batch, payload) {
       // write to sold by maker; multiple items possible
       await saveSoldOrder(maker, doc, batch, numOrders);
 
-      // delete listing from makerX
+      // delete listing from maker
       await deleteListingWithId(docId, maker, batch);
 
       // send email to maker that the item is purchased
@@ -3790,7 +3790,6 @@ async function refreshPendingTxns(user) {
 
 const nodemailer = require('nodemailer');
 const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
-const { type } = require('os');
 
 const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({
