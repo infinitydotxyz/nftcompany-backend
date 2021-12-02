@@ -48,7 +48,6 @@ const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
   utils.log(`Server listening on port ${PORT}...`);
-  utils.error('======== ENV =========', process.env.polygonRpc);
 });
 
 app.all('/u/*', async (req, res, next) => {
