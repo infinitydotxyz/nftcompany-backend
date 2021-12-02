@@ -21,10 +21,16 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/setup', async (req, res) => {
-  // uploadSourceImages();
-  testUpload();
+  try {
+    // uploadSourceImages();
+    const result = await testUpload();
 
-  res.send('setup');
+    res.send(result);
+  } catch (err) {
+    console.log(err);
+
+    res.send(err);
+  }
 });
 
 // api to get metadata
