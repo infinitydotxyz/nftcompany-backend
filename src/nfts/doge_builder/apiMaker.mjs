@@ -23,8 +23,6 @@ readFile('./images.json', (err, data) => {
     let cleanKey = key.replaceAll('/', '');
     cleanKey = snakeToCamel(cleanKey.toLowerCase());
 
-    console.log(key, cleanKey);
-
     // rebuild value
     const pathObjects = {};
 
@@ -57,5 +55,5 @@ readFile('./images.json', (err, data) => {
     output += '\n\n';
   }
 
-  writeFileSync('./api.ts', output);
+  writeFileSync('./dogeImages.ts', output);
 });
