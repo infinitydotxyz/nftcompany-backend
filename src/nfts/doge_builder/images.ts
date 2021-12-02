@@ -1,11 +1,12 @@
 import { readdirSync, Dirent, writeFileSync } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
-import { Doge, Bows, Hats, Backgrounds, Glasses } from './dogeImages';
+import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
 const { loadImage } = Canvas;
 const { Readable } = require('stream');
+import { generateDoge2048NftMetadata, DogeMetadata } from '../metadataUtils';
 
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
@@ -95,21 +96,92 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
 };
 
 export const testUpload = async (): Promise<string> => {
-  const doge: File = await bucket.file(Doge.doge);
-  const bowtie: File = await bucket.file(Bows.redBow);
-  const hat: File = await bucket.file(Hats.blackTopHat);
-  const background: File = await bucket.file(Backgrounds.tacos);
-  const glasses: File = await bucket.file(Glasses.eyePatch);
+  const score = 2200;
+  const numPlays = 122;
+  const dogBalance = 100000;
 
-  const image1 = await downloadImage(doge);
-  const image2 = await downloadImage(bowtie);
-  const image3 = await downloadImage(hat);
-  const imageBack = await downloadImage(background);
-  const image4 = await downloadImage(glasses);
+  const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
 
-  const buffer = await combineImages({ images: [imageBack, image1, image2, image3, image4] });
+  const buffer = await buildImage(metadata);
+  const result = await uploadImage(buffer, 'images/polygon/test12.jpg');
 
-  const remoteFile: File = bucket.file('images/polygon/test12.jpg');
+  return result;
+};
+
+const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
+  console.log(metadata);
+  const images: Canvas.Image[] = [];
+  let file: File;
+  let image: Canvas.Image;
+
+  // background
+  file = await bucket.file(Backgrounds.trippySwirl);
+  image = await downloadImage(file);
+  images.push(image);
+
+  // doge
+  file = await bucket.file(Doge.doge);
+  image = await downloadImage(file);
+  images.push(image);
+
+  switch (metadata.eyeTrait) {
+    case 'Heart Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Green':
+          file = await bucket.file(Hearts.greenHearts);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+        case 'Blue':
+          file = await bucket.file(Hearts.blueHearts);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+      }
+      break;
+  }
+
+  switch (metadata.headTrait) {
+    case 'Items':
+      switch (metadata.headTraitValue) {
+        case 'BTC':
+          file = await bucket.file(Hats.btcCap);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+        case 'SOL':
+          file = await bucket.file(Hats.solCap);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+        case 'ETH':
+          file = await bucket.file(Hats.greenEthCap);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+      }
+      break;
+  }
+
+  switch (metadata.neckTrait) {
+    case 'Bowtie':
+      switch (metadata.neckTraitValue) {
+        case 'Gold':
+          file = await bucket.file(Bows.goldBow);
+          image = await downloadImage(file);
+          images.push(image);
+          break;
+      }
+      break;
+  }
+
+  const buffer = await combineImages({ images });
+
+  return buffer;
+};
+
+const uploadImage = async (buffer: Buffer, path: string): Promise<string> => {
+  const remoteFile: File = bucket.file(path);
 
   return new Promise((resolve, reject) => {
     Readable.from(buffer).pipe(

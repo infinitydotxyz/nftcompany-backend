@@ -136,7 +136,7 @@ export class Lasers {
   static redLasers = 'images/doge/Lasers/Red_lasers.png';
 }
 
-class Mouth {
+export class Mouth {
   static joint = 'images/doge/Mouth/Joint.png';
   static mustache = 'images/doge/Mouth/Mustache.png';
 }
