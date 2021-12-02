@@ -1,11 +1,12 @@
-import { writeFileSync } from 'fs';
-import pkg from 'canvas';
-const { createCanvas } = pkg;
+import Canvas from 'canvas';
+const { createCanvas } = Canvas;
 
 const canvas = createCanvas(800, 800);
 const ctx = canvas.getContext('2d');
 
-export const saveFile = async ({ outputPath, images }) => {
+type Props = { images: Canvas.Image[] };
+
+export const combineImages = async ({ images }: Props): Promise<Buffer> => {
   try {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, 800, 800);
@@ -15,10 +16,9 @@ export const saveFile = async ({ outputPath, images }) => {
     }
 
     let buffer = canvas.toBuffer('image/jpeg', { quality: 0.3 });
-    writeFileSync(outputPath, buffer);
-    buffer = null;
+
+    return buffer;
   } catch (err) {
     console.log(err);
-    process.exit(1);
   }
 };

@@ -1,10 +1,11 @@
 import { readdirSync, Dirent, writeFileSync } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
 import { Doge, Bows, Hats, Backgrounds, Glasses } from './api';
-import { saveFile } from './imageMaker';
+import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
-import pkg from 'canvas';
-const { createCanvas, loadImage } = pkg;
+import Canvas from 'canvas';
+const { loadImage } = Canvas;
+const { Readable } = require('stream');
 
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
@@ -71,7 +72,7 @@ const upload = async (dir: string, result: Map<string, string[]>) => {
   result.set(relativePath, names);
 };
 
-const downloadImage = async (file: File): Promise<pkg.Image> => {
+const downloadImage = async (file: File): Promise<Canvas.Image> => {
   var memStream = new streamBuffers.WritableStreamBuffer({
     initialSize: 100 * 1024, // start at 100 kilobytes.
     incrementAmount: 10 * 1024 // grow by 10 kilobytes each time buffer overflows.
@@ -95,7 +96,7 @@ const downloadImage = async (file: File): Promise<pkg.Image> => {
   });
 };
 
-export const testUpload = async () => {
+export const testUpload = async (): Promise<string> => {
   const doge: File = await bucket.file(Doge.doge);
   const bowtie: File = await bucket.file(Bows.redBow);
   const hat: File = await bucket.file(Hats.blackTopHat);
@@ -108,12 +109,28 @@ export const testUpload = async () => {
   const imageBack = await downloadImage(background);
   const image4 = await downloadImage(glasses);
 
-  await saveFile({ outputPath: './duh.png', images: [imageBack, image1, image2, image3, image4] });
+  const buffer = await combineImages({ images: [imageBack, image1, image2, image3, image4] });
 
-  const result: UploadResponse = await bucket.upload('./duh.png', { destination: 'images/polygon/test.png' });
+  const remoteFile: File = bucket.file('images/polygon/test12.jpg');
 
-  console.log('upload result');
-  console.log(result);
-  // const d = await doge.arrayBuffer();
-  // const b = await bowtie.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    Readable.from(buffer).pipe(
+      remoteFile
+        .createWriteStream({
+          metadata: {
+            contentType: 'image/jpeg'
+          }
+        })
+        .on('error', (error) => {
+          console.log('error', error);
+
+          reject(error);
+        })
+        .on('finish', () => {
+          console.log('done');
+
+          resolve(remoteFile.name);
+        })
+    );
+  });
 };
