@@ -11,7 +11,7 @@ const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
-const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -634,7 +634,7 @@ async function updateChainIdInTxnsHelper(startAfterCreatedAt, limit) {
   let batch = db.batch();
 
   const query = db
-    .collectionGroup(fstrCnstnts.TXNS_COLL)
+    .collectionGroup(fstrCnstnts.MISSED_TXNS_COLL)
     .orderBy('createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit);
