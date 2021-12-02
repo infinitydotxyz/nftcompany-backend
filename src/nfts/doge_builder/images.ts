@@ -39,9 +39,7 @@ export const uploadSourceImages = async () => {
   writeFileSync('./src/nfts/doge_builder/images.json', jsonString);
 
   const destination = 'images/doge/images.json';
-  const uploadRes = await bucket.upload('./images.json', { destination });
-
-  console.log(uploadRes);
+  await bucket.upload('./images.json', { destination });
 };
 
 const upload = async (dir: string, result: Map<string, string[]>) => {
