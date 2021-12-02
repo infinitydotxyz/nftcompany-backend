@@ -283,5 +283,100 @@ export const metadata = {
         max: Infinity
       }
     }
+  },
+  background: {
+    appearanceItem: 'Background',
+    levels: {
+      1: {
+        traitType: 'Background',
+        traitValues: ['Purple'],
+        min: 0,
+        max: 8
+      },
+      2: {
+        traitType: 'Background',
+        traitValues: ['Green'],
+        min: 9,
+        max: 26
+      },
+      3: {
+        traitType: 'Background',
+        traitValues: ['Orange'],
+        min: 27,
+        max: 80
+      },
+      4: {
+        traitType: 'Background',
+        traitValues: ['Pink Stripes'],
+        min: 81,
+        max: 242
+      },
+      5: {
+        traitType: 'Background',
+        traitValues: ['Blue Stripes'],
+        min: 243,
+        max: 728
+      },
+      6: {
+        traitType: 'Background',
+        traitValues: ['Moon'],
+        min: 729,
+        max: 2186
+      },
+      7: {
+        traitType: 'Background',
+        traitValues: ['Nyan'],
+        min: 2187,
+        max: 6560
+      },
+      8: {
+        traitType: 'Background',
+        traitValues: ['Tacos'],
+        min: 6561,
+        max: 19682
+      },
+      9: {
+        traitType: 'Background',
+        traitValues: ['Pizza'],
+        min: 19683,
+        max: 59048
+      },
+      10: {
+        traitType: 'Background',
+        traitValues: ['Sushi'],
+        min: 59049,
+        max: 177146
+      },
+      11: {
+        traitType: 'Background',
+        traitValues: ['Matrix'],
+        min: 177147,
+        max: 531440
+      },
+      12: {
+        traitType: 'Background',
+        traitValues: ['Night Club'],
+        min: 531441,
+        max: 1594322
+      },
+      13: {
+        traitType: 'Background',
+        traitValues: ['Trippy Swirl'],
+        min: 1594323,
+        max: 4782968
+      },
+      14: {
+        traitType: 'Background',
+        traitValues: ['Clouds'],
+        min: 4782969,
+        max: 14348906
+      },
+      15: {
+        traitType: 'Background',
+        traitValues: ['Gold'],
+        min: 14348907,
+        max: 10000000000000000
+      }
+    }
   }
 };

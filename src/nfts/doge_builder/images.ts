@@ -98,7 +98,7 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
 export const testUpload = async (): Promise<string> => {
   const score = 2110;
   const numPlays = 132;
-  const dogBalance = 1222111100;
+  const dogBalance = 121100;
 
   const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
 
@@ -119,10 +119,71 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   let image: Canvas.Image;
   let imagePath: string;
 
-  // background
-  file = await bucket.file(Backgrounds.trippySwirl);
-  image = await downloadImage(file);
-  images.push(image);
+  // ---------------
+  // Background
+  // ---------------
+
+  imagePath = null;
+  switch (metadata.background) {
+    case 'Background':
+      switch (metadata.backgroundTraitValue) {
+        case 'Trippy Swirl':
+          imagePath = Backgrounds.trippySwirl;
+          break;
+        case 'Purple':
+          imagePath = Backgrounds.purple;
+          break;
+        case 'Orange':
+          imagePath = Backgrounds.orange;
+          break;
+        case 'Pink Stripes':
+          imagePath = Backgrounds.pinkStripes;
+          break;
+        case 'Blue Stripes':
+          imagePath = Backgrounds.blueStripes;
+          break;
+        case 'Moon':
+          imagePath = Backgrounds.moon;
+          break;
+        case 'Nyan':
+          imagePath = Backgrounds.nyan;
+          break;
+        case 'Tacos':
+          imagePath = Backgrounds.tacos;
+          break;
+        case 'Pizza':
+          imagePath = Backgrounds.pizza;
+          break;
+        case 'Sushi':
+          imagePath = Backgrounds.sushi;
+          break;
+        case 'Matrix':
+          imagePath = Backgrounds.matrix;
+          break;
+        case 'Night Club':
+          imagePath = Backgrounds.nightClub;
+          break;
+        case 'Clouds':
+          imagePath = Backgrounds.clouds;
+          break;
+        case 'Gold':
+          imagePath = Backgrounds.gold;
+          break;
+      }
+      break;
+  }
+
+  if (imagePath) {
+    file = await bucket.file(imagePath);
+    image = await downloadImage(file);
+    images.push(image);
+  } else {
+    console.log(`Not handled: ${metadata.headTrait}, ${metadata.headTraitValue}`);
+  }
+
+  // ---------------
+  // Doge
+  // ---------------
 
   // doge
   file = await bucket.file(Doge.doge);
