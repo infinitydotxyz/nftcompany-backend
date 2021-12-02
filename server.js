@@ -710,6 +710,7 @@ app.get('/featured-collections', async (req, res) => {
 });
 
 // transaction events (for a collection or a token)
+// todo: adi take chainId
 app.get('/events', async (req, res) => {
   const queryStr = decodeURIComponent(qs.stringify(req.query));
   const tokenId = req.query.token_id;
@@ -767,10 +768,10 @@ async function fetchOffersFromOSAndInfinity(req) {
     options.params.token_id = tokenId;
   }
 
+  const result = {
+    asset_events: []
+  };
   try {
-    const result = {
-      asset_events: []
-    };
 
     // infinity offers
     let query = db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
@@ -807,12 +808,11 @@ async function fetchOffersFromOSAndInfinity(req) {
       obj.offerSource = 'OpenSea';
       result.asset_events.push(obj);
     }
-
-    return result;
   } catch (err) {
     utils.error('Error occured while fetching events from opensea');
     utils.error(err);
   }
+  return result;
 }
 
 app.get('/opensea/wyvern/v1/orders', async (req, res) => {
