@@ -1,6 +1,6 @@
 import { readdirSync, Dirent, writeFileSync } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
-import { Doge, Bows, Hats, Backgrounds, Glasses } from './api';
+import { Doge, Bows, Hats, Backgrounds, Glasses } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
