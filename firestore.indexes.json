@@ -33,6 +33,50 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
+          "fieldPath": "metadata.asset.address",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.hasBlueCheck",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.address",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.hasBlueCheck",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
           "fieldPath": "metadata.asset.collectionName",
           "order": "ASCENDING"
         },
@@ -69,7 +113,133 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "metadata.asset.rawData.traits",
+          "fieldPath": "metadata.asset.searchCollectionName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.searchCollectionName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.searchCollectionName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.searchTitle",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.searchTitle",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.searchTitle",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.traits",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "metadata.asset.address",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.hasBlueCheck",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.basePriceInEth",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "listings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.asset.traits",
           "arrayConfig": "CONTAINS"
         },
         {
@@ -95,106 +265,6 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
           "fieldPath": "metadata.basePriceInEth",
           "order": "ASCENDING"
         },
@@ -227,7 +297,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "paymentToken",
+          "fieldPath": "metadata.listingType",
           "order": "ASCENDING"
         },
         {
@@ -249,7 +319,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "paymentToken",
+          "fieldPath": "metadata.listingType",
           "order": "ASCENDING"
         },
         {
@@ -317,307 +387,35 @@
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "metadata.asset.owner",
+          "fieldPath": "metadata.asset.address",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.asset.id",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "metadata.basePriceInEth",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "polygon-allCollections",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "hasBlueCheck",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "name",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-collectionListings",
+      "collectionGroup": "offers",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.collectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.collectionName",
+          "fieldPath": "metadata.asset.address",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "metadata.basePriceInEth",
           "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchCollectionName",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.asset.searchTitle",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "paymentToken",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "paymentToken",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.basePriceInEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "metadata.hasBlueCheck",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-offers",
+      "collectionGroup": "offers",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
@@ -630,20 +428,6 @@
         },
         {
           "fieldPath": "metadata.createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-txns",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
       ]
@@ -775,8 +559,8 @@
       ]
     },
     {
-      "collectionGroup": "polygon-listings",
-      "fieldPath": "metadata.asset.address",
+      "collectionGroup": "missedTxns",
+      "fieldPath": "createdAt",
       "indexes": [
         {
           "order": "ASCENDING",
@@ -791,80 +575,36 @@
           "queryScope": "COLLECTION"
         },
         {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION_GROUP"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "fieldPath": "metadata.asset.id",
-      "indexes": [
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
           "order": "DESCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "arrayConfig": "CONTAINS",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "order": "ASCENDING",
           "queryScope": "COLLECTION_GROUP"
         }
       ]
     },
     {
-      "collectionGroup": "polygon-listings",
-      "fieldPath": "metadata.asset.searchCollectionName",
-      "indexes": [
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "order": "DESCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "arrayConfig": "CONTAINS",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION_GROUP"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
-      "fieldPath": "metadata.asset.searchTitle",
-      "indexes": [
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "order": "DESCENDING",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "arrayConfig": "CONTAINS",
-          "queryScope": "COLLECTION"
-        },
-        {
-          "order": "ASCENDING",
-          "queryScope": "COLLECTION_GROUP"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "polygon-listings",
+      "collectionGroup": "offers",
       "fieldPath": "metadata.createdAt",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "txns",
+      "fieldPath": "createdAt",
       "indexes": [
         {
           "order": "ASCENDING",

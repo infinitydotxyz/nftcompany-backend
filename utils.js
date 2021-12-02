@@ -1,9 +1,12 @@
-const firebaseAdmin = require('firebase-admin');
 const { ethers } = require('ethers');
+const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
+
 const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
 const qs = require('qs');
 
+const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 
 firebaseAdmin.initializeApp({
@@ -210,5 +213,23 @@ module.exports = {
       .map((fulfilledResult) => {
         return fulfilledResult.value;
       });
+  },
+
+  getSearchFriendlyString: function (input) {
+    if (!input) {
+      return '';
+    }
+    // remove spaces, dashes and underscores only
+    const output = input.replace(/[\s-_]/g, '');
+    return output.toLowerCase();
+  },
+
+  getChainProvider: function (chainId) {
+    if (chainId === '1') {
+      return ethProvider;
+    } else if (chainId === '137') {
+      return polygonProvider;
+    }
+    return null;
   }
 };
