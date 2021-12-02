@@ -1,16 +1,25 @@
 import { metadata as doge2048NftMetadata } from './metadata/doge2048nft';
+import md5 from 'md5';
 
-export type DogeMetadata = {
+export class DogeMetadata {
   eyeTrait?: string;
   eyeTraitValue?: string;
   headTrait?: string;
   headTraitValue?: string;
   neckTrait?: string;
   neckTraitValue?: string;
-};
+
+  toString = (): string => {
+    return `${this.eyeTrait} ${this.eyeTraitValue} ${this.headTrait} ${this.headTraitValue} ${this.neckTrait} ${this.neckTraitValue}`;
+  };
+
+  hash = (): string => {
+    return md5(this.toString());
+  };
+}
 
 export const generateDoge2048NftMetadata = (score: number, numPlays: number, dogBalance: number): DogeMetadata => {
-  let result: DogeMetadata = {};
+  let result: DogeMetadata = new DogeMetadata();
 
   // get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {

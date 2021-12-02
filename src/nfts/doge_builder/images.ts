@@ -1,6 +1,6 @@
 import { readdirSync, Dirent, writeFileSync } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
-import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses } from './dogeImages';
+import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
@@ -96,14 +96,18 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
 };
 
 export const testUpload = async (): Promise<string> => {
-  const score = 2200;
-  const numPlays = 122;
-  const dogBalance = 100000;
+  const score = 2110;
+  const numPlays = 132;
+  const dogBalance = 1222111100;
 
   const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
 
   const buffer = await buildImage(metadata);
-  const result = await uploadImage(buffer, 'images/polygon/test12.jpg');
+
+  const path = `images/polygon/${metadata.hash()}.jpg`;
+
+  // TODO: check to see if the file exists, if so, don't upload
+  const result = await uploadImage(buffer, path);
 
   return result;
 };
@@ -113,6 +117,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   const images: Canvas.Image[] = [];
   let file: File;
   let image: Canvas.Image;
+  let imagePath: string;
 
   // background
   file = await bucket.file(Backgrounds.trippySwirl);
@@ -124,53 +129,217 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   image = await downloadImage(file);
   images.push(image);
 
+  // ---------------
+  // Eyes
+  // ---------------
+
+  imagePath = null;
   switch (metadata.eyeTrait) {
+    case 'Star Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Green':
+          imagePath = Stars.greenStars;
+          break;
+        case 'Pink':
+          imagePath = Stars.pinkStars;
+          break;
+        case 'Blue':
+          imagePath = Stars.blueStars;
+          break;
+        case 'Yellow':
+          imagePath = Stars.yellowStars;
+          break;
+        case 'White':
+          imagePath = Stars.whiteStars;
+          break;
+        case 'Red':
+          imagePath = Stars.redStars;
+          break;
+        case 'Light Purple':
+          imagePath = Stars.lightPurpleStars;
+          break;
+        case 'Purple':
+          imagePath = Stars.purpleStars;
+          break;
+        case 'Cyan':
+          imagePath = Stars.cyanStars;
+          break;
+        case 'Orange':
+          imagePath = Stars.orangeStars;
+          break;
+      }
+      break;
+
+    case 'Sunglasses':
+      switch (metadata.eyeTraitValue) {
+        case 'Green':
+          imagePath = Glasses.greenShades;
+          break;
+        case 'Pink':
+          imagePath = Glasses.pinkShades;
+          break;
+        case 'Dark Blue':
+          imagePath = Glasses.darkBlueShades;
+          break;
+        case 'Yellow':
+          imagePath = Glasses.yellowShades;
+          break;
+        case 'White':
+          imagePath = Glasses.whiteShades;
+          break;
+        case 'Red':
+          imagePath = Glasses.redShades;
+          break;
+        case 'Light Blue':
+          imagePath = Glasses.lightBlueShades;
+          break;
+        case 'Purple':
+          imagePath = Glasses.purpleShades;
+          break;
+        case 'Orange':
+          imagePath = Glasses.orangeShades;
+          break;
+      }
+      break;
+
     case 'Heart Eyes':
       switch (metadata.eyeTraitValue) {
         case 'Green':
-          file = await bucket.file(Hearts.greenHearts);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Hearts.greenHearts;
+          break;
+        case 'Pink':
+          imagePath = Hearts.pinkHearts;
           break;
         case 'Blue':
-          file = await bucket.file(Hearts.blueHearts);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Hearts.blueHearts;
+          break;
+        case 'Yellow':
+          imagePath = Hearts.yellowHearts;
+          break;
+        case 'White':
+          imagePath = Hearts.whiteHearts;
+          break;
+        case 'Red':
+          imagePath = Hearts.redHearts;
+          break;
+        case 'Light Purple':
+          imagePath = Hearts.lightPurpleHearts;
+          break;
+        case 'Purple':
+          imagePath = Hearts.purpleHearts;
+          break;
+        case 'Cyan':
+          imagePath = Hearts.cyanHearts;
+          break;
+        case 'Orange':
+          imagePath = Hearts.orangeHearts;
           break;
       }
+
       break;
   }
+  if (imagePath) {
+    file = await bucket.file(imagePath);
+    image = await downloadImage(file);
+    images.push(image);
+  } else {
+    console.log(`Not handled: ${metadata.eyeTrait}, ${metadata.eyeTraitValue}`);
+  }
 
+  // ---------------
+  // Head
+  // ---------------
+
+  imagePath = null;
   switch (metadata.headTrait) {
+    case 'Pirate Hat & Eye Patch':
+      file = await bucket.file(Glasses.eyePatch);
+      image = await downloadImage(file);
+      images.push(image);
+
+      imagePath = Hats.pirateHat;
+      break;
     case 'Items':
       switch (metadata.headTraitValue) {
         case 'BTC':
-          file = await bucket.file(Hats.btcCap);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Hats.btcCap;
           break;
         case 'SOL':
-          file = await bucket.file(Hats.solCap);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Hats.solCap;
           break;
         case 'ETH':
-          file = await bucket.file(Hats.greenEthCap);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Hats.greenEthCap;
+          break;
+        case 'Blue Diamond':
+          imagePath = Hats.diamondCap;
+          break;
+        case 'Fire Emoji':
+          imagePath = Hats.fireCap;
           break;
       }
       break;
   }
 
+  if (imagePath) {
+    file = await bucket.file(imagePath);
+    image = await downloadImage(file);
+    images.push(image);
+  } else {
+    console.log(`Not handled: ${metadata.headTrait}, ${metadata.headTraitValue}`);
+  }
+
+  // ---------------
+  // Neck
+  // ---------------
+
+  imagePath = null;
   switch (metadata.neckTrait) {
     case 'Bowtie':
       switch (metadata.neckTraitValue) {
         case 'Gold':
-          file = await bucket.file(Bows.goldBow);
-          image = await downloadImage(file);
-          images.push(image);
+          imagePath = Bows.goldBow;
           break;
+        case 'Red':
+          imagePath = Bows.redBow;
+          break;
+        case 'Black':
+          imagePath = Bows.blackBow;
+          break;
+        case 'Blue':
+          imagePath = Bows.blueBow;
+          break;
+        case 'Cyan':
+          imagePath = Bows.cyanBow;
+          break;
+        case 'Green':
+          imagePath = Bows.greenBow;
+          break;
+        case 'Light Purple':
+          imagePath = Bows.lightPurpleBow;
+          break;
+        case 'Purple':
+          imagePath = Bows.purpleBow;
+          break;
+        case 'Orange':
+          imagePath = Bows.orangeBow;
+          break;
+        case 'Pink':
+          imagePath = Bows.pinkBow;
+          break;
+        case 'Pink Checkered':
+          imagePath = Bows.pinkCheckeredBow;
+          break;
+        case 'Rainbow':
+          imagePath = Bows.rainbowBow;
+          break;
+      }
+
+      if (imagePath) {
+        file = await bucket.file(imagePath);
+        image = await downloadImage(file);
+        images.push(image);
+      } else {
+        console.log(`Not handled: ${metadata.neckTrait}, ${metadata.neckTraitValue}`);
       }
       break;
   }
