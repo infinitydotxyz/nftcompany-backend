@@ -97,8 +97,7 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
  * - sorting: sortByPriceDirection: 'asc' | 'desc' orderBy: 'sale_date' | 'sale_count' | 'sale_price'
  */
 app.get('/opensea/listings', async (req, res) => {
-  const { limit, tokenId, tokenAddress, tokenAddresses, sortByPriceDirection, orderBy, offset } = req.query;
-  const owner = undefined;
+  const { limit, tokenId, tokenAddress, tokenAddresses, sortByPriceDirection, orderBy, offset, owner } = req.query;
   const collection = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
   const assetContractAddress = tokenAddress;
   const tokenIds = [tokenId].filter((item) => item);
@@ -824,6 +823,14 @@ async function fetchOrdersFromOpensea({
   };
   try {
     const { data } = await axios.get(url, options);
+    if (data.orders && data.orders.length === 0) {
+      return {
+        result: {
+          count: 0,
+          orders: []
+        }
+      };
+    }
     // reduce to one asset per contract/tokenId with a list of openseaListings
     const assetIdToListingIndex = {};
     const getOrderData = (listing) => {
