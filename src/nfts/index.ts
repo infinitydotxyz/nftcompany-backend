@@ -22,9 +22,10 @@ router.get('/', async (req, res) => {
 
 router.get('/setup', async (req, res) => {
   try {
-    // uploadSourceImages();
-    const result = await testUpload();
+    // await uploadSourceImages();
+    // res.send('uploaded');
 
+    const result = await testUpload();
     res.send(result);
   } catch (err) {
     console.log(err);

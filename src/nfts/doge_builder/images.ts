@@ -1,4 +1,4 @@
-import { readdirSync, Dirent, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, Dirent } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
 import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
 import { combineImages } from './imageMaker';
@@ -11,7 +11,9 @@ import { generateDoge2048NftMetadata, DogeMetadata } from '../metadataUtils';
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
 const bucket = firebaseAdmin.storage().bucket();
-const kStartDir = './src/nfts/images';
+const kStartDir = './src/nfts/doge_builder/images';
+
+const imageCache = new Map<string, Canvas.Image>();
 
 const filesInDir = (path: string): Dirent[] => {
   let list = readdirSync(path, { withFileTypes: true });
@@ -33,45 +35,20 @@ const mapToObj = (map: Map<string, string[]>) => {
 export const uploadSourceImages = async () => {
   const result: Map<string, string[]> = new Map();
 
-  await upload(kStartDir, result);
+  await uploadDirectory(kStartDir, result);
 
   const jsonString = JSON.stringify(mapToObj(result), null, 2);
 
-  writeFileSync('./src/nfts/doge_builder/images.json', jsonString);
-
-  const destination = 'images/doge/images.json';
-  await bucket.upload('./images.json', { destination });
-};
-
-const upload = async (dir: string, result: Map<string, string[]>) => {
-  const names = [];
-
-  const files = filesInDir(dir);
-
-  let relativePath = dir.replace(kStartDir, '');
-
-  if (relativePath.length > 1) {
-    relativePath = `${relativePath}/`;
-  } else {
-    relativePath = '/';
-  }
-
-  for (const f of files) {
-    if (f.isFile()) {
-      const destination = `images/doge${relativePath}${f.name}`;
-
-      const result: UploadResponse = await bucket.upload(`${dir}/${f.name}`, { destination });
-
-      names.push(result[0].name);
-    } else {
-      await upload(`${dir}/${f.name}`, result);
-    }
-  }
-
-  result.set(relativePath, names);
+  await uploadString(jsonString, 'images/doge/images.json');
 };
 
 const downloadImage = async (file: File): Promise<Canvas.Image> => {
+  // check cache
+  let result: Canvas.Image = imageCache.get(file.name);
+  if (result != null) {
+    return result;
+  }
+
   var memStream = new streamBuffers.WritableStreamBuffer({
     initialSize: 100 * 1024, // start at 100 kilobytes.
     incrementAmount: 10 * 1024 // grow by 10 kilobytes each time buffer overflows.
@@ -89,13 +66,15 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
         if (buffer) {
           const img = await loadImage(buffer);
 
+          imageCache.set(file.name, img);
+
           resolve(img);
         }
       });
   });
 };
 
-export const testUpload = async (): Promise<string> => {
+export const testUpload = async (): Promise<boolean> => {
   const score = 2110;
   const numPlays = 132;
   const dogBalance = 121100;
@@ -106,14 +85,13 @@ export const testUpload = async (): Promise<string> => {
 
   const path = `images/polygon/${metadata.hash()}.jpg`;
 
-  // TODO: check to see if the file exists, if so, don't upload
+  // check to see if the file exists, if so, don't upload
   const result = await uploadImage(buffer, path);
 
   return result;
 };
 
 const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
-  console.log(metadata);
   const images: Canvas.Image[] = [];
   let file: File;
   let image: Canvas.Image;
@@ -410,27 +388,78 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   return buffer;
 };
 
-const uploadImage = async (buffer: Buffer, path: string): Promise<string> => {
+const uploadImage = async (buffer: Buffer, path: string): Promise<boolean> => {
+  return uploadBuffer(buffer, path);
+};
+
+const uploadString = async (str: string, path: string): Promise<boolean> => {
+  const buffer = Buffer.from(str, 'utf8');
+  buffer.write(str, 'utf8');
+
+  return uploadBuffer(buffer, path);
+};
+
+const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
+  const names = [];
+
+  const files = filesInDir(dir);
+
+  let relativePath = dir.replace(kStartDir, '');
+
+  if (relativePath.length > 1) {
+    relativePath = `${relativePath}/`;
+  } else {
+    relativePath = '/';
+  }
+
+  for (const f of files) {
+    if (f.isFile()) {
+      try {
+        const destination = `images/doge${relativePath}${f.name}`;
+        const srcPath = `${dir}/${f.name}`;
+        const buffer = readFileSync(srcPath);
+
+        await uploadBuffer(buffer, destination);
+
+        names.push(destination);
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      await uploadDirectory(`${dir}/${f.name}`, result);
+    }
+  }
+
+  result.set(relativePath, names);
+};
+
+const uploadBuffer = async (buffer: Buffer, path: string): Promise<boolean> => {
   const remoteFile: File = bucket.file(path);
 
-  return new Promise((resolve, reject) => {
-    Readable.from(buffer).pipe(
-      remoteFile
-        .createWriteStream({
-          metadata: {
-            contentType: 'image/jpeg'
-          }
-        })
-        .on('error', (error) => {
-          console.log('error', error);
+  // no idea why exists() returns an array [boolean]
+  const existsArray = await remoteFile.exists();
+  if (existsArray && existsArray.length > 0 && !existsArray[0]) {
+    return new Promise((resolve, reject) => {
+      Readable.from(buffer).pipe(
+        remoteFile
+          .createWriteStream({
+            metadata: {
+              contentType: 'image/jpeg'
+            }
+          })
+          .on('error', (error) => {
+            console.log('error', error);
 
-          reject(error);
-        })
-        .on('finish', () => {
-          console.log('done');
+            reject(error);
+          })
+          .on('finish', () => {
+            console.log('done');
 
-          resolve(remoteFile.name);
-        })
-    );
-  });
+            resolve(true);
+          })
+      );
+    });
+  }
+
+  return false;
 };
