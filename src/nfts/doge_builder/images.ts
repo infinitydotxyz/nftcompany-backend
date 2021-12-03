@@ -42,7 +42,7 @@ export const urlForDogeImage = async (score: number, numPlays: number, dogBalanc
 
   const result = await uploadImage(buffer, path);
 
-  return `https://firebasestorage.googleapis.com/v0/b/nftc-dev.appspot.com/o/${encodeURIComponent(path)}`;
+  return result.publicUrl();
 };
 
 // =================================================
@@ -413,11 +413,11 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   return buffer;
 };
 
-const uploadImage = async (buffer: Buffer, path: string): Promise<boolean> => {
+const uploadImage = async (buffer: Buffer, path: string): Promise<File> => {
   return uploadBuffer(buffer, path, 'image/jpeg');
 };
 
-const uploadString = async (str: string, path: string): Promise<boolean> => {
+const uploadString = async (str: string, path: string): Promise<File> => {
   const buffer = Buffer.from(str, 'utf8');
   buffer.write(str, 'utf8');
 
@@ -458,7 +458,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
   result.set(relativePath, names);
 };
 
-const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<boolean> => {
+const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<File> => {
   const remoteFile: File = bucket.file(path);
 
   // no idea why exists() returns an array [boolean]
@@ -480,11 +480,11 @@ const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): 
           .on('finish', () => {
             console.log('done');
 
-            resolve(true);
+            resolve(remoteFile);
           })
       );
     });
   }
 
-  return false;
+  return remoteFile;
 };
