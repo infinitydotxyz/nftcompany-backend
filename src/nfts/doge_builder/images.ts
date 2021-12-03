@@ -15,6 +15,39 @@ const kStartDir = './src/nfts/doge_builder/images';
 
 const imageCache = new Map<string, Canvas.Image>();
 
+export const uploadSourceImages = async () => {
+  const result: Map<string, string[]> = new Map();
+
+  await uploadDirectory(kStartDir, result);
+
+  const jsonString = JSON.stringify(mapToObj(result), null, 2);
+
+  await uploadString(jsonString, 'images/doge/images.json');
+};
+
+export const testUpload = async (): Promise<string> => {
+  const score = 2110;
+  const numPlays = 132;
+  const dogBalance = 121100;
+
+  return urlForDogeImage(score, numPlays, dogBalance);
+};
+
+export const urlForDogeImage = async (score: number, numPlays: number, dogBalance: number): Promise<string> => {
+  const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
+
+  const buffer = await buildImage(metadata);
+
+  const path = `images/polygon/${metadata.hash()}.jpg`;
+
+  const result = await uploadImage(buffer, path);
+
+  return `https://firebasestorage.googleapis.com/v0/b/nftc-dev.appspot.com/o/${encodeURIComponent(path)}`;
+};
+
+// =================================================
+// private
+
 const filesInDir = (path: string): Dirent[] => {
   let list = readdirSync(path, { withFileTypes: true });
 
@@ -30,16 +63,6 @@ const mapToObj = (map: Map<string, string[]>) => {
     acc[val[0]] = val[1];
     return acc;
   }, {});
-};
-
-export const uploadSourceImages = async () => {
-  const result: Map<string, string[]> = new Map();
-
-  await uploadDirectory(kStartDir, result);
-
-  const jsonString = JSON.stringify(mapToObj(result), null, 2);
-
-  await uploadString(jsonString, 'images/doge/images.json');
 };
 
 const downloadImage = async (file: File): Promise<Canvas.Image> => {
@@ -73,26 +96,6 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
   });
 };
 
-export const testUpload = async (): Promise<boolean> => {
-  const score = 2110;
-  const numPlays = 132;
-  const dogBalance = 121100;
-
-  return uploadForScore(score, numPlays, dogBalance);
-};
-
-export const uploadForScore = async (score: number, numPlays: number, dogBalance: number): Promise<boolean> => {
-  const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
-
-  const buffer = await buildImage(metadata);
-
-  const path = `images/polygon/${metadata.hash()}.jpg`;
-
-  const result = await uploadImage(buffer, path);
-
-  return result;
-};
-
 const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   const images: Canvas.Image[] = [];
   let file: File;
@@ -112,6 +115,9 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           break;
         case 'Purple':
           imagePath = Backgrounds.purple;
+          break;
+        case 'Green':
+          imagePath = Backgrounds.greenScreen;
           break;
         case 'Orange':
           imagePath = Backgrounds.orange;
@@ -158,7 +164,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
     image = await downloadImage(file);
     images.push(image);
   } else {
-    console.log(`Not handled: ${metadata.headTrait}, ${metadata.headTraitValue}`);
+    console.log(`Background: Not handled: ${metadata.background}, ${metadata.backgroundTraitValue}`);
   }
 
   // ---------------
@@ -284,7 +290,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
     image = await downloadImage(file);
     images.push(image);
   } else {
-    console.log(`Not handled: ${metadata.eyeTrait}, ${metadata.eyeTraitValue}`);
+    console.log(`Eyes: Not handled: ${metadata.eyeTrait}, ${metadata.eyeTraitValue}`);
   }
 
   // ---------------
@@ -300,6 +306,16 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
 
       imagePath = Hats.pirateHat;
       break;
+    case 'ETH':
+      switch (metadata.headTraitValue) {
+        case 'Purple':
+          imagePath = Hats.purpleEthCap;
+          break;
+        case 'Green':
+          imagePath = Hats.greenEthCap;
+          break;
+      }
+      break;
     case 'Items':
       switch (metadata.headTraitValue) {
         case 'BTC':
@@ -308,13 +324,20 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
         case 'SOL':
           imagePath = Hats.solCap;
           break;
-        case 'ETH':
-          imagePath = Hats.greenEthCap;
-          break;
         case 'Blue Diamond':
           imagePath = Hats.diamondCap;
           break;
         case 'Fire Emoji':
+          imagePath = Hats.fireCap;
+          break;
+
+        case 'Crown':
+          imagePath = Hats.fireCap;
+          break;
+        case 'Rocker':
+          imagePath = Hats.fireCap;
+          break;
+        case 'Heart':
           imagePath = Hats.fireCap;
           break;
       }
@@ -326,7 +349,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
     image = await downloadImage(file);
     images.push(image);
   } else {
-    console.log(`Not handled: ${metadata.headTrait}, ${metadata.headTraitValue}`);
+    console.log(`Head: Not handled: ${metadata.headTrait}, ${metadata.headTraitValue}`);
   }
 
   // ---------------
@@ -380,7 +403,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
         image = await downloadImage(file);
         images.push(image);
       } else {
-        console.log(`Not handled: ${metadata.neckTrait}, ${metadata.neckTraitValue}`);
+        console.log(`Neck: Not handled: ${metadata.neckTrait}, ${metadata.neckTraitValue}`);
       }
       break;
   }
