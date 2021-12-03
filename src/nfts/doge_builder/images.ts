@@ -59,13 +59,12 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
       .createReadStream()
       .pipe(memStream)
       .on('finish', async () => {
-        //  console.log(memStream.size());
-
         const buffer = memStream.getContents();
 
         if (buffer) {
           const img = await loadImage(buffer);
 
+          // add to cache
           imageCache.set(file.name, img);
 
           resolve(img);
@@ -79,13 +78,16 @@ export const testUpload = async (): Promise<boolean> => {
   const numPlays = 132;
   const dogBalance = 121100;
 
+  return uploadForScore(score, numPlays, dogBalance);
+};
+
+export const uploadForScore = async (score: number, numPlays: number, dogBalance: number): Promise<boolean> => {
   const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
 
   const buffer = await buildImage(metadata);
 
   const path = `images/polygon/${metadata.hash()}.jpg`;
 
-  // check to see if the file exists, if so, don't upload
   const result = await uploadImage(buffer, path);
 
   return result;
@@ -389,14 +391,14 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
 };
 
 const uploadImage = async (buffer: Buffer, path: string): Promise<boolean> => {
-  return uploadBuffer(buffer, path);
+  return uploadBuffer(buffer, path, 'image/jpeg');
 };
 
 const uploadString = async (str: string, path: string): Promise<boolean> => {
   const buffer = Buffer.from(str, 'utf8');
   buffer.write(str, 'utf8');
 
-  return uploadBuffer(buffer, path);
+  return uploadBuffer(buffer, path, 'application/json');
 };
 
 const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
@@ -419,7 +421,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
         const srcPath = `${dir}/${f.name}`;
         const buffer = readFileSync(srcPath);
 
-        await uploadBuffer(buffer, destination);
+        await uploadBuffer(buffer, destination, 'image/jpeg');
 
         names.push(destination);
       } catch (err) {
@@ -433,7 +435,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
   result.set(relativePath, names);
 };
 
-const uploadBuffer = async (buffer: Buffer, path: string): Promise<boolean> => {
+const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<boolean> => {
   const remoteFile: File = bucket.file(path);
 
   // no idea why exists() returns an array [boolean]
@@ -444,7 +446,7 @@ const uploadBuffer = async (buffer: Buffer, path: string): Promise<boolean> => {
         remoteFile
           .createWriteStream({
             metadata: {
-              contentType: 'image/jpeg'
+              contentType
             }
           })
           .on('error', (error) => {
