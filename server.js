@@ -395,7 +395,6 @@ async function openseaAssetDataToListing(chainId, data) {
     schema,
     chainId,
     asset: {
-      hasBlueCheck,
       address: tokenAddress,
       id: data.token_id,
       collectionName,
@@ -772,7 +771,6 @@ async function fetchOffersFromOSAndInfinity(req) {
     asset_events: []
   };
   try {
-
     // infinity offers
     let query = db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
     if (tokenId) {
@@ -1123,7 +1121,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 
   if (id) {
     // @ts-ignore
-    docId = req.query.id.trim(); // preserve case
+    docId = id.trim(); // preserve case
   }
 
   const infinityResponsePromise = getInfinityOrders({ maker, docId, side, tokenAddress, tokenId });
