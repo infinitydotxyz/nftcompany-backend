@@ -12,7 +12,11 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["node_modules/*", ],
+      "@utils/*": ["src/utils/*"],
+      "@routes/*": ["src/routes/*"],
+      "@constants": ["./src/constants.js"],
+      "@services/*": ["./src/services/*"]
     }
   },
   "include": ["src/", "src/**/*.json"],

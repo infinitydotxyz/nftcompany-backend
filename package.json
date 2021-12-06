@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "dev:ts": "npm run build && node ./dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npm run build && nodemon server.js",
     "start": "node server.js",

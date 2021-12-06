@@ -2,18 +2,36 @@ import express from 'express';
 
 import helmet from 'helmet';
 import cors from 'cors';
-import { router } from './routes';
+import { router } from '@routes/index.js';
+import { requestLogger, log } from '@utils/logger.js';
+import { requestErrorHandler } from '@utils/errorHandler.js';
+
+// TODO fix redefining global
+// import './globals.js';
 
 const app = express();
 
-app.use(express.json());
-app.use(cors());
-app.use(helmet());
+const registerMiddleware = () => {
+  app.use(express.json());
+  app.use(cors());
+  app.use(helmet());
+  app.use(requestLogger);
+};
 
-app.use('/', router);
+const registerRoutes = () => {
+  app.use('/', router);
+};
+
+const registerErrorHandler = () => {
+  app.use(requestErrorHandler);
+};
+
+registerMiddleware();
+registerRoutes();
+// error handler should be the last middleware registered
+registerErrorHandler();
 
 const PORT = process.env.PORT || 9090;
-
 app.listen(PORT, () => {
-  //   utils.log(`Server listening on port ${PORT}...`);
+  log(`Server listening on port ${PORT}...`);
 });
