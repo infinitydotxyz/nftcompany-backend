@@ -14,5 +14,6 @@ module.exports = {
   },
   rules: {
     eqeqeq: 2
-  }
+  },
+  ignorePatterns: ['/dist/**']
 };
