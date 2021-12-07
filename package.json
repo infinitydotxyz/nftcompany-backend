@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "dev:ts": "npm run build:ts && TS_NODE_BASEURL=./dist node -r ts-node/register/transpile-only -r tsconfig-paths/register dist/index.js",
+    "dev:ts": "npm run build:ts && TS_NODE_BASEURL=./dist node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/index.js",
     "build:ts": "npm install && rimraf dist && tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npm run build && nodemon server.js",

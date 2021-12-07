@@ -1,32 +1,12 @@
-require('dotenv').config();
-import { ethers } from 'ethers';
-
-import express from 'express';
+import { Router } from 'express';
 import { firestore } from '../../container.js';
 
-const router = express.Router();
-
-//TODO
-const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
-const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
-function getChainProvider(chainId: string) {
-  if (chainId === '1') {
-    return ethProvider;
-  } else if (chainId === '137') {
-    return polygonProvider;
-  }
-  return null;
-}
-
-// const utils = require('../../../utils');
-// const constants = require('../../../constants');
-// const fstrCnstnts = constants.firestore;
-// const firebaseAdmin = utils.getFirebaseAdmin();
-// const db = firebaseAdmin.firestore();
+const router = Router();
 
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUtils';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger.js';
+import { getChainProvider } from '@utils/ethers.js';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
