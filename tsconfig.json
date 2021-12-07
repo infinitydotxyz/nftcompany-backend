@@ -8,15 +8,17 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "allowJs": true,
     "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
-      "*": ["node_modules/*", ],
-      "@utils/*": ["src/utils/*"],
-      "@routes/*": ["src/routes/*"],
-      "@constants": ["./src/constants.js"],
-      "@services/*": ["./src/services/*"]
+      "*": ["../node_modules/*", ],
+      "@utils/*": ["./utils/*"],
+      "@routes/*": ["./routes/*"],
+      "@constants": ["./constants.js"],
+      "@services/*": ["./services/*"]
     }
   },
   "include": ["src/", "src/**/*.json"],

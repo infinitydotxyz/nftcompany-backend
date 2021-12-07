@@ -1,22 +1,9 @@
 import { fstrCnstnts } from '@constants';
-import firebaseAdmin from 'firebase-admin';
-
-const serviceAccount = require('../../creds/nftc-dev-firebase-creds.json');
-
-firebaseAdmin.initializeApp({
-  // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
-});
-
-export function getFirebaseAdmin() {
-  return firebaseAdmin;
-}
-
-const db = firebaseAdmin.firestore();
+import { firestore } from '../container.js';
 
 export async function isTokenVerified(address: string) {
   const tokenAddress = address.trim().toLowerCase();
-  const doc = await db.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(tokenAddress).get();
+  const doc = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(tokenAddress).get();
   if (doc.exists) {
     const hasBlueCheck = doc.get('hasBlueCheck');
     if (hasBlueCheck) {
@@ -27,7 +14,7 @@ export async function isTokenVerified(address: string) {
 }
 
 export async function hasBonusReward(address: string) {
-  const doc = await db
+  const doc = await firestore
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.BONUS_REWARD_TOKENS_COLL)

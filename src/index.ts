@@ -1,8 +1,10 @@
+// import 'tsconfig-paths/register';
+import 'reflect-metadata';
 import express from 'express';
 
 import helmet from 'helmet';
 import cors from 'cors';
-import { router } from '@routes/index.js';
+import router from '@routes/index.js';
 import { requestLogger, log } from '@utils/logger.js';
 import { requestErrorHandler } from '@utils/errorHandler.js';
 
