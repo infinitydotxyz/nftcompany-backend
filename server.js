@@ -726,6 +726,10 @@ app.get('/events', async (req, res) => {
         }
       };
       const { data } = await axios.get(url, options);
+      // append chain id assuming opensea is only used for eth mainnet
+      for (const obj of data.asset_events) {
+        obj.chainId = "1";
+      }
       respStr = utils.jsonString(data);
     }
     // to enable cdn cache
@@ -781,6 +785,7 @@ async function fetchOffersFromOSAndInfinity(req) {
     for (const offer of snapshot.docs) {
       const order = offer.data();
       const obj = { asset: {}, from_account: {} };
+      obj.chainId = order.metadata.chainId;
       obj.asset.token_id = order.metadata.asset.id;
       obj.asset.image_thumbnail_url = order.metadata.asset.image;
       obj.asset.name = order.metadata.asset.title;
@@ -795,6 +800,7 @@ async function fetchOffersFromOSAndInfinity(req) {
     const { data } = await axios.get(url, options);
     for (const order of data.orders) {
       const obj = { asset: {}, from_account: {} };
+      obj.chainId = "1"; // assuming opensea is only used for eth mainnet
       obj.asset.token_id = order.asset.token_id;
       obj.asset.image_thumbnail_url = order.asset.image_thumbnail_url;
       obj.asset.name = order.asset.name;
