@@ -1,8 +1,8 @@
 import { Request, Response, Router } from 'express';
 import { jsonString } from '@utils/formatters.js';
 import { error } from '@utils/logger.js';
-import CollectionDAO from '@base/dao/CollectionDAO';
 import { StatusCode } from '@base/types/StatusCode';
+import { hasBonusReward, isTokenVerified } from '..';
 
 const router = Router();
 
@@ -17,11 +17,7 @@ router.get('/:tokenAddress/verifiedBonusReward', async (req: Request, res: Respo
   }
 
   try {
-    const collectionDAO = new CollectionDAO(tokenAddress);
-    const [verified, bonusReward] = await Promise.all([
-      collectionDAO.isTokenVerified(),
-      collectionDAO.hasBonusReward()
-    ]);
+    const [verified, bonusReward] = await Promise.all([isTokenVerified(tokenAddress), hasBonusReward(tokenAddress)]);
 
     const resp = {
       verified,

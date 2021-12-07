@@ -1,21 +1,6 @@
-import { NextFunction, Request, Response } from 'express';
-
 const TRACE_LOG = process.env.TRACE_LOG === 'true';
 const INFO_LOG = process.env.INFO_LOG === 'true';
 const ERROR_LOG = process.env.ERROR_LOG === 'true';
-
-export function getRequestLogPrefix(req: Request) {
-  const date = new Date();
-  const path = req.path;
-  const ip = req.ip;
-  const method = req.method;
-  return `[${date.toISOString()}]:[${method}]:[${path}]:[${ip}]`;
-}
-
-export function requestLogger(req: Request, res: Response, next: NextFunction) {
-  console.log(getRequestLogPrefix(req));
-  next();
-}
 
 export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]) {
   if (ERROR_LOG) {

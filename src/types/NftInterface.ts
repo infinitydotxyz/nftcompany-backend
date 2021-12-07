@@ -3,7 +3,7 @@ export enum OrderSide {
   Sell = 1
 }
 
-export enum ListType {
+export enum ListingType {
   FixedPrice = 'fixedPrice',
   DutchAuction = 'dutchAuction',
   EnglishAuction = 'englishAuction'

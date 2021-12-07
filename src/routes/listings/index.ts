@@ -1,4 +1,4 @@
-import { ListType, OrderSide } from '@base/types/NftInterface';
+import { ListingType, OrderSide } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, fstrCnstnts } from '@constants';
 import { parseQueryFields } from '@utils/parsers.js';
@@ -8,8 +8,11 @@ import { firestore } from '@base/container';
 import crypto from 'crypto';
 import { fetchAssetFromOpensea } from '@routes/opensea';
 import axios from 'axios';
-import { jsonString } from '@utils/formatters';
+import { getEndCode, getSearchFriendlyString, jsonString } from '@utils/formatters';
 import { checkERC1155Ownership, checkERC721Ownership } from '@services/ethereum/checkTokenOwnership';
+import firebaseAdmin from 'firebase-admin';
+import { OrderDirection } from '@base/types/Queries';
+import { isTokenVerified } from '@routes/token';
 
 const router = Router();
 
@@ -61,9 +64,9 @@ router.get('/listings', async (req, res) => {
 
   if (
     listType &&
-    listType !== ListType.FixedPrice &&
-    listType !== ListType.DutchAuction &&
-    listType !== ListType.EnglishAuction
+    listType !== ListingType.FixedPrice &&
+    listType !== ListingType.DutchAuction &&
+    listType !== ListingType.EnglishAuction
   ) {
     error('Input error - invalid list type');
     res.sendStatus(StatusCode.InternalServerError);
@@ -107,14 +110,14 @@ router.get('/listings', async (req, res) => {
       priceMin,
       priceMax,
       sortByPriceDirection,
-      startAfterBlueCheck,
+      startAfterBlueCheck as string,
       startAfterPrice,
       startAfterMillis,
       limit,
-      listType,
-      traitType,
-      traitValue,
-      collectionIds
+      listType as ListingType,
+      traitType as string,
+      traitValue as string,
+      collectionIds as string
     );
     if (resp) {
       res.set({
@@ -123,7 +126,7 @@ router.get('/listings', async (req, res) => {
       });
     }
   } else {
-    resp = await getListingsByCollection(startAfterBlueCheck, startAfterSearchCollectionName, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck as string, startAfterSearchCollectionName, limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -193,7 +196,7 @@ async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, token
   }
 }
 
-async function getAssetAsListing(docId: string, data: any) {
+export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');
   try {
     const listings = [];
@@ -353,65 +356,65 @@ async function deleteOffer(batch: any, docRef: any) {
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
 }
 
-function updateNumOrders(batch: any, user: string, numOrders: number | string, hasBonus: boolean, side: OrderSide) {
-  utils.log('Updating user stats');
+function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: boolean, side: OrderSide) {
+  log('Updating user stats');
 
-  const ref = db
+  const ref = firestore.db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
   if (side === 0) {
     // offers
-    batch.set(ref, { numOffers: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
+    batch.set(ref, { numOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
-      batch.set(ref, { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
+      batch.set(ref, { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     }
   } else if (side === 1) {
     // listings
-    batch.set(ref, { numListings: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
+    batch.set(ref, { numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
-      batch.set(ref, { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(num) }, { merge: true });
+      batch.set(ref, { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     }
   }
 }
 
 async function getListingsStartingWithText(
-  text,
-  limit,
-  startAfterSearchTitle,
-  startAfterSearchCollectionName,
-  startAfterMillis,
-  startAfterPrice,
-  sortByPriceDirection
+  text: string,
+  limit: number,
+  startAfterSearchTitle?: boolean,
+  startAfterSearchCollectionName?: boolean,
+  startAfterMillis?: number,
+  startAfterPrice?: number,
+  sortByPriceDirection?: OrderDirection
 ) {
   try {
-    utils.log('Getting listings starting with text:', text);
+    log('Getting listings starting with text:', text);
 
     // search for listings which title startsWith text
-    const startsWith = utils.getSearchFriendlyString(text);
+    const startsWith = getSearchFriendlyString(text);
     const limit1 = Math.ceil(limit / 2);
     const limit2 = limit - limit1;
 
-    const queryRef1 = db
+    const queryRef1 = firestore.db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
-      .where('metadata.asset.searchTitle', '<', utils.getEndCode(startsWith))
-      .orderBy('metadata.asset.searchTitle', 'asc')
+      .where('metadata.asset.searchTitle', '<', getEndCode(startsWith))
+      .orderBy('metadata.asset.searchTitle', OrderDirection.Ascending)
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
+      .orderBy('metadata.createdAt', OrderDirection.Descending)
       .startAfter(startAfterSearchTitle, startAfterPrice, startAfterMillis)
       .limit(limit1);
     const resultByTitle = await queryRef1.get();
 
     // search for listings which collectionName startsWith text
-    const queryRef2 = db
+    const queryRef2 = firestore.db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
-      .where('metadata.asset.searchCollectionName', '<', utils.getEndCode(startsWith))
-      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .where('metadata.asset.searchCollectionName', '<', getEndCode(startsWith))
+      .orderBy('metadata.asset.searchCollectionName', OrderDirection.Ascending)
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc')
+      .orderBy('metadata.createdAt', OrderDirection.Descending)
       .startAfter(startAfterSearchCollectionName, startAfterPrice, startAfterMillis)
       .limit(limit2);
     const resultByCollectionName = await queryRef2.get();
@@ -419,50 +422,56 @@ async function getListingsStartingWithText(
     // combine both results:
     return getOrdersResponse({ docs: [...resultByCollectionName.docs, ...resultByTitle.docs] });
   } catch (err) {
-    utils.error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
-    utils.error(err);
+    error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
+    error(err);
   }
 }
 
 async function getListingsByCollectionNameAndPrice(
-  collectionName,
-  priceMin,
-  priceMax,
-  sortByPriceDirection,
-  startAfterBlueCheck,
-  startAfterPrice,
-  startAfterMillis,
-  limit,
-  listType,
-  traitType,
-  traitValue,
-  collectionIds
+  collectionName: string,
+  priceMin: number,
+  priceMax: number,
+  sortByPriceDirection: OrderDirection,
+  startAfterBlueCheck: string,
+  startAfterPrice: number,
+  startAfterMillis: number,
+  limit: number,
+  listingType: ListingType,
+  traitType: string,
+  traitValue: string,
+  collectionIds?: string
 ) {
   try {
-    utils.log('Getting listings of a collection');
+    log('Getting listings of a collection');
 
     let startAfterBlueCheckBool = true;
     if (startAfterBlueCheck !== undefined) {
       startAfterBlueCheckBool = startAfterBlueCheck === 'true';
     }
 
-    const runQuery = ({ hasBlueCheckValue, startAfterPrice, startAfterMillis, limit }) => {
-      let queryRef = db
+    const runQuery = ({
+      hasBlueCheckValue,
+      startAfterPrice,
+      startAfterMillis,
+      limit
+    }: {
+      hasBlueCheckValue: boolean;
+      startAfterPrice: number;
+      startAfterMillis: number;
+      limit: number;
+    }) => {
+      let queryRef = firestore.db
         .collectionGroup(fstrCnstnts.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
 
-      if (listType) {
-        queryRef = queryRef.where('metadata.listingType', '==', listType);
+      if (listingType) {
+        queryRef = queryRef.where('metadata.listingType', '==', listingType);
       }
 
       if (collectionName) {
-        queryRef = queryRef.where(
-          'metadata.asset.searchCollectionName',
-          '==',
-          utils.getSearchFriendlyString(collectionName)
-        );
+        queryRef = queryRef.where('metadata.asset.searchCollectionName', '==', getSearchFriendlyString(collectionName));
       }
 
       if (collectionIds) {
@@ -525,8 +534,8 @@ async function getListingsByCollectionNameAndPrice(
 
     return getOrdersResponseFromArray(results);
   } catch (err) {
-    utils.error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
-    utils.error(err);
+    error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
+    error(err);
   }
 }
 
@@ -545,21 +554,21 @@ async function fetchAssetFromCovalent(chainId: string, tokenId: string, tokenAdd
       return '';
     }
   } catch (err) {
-    utils.error('Error occured while fetching assets from covalent');
-    utils.error(err);
+    error('Error occured while fetching assets from covalent');
+    error(err);
   }
 }
 
-async function saveRawCovalentAssetInDatabase(chainId, rawAssetData) {
+async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any) {
   try {
-    const assetData = {};
+    const assetData: any = {};
     const marshalledData = await covalentAssetDataToListing(chainId, rawAssetData);
     assetData.metadata = marshalledData;
     assetData.rawData = rawAssetData;
 
     const tokenAddress = marshalledData.asset.address.toLowerCase();
     const tokenId = marshalledData.asset.id;
-    const newDoc = db
+    const newDoc = firestore
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
@@ -567,12 +576,12 @@ async function saveRawCovalentAssetInDatabase(chainId, rawAssetData) {
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {
-    utils.error('Error occured while saving asset data in database');
-    utils.error(err);
+    error('Error occured while saving asset data in database');
+    error(err);
   }
 }
 
-async function covalentAssetDataToListing(chainId, data) {
+async function covalentAssetDataToListing(chainId: string, data: any) {
   const address = data.contract_address;
   const collectionName = data.contract_name;
   let id = '';
@@ -621,8 +630,8 @@ async function covalentAssetDataToListing(chainId, data) {
       description,
       image,
       imagePreview,
-      searchCollectionName: utils.getSearchFriendlyString(collectionName),
-      searchTitle: utils.getSearchFriendlyString(title),
+      searchCollectionName: getSearchFriendlyString(collectionName),
+      searchTitle: getSearchFriendlyString(title),
       title,
       numTraits,
       traits
@@ -631,14 +640,14 @@ async function covalentAssetDataToListing(chainId, data) {
   return listing;
 }
 
-async function deleteListing(batch, docRef) {
+async function deleteListing(batch: any, docRef: any) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    utils.log('No listing to delete: ' + docRef.id);
+    log('No listing to delete: ' + docRef.id);
     return;
   }
   const listing = doc.id;
-  utils.log('Deleting listing', listing);
+  log('Deleting listing', listing);
   const user = doc.data().maker;
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
@@ -649,12 +658,13 @@ async function deleteListing(batch, docRef) {
   // update num collection listings
   try {
     const tokenAddress = doc.data().metadata.asset.address;
-    db.collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+    firestore
+      .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
       .doc(tokenAddress)
       .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
   } catch (err) {
-    utils.error('Error updating root collection data on delete listing');
-    utils.error(err);
+    error('Error updating root collection data on delete listing');
+    error(err);
   }
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);

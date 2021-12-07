@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import { getRequestLogPrefix, error, log } from './logger.js';
+import { error, log } from '../utils/logger.js';
+import { getRequestLogPrefix } from './logger.js';
 
 /**
  * express middleware error handler

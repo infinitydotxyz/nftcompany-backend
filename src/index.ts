@@ -5,8 +5,9 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import router from '@routes/index.js';
-import { requestLogger, log } from '@utils/logger.js';
-import { requestErrorHandler } from '@utils/errorHandler.js';
+import { log } from '@utils/logger.js';
+import { requestErrorHandler } from '@base/middleware/errorHandler.js';
+import { requestLogger } from '@base/middleware/logger.js';
 
 // TODO fix redefining global
 // import './globals.js';

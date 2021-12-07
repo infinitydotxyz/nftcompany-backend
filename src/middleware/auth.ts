@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
 import { auth } from '@constants';
-import { error } from './logger.js';
+import { error } from '../utils/logger.js';
 
 export async function authorizeUser(req: Request, res: Response, next: NextFunction) {
   // todo: adi for testing only
