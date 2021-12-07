@@ -6,11 +6,13 @@ const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
 
 const firebaseAdmin = require('firebase-admin');
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
-  // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.applicationDefault()
 });
+
+const allowedDomains = [
+  'infinity.xyz',
+];
 
 Object.defineProperty(global, '__stack', {
   get: function () {
@@ -95,10 +97,23 @@ module.exports = {
     return JSON.stringify(obj, null, 2);
   },
 
-  authorizeUser: async function (path, signature, message) {
-    // todo: adi for testing only
-    // return true;
+  getAppCorsOptions: function() {
+    const escapeForRegex = function (str) {
+      return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    };
+    const allowedOrigins = [];
+    for (const domain of allowedDomains) {
+      allowedOrigins.push(new RegExp(`^${escapeForRegex(domain)}$`));
+      allowedOrigins.push(new RegExp(`^https:\/\/${escapeForRegex(domain)}$`));
+    }
+    const corsOptions = {
+      origin: allowedOrigins,
+      optionsSuccessStatus: 200,
+    };
+    return corsOptions;
+  },
 
+  authorizeUser: async function (path, signature, message) {
     // path is in the form /u/user/*
     const userId = path.split('/')[2].trim().toLowerCase();
     try {

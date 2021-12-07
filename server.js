@@ -20,7 +20,7 @@ const erc1155Abi = require('./abi/erc1155.json');
 const app = express();
 const cors = require('cors');
 app.use(express.json());
-app.use(cors());
+app.use(cors(utils.getAppCorsOptions()));
 app.use(helmet());
 
 // other routes
@@ -3373,7 +3373,7 @@ async function refreshPendingTxns(user) {
 // ==================================================== Email ==============================================================
 
 const nodemailer = require('nodemailer');
-const mailCreds = require('./creds/nftc-dev-nodemailer-creds.json');
+const mailCreds = require('./creds/nftc-infinity-nodemailer-creds.json');
 
 const senderEmailAddress = 'hi@infinity.xyz';
 const transporter = nodemailer.createTransport({

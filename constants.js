@@ -1,9 +1,8 @@
 require('dotenv').config();
-const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
 module.exports = {
   firestore: {
-    ROOT_COLL: testRoot,
+    ROOT_COLL: 'root',
     OPENSEA_COLL: 'combinedOpenseaSnapshot',
     INFO_DOC: 'info',
     COLLECTION_LISTINGS_COLL: 'collectionListings',
@@ -25,8 +24,8 @@ module.exports = {
     message: 'X-AUTH-MESSAGE'
   },
 
-  API_BASE: 'http://localhost:9090',
-  SITE_BASE: 'http://localhost:3000',
+  API_BASE: 'https://sv.infinity.xyz',
+  SITE_BASE: 'https://infinity.xyz',
   SALE_FEES_TO_PURCHASE_FEES_RATIO: 5,
 
   POLYGON_WYVERN_EXCHANGE_ADDRESS: '0xbfbf0bd8963fe4f5168745ad59da20bf78d6385e',
