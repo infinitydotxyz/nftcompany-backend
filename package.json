@@ -36,6 +36,7 @@
     "firebase-admin": "9.11.1",
     "helmet": "4.6.0",
     "lodash": "^4.17.21",
+    "mime": "^1.6.0",
     "nodemailer": "6.6.3",
     "pg": "8.7.1",
     "qs": "^6.7.0",

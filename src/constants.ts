@@ -38,3 +38,8 @@ export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const FEATURED_LIMIT = 4; // number of featured collections
 
 export const OPENSEA_API = 'https://api.opensea.io/api/v1/';
+
+export const DEFAULT_ITEMS_PER_PAGE = 50;
+export const DEFAULT_MIN_ETH = 0.0000001;
+export const DEFAULT_MAX_ETH = 1000000; // for listings
+export const DEFAULT_PRICE_SORT_DIRECTION = 'desc';

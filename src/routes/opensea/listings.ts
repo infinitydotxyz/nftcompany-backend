@@ -12,7 +12,7 @@ const router = Router();
  * - filters: offset, limit (max 50)
  * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
  */
-router.get('/', async (req, res) => {
+router.get('/listings', async (req, res) => {
   const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } =
     req.query;
 

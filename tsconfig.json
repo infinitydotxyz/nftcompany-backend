@@ -18,7 +18,8 @@
       "@utils/*": ["./utils/*"],
       "@routes/*": ["./routes/*"],
       "@constants": ["./constants.js"],
-      "@services/*": ["./services/*"]
+      "@services/*": ["./services/*"],
+      "@base/*": ["./*"],
     }
   },
   "include": ["src/", "src/**/*.json"],

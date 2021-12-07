@@ -6,9 +6,9 @@ import token from './token';
 
 const router = Router();
 
-router.use('/nfts', nfts);
-router.use('./opensea', opensea);
-router.use('/token', token);
-router.use('/u', u);
+router.use('/', nfts);
+router.use('/', opensea);
+router.use('/', token);
+router.use('/', u);
 
 export default router;

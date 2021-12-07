@@ -3,6 +3,6 @@ import { authorizeUser } from '@utils/auth.js';
 
 const router = Router();
 
-router.use('/', authorizeUser);
+router.use('/u', authorizeUser);
 
 export default router;

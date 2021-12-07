@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 
 const TRACE_LOG = process.env.TRACE_LOG === 'true';
 const INFO_LOG = process.env.INFO_LOG === 'true';
-export const ERROR_LOG = process.env.ERROR_LOG === 'true';
+const ERROR_LOG = process.env.ERROR_LOG === 'true';
 
 export function getRequestLogPrefix(req: Request) {
   const date = new Date();

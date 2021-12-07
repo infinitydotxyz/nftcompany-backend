@@ -7,10 +7,6 @@ import { getRequestLogPrefix, error, log } from './logger.js';
  * must have all 4 argements listed so express can
  * identify it as an error handler
  *
- * @param err
- * @param req
- * @param res
- * @param next
  */
 export function requestErrorHandler(err: Error, req: Request, res: Response, _: NextFunction) {
   const prefix = getRequestLogPrefix(req);

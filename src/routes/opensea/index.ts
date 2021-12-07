@@ -3,6 +3,6 @@ import listings from './listings.js';
 
 const router = Router();
 
-router.use('/listings', listings);
+router.use('/opensea', listings);
 
 export default router;

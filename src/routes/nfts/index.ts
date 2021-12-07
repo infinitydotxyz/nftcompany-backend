@@ -7,16 +7,17 @@ import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUt
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger.js';
 import { getChainProvider } from '@utils/ethers.js';
+import { StatusCode } from '@base/types/StatusCode.js';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
 
-router.get('/', async (req, res) => {
+router.get('/nfts', async (req, res) => {
   res.send('nfts');
 });
 
 // api to get metadata
-router.get('/:tokenAddress/:tokenId', async (req, res) => {
+router.get('nfts/:tokenAddress/:tokenId', async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
   const { chainId } = req.query;
@@ -52,12 +53,16 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
   } catch (err) {
     error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
     error(err);
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 });
 
-router.post('/:nft/mint', async (req, res) => {});
+router.post('nfts/:nft/mint', async (req, res) => {
+  res.sendStatus(StatusCode.NotImplemented);
+});
 
-router.post('/:nft/state', async (req, res) => {});
+router.post('nfts/:nft/state', async (req, res) => {
+  res.sendStatus(StatusCode.NotImplemented);
+});
 
 export default router;
