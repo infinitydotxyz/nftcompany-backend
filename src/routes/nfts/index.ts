@@ -6,7 +6,7 @@ const router = Router();
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUtils';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger.js';
-import { getChainProvider } from '@utils/ethers.js';
+import { getProvider } from '@utils/ethers.js';
 import { StatusCode } from '@base/types/StatusCode.js';
 
 // todo: adi change this
@@ -23,7 +23,7 @@ router.get('nfts/:tokenAddress/:tokenId', async (req, res) => {
   const { chainId } = req.query;
   try {
     // read data from chain
-    const provider = getChainProvider(chainId as string);
+    const provider = getProvider(chainId as string);
     if (!provider) {
       error('Chain provider is null for chain', chainId);
       res.sendStatus(500);

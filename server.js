@@ -768,7 +768,6 @@ async function fetchOffersFromOSAndInfinity(req) {
     asset_events: []
   };
   try {
-
     // infinity offers
     let query = db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
     if (tokenId) {

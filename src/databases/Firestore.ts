@@ -5,17 +5,17 @@ const serviceAccount = require('../../creds/nftc-dev-firebase-creds.json');
 
 @singleton()
 export default class Firestore {
-  firestore: FirebaseFirestore.Firestore;
+  db: FirebaseFirestore.Firestore;
 
   constructor() {
     firebaseAdmin.initializeApp({
       // @ts-ignore
       credential: firebaseAdmin.credential.cert(serviceAccount)
     });
-    this.firestore = firebaseAdmin.firestore();
+    this.db = firebaseAdmin.firestore();
   }
 
   collection(collectionPath: string) {
-    return this.firestore.collection(collectionPath);
+    return this.db.collection(collectionPath);
   }
 }
