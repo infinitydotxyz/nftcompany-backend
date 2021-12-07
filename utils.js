@@ -4,9 +4,11 @@ const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygon
 
 const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
+const qs = require('qs');
 
 const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -188,6 +190,29 @@ module.exports = {
 
   getUniqueItemsByProperties: function (items, propNames) {
     return uniqBy(items, 'address');
+  },
+
+  deepCopy: function (item) {
+    return JSON.parse(JSON.stringify(item));
+  },
+
+  /**
+   * @returns the params serialized where arrays are formatted such that the
+   * key is repeated for each element of the array (without brackets);
+   *
+   * e.g. serializing  { key: [value1, value2, value3] } results in
+   * ?key=value1&key=value2&key=value3
+   */
+  openseaParamSerializer: (params) => {
+    return qs.stringify(params, { arrayFormat: 'repeat' });
+  },
+
+  getFulfilledPromiseSettledResults: (promiseResults) => {
+    return promiseResults
+      .filter((result) => result.status === 'fulfilled')
+      .map((fulfilledResult) => {
+        return fulfilledResult.value;
+      });
   },
 
   getSearchFriendlyString: function (input) {

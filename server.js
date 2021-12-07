@@ -97,19 +97,19 @@ app.get('/token/:tokenAddress/verfiedBonusReward', async (req, res) => {
 // fetch listings from opensea api
 /**
  * supports queries
- * - query owner, tokenAddresses or tokenAddress, tokenIds,
- * - query tokenAddress, tokenIds
- * - query tokenAddresses, tokenIds
- * - query collection
+ * - query tokenAddress
+ * - query tokenAddress, tokenId
  * - filters: offset, limit (max 50)
- * - sorting: orderBy: 'asc' | 'desc' orderDirection: 'sale_date' | 'sale_count' | 'sale_price'
+ * - sorting: sortByPriceDirection: 'asc' | 'desc' orderBy: 'sale_date' | 'sale_count' | 'sale_price'
  */
 app.get('/opensea/listings', async (req, res) => {
-  const { owner, tokenIds, tokenAddress, tokenAddresses, orderBy, orderDirection, offset, limit, collection } =
-    req.query;
-
+  const { limit, tokenId, tokenAddress, tokenAddresses, sortByPriceDirection, orderBy, offset, owner } = req.query;
+  const collection = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
   const assetContractAddress = tokenAddress;
+  const tokenIds = [tokenId].filter((item) => item);
   const assetContractAddresses = tokenAddresses;
+  const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
+
   const resp = await fetchAssetsFromOpensea(
     owner,
     tokenIds,
@@ -121,6 +121,7 @@ app.get('/opensea/listings', async (req, res) => {
     limit,
     collection
   );
+
   const stringifiedResp = utils.jsonString(resp);
   if (stringifiedResp) {
     res.set({
@@ -387,9 +388,10 @@ async function openseaAssetDataToListing(chainId, data) {
       description = assetContract.description;
     }
   }
+  const hasBlueCheck = await isTokenVerified(tokenAddress);
   const listing = {
     isListing: false,
-    hasBlueCheck: await isTokenVerified(tokenAddress),
+    hasBlueCheck,
     schema,
     chainId,
     asset: {
@@ -397,6 +399,7 @@ async function openseaAssetDataToListing(chainId, data) {
       id: data.token_id,
       collectionName,
       description,
+      owner: data.owner.address,
       image: data.image_url,
       imagePreview: data.image_preview_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
@@ -726,6 +729,10 @@ app.get('/events', async (req, res) => {
         }
       };
       const { data } = await axios.get(url, options);
+      // append chain id assuming opensea is only used for eth mainnet
+      for (const obj of data.asset_events) {
+        obj.chainId = "1";
+      }
       respStr = utils.jsonString(data);
     }
     // to enable cdn cache
@@ -780,6 +787,7 @@ async function fetchOffersFromOSAndInfinity(req) {
     for (const offer of snapshot.docs) {
       const order = offer.data();
       const obj = { asset: {}, from_account: {} };
+      obj.chainId = order.metadata.chainId;
       obj.asset.token_id = order.metadata.asset.id;
       obj.asset.image_thumbnail_url = order.metadata.asset.image;
       obj.asset.name = order.metadata.asset.title;
@@ -794,6 +802,7 @@ async function fetchOffersFromOSAndInfinity(req) {
     const { data } = await axios.get(url, options);
     for (const order of data.orders) {
       const obj = { asset: {}, from_account: {} };
+      obj.chainId = "1"; // assuming opensea is only used for eth mainnet
       obj.asset.token_id = order.asset.token_id;
       obj.asset.image_thumbnail_url = order.asset.image_thumbnail_url;
       obj.asset.name = order.asset.name;
@@ -808,6 +817,196 @@ async function fetchOffersFromOSAndInfinity(req) {
     utils.error(err);
   }
   return result;
+}
+
+app.get('/opensea/wyvern/v1/orders', async (req, res) => {
+  const {
+    assetContractAddress,
+    paymentTokenAddress,
+    maker,
+    taker,
+    owner,
+    isEnglish,
+    bundled,
+    includeBundled,
+    includeInvalid,
+    listedAfter,
+    listedBefore,
+    tokenId,
+    tokenIds,
+    side,
+    saleKind,
+    limit,
+    offset,
+    orderBy,
+    orderDirection
+  } = req.query;
+
+  const fetchResponse = await fetchOrdersFromOpensea({
+    assetContractAddress,
+    paymentTokenAddress,
+    maker,
+    taker,
+    owner,
+    isEnglish,
+    bundled,
+    includeBundled,
+    includeInvalid,
+    listedAfter,
+    listedBefore,
+    tokenId,
+    tokenIds,
+    side,
+    saleKind,
+    limit,
+    offset,
+    orderBy,
+    orderDirection
+  });
+
+  if (fetchResponse.error) {
+    res.sendStatus(fetchResponse.error);
+    return;
+  }
+
+  const resp = fetchResponse.result;
+  const stringifiedResp = utils.jsonString(resp);
+  if (stringifiedResp) {
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+    });
+    res.send(stringifiedResp);
+  } else {
+    res.sendStatus(500);
+  }
+});
+
+async function fetchOrdersFromOpensea({
+  assetContractAddress,
+  paymentTokenAddress,
+  maker,
+  taker,
+  owner,
+  isEnglish,
+  bundled,
+  includeBundled,
+  includeInvalid,
+  listedAfter,
+  listedBefore,
+  tokenId,
+  tokenIds,
+  side,
+  saleKind,
+  limit,
+  offset,
+  orderBy,
+  orderDirection
+}) {
+  utils.log('Fetching Orders from OpenSea');
+  const authKey = process.env.openseaKey;
+  const url = 'https://api.opensea.io/wyvern/v1/orders/';
+  const options = {
+    headers: {
+      'X-API-KEY': authKey
+    },
+    params: {
+      asset_contract_address: assetContractAddress,
+      payment_token_address: paymentTokenAddress,
+      maker,
+      taker,
+      owner,
+      is_english: isEnglish,
+      bundled,
+      include_bundled: includeBundled,
+      include_invalid: includeInvalid,
+      listed_after: listedAfter,
+      listed_before: listedBefore,
+      token_id: tokenId,
+      token_ids: tokenIds,
+      side,
+      sale_kind: saleKind,
+      limit,
+      offset,
+      order_by: orderBy,
+      order_direction: orderDirection
+    },
+    paramsSerializer: utils.openseaParamSerializer
+  };
+  try {
+    const { data } = await axios.get(url, options);
+    if (data.orders && data.orders.length === 0) {
+      return {
+        result: {
+          count: 0,
+          orders: []
+        }
+      };
+    }
+    // reduce to one asset per contract/tokenId with a list of openseaListings
+    const assetIdToListingIndex = {};
+    const getOrderData = (listing) => {
+      const listingCopy = utils.deepCopy(listing);
+      delete listingCopy.asset;
+      return listingCopy;
+    };
+
+    const convertOpenseaOrdersToOpenseaListings = (orders) => {
+      return orders.reduce(
+        (acc, item) => {
+          if (item.asset) {
+            const id = item.asset.id;
+            if (!id) {
+              return acc;
+            }
+            let listingIndex = assetIdToListingIndex[id];
+            if (listingIndex === undefined) {
+              const asset = item.asset;
+              const listing = {
+                ...asset,
+                sell_orders: []
+              };
+              acc.listings.push(listing);
+              listingIndex = acc.listings.length - 1;
+              assetIdToListingIndex[id] = listingIndex;
+              acc.count += 1;
+            }
+            const order = getOrderData(item);
+            acc.listings[listingIndex].sell_orders.push(order);
+          }
+          return acc;
+        },
+        { count: 0, listings: [] }
+      );
+    };
+
+    const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
+
+    const listingsResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
+
+    const aggregateListingAsOrders = (listings) => {
+      return listings?.reduce?.(
+        (acc, listing) => {
+          if (listing) {
+            const order = {
+              ...listing
+            };
+            return { count: acc.count + 1, orders: [...acc.orders, order] };
+          }
+          return acc;
+        },
+        { count: 0, orders: [] }
+      );
+    };
+
+    const result = aggregateListingAsOrders(listingsResponse.listings);
+
+    return { result };
+  } catch (err) {
+    utils.error('Error occured while fetching orders from opensea');
+    utils.error(err);
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
+  }
 }
 
 // fetch listings of user
@@ -926,24 +1125,53 @@ app.get('/wyvern/v1/orders', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
-  if (req.query.id) {
+  if (id) {
     // @ts-ignore
-    docId = req.query.id.trim(); // preserve case
+    docId = id.trim(); // preserve case
   }
 
-  if (docId && docId.length > 0) {
-    return getOrdersWithDocId(res, { maker, id, side });
-  }
+  const infinityResponsePromise = getInfinityOrders({ maker, docId, side, tokenAddress, tokenId });
+  const openseaResponsePromise = fetchOrdersFromOpensea({ assetContractAddress: tokenAddress, maker, side, tokenId });
 
-  return getOrdersWithTokenId(res, { maker, tokenAddress, tokenId, side });
+  try {
+    const [infinityResponse, openseaResponse] = await Promise.all([infinityResponsePromise, openseaResponsePromise]);
+    const error = infinityResponse.error && openseaResponse.error;
+    if (error) {
+      const errorCode = infinityResponse.error || openseaResponse.error;
+      utils.log(`Fetching orders failed `);
+      res.sendStatus(errorCode);
+      return;
+    }
+    const infinityCount = infinityResponse?.result?.count || 0;
+    const openseaCount = openseaResponse?.result?.count || 0;
+    const infinityOrders = infinityResponse?.result?.orders || [];
+    const openseaOrders = openseaResponse?.result?.orders || [];
+
+    const result = {
+      count: infinityCount + openseaCount,
+      orders: [...infinityOrders, ...openseaOrders]
+    };
+
+    res.send(result);
+  } catch (err) {
+    utils.log('Error while fetching orders');
+    utils.error(err);
+    res.sendStatus(types.StatusCode.INTERNAL_SERVER_ERROR);
+  }
 });
 
-// TODO: refactor: don't pass the whole "req" or "res" => pass { vars... } instead.
-const getOrdersWithDocId = async (res, { maker, id, side }) => {
+async function getInfinityOrders({ maker, docId, side, tokenAddress, tokenId }) {
+  if (docId?.length > 0) {
+    return getOrdersWithDocId({ maker, docId, side });
+  }
+
+  return getOrdersWithTokenId({ maker, tokenAddress, tokenId, side });
+}
+
+const getOrdersWithDocId = async ({ maker, id, side }) => {
   if (!maker || !id || !side || (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())) {
     utils.error('Invalid input');
-    res.sendStatus(500);
-    return;
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 
   const makerStr = maker.trim().toLowerCase();
@@ -972,19 +1200,18 @@ const getOrdersWithDocId = async (res, { maker, id, side }) => {
         count: orders.length,
         orders: orders
       };
-      res.send(resp);
+      return { result: resp };
     } else {
-      res.sendStatus(404);
-      return;
+      return { error: types.StatusCode.NOT_FOUND };
     }
   } catch (err) {
     utils.error('Error fetching order: ' + docId + ' for user ' + makerStr + ' from collection ' + collection);
     utils.error(err);
-    res.sendStatus(500);
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 };
 
-const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side }) => {
+const getOrdersWithTokenId = async ({ maker, tokenAddress, tokenId, side }) => {
   if (
     !maker ||
     !tokenAddress ||
@@ -992,8 +1219,8 @@ const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side })
     (side !== types.OrderSide.Buy.toString() && side !== types.OrderSide.Sell.toString())
   ) {
     utils.error('Invalid input');
-    res.sendStatus(500);
-    return;
+
+    return { error: types.StatusCode.INTERNAL_SERVER_ERROR };
   }
 
   const makerStr = maker.trim().toLowerCase();
@@ -1011,10 +1238,12 @@ const getOrdersWithTokenId = async (res, { maker, tokenAddress, tokenId, side })
       count: orders.length,
       orders: orders
     };
-    res.send(resp);
-  } else {
-    res.sendStatus(404);
+    return { result: resp };
   }
+
+  return {
+    error: types.StatusCode.NOT_FOUND
+  };
 };
 
 async function getOrders(maker, tokenAddress, tokenId, side) {
@@ -2747,8 +2976,7 @@ async function fetchAssetsFromOpensea(
   collection
 ) {
   utils.log('Fetching assets from opensea');
-  const authKey = process.env.openseaKey;
-  const url = constants.OPENSEA_API + 'assets/';
+
   const ownerQuery = owner ? { owner } : {};
 
   const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
@@ -2757,7 +2985,7 @@ async function fetchAssetsFromOpensea(
     (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
 
   const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
-  const defaultOrderBy = 'sale_price';
+  const defaultOrderBy = 'sale_date';
   if (orderBy && !isValidOrderByOption) {
     utils.error(`Invalid order by option passed while fetching assets from opensea`);
     orderBy = defaultOrderBy;
@@ -2779,6 +3007,8 @@ async function fetchAssetsFromOpensea(
   const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
   const collectionQuery = collection ? { collection } : {};
 
+  const authKey = process.env.openseaKey;
+  const url = constants.OPENSEA_API + 'assets/';
   const options = {
     headers: {
       'X-API-KEY': authKey
@@ -2794,36 +3024,227 @@ async function fetchAssetsFromOpensea(
       ...limitQuery,
       ...collectionQuery
     },
-    paramsSerializer: (params) => {
-      return qs.stringify(params, { arrayFormat: 'repeat' });
-    }
+    paramsSerializer: utils.openseaParamSerializer
   };
 
   try {
     const { data } = await axios.get(url, options);
-    const assetListingPromises = (data.assets || []).map(async (rawAssetData) => {
-      const assetData = {};
-      const chainId = '1'; // assuming OS api is used only for eth mainnet
-      const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
-      assetData.metadata = marshalledData;
-      assetData.rawData = rawAssetData;
-      const tokenAddress = marshalledData.asset.address.toLowerCase();
-      const tokenId = marshalledData.asset.id;
-      return JSON.parse(await getAssetAsListing(getAssetDocId({ tokenId, tokenAddress, chainId }), assetData));
-    });
+    const listings = await convertOpenseaListingsToInfinityListings(data.assets);
 
-    const assetListingPromiseResults = await Promise.allSettled(assetListingPromises);
-    const assetListings = assetListingPromiseResults
-      .filter((result) => result.status === 'fulfilled')
-      .map((fulfilledResult) => fulfilledResult.value);
-
-    // async store in db
-    saveRawOpenseaAssetBatchInDatabase(assetListings);
-    return assetListings;
-  } catch (err) {
+    return listings;
+  } catch (error) {
     utils.error('Error occured while fetching assets from opensea');
-    utils.error(err);
+    utils.error(error);
   }
+}
+
+/**
+ *  converts listings
+ *
+ * @param rawAssetDataArray to be converted to infinity listings
+ * @returns an array of listings following the infinity schema
+ */
+async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: RawAssetData[] */) {
+  if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
+    return [];
+  }
+  const listingMetadataPromises /*: Promise<ListingMetadata>[] */ = rawAssetDataArray.map(
+    async (rawAssetData /*: RawAssetData */) => {
+      const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
+      return listingMetadata;
+    }
+  );
+
+  const listingMetadataPromiseResults = await Promise.allSettled(listingMetadataPromises);
+  const listingMetadataArray /*: ListingMetadata[] */ =
+    utils.getFulfilledPromiseSettledResults(listingMetadataPromiseResults);
+
+  const assetListings = listingMetadataArray.reduce((assetListings, listingMetadata) => {
+    const tokenAddress = listingMetadata.asset.address.toLowerCase();
+    const tokenId = listingMetadata.asset.id;
+    const docId = getDocId({ tokenId, tokenAddress, basePrice: '' });
+    try {
+      const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })); /* as {
+            count: number;
+            listings: ListingMetadata & { id: string };
+        }; */
+      return [...assetListings, assetListing];
+    } catch {
+      return assetListings;
+    }
+  }, []);
+
+  // async store in db
+  saveRawOpenseaAssetBatchInDatabase(assetListings);
+
+  const listings /*: Listing[] */ = listingMetadataArray.reduce((listings, listingMetadata) => {
+    const rawSellOrders = listingMetadata.asset.rawData?.sell_orders;
+    const tokenAddress = listingMetadata.asset.address.toLowerCase();
+    const tokenId = listingMetadata.asset.id;
+    const id = getDocId({ tokenId, tokenAddress, basePrice: '' });
+
+    const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
+    if (rawSellOrders?.length > 0) {
+      const infinityListingsWithOrders /*: ListingWithOrder[] */ = rawSellOrders.reduce((listings, rawSellOrder) => {
+        const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
+        if (baseOrder) {
+          const infinityListing /*: ListingWithOrder */ = {
+            id,
+            metadata: listingMetadata,
+            order: baseOrder,
+            ...baseOrder,
+            ...infinityOrderData
+          };
+          return [...listings, infinityListing];
+        }
+        return listings;
+      }, []);
+
+      return [...listings, ...infinityListingsWithOrders];
+    } else {
+      const listing /*: ListingWithoutOrder */ = {
+        metadata: listingMetadata,
+        id,
+        ...infinityOrderData
+      };
+      return [...listings, listing];
+    }
+  }, []);
+
+  return {
+    count: listings.length,
+    listings: listings || []
+  };
+}
+
+const getOrderTypeFromRawSellOrder = (order /*: RawSellOrder */) => {
+  switch (order?.sale_kind) {
+    case 0:
+      if (order?.payment_token_contract?.symbol === 'ETH') {
+        return 'fixedPrice';
+      }
+      return 'englishAuction';
+    case 1:
+      return 'dutchAuction';
+    default:
+  }
+};
+
+async function rawAssetDataToListingMetadata(data /*: RawAssetData */) /*: Promise<ListingMetadata> */ {
+  const assetContract = data.asset_contract;
+  let tokenAddress = '';
+  let schema = '';
+  let description = data.description;
+  let collectionName = '';
+  if (assetContract) {
+    tokenAddress = assetContract.address;
+    schema = assetContract.schema_name;
+    collectionName = assetContract.name;
+    if (assetContract.description) {
+      description = assetContract.description;
+    }
+  }
+  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const traits = convertRawTraitsToInfinityTraits(data.traits);
+  const rawSellOrder = data.sell_orders?.[0];
+  const basePriceInWei = rawSellOrder?.base_price;
+
+  const basePriceInEth = basePriceInWei ? Number(ethers.utils.formatEther(basePriceInWei)) : undefined;
+  const listingType = getOrderTypeFromRawSellOrder(rawSellOrder);
+
+  const listing /*: ListingMetadata */ = {
+    hasBonusReward: false,
+    createdAt: new Date(assetContract.created_date).getTime(),
+    basePriceInEth: basePriceInEth,
+    listingType,
+    schema,
+    hasBlueCheck,
+    chainId: '1', // Assuming opensea api is only used in mainnet
+    chain: 'Ethereum',
+    asset: {
+      title: data?.name,
+      traits,
+      searchTitle: utils.getSearchFriendlyString(data.name),
+      traitValues: traits?.map(({ traitValue }) => traitValue),
+      numTraits: traits?.length,
+      rawData: data,
+      collectionName,
+      id: data.token_id,
+      description,
+      image: data.image_url,
+      searchCollectionName: utils.getSearchFriendlyString(collectionName),
+      address: tokenAddress,
+      imagePreview: data.image_preview_url,
+      traitTypes: traits?.map(({ traitType }) => traitType)
+    }
+  };
+  return listing;
+}
+
+function convertRawTraitsToInfinityTraits(traits /*: RawTrait[] */) /*: Trait[] */ {
+  // eslint-disable-next-line camelcase
+  return traits?.map(({ trait_type, value }) => {
+    return {
+      traitType: trait_type,
+      traitValue: value
+    };
+  });
+}
+
+function getInfinityOrderData(asset /*: Asset */, hasBlueCheck /*: boolean */) {
+  const chainId = '1';
+  const infinityOrder /*: InfinityOrderData */ = {
+    source: 1, // opensea
+    tokenId: asset.id,
+    tokenAddress: asset.address,
+    hasBlueCheck: hasBlueCheck,
+    title: asset.title,
+    chainId,
+    hasBonusReward: false
+  };
+  return infinityOrder;
+}
+
+/**
+ *
+ * @param asset metadata to set in the order.metadata.asset
+ * @returns
+ */
+function rawSellOrderToBaseOrder(order /* : RawSellOrder */) /*: BaseOrder */ {
+  try {
+    const baseOrder = {
+      howToCall: Number(order.how_to_call),
+      salt: order.salt,
+      feeRecipient: order.fee_recipient.address,
+      staticExtradata: order.static_extradata,
+      quantity: order.quantity,
+      staticTarget: order.static_target,
+      maker: order.maker.address,
+      side: Number(order.side),
+      takerProtocolFee: order.taker_protocol_fee,
+      saleKind: Number(order.sale_kind),
+      basePrice: order.base_price,
+      extra: order.extra,
+      expirationTime: order.expiration_time?.toString?.(),
+      calldata: order.calldata,
+      hash: order.order_hash,
+      r: order.r,
+      replacementPattern: order.replacement_pattern,
+      taker: order.taker.address,
+      takerRelayerFee: order.taker_relayer_fee,
+      s: order.s,
+      makerRelayerFee: order.maker_relayer_fee,
+      listingTime: order.listing_time?.toString?.(),
+      target: order.target,
+      v: Number(order.v),
+      makerProtocolFee: order.maker_protocol_fee,
+      paymentToken: order.payment_token,
+      feeMethod: Number(order.fee_method),
+      exchange: order.exchange,
+      makerReferrerFee: order.maker_referrer_fee
+    };
+    return baseOrder;
+  } catch {}
 }
 
 async function saveRawOpenseaAssetBatchInDatabase(assetListings) {
