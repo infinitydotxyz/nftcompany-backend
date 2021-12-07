@@ -11,7 +11,7 @@ const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount)
@@ -336,6 +336,80 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdUsers so far', thresholdUsers);
   console.log('nonThresholdUsers so far', nonThresholdUsers);
   console.log('thresholdDiff so far', thresholdDiff);
+}
+
+async function calcTxnStats(csvFileName) {
+  try {
+    if (readComplete) {
+      console.log('totalUsers', totalUsers);
+      console.log('osUsers', thresholdUsers);
+      console.log('nonOSUsers', nonThresholdUsers);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    await calcTxnStatsHelper(records);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function calcTxnStatsHelper(records) {
+  records.forEach(async (record, i) => {
+    const [seller, buyer, price, collAddr, date, txnHash] = record;
+    const transacted = +ethers.utils.formatEther(price);
+    console.log(i, seller, buyer, transacted);
+
+    // seller
+    const sellerDoc = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(seller.trim().toLowerCase()).get();
+    let isSellerOSUser = false;
+    let sellerTier = getUserRewardTier(transacted);
+    if (sellerDoc.exists) {
+      const sellerOSVol = sellerDoc.get('totalVolUSD');
+      sellerTier = getUserRewardTier(sellerOSVol);
+      isSellerOSUser = true;
+    } 
+    const sellerThreshold = sellerTier.threshold;
+    const sellerEligible = sellerTier.eligible;
+    const sellerData = {
+      isOSUser: isSellerOSUser,
+      threshold: sellerThreshold,
+      eligible: sellerEligible,
+      transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
+    };
+    db.collection('airdropStats')
+      .doc(seller.trim().toLowerCase())
+      .set(sellerData, { merge: true })
+      .catch((err) => console.error(err));
+
+    // buyer
+    const buyerDoc = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(buyer.trim().toLowerCase()).get();
+    let isBuyerOSUser = false;
+    let buyerTier = getUserRewardTier(transacted);
+    if (buyerDoc.exists) {
+      const buyerOSVol = buyerDoc.get('totalVolUSD');
+      buyerTier = getUserRewardTier(buyerOSVol);
+      isBuyerOSUser = true;
+    }
+    const buyerThreshold = buyerTier.threshold;
+    const buyerEligible = buyerTier.eligible;
+    const buyerData = {
+      isOSUser: isBuyerOSUser,
+      threshold: buyerThreshold,
+      eligible: buyerEligible,
+      transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
+    };
+    db.collection('airdropStats')
+      .doc(buyer.trim().toLowerCase())
+      .set(buyerData, { merge: true })
+      .catch((err) => console.error(err));
+  });
 }
 
 let prunedListings = 0;
@@ -877,6 +951,57 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
   await Promise.all(batchCommits);
 }
 
+async function getTxnStats() {
+  try {
+    const limit = 4000;
+
+    if (readComplete) {
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    // @ts-ignore
+    await getTxnStatsHelper(limit);
+    await getTxnStats();
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function getTxnStatsHelper(limit) {
+  const snapshot = await db.collection('airdropStats').get();
+
+  console.log('docs so far', snapshot.docs.length);
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalUsers += snapshot.docs.length;
+  console.log('totalUsers so far', totalUsers);
+
+  const doc = snapshot.docs[snapshot.docs.length-1];
+  const payload = doc.data();
+  console.log(JSON.stringify(payload));
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const payload = doc.data();
+    const eligible = payload.eligible;
+    const isOSUser = payload.isOSUser;
+    const threshold = payload.threshold;
+    const transacted = payload.transacted;
+
+    appendFileSync(
+      './airdropStats.csv',
+      `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`
+    );
+  }
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
@@ -894,6 +1019,10 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
 // updateOffers(process.argv[2]).catch((e) => console.error(e));
 
 // updateListings(process.argv[2]).catch((e) => console.error(e));
+
+// calcTxnStats(process.argv[2]).catch((e) => console.error(e));
+
+getTxnStats();
 
 // =================================================== HELPERS ===========================================================
 
