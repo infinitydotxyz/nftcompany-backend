@@ -197,7 +197,7 @@ module.exports = {
    * @returns the params serialized where arrays are formatted such that the
    * key is repeated for each element of the array (without brackets);
    *
-   * e.g. serializing  { key: [value1, value2, value3] } resutls in
+   * e.g. serializing  { key: [value1, value2, value3] } results in
    * ?key=value1&key=value2&key=value3
    */
   openseaParamSerializer: (params) => {
