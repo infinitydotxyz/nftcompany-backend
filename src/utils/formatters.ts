@@ -36,3 +36,18 @@ export function normalizeAddress(address: string) {
 export function openseaParamSerializer(params: string[]) {
   return qs.stringify(params, { arrayFormat: 'repeat' });
 }
+
+export function docsToArray(dbDocs: any) {
+  if (!dbDocs) {
+    return { results: [], count: 0 };
+  }
+  const results = [];
+  for (const doc of dbDocs) {
+    const item = doc.data();
+    if (doc.id) {
+      item.id = doc.id;
+    }
+    results.push(item);
+  }
+  return { results, count: results.length };
+}

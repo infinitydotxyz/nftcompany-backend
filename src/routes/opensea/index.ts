@@ -15,46 +15,6 @@ import { Router } from 'express';
 
 const router = Router();
 
-// fetch listings from opensea api
-/**
- * supports queries
- * - query tokenAddress
- * - query tokenAddress, tokenId
- * - filters: offset, limit (max 50)
- * - sorting: sortByPriceDirection: 'asc' | 'desc' orderBy: 'sale_date' | 'sale_count' | 'sale_price'
- */
-router.get('/listings', async (req, res) => {
-  const { limit, tokenId, tokenAddress, tokenAddresses, sortByPriceDirection, orderBy, offset, owner } = req.query;
-  const collection: any = undefined; // collection name is not always the same as collection slug therefore prefer tokenAddress
-  const assetContractAddress = tokenAddress;
-  const tokenIds = [tokenId].filter((item) => item);
-  const assetContractAddresses = tokenAddresses;
-  const orderDirection = typeof sortByPriceDirection === 'string' ? sortByPriceDirection.toLowerCase() : undefined;
-
-  const resp = await fetchAssetsFromOpensea(
-    owner as string | undefined,
-    tokenIds as string[] | undefined,
-    assetContractAddress as string | undefined,
-    assetContractAddresses as string[] | undefined,
-    orderBy as 'sale_date' | 'sale_count' | 'sale_price' | undefined,
-    orderDirection as OrderDirection | undefined,
-    offset as unknown as number,
-    limit as unknown as number,
-    collection
-  );
-
-  const stringifiedResp = jsonString(resp);
-  if (stringifiedResp) {
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
-    });
-    res.send(stringifiedResp);
-  } else {
-    res.sendStatus(500);
-  }
-});
-
 export default router;
 
 /**
@@ -69,7 +29,7 @@ export default router;
  * @param limit
  * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
  */
-async function fetchAssetsFromOpensea(
+export async function fetchAssetsFromOpensea(
   owner?: string,
   tokenIds?: string[],
   assetContractAddress?: string,
@@ -150,7 +110,9 @@ async function fetchAssetsFromOpensea(
  * @param rawAssetDataArray to be converted to infinity listings
  * @returns an array of listings following the infinity schema
  */
-async function convertOpenseaListingsToInfinityListings(rawAssetDataArray: RawAssetData[]): Promise<ListingResponse> {
+export async function convertOpenseaListingsToInfinityListings(
+  rawAssetDataArray: RawAssetData[]
+): Promise<ListingResponse> {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
     return {
       count: 0,
@@ -231,7 +193,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray: RawAs
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
-function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder {
+export function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder {
   try {
     const baseOrder = {
       howToCall: Number(order.how_to_call),
@@ -268,7 +230,7 @@ function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder {
   } catch {}
 }
 
-function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
+export function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
   const chainId = '1';
   const infinityOrder /*: InfinityOrderData */ = {
     source: 1, // opensea
@@ -282,7 +244,7 @@ function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
   return infinityOrder;
 }
 
-async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
+export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   try {
     const batch = firestore.db.batch();
 
@@ -312,7 +274,7 @@ async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   }
 }
 
-async function rawAssetDataToListingMetadata(data: RawAssetData): Promise<ListingMetadata> {
+export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise<ListingMetadata> {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
@@ -376,7 +338,7 @@ export function getOrderTypeFromRawSellOrder(order: RawSellOrder) {
   }
 }
 
-function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
+export function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
   // eslint-disable-next-line camelcase
   return traits?.map(({ trait_type, value }) => {
     return {
@@ -405,7 +367,7 @@ export async function fetchAssetFromOpensea(chainId: string, tokenId: string, to
   }
 }
 
-async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: RawAssetData) {
+export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: RawAssetData) {
   try {
     const assetData: any = {};
     const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
@@ -427,7 +389,7 @@ async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: RawA
   }
 }
 
-async function openseaAssetDataToListing(chainId: string, data: RawAssetData) {
+export async function openseaAssetDataToListing(chainId: string, data: RawAssetData) {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';

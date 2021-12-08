@@ -1,3 +1,5 @@
+import { NFTDataSource, OrderDirection } from './types/Queries';
+
 export const testRoot = process.env.firestoreTestRoot || 'testRoot';
 
 export const fstrCnstnts = {
@@ -42,4 +44,6 @@ export const OPENSEA_API = 'https://api.opensea.io/api/v1/';
 export const DEFAULT_ITEMS_PER_PAGE = 50;
 export const DEFAULT_MIN_ETH = 0.0000001;
 export const DEFAULT_MAX_ETH = 1000000; // for listings
-export const DEFAULT_PRICE_SORT_DIRECTION = 'desc';
+export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
+
+export const INFINITY_EMAIL = 'hi@infinity.xyz';

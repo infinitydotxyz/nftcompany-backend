@@ -1,8 +1,7 @@
 import { singleton } from 'tsyringe';
 import firebaseAdmin from 'firebase-admin';
 import crypto from 'crypto';
-
-const serviceAccount = require('../../creds/nftc-dev-firebase-creds.json');
+import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 
 @singleton()
 export default class Firestore {

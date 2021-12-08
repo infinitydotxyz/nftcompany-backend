@@ -142,7 +142,12 @@ router.get('/listings', async (req, res) => {
   }
 });
 
-async function getListingByTokenAddressAndId(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
+export async function getListingByTokenAddressAndId(
+  chainId: string,
+  tokenId: string,
+  tokenAddress: string,
+  limit: number
+) {
   log('Getting listings of token id and token address');
   try {
     let resp = '';
@@ -166,11 +171,11 @@ async function getListingByTokenAddressAndId(chainId: string, tokenId: string, t
   }
 }
 
-async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
+export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
   log('Getting asset as listing from db');
   try {
     let resp = '';
-    const docId = getAssetDocId({ chainId, tokenId, tokenAddress });
+    const docId = firestore.getAssetDocId({ chainId, tokenId, tokenAddress });
     const doc = await firestore.db
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
@@ -214,11 +219,6 @@ export function getAssetAsListing(docId: string, data: any) {
   }
 }
 
-function getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
-  const data = tokenAddress.trim() + tokenId.trim() + chainId;
-  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-}
-
 function getOrdersResponse(data: any) {
   return getOrdersResponseFromArray(data.docs);
 }
@@ -234,7 +234,7 @@ function isOrderExpired(doc: any) {
   return orderExpirationTime <= utcSecondsSinceEpoch;
 }
 
-function getOrdersResponseFromArray(docs: any) {
+export function getOrdersResponseFromArray(docs: any) {
   const listings = [];
   for (const doc of docs) {
     const listing = doc.data();
@@ -258,7 +258,7 @@ function getOrdersResponseFromArray(docs: any) {
   return jsonString(resp);
 }
 
-async function checkOwnershipChange(doc: any) {
+export async function checkOwnershipChange(doc: any) {
   const order = doc.data();
   const side = order.side;
   const schema = order.metadata.schema;
@@ -284,7 +284,7 @@ async function checkOwnershipChange(doc: any) {
   }
 }
 
-async function getListingsByCollection(
+export async function getListingsByCollection(
   startAfterBlueCheck: boolean | string,
   startAfterSearchCollectionName: boolean,
   limit: number
@@ -310,7 +310,7 @@ async function getListingsByCollection(
   }
 }
 
-async function deleteExpiredOrder(doc: any) {
+export async function deleteExpiredOrder(doc: any) {
   log('Deleting expired order', doc.id);
   const order = doc.data();
   const side = +order.side;
@@ -337,7 +337,7 @@ async function deleteExpiredOrder(doc: any) {
     });
 }
 
-async function deleteOffer(batch: any, docRef: any) {
+export async function deleteOffer(batch: any, docRef: any) {
   const doc = await docRef.get();
   if (!doc.exists) {
     log('No offer to delete: ' + docRef.id);
@@ -356,7 +356,7 @@ async function deleteOffer(batch: any, docRef: any) {
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
 }
 
-function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: boolean, side: OrderSide) {
+export function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: boolean, side: OrderSide) {
   log('Updating user stats');
 
   const ref = firestore.db
@@ -379,7 +379,7 @@ function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: 
   }
 }
 
-async function getListingsStartingWithText(
+export async function getListingsStartingWithText(
   text: string,
   limit: number,
   startAfterSearchTitle?: boolean,
@@ -427,7 +427,7 @@ async function getListingsStartingWithText(
   }
 }
 
-async function getListingsByCollectionNameAndPrice(
+export async function getListingsByCollectionNameAndPrice(
   collectionName: string,
   priceMin: number,
   priceMax: number,
@@ -539,7 +539,7 @@ async function getListingsByCollectionNameAndPrice(
   }
 }
 
-async function fetchAssetFromCovalent(chainId: string, tokenId: string, tokenAddress: string) {
+export async function fetchAssetFromCovalent(chainId: string, tokenId: string, tokenAddress: string) {
   log('Getting asset from Covalent');
   const apiBase = 'https://api.covalenthq.com/v1/';
   const authKey = process.env.covalentKey;
@@ -559,7 +559,7 @@ async function fetchAssetFromCovalent(chainId: string, tokenId: string, tokenAdd
   }
 }
 
-async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any) {
+export async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any) {
   try {
     const assetData: any = {};
     const marshalledData = await covalentAssetDataToListing(chainId, rawAssetData);
@@ -572,7 +572,7 @@ async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(getAssetDocId({ tokenAddress, tokenId, chainId }));
+      .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {
@@ -581,7 +581,7 @@ async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any
   }
 }
 
-async function covalentAssetDataToListing(chainId: string, data: any) {
+export async function covalentAssetDataToListing(chainId: string, data: any) {
   const address = data.contract_address;
   const collectionName = data.contract_name;
   let id = '';
@@ -640,7 +640,7 @@ async function covalentAssetDataToListing(chainId: string, data: any) {
   return listing;
 }
 
-async function deleteListing(batch: any, docRef: any) {
+export async function deleteListing(batch: any, docRef: any) {
   const doc = await docRef.get();
   if (!doc.exists) {
     log('No listing to delete: ' + docRef.id);
@@ -668,4 +668,37 @@ async function deleteListing(batch: any, docRef: any) {
   }
   // update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
+}
+
+// eslint-disable-next-line no-unused-vars
+export async function getAllListings(
+  sortByPriceDirection: OrderDirection,
+  startAfterPrice: string,
+  startAfterMillis: string,
+  startAfterBlueCheck: string,
+  limit: number
+) {
+  log('Getting all listings');
+
+  try {
+    let query = firestore.db
+      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.basePriceInEth', sortByPriceDirection)
+      .orderBy('metadata.createdAt', 'desc');
+
+    if (startAfterBlueCheck === undefined) {
+      query = query.startAfter(true, startAfterPrice, startAfterMillis);
+    } else {
+      const startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+      query = query.startAfter(startAfterBlueCheckBool, startAfterPrice, startAfterMillis);
+    }
+
+    const data = await query.limit(limit).get();
+
+    return getOrdersResponse(data);
+  } catch (err) {
+    error('Failed to get listings');
+    error(err);
+  }
 }

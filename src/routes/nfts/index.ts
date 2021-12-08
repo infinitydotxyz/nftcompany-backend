@@ -10,7 +10,7 @@ import { getProvider } from '@utils/ethers.js';
 import { StatusCode } from '@base/types/StatusCode.js';
 
 // todo: adi change this
-const dogeAbi = require('./abis/doge2048nft.json');
+import dogeAbi from './abis/doge2048nft.json';
 
 router.get('/nfts', async (req, res) => {
   res.send('nfts');
