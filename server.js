@@ -779,7 +779,7 @@ async function fetchOffersFromOSAndInfinity(req) {
   return result;
 }
 
-app.get('/opensea/wyvern/v1/orders', async (req, res) => {
+app.get('/listings/import', async (req, res) => {
   const {
     assetContractAddress,
     paymentTokenAddress,
