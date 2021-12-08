@@ -47,6 +47,45 @@ async function importCsv(csvFileName) {
   console.log(`Processed ${records.length} records`);
 }
 
+async function airDropStats(csvFileName) {
+  const fileContents = await readFile(csvFileName, 'utf8');
+  // @ts-ignore
+  const records = await parse(fileContents, { columns: false });
+  records.forEach((record, i) => {
+    const [address, threshold, eligible, isOSUser, transacted] = record;
+    const transactedNum = +transacted;
+    let newThreshold = 0;
+    let newEligible = 0;
+
+    if (transactedNum > 0 && transactedNum < 2) {
+      newThreshold = 0.02;
+      newEligible = 70;
+    } else if (transactedNum >= 2 && transactedNum < 5) {
+      newThreshold = 2;
+      newEligible = 1088;
+    } else if (transactedNum >= 5 && transactedNum < 15) {
+      newThreshold = 5;
+      newEligible = 2636;
+    } else if (transactedNum >= 15 && transactedNum < 30) {
+      newThreshold = 15;
+      newEligible = 7337;
+    } else if (transactedNum >= 30) {
+      newThreshold = 30;
+      newEligible = 16678;
+    }
+    let thr = threshold;
+    let elig = eligible;
+    if (isOSUser.trim().toLowerCase() === 'false') {
+      thr = 0;
+      elig = 0;
+    }
+    appendFileSync(
+      './airDropNew.csv',
+      `${address},${thr},${elig},${isOSUser},${transacted},${newThreshold},${newEligible}\n`
+    );
+  });
+}
+
 // eslint-disable-next-line no-unused-vars
 function updateAllCollections(records) {
   const batchCommits = [];
@@ -374,7 +413,7 @@ async function calcTxnStatsHelper(records) {
       const sellerOSVol = sellerDoc.get('totalVolUSD');
       sellerTier = getUserRewardTier(sellerOSVol);
       isSellerOSUser = true;
-    } 
+    }
     const sellerThreshold = sellerTier.threshold;
     const sellerEligible = sellerTier.eligible;
     const sellerData = {
@@ -983,7 +1022,7 @@ async function getTxnStatsHelper(limit) {
   totalUsers += snapshot.docs.length;
   console.log('totalUsers so far', totalUsers);
 
-  const doc = snapshot.docs[snapshot.docs.length-1];
+  const doc = snapshot.docs[snapshot.docs.length - 1];
   const payload = doc.data();
   console.log(JSON.stringify(payload));
 
@@ -995,10 +1034,7 @@ async function getTxnStatsHelper(limit) {
     const threshold = payload.threshold;
     const transacted = payload.transacted;
 
-    appendFileSync(
-      './airdropStats.csv',
-      `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`
-    );
+    appendFileSync('./airdropStats.csv', `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`);
   }
 }
 
@@ -1022,7 +1058,9 @@ async function getTxnStatsHelper(limit) {
 
 // calcTxnStats(process.argv[2]).catch((e) => console.error(e));
 
-getTxnStats();
+// getTxnStats();
+
+airDropStats(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
