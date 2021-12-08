@@ -308,7 +308,7 @@ async function fetchAssetFromCovalent(chainId, tokenId, tokenAddress) {
   }
 }
 
-async function getAssetAsListing(docId, data) {
+function getAssetAsListing(docId, data) {
   utils.log('Converting asset to listing');
   try {
     const listings = [];
@@ -1115,7 +1115,7 @@ app.get('/wyvern/v1/orders', async (req, res) => {
 
 async function getInfinityOrders({ maker, docId, side, tokenAddress, tokenId }) {
   if (docId?.length > 0) {
-    return getOrdersWithDocId({ maker, docId, side });
+    return getOrdersWithDocId({ maker, id: docId, side });
   }
 
   return getOrdersWithTokenId({ maker, tokenAddress, tokenId, side });
@@ -3074,7 +3074,7 @@ function getInfinityOrderData(asset /*: Asset */, hasBlueCheck /*: boolean */) {
 
 /**
  *
- * @param asset metadata to set in the order.metadata.asset
+ * @param order metadata to set in the order.metadata.asset
  * @returns
  */
 function rawSellOrderToBaseOrder(order /* : RawSellOrder */) /*: BaseOrder */ {
