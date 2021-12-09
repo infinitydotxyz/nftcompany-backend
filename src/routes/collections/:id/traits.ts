@@ -5,13 +5,13 @@ import { fstrCnstnts, OPENSEA_API } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import axios from 'axios';
-import { Router } from 'express';
-const router = Router();
+import { Request, Response } from 'express';
 
 // get traits & their values of a collection
-router.get('/:id/traits', async (req, res) => {
+const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
   const id = req.params.id.trim().toLowerCase();
+  console.log(id);
   let resp = {};
   const traitMap: any = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
@@ -57,6 +57,6 @@ router.get('/:id/traits', async (req, res) => {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
+};
 
-export default router;
+export { getTraits };

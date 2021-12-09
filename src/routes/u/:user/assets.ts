@@ -9,13 +9,13 @@ import axios from 'axios';
 
 const router = Router();
 
-router.get('/:user/assets', (req, res) => {
+router.get('/', (req: Request<{ user: string }>, res) => {
   fetchAssetsOfUser(req, res);
 });
 
 export default router;
 
-export async function fetchAssetsOfUser(req: Request, res: Response) {
+export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
   const {

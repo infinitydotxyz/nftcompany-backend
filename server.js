@@ -1,4 +1,4 @@
-const nfts = require('./dist/nfts/index').default;
+// const nfts = require('./dist/nfts/index').default;
 
 require('dotenv').config();
 const { ethers } = require('ethers');
@@ -24,7 +24,7 @@ app.use(cors());
 app.use(helmet());
 
 // other routes
-app.use('/nfts', nfts);
+// app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;

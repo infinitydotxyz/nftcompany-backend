@@ -6,7 +6,7 @@ import { Router } from 'express';
 const router = Router();
 
 // get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
-router.get('/featured-collections', async (req, res) => {
+router.get('/', async (req, res) => {
   log('fetch list of Featured Collections');
   try {
     const result = await firestore.collection(fstrCnstnts.FEATURED_COLL).limit(FEATURED_LIMIT).get();

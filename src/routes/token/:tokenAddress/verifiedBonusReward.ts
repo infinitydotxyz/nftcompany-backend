@@ -7,7 +7,7 @@ import { hasBonusReward, isTokenVerified } from '..';
 const router = Router();
 
 // check if token is verified or has bonus reward
-router.get('/:tokenAddress/verifiedBonusReward', async (req: Request, res: Response) => {
+router.get('/', async (req: Request<{ tokenAddress: string }>, res: Response) => {
   const tokenAddress = (`${req.params.tokenAddress}` || '').trim().toLowerCase();
 
   if (!tokenAddress) {

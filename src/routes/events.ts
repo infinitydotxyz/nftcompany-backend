@@ -10,7 +10,7 @@ const router = Router();
 
 // transaction events (for a collection or a token)
 // todo: adi take chainId
-router.get('/events', async (req, res) => {
+router.get('/', async (req, res) => {
   const queryStr = decodeURIComponent(qs.stringify(req.query));
   const tokenId = req.query.token_id;
   const eventType = req.query.event_type;

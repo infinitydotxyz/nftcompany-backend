@@ -13,10 +13,6 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 import { Router } from 'express';
 
-const router = Router();
-
-export default router;
-
 /**
  *
  * @param owner The address of the owner of the assets

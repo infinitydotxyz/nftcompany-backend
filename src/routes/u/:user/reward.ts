@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import firebaseAdmin from 'firebase-admin';
 import { getUserRateLimit } from '@base/middleware/rateLimit';
-import { RewardTiers, UsPersonAnswer } from '@base/types/RewardTiers';
+import { RewardTiers, UsPersonAnswer } from '@base/types/Rewards';
 import { StatusCode } from '@base/types/StatusCode';
 import {
   fstrCnstnts,
@@ -16,7 +16,7 @@ import { getExchangeAddress, getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
 import { bn, toFixed5 } from '@utils/index.js';
 import { error, log, trace } from '@utils/logger';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { ethers } from 'ethers';
 import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { JsonFragment } from '@ethersproject/abi';
@@ -27,7 +27,7 @@ import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
 const router = Router();
 
 // fetch user reward
-router.get('/:user/reward', getUserRateLimit, async (req, res) => {
+router.get('/', getUserRateLimit, async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     error('Invalid input');
@@ -43,17 +43,24 @@ router.get('/:user/reward', getUserRateLimit, async (req, res) => {
   }
 });
 
-export async function getReward(user: any) {
-  log('Getting reward for user', user);
+export default router;
+
+/**
+ *
+ * @param user
+ * @returns
+ */
+export async function getReward(userAddress: string) {
+  log('Getting reward for user', userAddress);
 
   const userRef = await firestore
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
+    .doc(userAddress)
     .get();
 
-  const userOpenseaRef = await firestore.collection(fstrCnstnts.OPENSEA_COLL).doc(user).get();
+  const userOpenseaRef = await firestore.collection(fstrCnstnts.OPENSEA_COLL).doc(userAddress).get();
 
   let openseaVol = 0;
   let rewardTier = {};
@@ -93,7 +100,7 @@ export async function getReward(user: any) {
   const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
   // initiate refresh pending txns
-  refreshPendingTxns(user);
+  refreshPendingTxns(userAddress);
 
   const resp = {
     numSales: numSales.toString(),
@@ -122,7 +129,7 @@ export async function getReward(user: any) {
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
+    .doc(userAddress)
     .set(
       {
         openseaVol: openseaVol,
@@ -131,12 +138,13 @@ export async function getReward(user: any) {
       { merge: true }
     )
     .catch((err) => {
-      error('Error updating reward info for user ' + user);
+      error('Error updating reward info for user ' + userAddress);
       error(err);
     });
 
   return resp;
 }
+
 export function getEmptyUserInfo() {
   return {
     numListings: '0',
@@ -617,8 +625,6 @@ export async function isValidNftcTxn(txnHash: string, chainId: string, actionTyp
   }
   return isValid;
 }
-
-export default router;
 
 // order fulfill
 export async function fulfillOrder(user: any, batch: any, payload: any) {

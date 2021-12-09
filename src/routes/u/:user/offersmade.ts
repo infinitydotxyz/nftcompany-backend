@@ -3,12 +3,12 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import { getOrdersResponse } from './listings';
 const router = Router();
 
 // fetch offer made by user
-router.get('/:user/offersmade', async (req, res) => {
+router.get('/', async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const {
     limit,

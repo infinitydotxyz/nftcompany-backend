@@ -4,11 +4,11 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error, log } from '@utils/logger';
 import { Router } from 'express';
-import { stringify } from 'querystring';
+
 const router = Router();
 
 // fetch order to fulfill
-router.get('/wyvern/v1/orders', async (req, res) => {
+router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 

@@ -1,13 +1,13 @@
 import { firestore } from '@base/container';
 import { lowRateLimit } from '@base/middleware/rateLimit';
-import { UsPersonAnswer } from '@base/types/RewardTiers';
+import { UsPersonAnswer } from '@base/types/Rewards';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 const router = Router();
 
-router.post('/u/:user/usperson', lowRateLimit, async (req, res) => {
+router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { usPerson }: { usPerson?: string } = req.body;
 

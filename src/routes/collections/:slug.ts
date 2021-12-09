@@ -3,10 +3,9 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
-import { Router } from 'express';
-const router = Router();
+import { Request, Response } from 'express';
 
-router.get('/collections/:slug', async (req, res) => {
+export const getCollectionInfo = async (req: Request<{ slug: string }>, res: Response) => {
   const slug = req.params.slug;
   log('Fetching collection info for', slug);
   firestore
@@ -30,6 +29,4 @@ router.get('/collections/:slug', async (req, res) => {
       error('Failed to get collection info for', slug, err);
       res.sendStatus(StatusCode.InternalServerError);
     });
-});
-
-export default router;
+};

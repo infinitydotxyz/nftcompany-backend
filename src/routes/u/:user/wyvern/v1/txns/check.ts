@@ -6,13 +6,13 @@ import { bn } from '@utils/index.js';
 import { getExchangeAddress, getProvider } from '@utils/ethers';
 import { error, log } from '@utils/logger';
 import { ethers } from 'ethers';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { StatusCode } from '@base/types/StatusCode';
 const router = Router();
 
 // check txn
-router.post('/u/:user/wyvern/v1/txns/check', postUserRateLimit, async (req, res) => {
+router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) => {
   try {
     const payload = req.body;
 

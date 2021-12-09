@@ -1,11 +1,16 @@
 import { ListingType, OrderSide } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
-import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, fstrCnstnts } from '@constants';
+import {
+  DEFAULT_ITEMS_PER_PAGE,
+  DEFAULT_MAX_ETH,
+  DEFAULT_MIN_ETH,
+  fstrCnstnts,
+  DEFAULT_PRICE_SORT_DIRECTION
+} from '@constants';
 import { parseQueryFields } from '@utils/parsers.js';
 import { error, log } from '@utils/logger.js';
 import { Router } from 'express';
 import { firestore } from '@base/container';
-import crypto from 'crypto';
 import { fetchAssetFromOpensea } from '@routes/opensea';
 import axios from 'axios';
 import { getEndCode, getSearchFriendlyString, jsonString } from '@utils/formatters';
@@ -13,8 +18,11 @@ import { checkERC1155Ownership, checkERC721Ownership } from '@services/ethereum/
 import firebaseAdmin from 'firebase-admin';
 import { OrderDirection } from '@base/types/Queries';
 import { isTokenVerified } from '@routes/token';
+import importListings from './import';
 
 const router = Router();
+
+router.use('/import', importListings);
 
 // fetch listings (for Explore page)
 /*
@@ -24,7 +32,7 @@ const router = Router();
 - supports all listings
 - support title
 */
-router.get('/listings', async (req, res) => {
+router.get('/', async (req, res) => {
   const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
@@ -141,6 +149,8 @@ router.get('/listings', async (req, res) => {
     res.sendStatus(500);
   }
 });
+
+export default router;
 
 export async function getListingByTokenAddressAndId(
   chainId: string,

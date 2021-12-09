@@ -6,7 +6,7 @@ import { error } from '@utils/logger';
 import { Router } from 'express';
 const router = Router();
 
-router.get('/verifiedCollections', async (req, res) => {
+router.get('/', async (req, res) => {
   const startAfterName = req.query.startAfterName || '';
   const limit = +(req.query.limit || 50);
 

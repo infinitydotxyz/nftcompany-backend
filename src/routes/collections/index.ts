@@ -5,9 +5,15 @@ import { getUniqueItemsByProperties } from '@utils/index.js';
 import { getEndCode, getSearchFriendlyString, jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
+import { getCollectionInfo } from './:slug';
+import { getTraits } from './:id/traits';
+
 const router = Router();
 
-router.get('/collections', async (req, res) => {
+router.use('/:id/traits', getTraits);
+router.use('/:slug', getCollectionInfo);
+
+router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig as string);
   if (startsWith && typeof startsWith === 'string') {

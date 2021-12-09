@@ -2,12 +2,12 @@ import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { getOrdersResponse } from './listings';
 const router = Router();
 
 // fetch offer received by user
-router.get('/:user/offersreceived', async (req, res) => {
+router.get('/', async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
   const {

@@ -7,7 +7,7 @@ import { Router } from 'express';
 const router = Router();
 
 // fetch rewards leaderboard
-router.get('/rewards/leaderboard', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const sales = await firestore
       .collection(fstrCnstnts.ROOT_COLL)

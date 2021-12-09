@@ -3,11 +3,11 @@ import { lowRateLimit } from '@base/middleware/rateLimit';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
-import { Router } from 'express';
+import { Request, Router } from 'express';
 
 const router = Router();
 
-router.post('/u/:user/subscribeEmail', lowRateLimit, async (req, res) => {
+router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 

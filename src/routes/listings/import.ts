@@ -24,7 +24,7 @@ import { Router } from 'express';
 import { getAssetAsListing } from '.';
 const router = Router();
 
-router.get('/listings/import', async (req, res) => {
+router.get('/', async (req, res) => {
   const {
     assetContractAddress,
     paymentTokenAddress,

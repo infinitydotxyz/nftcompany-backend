@@ -5,7 +5,7 @@ import { error } from '@utils/logger';
 import { Router } from 'express';
 const router = Router();
 
-router.get('/verifyEmail', async (req, res) => {
+router.get('/', async (req, res) => {
   // @ts-ignore
   const user = (req.query.user || '').trim().toLowerCase();
   // @ts-ignore

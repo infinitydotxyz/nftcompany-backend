@@ -6,14 +6,14 @@ import { fstrCnstnts, NFTC_FEE_ADDRESS } from '@constants';
 import { updateNumOrders } from '@routes/listings';
 import { hasBonusReward, isTokenVerified } from '@routes/token';
 import { error, log } from '@utils/logger';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import firebaseAdmin from 'firebase-admin';
 import { prepareEmail } from '../../reward';
 
 const router = Router();
 
 // post a listing or make offer
-router.post('/u/:user/wyvern/v1/orders', postUserRateLimit, async (req, res) => {
+router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {

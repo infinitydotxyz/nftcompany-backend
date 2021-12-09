@@ -5,11 +5,14 @@ import { fstrCnstnts } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { waitForMissedTxn, waitForTxn } from '../../../reward';
+import check from './check';
 const router = Router();
 
-router.get('/u/:user/wyvern/v1/txns', async (req, res) => {
+router.use('/check', check);
+
+router.get('/', async (req: Request<{ user: string }>, res) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const {
     limit,

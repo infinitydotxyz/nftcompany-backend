@@ -5,7 +5,7 @@ import { error } from '@utils/logger';
 import { Router } from 'express';
 const router = Router();
 
-router.get('/titles', async (req, res) => {
+router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
   const startsWith = getSearchFriendlyString(startsWithOrig as string);
   if (startsWith && typeof startsWith === 'string') {

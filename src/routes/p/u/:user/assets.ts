@@ -1,9 +1,9 @@
 import { fetchAssetsOfUser } from '@routes/u/:user/assets';
-import { Router } from 'express';
+import { Router, Request } from 'express';
 
 const router = Router();
 
-router.get('/:user/assets', (req, res) => {
+router.get('/', (req: Request<{ user: string }>, res) => {
   fetchAssetsOfUser(req, res);
 });
 
