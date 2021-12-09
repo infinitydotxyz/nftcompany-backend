@@ -1239,10 +1239,10 @@ app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
     const resp = {
       threshold: '5 ETH',
       transacted: '10 ETH',
-      eligible: '12000',
-      reward: '24000',
+      eligible: 12000,
+      reward: 24000,
       bonus: '5x',
-      total: '120000'
+      total: 120000
     };
     const respStr = utils.jsonString(resp);
     // to enable cdn cache
