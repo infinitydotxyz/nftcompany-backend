@@ -22,6 +22,7 @@ router.get('/', async (req, res) => {
 
 // used for uploading the doge source images
 // and testing creating and uploading an NFT based on metadata
+// todo : adi remove in prod
 router.get('/setup', async (req, res) => {
   try {
     // await uploadSourceImages();
