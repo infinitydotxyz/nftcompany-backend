@@ -14,7 +14,8 @@ const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 const types = require('./types');

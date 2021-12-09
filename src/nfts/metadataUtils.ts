@@ -1,34 +1,61 @@
 import { metadata as doge2048NftMetadata } from './metadata/doge2048nft';
+import md5 from 'md5';
 
-export const generateDoge2048NftMetadata = (score: number, numPlays: number, dogBalance: number) => {
-  let eyeTrait: string,
-    eyeTraitValue: string,
-    headTrait: string,
-    headTraitValue: string,
-    neckTrait: string,
-    neckTraitValue: string;
+export class DogeMetadata {
+  background?: string;
+  backgroundTraitValue?: string;
+  eyeTrait?: string;
+  eyeTraitValue?: string;
+  headTrait?: string;
+  headTraitValue?: string;
+  neckTrait?: string;
+  neckTraitValue?: string;
+
+  toString = (): string => {
+    return `${this.background} ${this.backgroundTraitValue} ${this.eyeTrait} ${this.eyeTraitValue} ${this.headTrait} ${this.headTraitValue} ${this.neckTrait} ${this.neckTraitValue}`;
+  };
+
+  hash = (): string => {
+    return md5(this.toString());
+  };
+}
+
+export const generateDoge2048NftMetadata = (score: number, numPlays: number, dogBalance: number): DogeMetadata => {
+  let result: DogeMetadata = new DogeMetadata();
 
   // get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {
-      eyeTrait = val.traitType;
-      eyeTraitValue = pickRandomItemFromArray(val.traitValues);
+      result.eyeTrait = val.traitType;
+      result.eyeTraitValue = pickRandomItemFromArray(val.traitValues);
     }
   }
+
   // get head trait
   for (const val of Object.values(doge2048NftMetadata.plays.levels)) {
     if (numPlays >= val.min && numPlays <= val.max) {
-      headTrait = val.traitType;
-      headTraitValue = pickRandomItemFromArray(val.traitValues);
+      result.headTrait = val.traitType;
+      result.headTraitValue = pickRandomItemFromArray(val.traitValues);
     }
   }
+
   // get neck trait
   for (const val of Object.values(doge2048NftMetadata.dogTokenBalanceInNft.levels)) {
     if (dogBalance >= val.min && dogBalance <= val.max) {
-      neckTrait = val.traitType;
-      neckTraitValue = pickRandomItemFromArray(val.traitValues);
+      result.neckTrait = val.traitType;
+      result.neckTraitValue = pickRandomItemFromArray(val.traitValues);
     }
   }
+
+  // get background
+  for (const val of Object.values(doge2048NftMetadata.background.levels)) {
+    if (dogBalance >= val.min && dogBalance <= val.max) {
+      result.background = val.traitType;
+      result.backgroundTraitValue = pickRandomItemFromArray(val.traitValues);
+    }
+  }
+
+  return result;
 };
 
 export const getDoge2048NftLevelId = (score: number, numPlays: number, dogBalance: number): string => {
