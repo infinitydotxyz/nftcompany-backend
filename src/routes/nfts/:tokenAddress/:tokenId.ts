@@ -16,7 +16,7 @@ export const getAssetMetadata = async (req: Request<{ tokenAddress: string; toke
     const provider = getProvider(chainId as string);
     if (!provider) {
       error('Chain provider is null for chain', chainId);
-      res.sendStatus(500);
+      res.sendStatus(StatusCode.BadRequest);
       return;
     }
 
@@ -40,6 +40,7 @@ export const getAssetMetadata = async (req: Request<{ tokenAddress: string; toke
     if (snapshot.docs.length > 0) {
     }
     const metadataJson = generateDoge2048NftMetadata(score, numPlays, dogBalance);
+    res.sendStatus(StatusCode.Ok);
   } catch (err) {
     error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
     error(err);

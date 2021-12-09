@@ -1,19 +1,15 @@
 import { jsonString } from '@utils/formatters';
 import { parseQueryFields } from '@utils/parsers';
-import { Request, Response, Router } from 'express';
+import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
 import { OPENSEA_API } from '@constants';
 import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
 import axios from 'axios';
 
-const router = Router();
-
-router.get('/', (req: Request<{ user: string }>, res) => {
+export const getUserAssets = (req: Request<{ user: string }>, res: Response) => {
   fetchAssetsOfUser(req, res);
-});
-
-export default router;
+};
 
 export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
@@ -24,6 +20,7 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     error: err
   }: { limit?: number; offset?: number; error?: number } = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (err) {
+    res.sendStatus(StatusCode.InternalServerError);
     return;
   }
   if (!user) {

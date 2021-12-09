@@ -2,10 +2,10 @@ import { firestore } from '@base/container.js';
 import { fstrCnstnts } from '@constants';
 import { normalizeAddress } from '@utils/formatters.js';
 import { Router } from 'express';
-import verifiedBonusReward from './:tokenAddress/verifiedBonusReward.js';
+import { getVerifiedBonusReward } from './:tokenAddress/verifiedBonusReward.js';
 const router = Router();
 
-router.use('/:tokenAddress/verifiedBonusReward', verifiedBonusReward);
+router.get('/:tokenAddress/verifiedBonusReward', getVerifiedBonusReward);
 
 /**
  *

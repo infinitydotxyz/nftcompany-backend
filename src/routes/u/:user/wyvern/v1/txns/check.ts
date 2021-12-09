@@ -1,18 +1,17 @@
 import { firestore } from '@base/container';
-import { postUserRateLimit } from '@base/middleware/rateLimit';
+
 import { fstrCnstnts, NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '@constants';
 import { waitForTxn } from '@routes/u/:user/reward';
 import { bn } from '@utils/index.js';
 import { getExchangeAddress, getProvider } from '@utils/ethers';
 import { error, log } from '@utils/logger';
 import { ethers } from 'ethers';
-import { Router, Request } from 'express';
+import { Request, Response } from 'express';
 import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { StatusCode } from '@base/types/StatusCode';
-const router = Router();
 
 // check txn
-router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) => {
+export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {
   try {
     const payload = req.body;
 
@@ -150,7 +149,7 @@ router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) 
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
+};
 
 export async function getTxnData(txnHash: string, chainId: string, actionType: 'fulfill' | 'cancel') {
   let isValid = true;
@@ -215,5 +214,3 @@ export async function getTxnData(txnHash: string, chainId: string, actionType: '
   }
   return { isValid, from, buyer, seller, value };
 }
-
-export default router;

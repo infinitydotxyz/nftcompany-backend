@@ -16,7 +16,7 @@ import { getExchangeAddress, getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
 import { bn, toFixed5 } from '@utils/index.js';
 import { error, log, trace } from '@utils/logger';
-import { Router, Request } from 'express';
+import { Request, Response } from 'express';
 import { ethers } from 'ethers';
 import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { JsonFragment } from '@ethersproject/abi';
@@ -24,10 +24,9 @@ import { deleteOffer, updateNumOrders } from '@routes/listings';
 import nodemailer from 'nodemailer';
 import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
 
-const router = Router();
-
 // fetch user reward
-router.get('/', getUserRateLimit, async (req: Request<{ user: string }>, res) => {
+// router.get('/', getUserRateLimit,
+export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     error('Invalid input');
@@ -41,9 +40,7 @@ router.get('/', getUserRateLimit, async (req: Request<{ user: string }>, res) =>
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
-
-export default router;
+};
 
 /**
  *

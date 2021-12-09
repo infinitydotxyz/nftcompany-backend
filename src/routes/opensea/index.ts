@@ -11,7 +11,6 @@ import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { Router } from 'express';
 
 /**
  *

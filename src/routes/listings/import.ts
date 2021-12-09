@@ -22,6 +22,7 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 import { Router } from 'express';
 import { getAssetAsListing } from '.';
+import { off } from 'process';
 const router = Router();
 
 router.get('/', async (req, res) => {
@@ -53,18 +54,18 @@ router.get('/', async (req, res) => {
     maker: maker as string,
     taker: taker as string,
     owner: owner as string,
-    isEnglish: isEnglish === 'true',
-    bundled: bundled === 'true',
-    includeBundled: includeBundled === 'true',
-    includeInvalid: includeInvalid === 'true',
-    listedAfter: Number(listedAfter),
-    listedBefore: Number(listedBefore),
+    isEnglish: Boolean(isEnglish),
+    bundled: Boolean(bundled),
+    includeBundled: Boolean(includeBundled),
+    includeInvalid: Boolean(includeInvalid),
+    listedAfter: Number.isNaN(Number(listedAfter)) ? undefined : Number(listedAfter),
+    listedBefore: Number.isNaN(Number(listedBefore)) ? undefined : Number(listedBefore),
     tokenId: tokenId as string,
     tokenIds: tokenIds as string[],
-    side: Number(side as string) as OrderSide,
-    saleKind: Number(saleKind),
-    limit: Number(limit),
-    offset: Number(offset),
+    side: Number.isNaN(Number(side)) ? undefined : (Number(side) as OrderSide),
+    saleKind: Number.isNaN(Number(saleKind)) ? undefined : Number(saleKind),
+    limit: Number.isNaN(Number(limit)) ? undefined : Number(limit),
+    offset: Number.isNaN(Number(off)) ? undefined : Number(offset),
     orderBy: orderBy as string,
     orderDirection: orderDirection as string as OrderDirection
   });
@@ -158,6 +159,7 @@ async function fetchOrdersFromOpensea({
     },
     paramsSerializer: openseaParamSerializer
   };
+
   try {
     const { data } = await axios.get(url, options);
     if (data.orders && data.orders.length === 0) {
@@ -228,6 +230,7 @@ async function fetchOrdersFromOpensea({
 
     return { result };
   } catch (err) {
+    console.log(err.request);
     error('Error occured while fetching orders from opensea');
     error(err);
     return { error: StatusCode.InternalServerError };

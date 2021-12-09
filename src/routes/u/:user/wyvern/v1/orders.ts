@@ -6,14 +6,12 @@ import { fstrCnstnts, NFTC_FEE_ADDRESS } from '@constants';
 import { updateNumOrders } from '@routes/listings';
 import { hasBonusReward, isTokenVerified } from '@routes/token';
 import { error, log } from '@utils/logger';
-import { Router, Request } from 'express';
+import { Request, Response } from 'express';
 import firebaseAdmin from 'firebase-admin';
 import { prepareEmail } from '../../reward';
 
-const router = Router();
-
 // post a listing or make offer
-router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) => {
+export const postUserOrders = async (req: Request<{ user: string }>, res: Response) => {
   const payload = req.body;
 
   if (Object.keys(payload).length === 0) {
@@ -100,7 +98,7 @@ router.post('/', postUserRateLimit, async (req: Request<{ user: string }>, res) 
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
+};
 
 export async function postListing(maker: string, payload: any, batch: any, numOrders: number, hasBonus: boolean) {
   log('Writing listing to firestore for user + ' + maker);
@@ -195,5 +193,3 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
   // send email to taker that an offer is made
   prepareEmail(taker, payload, 'offerMade');
 }
-
-export default router;

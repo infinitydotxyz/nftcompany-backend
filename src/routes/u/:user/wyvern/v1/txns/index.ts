@@ -1,18 +1,13 @@
 import { firestore } from '@base/container';
-import { postUserRateLimit } from '@base/middleware/rateLimit';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router, Request } from 'express';
+import { Request, Response } from 'express';
 import { waitForMissedTxn, waitForTxn } from '../../../reward';
-import check from './check';
-const router = Router();
 
-router.use('/check', check);
-
-router.get('/', async (req: Request<{ user: string }>, res) => {
+export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const {
     limit,
@@ -91,11 +86,11 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
+};
 
 // save txn
 // called on buy now, accept offer, cancel offer, cancel listing
-router.post('/u/:user/wyvern/v1/txns', postUserRateLimit, async (req, res) => {
+export const postUserTxn = async (req: Request<{ user: string }>, res: Response) => {
   try {
     const payload = req.body;
 
@@ -202,6 +197,4 @@ router.post('/u/:user/wyvern/v1/txns', postUserRateLimit, async (req, res) => {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
-
-export default router;
+};

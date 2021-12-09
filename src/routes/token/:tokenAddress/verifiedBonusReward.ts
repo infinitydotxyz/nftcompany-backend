@@ -1,13 +1,11 @@
-import { Request, Response, Router } from 'express';
+import { Request, Response } from 'express';
 import { jsonString } from '@utils/formatters.js';
 import { error } from '@utils/logger.js';
 import { StatusCode } from '@base/types/StatusCode';
 import { hasBonusReward, isTokenVerified } from '..';
 
-const router = Router();
-
 // check if token is verified or has bonus reward
-router.get('/', async (req: Request<{ tokenAddress: string }>, res: Response) => {
+export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string }>, res: Response) => {
   const tokenAddress = (`${req.params.tokenAddress}` || '').trim().toLowerCase();
 
   if (!tokenAddress) {
@@ -37,6 +35,4 @@ router.get('/', async (req: Request<{ tokenAddress: string }>, res: Response) =>
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
-
-export default router;
+};

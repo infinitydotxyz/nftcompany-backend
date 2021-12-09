@@ -1,13 +1,11 @@
 import { firestore } from '@base/container';
-import { lowRateLimit } from '@base/middleware/rateLimit';
 import { UsPersonAnswer } from '@base/types/Rewards';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
-import { Router, Request } from 'express';
-const router = Router();
+import { Request, Response } from 'express';
 
-router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
+export const postUsPerson = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { usPerson }: { usPerson?: string } = req.body;
 
@@ -46,6 +44,4 @@ router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
       error(err);
       res.sendStatus(StatusCode.InternalServerError);
     });
-});
-
-export default router;
+};

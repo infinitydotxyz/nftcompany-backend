@@ -1,14 +1,12 @@
 import { firestore } from '@base/container';
-import { lowRateLimit } from '@base/middleware/rateLimit';
 import { StatusCode } from '@base/types/StatusCode';
 import { API_BASE, fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import crypto from 'crypto';
-import { Router } from 'express';
+import { Request, Response } from 'express';
 import { sendEmail } from './reward';
-const router = Router();
 
-router.post('/', lowRateLimit, async (req, res) => {
+export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const email = (req.body.email || '').trim().toLowerCase();
 
@@ -54,6 +52,4 @@ router.post('/', lowRateLimit, async (req, res) => {
       error(err);
       res.sendStatus(StatusCode.InternalServerError);
     });
-});
-
-export default router;
+};

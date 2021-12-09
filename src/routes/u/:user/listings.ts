@@ -4,11 +4,10 @@ import { fstrCnstnts } from '@constants';
 import { getOrdersResponseFromArray } from '@routes/listings';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router, Request } from 'express';
-const router = Router();
+import { Request, Response } from 'express';
 
 // fetch listings of user
-router.get('/', async (req: Request<{ user: string }>, res) => {
+export const getUserListings = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const {
     limit,
@@ -47,10 +46,8 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
       error(err);
       res.sendStatus(500);
     });
-});
+};
 
 export function getOrdersResponse(data: any) {
   return getOrdersResponseFromArray(data.docs);
 }
-
-export default router;

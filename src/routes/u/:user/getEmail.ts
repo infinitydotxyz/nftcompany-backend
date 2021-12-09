@@ -3,10 +3,9 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
-import { Request, Router } from 'express';
-const router = Router();
+import { Request, Router, Response } from 'express';
 
-router.get('/', async (req: Request<{ user: string }>, res) => {
+export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
 
   if (!user) {
@@ -35,6 +34,4 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
   } else {
     res.send('{}');
   }
-});
-
-export default router;
+};

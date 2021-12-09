@@ -3,11 +3,9 @@ import { lowRateLimit } from '@base/middleware/rateLimit';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
-import { Request, Router } from 'express';
+import { Request, Response } from 'express';
 
-const router = Router();
-
-router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
+export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const data = req.body;
 
@@ -41,6 +39,4 @@ router.post('/', lowRateLimit, async (req: Request<{ user: string }>, res) => {
       error(err);
       res.sendStatus(StatusCode.InternalServerError);
     });
-});
-
-export default router;
+};

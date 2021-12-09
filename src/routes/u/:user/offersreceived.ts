@@ -1,15 +1,17 @@
 import { firestore } from '@base/container';
+import { OrderDirection } from '@base/types/Queries';
+import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Router, Request } from 'express';
+import { Router, Request, Response } from 'express';
 import { getOrdersResponse } from './listings';
 const router = Router();
 
 // fetch offer received by user
-router.get('/', async (req: Request<{ user: string }>, res) => {
+export const getUserOffersReceived = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const sortByPrice = req.query.sortByPrice || 'desc'; // descending default
+  const sortByPrice = req.query.sortByPrice || OrderDirection.Descending; // descending default
   const {
     limit,
     startAfterMillis,
@@ -25,7 +27,7 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
   }
   if (!user) {
     error('Empty user');
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.BadRequest);
     return;
   }
   firestore.db
@@ -44,8 +46,8 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
     .catch((err) => {
       error('Failed to get offers received by user ' + user);
       error(err);
-      res.sendStatus(500);
+      res.sendStatus(StatusCode.InternalServerError);
     });
-});
+};
 
 export default router;

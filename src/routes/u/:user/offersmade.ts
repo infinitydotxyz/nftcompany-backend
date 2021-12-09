@@ -3,12 +3,11 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
-import { Request, Router } from 'express';
+import { Request, Response } from 'express';
 import { getOrdersResponse } from './listings';
-const router = Router();
 
 // fetch offer made by user
-router.get('/', async (req: Request<{ user: string }>, res) => {
+export const getUserOffersMade = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const {
     limit,
@@ -48,6 +47,4 @@ router.get('/', async (req: Request<{ user: string }>, res) => {
       error(err);
       res.sendStatus(StatusCode.InternalServerError);
     });
-});
-
-export default router;
+};
