@@ -1232,17 +1232,14 @@ app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
     res.sendStatus(500);
     return;
   }
+  utils.log('Fetching user rewards for', user);
   try {
-    // const resp = await getReward(user);
-    const resp = {
-      threshold: '5 ETH',
-      transacted: '10 ETH',
-      eligible: 12000,
-      reward: 24000,
-      bonus: '5x',
-      total: 120000
-    };
-    const respStr = utils.jsonString(resp);
+    const doc = await db.collection('airdropStats').doc(user).get();
+    const resp = doc.data();
+    let respStr = '';
+    if (resp) {
+      respStr = utils.jsonString(resp);
+    }
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
@@ -1250,7 +1247,7 @@ app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
     });
     res.send(respStr);
   } catch (err) {
-    utils.error(err);
+    utils.error('Erorr fetching user rewards for', user, err);
     res.sendStatus(500);
   }
 });
