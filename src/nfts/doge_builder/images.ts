@@ -440,7 +440,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
   for (const f of files) {
     if (f.isFile()) {
       try {
-        const destination = `images/doge${relativePath}${f.name}`;
+        const destination = `images/doge2048${relativePath}${f.name}`;
         const srcPath = `${dir}/${f.name}`;
         const buffer = readFileSync(srcPath);
 
