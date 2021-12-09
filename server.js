@@ -1235,8 +1235,22 @@ app.get('/u/:user/reward', utils.getUserRateLimit, async (req, res) => {
     return;
   }
   try {
-    const resp = await getReward(user);
-    res.send(resp);
+    // const resp = await getReward(user);
+    const resp = {
+      threshold: '5 ETH',
+      transacted: '10 ETH',
+      eligible: '12000',
+      reward: '24000',
+      bonus: '5x',
+      total: '120000'
+    };
+    const respStr = utils.jsonString(resp);
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
   } catch (err) {
     utils.error(err);
     res.sendStatus(500);
