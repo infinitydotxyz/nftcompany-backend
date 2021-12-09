@@ -38,7 +38,7 @@ export const urlForDogeImage = async (score: number, numPlays: number, dogBalanc
 
   const buffer = await buildImage(metadata);
 
-  const path = `images/polygon/${metadata.hash()}.jpg`;
+  const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
 
   const result = await uploadImage(buffer, path);
 
