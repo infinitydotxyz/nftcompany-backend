@@ -143,6 +143,15 @@ export interface RawTrait {
   max_value?: any;
 }
 
+export interface RawTraitWithValues {
+  trait_type: string;
+  trait_count: number;
+  display_type?: any;
+  values: string[];
+  order?: any;
+  max_value?: any;
+}
+
 export interface RawCollection {
   instagram_username?: any;
   large_image_url: string;

@@ -10,8 +10,8 @@ import { getTraits } from './:id/traits';
 
 const router = Router();
 
-router.use('/:id/traits', getTraits);
-router.use('/:slug', getCollectionInfo);
+router.get('/:id/traits', getTraits);
+router.get('/:slug', getCollectionInfo);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;

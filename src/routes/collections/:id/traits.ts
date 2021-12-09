@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { RawTrait } from '@base/types/OSNftInterface';
+import { RawTrait, RawTraitWithValues } from '@base/types/OSNftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts, OPENSEA_API } from '@constants';
 import { jsonString } from '@utils/formatters';
@@ -10,24 +10,25 @@ import { Request, Response } from 'express';
 // get traits & their values of a collection
 const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
-  const id = req.params.id.trim().toLowerCase();
-  console.log(id);
+  const contractAddress = req.params.id.trim().toLowerCase();
   let resp = {};
-  const traitMap: any = {}; // { name: { {info) }} }
+  const traitMap: { [trait_type: string]: RawTraitWithValues } = {}; // { name: { {info) }} }
   const authKey = process.env.openseaKey;
-  const url = OPENSEA_API + `assets/?asset_contract_address=${id}&limit=` + 50 + '&offset=' + 0;
+  const url = OPENSEA_API + `assets/?asset_contract_address=${contractAddress}&limit=` + 50 + '&offset=' + 0;
   const options = {
     headers: {
       'X-API-KEY': authKey
     }
   };
+
   try {
     const { data } = await axios.get(url, options);
-    const traits: any[] = [];
+
+    const traits: RawTraitWithValues[] = [];
     if (data?.assets) {
       data.assets.forEach((item: any) => {
         item.traits.forEach((trait: RawTrait) => {
-          traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+          traitMap[trait.trait_type] = (traitMap[trait.trait_type] || trait) as RawTraitWithValues;
           traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
           if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
             traitMap[trait.trait_type].values.push(trait.value);
@@ -42,8 +43,9 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
     resp = {
       traits
     };
+
     // store in firestore for future use
-    firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(id).set(resp, { merge: true });
+    firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(contractAddress).set(resp, { merge: true });
 
     // return response
     const respStr = jsonString(resp);

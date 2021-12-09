@@ -3,12 +3,11 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { getProvider } from '@utils/ethers';
 import { error } from '@utils/logger';
-import { Router, Request } from 'express';
+import { Router, Request, Response } from 'express';
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from '../metadataUtils';
-const router = Router();
 
 // api to get metadata
-router.get('/', async (req: Request<{ tokenAddress: string; tokenId: string }>, res) => {
+export const getAssetMetadata = async (req: Request<{ tokenAddress: string; tokenId: string }>, res: Response) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
   const { chainId } = req.query;
@@ -46,6 +45,4 @@ router.get('/', async (req: Request<{ tokenAddress: string; tokenId: string }>, 
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-});
-
-export default router;
+};
