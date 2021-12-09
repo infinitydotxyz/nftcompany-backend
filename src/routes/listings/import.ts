@@ -84,7 +84,7 @@ router.get('/', async (req, res) => {
     });
     res.send(stringifiedResp);
   } else {
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 });
 

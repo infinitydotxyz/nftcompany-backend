@@ -44,7 +44,7 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
     .catch((err) => {
       error('Failed to get user listings for user ' + user);
       error(err);
-      res.sendStatus(500);
+      res.sendStatus(StatusCode.InternalServerError);
     });
 };
 

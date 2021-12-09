@@ -1,4 +1,5 @@
 import { firestore } from '@base/container';
+import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts, OPENSEA_API } from '@constants';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
@@ -44,7 +45,7 @@ router.get('/', async (req, res) => {
   } catch (err) {
     error('Error occured while fetching events from opensea');
     error(err);
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 });
 

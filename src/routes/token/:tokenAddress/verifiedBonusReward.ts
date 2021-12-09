@@ -10,7 +10,7 @@ export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string
 
   if (!tokenAddress) {
     error('Empty token address');
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.BadRequest);
     return;
   }
 

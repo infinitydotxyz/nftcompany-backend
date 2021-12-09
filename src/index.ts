@@ -1,4 +1,3 @@
-// import 'tsconfig-paths/register';
 import 'reflect-metadata';
 import express from 'express';
 

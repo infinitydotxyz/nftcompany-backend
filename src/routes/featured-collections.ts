@@ -1,4 +1,5 @@
 import { firestore } from '@base/container';
+import { StatusCode } from '@base/types/StatusCode';
 import { FEATURED_LIMIT, fstrCnstnts } from '@constants';
 import { docsToArray, jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
@@ -20,12 +21,12 @@ router.get('/', async (req, res) => {
       });
       res.send(respStr);
     } else {
-      res.sendStatus(404);
+      res.sendStatus(StatusCode.NotFound);
     }
   } catch (err) {
     error('Error fetching featured collections.');
     error(err);
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 });
 

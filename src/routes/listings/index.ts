@@ -146,7 +146,7 @@ router.get('/', async (req, res) => {
   if (resp) {
     res.send(resp);
   } else {
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 });
 

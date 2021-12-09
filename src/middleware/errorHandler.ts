@@ -1,4 +1,6 @@
+import { StatusCode } from '@base/types/StatusCode.js';
 import { NextFunction, Request, Response } from 'express';
+import { stat } from 'fs';
 import { error, log } from '../utils/logger.js';
 import { getRequestLogPrefix } from './logger.js';
 
@@ -11,8 +13,8 @@ import { getRequestLogPrefix } from './logger.js';
  */
 export function requestErrorHandler(err: Error, req: Request, res: Response, _: NextFunction) {
   const prefix = getRequestLogPrefix(req);
-  const internalServerError = 500;
-  log(`${prefix} Status Code: ${internalServerError}`);
+  const status = StatusCode.InternalServerError;
+  log(`${prefix} Status Code: ${status}`);
   error(err);
-  res.sendStatus(internalServerError);
+  res.sendStatus(status);
 }

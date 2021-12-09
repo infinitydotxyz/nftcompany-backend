@@ -1,4 +1,5 @@
 import { firestore } from '@base/container';
+import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { getEndCode, getSearchFriendlyString, jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
@@ -37,7 +38,7 @@ router.get('/', async (req, res) => {
       })
       .catch((err) => {
         error('Failed to get titles', err);
-        res.sendStatus(500);
+        res.sendStatus(StatusCode.InternalServerError);
       });
   } else {
     res.send(jsonString([]));

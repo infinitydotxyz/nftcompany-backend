@@ -45,7 +45,7 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     res.send(resp);
   } catch (err) {
     error(err);
-    res.sendStatus(500);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 }
 
