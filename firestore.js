@@ -49,42 +49,52 @@ async function importCsv(csvFileName) {
 }
 
 async function airDropStats(csvFileName) {
+  const limit = 500;
   const fileContents = await readFile(csvFileName, 'utf8');
+  const batchCommits = [];
+  let batch = db.batch();
   // @ts-ignore
   const records = await parse(fileContents, { columns: false });
   records.forEach((record, i) => {
-    const [address, threshold, eligible, isOSUser, transacted] = record;
-    const transactedNum = +transacted;
-    let newThreshold = 0;
-    let newEligible = 0;
-
-    if (transactedNum > 0 && transactedNum < 2) {
-      newThreshold = 0.02;
-      newEligible = 70;
-    } else if (transactedNum >= 2 && transactedNum < 5) {
-      newThreshold = 2;
-      newEligible = 1088;
-    } else if (transactedNum >= 5 && transactedNum < 15) {
-      newThreshold = 5;
-      newEligible = 2636;
-    } else if (transactedNum >= 15 && transactedNum < 30) {
-      newThreshold = 15;
-      newEligible = 7337;
-    } else if (transactedNum >= 30) {
-      newThreshold = 30;
-      newEligible = 16678;
+    const [address, oldThreshold, oldEligible, isOSUser, transacted, newThreshold, newEligible, proportion, earnedTokens, finalEarnedTokens] = record;
+    const addressLower = address.trim().toLowerCase();
+    const oldThresholdNum = parseFloat(oldThreshold);
+    const oldEligibleNum = parseFloat(oldEligible);
+    const isOSUserBool = isOSUser.trim().toLowerCase() === 'true';
+    const transactedNum = parseFloat(transacted);
+    const newThresholdNum = parseFloat(newThreshold);
+    const newEligibleNum = parseFloat(newEligible);
+    const proportionNum = parseFloat(proportion);
+    const earnedTokensNum = parseFloat(earnedTokens);
+    if (isNaN(earnedTokensNum)) {
+      console.log('nan', earnedTokens, earnedTokensNum);
     }
-    let thr = threshold;
-    let elig = eligible;
-    if (isOSUser.trim().toLowerCase() === 'false') {
-      thr = 0;
-      elig = 0;
+    if (isNaN(proportionNum)) {
+      console.log('nan', proportion, proportionNum);
     }
-    appendFileSync(
-      './airDropNew.csv',
-      `${address},${thr},${elig},${isOSUser},${transacted},${newThreshold},${newEligible}\n`
-    );
+    const finalEarnedTokensNum = parseFloat(finalEarnedTokens);
+    const obj = {
+      address: addressLower,
+      oldThreshold: oldThresholdNum,
+      oldEligible: oldEligibleNum,
+      isOSUser: isOSUserBool,
+      transacted: transactedNum,
+      newThreshold: newThresholdNum,
+      newEligible: newEligibleNum,
+      proportion: proportionNum,
+      earnedTokens: earnedTokensNum,
+      finalEarnedTokens: finalEarnedTokensNum
+    };
+    const ref = db.collection('airdropStats').doc(addressLower);
+    batch.set(ref, obj);
+    if ((i + 1) % limit === 0) {
+      console.log(`Writing record ${i + 1}`);
+      batchCommits.push(batch.commit());
+      batch = db.batch();
+    }
   });
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
 }
 
 // eslint-disable-next-line no-unused-vars
