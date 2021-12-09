@@ -35,14 +35,14 @@ export const testUpload = async (): Promise<string> => {
 
 export const urlForDogeImage = async (score: number, numPlays: number, dogBalance: number): Promise<string> => {
   const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
-
-  const buffer = await buildImage(metadata);
-
   const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
-
-  const result = await uploadImage(buffer, path);
-
-  return result.publicUrl();
+  const remoteFile: File = bucket.file(path);
+  const existsArray = await remoteFile.exists();
+  if (existsArray && existsArray.length > 0 && !existsArray[0]) {
+    const buffer = await buildImage(metadata);
+    await uploadImage(buffer, path);
+  }
+  return remoteFile.publicUrl();
 };
 
 // =================================================
