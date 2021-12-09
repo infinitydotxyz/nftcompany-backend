@@ -12,7 +12,8 @@ const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 if (process.argv.length < 3) {
@@ -39,7 +40,7 @@ async function importCsv(csvFileName) {
 
 // eslint-disable-next-line no-unused-vars
 async function aggregateAddressTotals(records) {
-  const combined = {}
+  const combined = {};
   for (let i = 0; i < records.length; i++) {
     console.log(i);
     const record = records[i];
@@ -60,7 +61,7 @@ async function removeInvalidAddresses(records) {
   for (let i = 0; i < records.length; i++) {
     console.log(i);
     if (i > 999) {
-        break;
+      break;
     }
     const record = records[i];
     const address = record[0];
@@ -91,7 +92,7 @@ function writeToFirestore(records) {
     const address = record[0];
     const total = +parseFloat(record[1]).toFixed(2);
     const docRef = db.collection('combinedOpenseaSnapshot').doc(address);
-    batch.set(docRef, { totalVolUSD: firebaseAdmin.firestore.FieldValue.increment(total) }, {merge: true});
+    batch.set(docRef, { totalVolUSD: firebaseAdmin.firestore.FieldValue.increment(total) }, { merge: true });
     if ((i + 1) % 500 === 0) {
       console.log(`Writing record ${i + 1}`);
       batchCommits.push(batch.commit());

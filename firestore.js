@@ -11,10 +11,11 @@ const axios = require('axios').default;
 
 const firebaseAdmin = require('firebase-admin');
 
-const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
+const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 const types = require('./types');
@@ -45,6 +46,55 @@ async function importCsv(csvFileName) {
     process.exit(1);
   }
   console.log(`Processed ${records.length} records`);
+}
+
+async function airDropStats(csvFileName) {
+  const limit = 500;
+  const fileContents = await readFile(csvFileName, 'utf8');
+  const batchCommits = [];
+  let batch = db.batch();
+  // @ts-ignore
+  const records = await parse(fileContents, { columns: false });
+  records.forEach((record, i) => {
+    const [address, oldThreshold, oldEligible, isOSUser, transacted, newThreshold, newEligible, proportion, earnedTokens, finalEarnedTokens] = record;
+    const addressLower = address.trim().toLowerCase();
+    const oldThresholdNum = parseFloat(oldThreshold);
+    const oldEligibleNum = parseFloat(oldEligible);
+    const isOSUserBool = isOSUser.trim().toLowerCase() === 'true';
+    const transactedNum = parseFloat(transacted);
+    const newThresholdNum = parseFloat(newThreshold);
+    const newEligibleNum = parseFloat(newEligible);
+    const proportionNum = parseFloat(proportion);
+    const earnedTokensNum = parseFloat(earnedTokens);
+    if (isNaN(earnedTokensNum)) {
+      console.log('nan', earnedTokens, earnedTokensNum);
+    }
+    if (isNaN(proportionNum)) {
+      console.log('nan', proportion, proportionNum);
+    }
+    const finalEarnedTokensNum = parseFloat(finalEarnedTokens);
+    const obj = {
+      address: addressLower,
+      oldThreshold: oldThresholdNum,
+      oldEligible: oldEligibleNum,
+      isOSUser: isOSUserBool,
+      transacted: transactedNum,
+      newThreshold: newThresholdNum,
+      newEligible: newEligibleNum,
+      proportion: proportionNum,
+      earnedTokens: earnedTokensNum,
+      finalEarnedTokens: finalEarnedTokensNum
+    };
+    const ref = db.collection('airdropStats').doc(addressLower);
+    batch.set(ref, obj);
+    if ((i + 1) % limit === 0) {
+      console.log(`Writing record ${i + 1}`);
+      batchCommits.push(batch.commit());
+      batch = db.batch();
+    }
+  });
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -336,6 +386,80 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdUsers so far', thresholdUsers);
   console.log('nonThresholdUsers so far', nonThresholdUsers);
   console.log('thresholdDiff so far', thresholdDiff);
+}
+
+async function calcTxnStats(csvFileName) {
+  try {
+    if (readComplete) {
+      console.log('totalUsers', totalUsers);
+      console.log('osUsers', thresholdUsers);
+      console.log('nonOSUsers', nonThresholdUsers);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    await calcTxnStatsHelper(records);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function calcTxnStatsHelper(records) {
+  records.forEach(async (record, i) => {
+    const [seller, buyer, price, collAddr, date, txnHash] = record;
+    const transacted = +ethers.utils.formatEther(price);
+    console.log(i, seller, buyer, transacted);
+
+    // seller
+    const sellerDoc = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(seller.trim().toLowerCase()).get();
+    let isSellerOSUser = false;
+    let sellerTier = getUserRewardTier(transacted);
+    if (sellerDoc.exists) {
+      const sellerOSVol = sellerDoc.get('totalVolUSD');
+      sellerTier = getUserRewardTier(sellerOSVol);
+      isSellerOSUser = true;
+    }
+    const sellerThreshold = sellerTier.threshold;
+    const sellerEligible = sellerTier.eligible;
+    const sellerData = {
+      isOSUser: isSellerOSUser,
+      threshold: sellerThreshold,
+      eligible: sellerEligible,
+      transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
+    };
+    db.collection('airdropStats')
+      .doc(seller.trim().toLowerCase())
+      .set(sellerData, { merge: true })
+      .catch((err) => console.error(err));
+
+    // buyer
+    const buyerDoc = await db.collection(fstrCnstnts.OPENSEA_COLL).doc(buyer.trim().toLowerCase()).get();
+    let isBuyerOSUser = false;
+    let buyerTier = getUserRewardTier(transacted);
+    if (buyerDoc.exists) {
+      const buyerOSVol = buyerDoc.get('totalVolUSD');
+      buyerTier = getUserRewardTier(buyerOSVol);
+      isBuyerOSUser = true;
+    }
+    const buyerThreshold = buyerTier.threshold;
+    const buyerEligible = buyerTier.eligible;
+    const buyerData = {
+      isOSUser: isBuyerOSUser,
+      threshold: buyerThreshold,
+      eligible: buyerEligible,
+      transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
+    };
+    db.collection('airdropStats')
+      .doc(buyer.trim().toLowerCase())
+      .set(buyerData, { merge: true })
+      .catch((err) => console.error(err));
+  });
 }
 
 let prunedListings = 0;
@@ -877,6 +1001,54 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
   await Promise.all(batchCommits);
 }
 
+async function getTxnStats() {
+  try {
+    const limit = 4000;
+
+    if (readComplete) {
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    // @ts-ignore
+    await getTxnStatsHelper(limit);
+    await getTxnStats();
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function getTxnStatsHelper(limit) {
+  const snapshot = await db.collection('airdropStats').get();
+
+  console.log('docs so far', snapshot.docs.length);
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalUsers += snapshot.docs.length;
+  console.log('totalUsers so far', totalUsers);
+
+  const doc = snapshot.docs[snapshot.docs.length - 1];
+  const payload = doc.data();
+  console.log(JSON.stringify(payload));
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const payload = doc.data();
+    const eligible = payload.eligible;
+    const isOSUser = payload.isOSUser;
+    const threshold = payload.threshold;
+    const transacted = payload.transacted;
+
+    appendFileSync('./airdropStats.csv', `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`);
+  }
+}
+
 // ===================================================== MAINS ==========================================================
 
 // main(process.argv[2]).catch((e) => console.error(e));
@@ -894,6 +1066,12 @@ async function updateListingsHelper(startAfterCreatedAt, limit) {
 // updateOffers(process.argv[2]).catch((e) => console.error(e));
 
 // updateListings(process.argv[2]).catch((e) => console.error(e));
+
+// calcTxnStats(process.argv[2]).catch((e) => console.error(e));
+
+// getTxnStats();
+
+airDropStats(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
