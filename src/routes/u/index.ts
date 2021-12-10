@@ -17,8 +17,9 @@ import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
 const router = Router();
 
 router.use('/:user', authorizeUser);
+
 router.get('/:user/wyvern/v1/txns', getUserTxns);
-router.get('/:user/wyvern/v1/assets', getUserAssets);
+router.get('/:user/assets', getUserAssets);
 router.get('/:user/getEmail', getUserEmail);
 router.get('/:user/listings', getUserListings);
 router.get('/:user/offersmade', getUserOffersMade);
