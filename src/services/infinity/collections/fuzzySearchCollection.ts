@@ -1,49 +1,8 @@
 import { firestore } from '@base/container';
-import { CollectionInfo } from '@base/types/NftInterface';
-import { RawTraitWithValues } from '@base/types/OSNftInterface';
 import { fstrCnstnts } from '@constants';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
-import { ethers } from 'ethers';
 
-export async function saveCollectionTraits(contractAddress: string, traits: RawTraitWithValues[]) {
-  if (!ethers.utils.isAddress(contractAddress)) {
-    return { success: false, error: new Error('invalid address') };
-  }
-  try {
-    await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(contractAddress).set({ traits }, { merge: true });
-    return { success: true };
-  } catch (err) {
-    return {
-      successs: false,
-      error: err
-    };
-  }
-}
-
-export async function getCollectionInfoByName(searchCollectionName: string, limit: number) {
-  try {
-    const res = await firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .where('searchCollectionName', '==', searchCollectionName)
-      .limit(limit)
-      .get();
-    const data: CollectionInfo[] = res.docs.map((doc) => {
-      return doc.data() as CollectionInfo;
-    });
-
-    return {
-      success: true,
-      data
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: err
-    };
-  }
-}
-
-export async function collectionQuery(startsWithQuery: string, limit: number) {
+export async function fuzzySearchCollection(startsWithQuery: string, limit: number) {
   const startsWith = getSearchFriendlyString(startsWithQuery);
   try {
     if (!startsWith) {

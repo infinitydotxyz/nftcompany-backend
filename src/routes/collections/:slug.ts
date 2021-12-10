@@ -1,5 +1,5 @@
 import { StatusCode } from '@base/types/StatusCode';
-import { getCollectionInfoByName } from '@services/infinity/collections';
+import { getCollectionInfoByName } from '@services/infinity/collections/getCollectionInfoByName';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { Request, Response } from 'express';

@@ -3,7 +3,7 @@ import { OPENSEA_API } from '@constants';
 import { ethers } from 'ethers';
 import { openseaClient } from '../client';
 
-export async function getOpenseaCollectionTraits(contractAddress: string) {
+export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (!ethers.utils.isAddress(contractAddress)) {
     return { success: false, error: new Error('invalid address') };
   }

@@ -1,13 +1,11 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
 import { getUniqueItemsByProperties } from '@utils/index.js';
-import { getEndCode, getSearchFriendlyString, jsonString } from '@utils/formatters';
+import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
 import { getCollectionInfo } from './:slug';
 import { getTraits } from './:id/traits';
-import { collectionQuery } from '@services/infinity/collections';
+import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 
 const router = Router();
 
@@ -18,7 +16,7 @@ router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
 
   try {
-    const { success, data, error: err } = await collectionQuery(startsWithOrig as string, 10);
+    const { success, data, error: err } = await fuzzySearchCollection(startsWithOrig as string, 10);
 
     if (success) {
       const deDupresp = getUniqueItemsByProperties(data, 'collectionName');

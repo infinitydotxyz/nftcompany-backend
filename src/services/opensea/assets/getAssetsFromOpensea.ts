@@ -8,10 +8,9 @@ import { isTokenVerified } from '@routes/token';
 import { getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';
-import axios from 'axios';
 import { ethers } from 'ethers';
-import { openseaClient } from './client';
-import { getOrderTypeFromRawSellOrder } from './utils';
+import { openseaClient } from '../client';
+import { getOrderTypeFromRawSellOrder } from '../utils';
 
 /**
  *
@@ -25,7 +24,7 @@ import { getOrderTypeFromRawSellOrder } from './utils';
  * @param limit
  * @param collection Limit responses to members of a collection. Case sensitive and must match the collection slug exactly
  */
-export async function fetchAssetsFromOpensea(
+export async function getAssetsFromOpensea(
   owner?: string,
   tokenIds?: string[],
   assetContractAddress?: string,
@@ -322,25 +321,6 @@ export function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
       traitValue: value
     };
   });
-}
-
-export async function fetchAssetFromOpensea(chainId: string, tokenId: string, tokenAddress: string) {
-  log('Getting asset from Opensea');
-  try {
-    const url = OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
-    const authKey = process.env.openseaKey;
-    const options = {
-      headers: {
-        'X-API-KEY': authKey
-      }
-    };
-    const { data } = await axios.get(url, options);
-    // store asset for future use
-    return await saveRawOpenseaAssetInDatabase(chainId, data);
-  } catch (err) {
-    error('Failed to get asset from opensea', tokenAddress, tokenId);
-    error(err);
-  }
 }
 
 export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: RawAssetData) {

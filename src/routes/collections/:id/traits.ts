@@ -1,6 +1,7 @@
 import { StatusCode } from '@base/types/StatusCode';
-import { saveCollectionTraits } from '@services/infinity/collections';
-import { getOpenseaCollectionTraits } from '@services/opensea/collection/traits';
+import { saveCollectionTraits } from '@services/infinity/collections/saveCollectionTraits';
+import { getCollectionTraitsFromOpensea } from '@services/opensea/collection/getCollectionTraitsFromOpensea';
+
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { ethers } from 'ethers';
@@ -18,7 +19,7 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   }
 
   try {
-    const { success, data: traits, error: err } = await getOpenseaCollectionTraits(contractAddress);
+    const { success, data: traits, error: err } = await getCollectionTraitsFromOpensea(contractAddress);
 
     if (success) {
       resp = {

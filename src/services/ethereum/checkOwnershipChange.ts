@@ -5,6 +5,32 @@ import ERC721ABI from '@base/abi/ERC721.json';
 import ERC1155ABI from '@base/abi/ERC1155.json';
 import { error, log } from '@utils/logger';
 
+export async function checkOwnershipChange(doc: any) {
+  const order = doc.data();
+  const side = order.side;
+  const schema = order.metadata.schema;
+  const address = order.metadata.asset.address;
+  const id = order.metadata.asset.id;
+  const chainId = order.metadata.chainId;
+  if (side === 1) {
+    // listing
+    const maker = order.maker;
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
+      checkERC721Ownership(doc, chainId, maker, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, chainId, maker, address, id);
+    }
+  } else if (side === 0) {
+    // offer
+    const owner = order.metadata.asset.owner;
+    if (schema && schema.trim().toLowerCase() === 'erc721') {
+      checkERC721Ownership(doc, chainId, owner, address, id);
+    } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
+      checkERC1155Ownership(doc, chainId, owner, address, id);
+    }
+  }
+}
+
 export async function checkERC721Ownership(doc: any, chainId: string, owner: string, address: string, id: string) {
   try {
     const provider = getProvider(chainId);
