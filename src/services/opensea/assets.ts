@@ -1,17 +1,17 @@
 import { firestore } from '@base/container';
 import { Asset, BaseOrder, ListingMetadata, ListingResponse, Trait } from '@base/types/ListingResponse';
-import { ListingType } from '@base/types/NftInterface';
 import { RawAssetData, RawSellOrder, RawTrait } from '@base/types/OSNftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts, OPENSEA_API } from '@constants';
 import { getAssetAsListing } from '@routes/listings';
 import { isTokenVerified } from '@routes/token';
-import { getSearchFriendlyString, openseaParamSerializer } from '@utils/formatters';
+import { getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
 import { openseaClient } from './client';
+import { getOrderTypeFromRawSellOrder } from './utils';
 
 /**
  *
@@ -312,19 +312,6 @@ export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise
     }
   };
   return listing;
-}
-
-export function getOrderTypeFromRawSellOrder(order: RawSellOrder) {
-  switch (order?.sale_kind) {
-    case 0:
-      if (order?.payment_token_contract?.symbol === 'ETH') {
-        return ListingType.FixedPrice;
-      }
-      return ListingType.EnglishAuction;
-    case 1:
-      return ListingType.DutchAuction;
-    default:
-  }
 }
 
 export function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
