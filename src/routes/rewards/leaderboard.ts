@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { getPurchaseLeaders } from '@services/infinity/users/purchases/getPurchaseLeaders';
+import { getSaleLeaders } from '@services/infinity/users/sales/getSaleLeaders';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
@@ -9,45 +9,11 @@ const router = Router();
 // fetch rewards leaderboard
 router.get('/', async (req, res) => {
   try {
-    const sales = await firestore
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .orderBy('salesTotalNumeric', 'desc')
-      .limit(10)
-      .get();
-
-    const saleLeaders = [];
-    for (const doc of sales.docs) {
-      const docData = doc.data();
-      const result = {
-        id: doc.id,
-        total: docData.salesTotalNumeric
-      };
-      saleLeaders.push(result);
-    }
-
-    const buys = await firestore
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.USERS_COLL)
-      .orderBy('purchasesTotalNumeric', 'desc')
-      .limit(10)
-      .get();
-
-    const buyLeaders = [];
-    for (const doc of buys.docs) {
-      const docData = doc.data();
-      const result = {
-        id: doc.id,
-        total: docData.purchasesTotalNumeric
-      };
-      buyLeaders.push(result);
-    }
+    const [saleLeaders, purchaseLeaders] = await Promise.all([getSaleLeaders(10), getPurchaseLeaders(10)]);
 
     const resp = {
-      count: saleLeaders.length + buyLeaders.length,
-      results: { saleLeaders, buyLeaders }
+      count: saleLeaders.length + purchaseLeaders.length,
+      results: { saleLeaders, buyLeaders: purchaseLeaders }
     };
     const respStr = jsonString(resp);
     // to enable cdn cache

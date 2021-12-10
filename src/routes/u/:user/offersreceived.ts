@@ -2,10 +2,11 @@ import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
+import { getOrdersResponse } from '@services/infinity/utils';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Router, Request, Response } from 'express';
-import { getOrdersResponse } from './listings';
+
 const router = Router();
 
 // fetch offer received by user

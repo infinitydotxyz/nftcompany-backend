@@ -1,10 +1,10 @@
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
+import { getOrdersResponse } from '@services/infinity/utils';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
-import { getOrdersResponse } from './listings';
 
 // fetch offer made by user
 export const getUserOffersMade = async (req: Request<{ user: string }>, res: Response) => {

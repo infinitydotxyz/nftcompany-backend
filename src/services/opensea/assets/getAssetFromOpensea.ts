@@ -3,7 +3,7 @@ import { error, log } from '@utils/logger';
 import { saveRawOpenseaAssetInDatabase } from './getAssetsFromOpensea';
 import { openseaClient } from '../client';
 
-export async function fetchAssetFromOpensea(chainId: string, tokenId: string, tokenAddress: string) {
+export async function getAssetFromOpensea(chainId: string, tokenId: string, tokenAddress: string) {
   log('Getting asset from Opensea');
   try {
     const url = OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;

@@ -1,4 +1,4 @@
-import { isTokenVerified } from '@routes/token';
+import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getSearchFriendlyString } from '@utils/formatters';
 
 export async function covalentAssetDataToListing(chainId: string, data: any) {

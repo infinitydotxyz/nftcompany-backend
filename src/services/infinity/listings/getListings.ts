@@ -2,10 +2,9 @@ import { firestore } from '@base/container';
 import { ListingType } from '@base/types/NftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '@constants';
-import { getOrdersResponse } from '@routes/u/:user/listings';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
-import { getOrdersResponseFromArray } from './getListingsByTokenAddressAndId';
+import { getOrdersResponse, getOrdersResponseFromArray } from '../utils';
 
 export async function getListingsStartingWithText(
   text: string,

@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
-import { getOrdersResponse } from '@routes/u/:user/listings';
 import { error } from '@utils/logger';
+import { getOrdersResponse } from '../utils';
 
 export async function getListingsByCollection(
   startAfterBlueCheck: boolean | string,

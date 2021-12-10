@@ -7,7 +7,6 @@ import router from '@routes/index.js';
 import { log } from '@utils/logger.js';
 import { requestErrorHandler } from '@base/middleware/errorHandler.js';
 import { requestLogger } from '@base/middleware/logger.js';
-import { fetchAssetsFromOpensea } from '@routes/opensea';
 
 // TODO fix redefining global
 // import './globals.js';

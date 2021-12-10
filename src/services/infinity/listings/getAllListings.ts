@@ -1,8 +1,8 @@
 import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts } from '@constants';
-import { getOrdersResponse } from '@routes/u/:user/listings';
 import { error, log } from '@utils/logger';
+import { getOrdersResponse } from '../utils';
 
 export async function getAllListings(
   sortByPriceDirection: OrderDirection,

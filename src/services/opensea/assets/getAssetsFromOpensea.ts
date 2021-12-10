@@ -3,8 +3,8 @@ import { Asset, BaseOrder, ListingMetadata, ListingResponse, Trait } from '@base
 import { RawAssetData, RawSellOrder, RawTrait } from '@base/types/OSNftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts, OPENSEA_API } from '@constants';
-import { getAssetAsListing } from '@routes/listings';
-import { isTokenVerified } from '@routes/token';
+import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
+import { getAssetAsListing } from '@services/infinity/utils';
 import { getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';

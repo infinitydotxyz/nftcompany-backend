@@ -1,11 +1,8 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
-import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
-import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { fetchAssetAsListingFromDb } from '../assets/getAssetsAsListings';
-import { deleteExpiredOrder } from '../orders/deleteExpiredOrder';
-import { isOrderExpired } from '../utils';
+import { getOrdersResponse } from '../utils';
 
 export async function getListingByTokenAddressAndId(
   chainId: string,
@@ -34,32 +31,4 @@ export async function getListingByTokenAddressAndId(
     error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
     error(err);
   }
-}
-
-function getOrdersResponse(data: any) {
-  return getOrdersResponseFromArray(data.docs);
-}
-
-export function getOrdersResponseFromArray(docs: any) {
-  const listings = [];
-  for (const doc of docs) {
-    const listing = doc.data();
-    const isExpired = isOrderExpired(doc);
-    try {
-      checkOwnershipChange(doc);
-    } catch (err) {
-      error('Error checking ownership change info', err);
-    }
-    if (!isExpired) {
-      listing.id = doc.id;
-      listings.push(listing);
-    } else {
-      deleteExpiredOrder(doc);
-    }
-  }
-  const resp = {
-    count: listings.length,
-    listings
-  };
-  return jsonString(resp);
 }

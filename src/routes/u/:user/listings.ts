@@ -1,7 +1,8 @@
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
-import { getOrdersResponseFromArray } from '@routes/listings';
+import { getOrdersResponse } from '@services/infinity/utils';
+
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
@@ -47,7 +48,3 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
       res.sendStatus(StatusCode.InternalServerError);
     });
 };
-
-export function getOrdersResponse(data: any) {
-  return getOrdersResponseFromArray(data.docs);
-}

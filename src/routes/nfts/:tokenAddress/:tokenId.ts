@@ -3,7 +3,7 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import { getProvider } from '@utils/ethers';
 import { error } from '@utils/logger';
-import { Router, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from '../metadataUtils';
 
 // api to get metadata

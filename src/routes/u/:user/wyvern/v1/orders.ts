@@ -1,10 +1,9 @@
 import { firestore } from '@base/container';
-import { postUserRateLimit } from '@base/middleware/rateLimit';
-import { OrderSide } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts, NFTC_FEE_ADDRESS } from '@constants';
-import { updateNumOrders } from '@routes/listings';
-import { hasBonusReward, isTokenVerified } from '@routes/token';
+import { hasBonusReward } from '@services/infinity/collections/hasBonusReward';
+import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
+import { updateNumOrders } from '@services/infinity/orders/updateNumOrders';
 import { error, log } from '@utils/logger';
 import { Request, Response } from 'express';
 import firebaseAdmin from 'firebase-admin';

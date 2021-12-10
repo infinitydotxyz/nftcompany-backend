@@ -20,9 +20,10 @@ import { Request, Response } from 'express';
 import { ethers } from 'ethers';
 import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { JsonFragment } from '@ethersproject/abi';
-import { deleteOffer, updateNumOrders } from '@routes/listings';
 import nodemailer from 'nodemailer';
 import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
+import { updateNumOrders } from '@services/infinity/orders/updateNumOrders';
+import { deleteOffer } from '@services/infinity/offers/deleteOffer';
 
 // fetch user reward
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
