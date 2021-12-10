@@ -361,7 +361,7 @@ async function openseaAssetDataToListing(chainId, data) {
       description,
       owner: data.owner.address,
       image: data.image_url,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       searchTitle: utils.getSearchFriendlyString(data.name),
       title: data.name,
@@ -2694,7 +2694,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
               searchCollectionName: payload.metadata.asset.searchCollectionName,
               description: payload.metadata.asset.description,
               image: payload.metadata.asset.image,
-              imagePreview: payload.metadata.asset.imagePreview
+              imagePreview: payload.metadata.asset.imagePreview || payload.metadata.asset.image
             }
           }
         },
@@ -2924,7 +2924,7 @@ async function getAssetsFromOpensea(address, limit, offset) {
  */
 async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: RawAssetData[] */) {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
-    return [];
+    return { count: 0, listings: [] };
   }
   const listingMetadataPromises /*: Promise<ListingMetadata>[] */ = rawAssetDataArray.map(
     async (rawAssetData /*: RawAssetData */) => {
@@ -3052,7 +3052,7 @@ async function rawAssetDataToListingMetadata(data /*: RawAssetData */) /*: Promi
       image: data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       address: tokenAddress,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       traitTypes: traits?.map(({ traitType }) => traitType)
     }
   };
