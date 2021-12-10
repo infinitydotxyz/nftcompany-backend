@@ -1,9 +1,9 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { saveCollectionTraits } from '@services/infinity/collections';
 import { getOpenseaCollectionTraits } from '@services/opensea/collection/traits';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
+import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 // get traits & their values of a collection
@@ -12,22 +12,37 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   const contractAddress = req.params.id.trim().toLowerCase();
   let resp = {};
 
+  if (!ethers.utils.isAddress(contractAddress)) {
+    res.sendStatus(StatusCode.BadRequest);
+    return;
+  }
+
   try {
-    const traits = await getOpenseaCollectionTraits(contractAddress);
-    resp = {
-      traits
-    };
+    const { success, data: traits, error: err } = await getOpenseaCollectionTraits(contractAddress);
 
-    // store in firestore for future use
-    firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(contractAddress).set(resp, { merge: true });
+    if (success) {
+      resp = {
+        traits
+      };
+      // store in firestore for future use
+      saveCollectionTraits(contractAddress, traits);
 
-    // return response
-    const respStr = jsonString(resp);
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
-    });
-    res.send(respStr);
+      // return response
+      const respStr = jsonString(resp);
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
+      return;
+    }
+
+    if (err) {
+      error('Error occured while fetching assets from opensea');
+      error(err);
+    }
+    res.sendStatus(StatusCode.InternalServerError);
+    return;
   } catch (err) {
     error('Error occured while fetching assets from opensea');
     error(err);
