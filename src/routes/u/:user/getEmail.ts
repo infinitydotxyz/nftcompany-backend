@@ -22,8 +22,7 @@ export const getUserEmail = async (req: Request<{ user: string }>, res: Response
     .get();
 
   const data = userDoc.data();
-
-  if (data.profileInfo && data.profileInfo.email && data.profileInfo.email.address) {
+  if (data?.profileInfo?.email?.address) {
     const resp = jsonString(data.profileInfo.email);
     // to enable cdn cache
     res.set({

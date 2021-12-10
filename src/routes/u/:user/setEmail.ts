@@ -9,7 +9,6 @@ import { sendEmail } from './reward';
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const email = (req.body.email || '').trim().toLowerCase();
-
   if (!user || !email) {
     error('Invalid input');
     res.sendStatus(StatusCode.BadRequest);

@@ -12,7 +12,6 @@ import featuredCollections from './featured-collections';
 import titles from './titles';
 import verifiedCollections from './verifiedCollections';
 import verifyEmail from './verifyEmail';
-import { authorizeUser } from '@base/middleware/auth';
 
 const router = Router();
 
