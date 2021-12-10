@@ -12,6 +12,7 @@ import featuredCollections from './featured-collections';
 import titles from './titles';
 import verifiedCollections from './verifiedCollections';
 import verifyEmail from './verifyEmail';
+import { authorizeUser } from '@base/middleware/auth';
 
 const router = Router();
 
@@ -21,12 +22,16 @@ router.use('/nfts', nfts);
 router.use('/p', p);
 router.use('/rewards', rewards);
 router.use('/token', token);
-router.use('/u', u);
 router.use('/wyvern/v1', wyvernV1);
 router.use('/events', events);
 router.use('/featured-collections', featuredCollections);
 router.use('/titles', titles);
 router.use('/verifiedCollections', verifiedCollections);
 router.use('/verifyEmail', verifyEmail);
+
+/**
+ * require auth
+ */
+router.use('/u', u);
 
 export default router;
