@@ -25,19 +25,29 @@ import nodemailer from 'nodemailer';
 import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
 
 // fetch user reward
-// router.get('/', getUserRateLimit,
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   if (!user) {
     error('Invalid input');
-    res.sendStatus(StatusCode.BadRequest);
+    res.sendStatus(StatusCode.InternalServerError);
     return;
   }
+  log('Fetching user rewards for', user);
   try {
-    const resp = await getReward(user);
-    res.send(resp);
+    const doc = await firestore.collection('airdropStats').doc(user).get();
+    const resp = doc.data();
+    let respStr = '';
+    if (resp) {
+      respStr = jsonString(resp);
+    }
+    // to enable cdn cache
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=60',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
   } catch (err) {
-    error(err);
+    error('Erorr fetching user rewards for', user, err);
     res.sendStatus(StatusCode.InternalServerError);
   }
 };
