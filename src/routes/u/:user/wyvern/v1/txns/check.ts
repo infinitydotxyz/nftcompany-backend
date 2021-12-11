@@ -1,14 +1,10 @@
-import { firestore } from '@base/container';
-
-import { fstrCnstnts, NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '@constants';
 import { waitForTxn } from '@routes/u/:user/reward';
-import { bn } from '@utils/index.js';
-import { getExchangeAddress, getProvider } from '@utils/ethers';
 import { error, log } from '@utils/logger';
-import { ethers } from 'ethers';
 import { Request, Response } from 'express';
-import openseaAbi from '@base/abi/openseaExchangeContract.json';
 import { StatusCode } from '@base/types/StatusCode';
+import { getTxnData } from '@services/infinity/orders/getTxnData';
+import { getUserTxnRef } from '@services/infinity/orders/getUserTxn';
+import { writeTxn } from '@services/infinity/orders/writeTxn';
 
 // check txn
 export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {
@@ -62,155 +58,27 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
       error('Invalid NFTC txn', txnHash);
       res.sendStatus(StatusCode.BadRequest);
       return;
-    } else {
-      // check if doc exists
-      const docRef = firestore.db
-        .collection(fstrCnstnts.ROOT_COLL)
-        .doc(fstrCnstnts.INFO_DOC)
-        .collection(fstrCnstnts.USERS_COLL)
-        .doc(from)
-        .collection(fstrCnstnts.TXNS_COLL)
-        .doc(txnHash);
-
-      const doc = await docRef.get();
-      if (doc.exists) {
-        // listen for txn mined or not mined
-        waitForTxn(from, doc.data());
-        res.sendStatus(StatusCode.Ok);
-        return;
-      } else {
-        // txn is valid but it doesn't exist in firestore
-        // we write to firestore
-        log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
-        const batch = firestore.db.batch();
-        const valueInEth = +ethers.utils.formatEther('' + value);
-
-        const txnPayload = {
-          txnHash,
-          status: 'pending',
-          salePriceInEth: valueInEth,
-          actionType,
-          chainId,
-          createdAt: Date.now(),
-          buyer,
-          seller
-        };
-
-        // if cancel order
-        if (actionType === 'cancel') {
-          const cancelTxnRef = firestore
-            .collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-            .collection(fstrCnstnts.USERS_COLL)
-            .doc(from)
-            .collection(fstrCnstnts.MISSED_TXNS_COLL)
-            .doc(txnHash);
-
-          batch.set(cancelTxnRef, txnPayload, { merge: true });
-        } else if (actionType === 'fulfill') {
-          const buyerTxnRef = firestore
-            .collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-            .collection(fstrCnstnts.USERS_COLL)
-            .doc(buyer)
-            .collection(fstrCnstnts.MISSED_TXNS_COLL)
-            .doc(txnHash);
-
-          batch.set(buyerTxnRef, txnPayload, { merge: true });
-
-          const sellerTxnRef = firestore
-            .collection(fstrCnstnts.ROOT_COLL)
-            .doc(fstrCnstnts.INFO_DOC)
-            .collection(fstrCnstnts.USERS_COLL)
-            .doc(seller)
-            .collection(fstrCnstnts.MISSED_TXNS_COLL)
-            .doc(txnHash);
-
-          batch.set(sellerTxnRef, txnPayload, { merge: true });
-        }
-
-        // commit batch
-        log('Committing the non-existent valid txn', txnHash, ' batch to firestore');
-        batch
-          .commit()
-          .then((resp) => {
-            // no op
-          })
-          .catch((err) => {
-            error('Failed to commit non-existent valid txn', txnHash, ' batch');
-            error(err);
-            res.sendStatus(StatusCode.InternalServerError);
-          });
-      }
     }
+
+    const txnRef = getUserTxnRef(from, txnHash);
+    const txnDoc = await txnRef.get();
+
+    if (txnDoc.exists) {
+      // listen for txn mined or not mined
+      waitForTxn(from, txnDoc.data());
+      res.sendStatus(StatusCode.Ok);
+      return;
+    }
+
+    // txn is valid but it doesn't exist in firestore
+    // we write to firestore
+    log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
+    await writeTxn(actionType, { isValid, from, buyer, seller, value, txnHash, chainId });
     res.sendStatus(StatusCode.Ok);
+    return;
   } catch (err) {
     error('Error saving pending txn');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
 };
-
-export async function getTxnData(txnHash: string, chainId: string, actionType: 'fulfill' | 'cancel') {
-  let isValid = true;
-  let from = '';
-  let buyer = '';
-  let seller = '';
-  let value = bn(0);
-  const provider = getProvider(chainId);
-  const txn = provider ? await provider.getTransaction(txnHash) : null;
-  if (txn) {
-    from = txn.from ? txn.from.trim().toLowerCase() : '';
-    const to = txn.to;
-    const txnChainId = txn.chainId;
-    const data = txn.data;
-    value = txn.value;
-    const openseaIface = new ethers.utils.Interface(openseaAbi);
-    const decodedData = openseaIface.parseTransaction({ data, value });
-    const functionName = decodedData.name;
-    const args = decodedData.args;
-
-    // checks
-    const exchangeAddress = getExchangeAddress(chainId);
-    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
-      isValid = false;
-    }
-    if (txnChainId !== +chainId) {
-      isValid = false;
-    }
-    if (actionType === 'fulfill' && functionName !== WYVERN_ATOMIC_MATCH_FUNCTION) {
-      isValid = false;
-    }
-    if (actionType === 'cancel' && functionName !== WYVERN_CANCEL_ORDER_FUNCTION) {
-      isValid = false;
-    }
-
-    if (args && args.length > 0) {
-      const addresses = args[0];
-      if (addresses && actionType === 'fulfill' && addresses.length === 14) {
-        buyer = addresses[1] ? addresses[1].trim().toLowerCase() : '';
-        seller = addresses[8] ? addresses[8].trim().toLowerCase() : '';
-        const buyFeeRecipient = addresses[3];
-        const sellFeeRecipient = addresses[10];
-        if (
-          buyFeeRecipient.toLowerCase() !== NFTC_FEE_ADDRESS.toLowerCase() &&
-          sellFeeRecipient.toLowerCase() !== NFTC_FEE_ADDRESS.toLowerCase()
-        ) {
-          isValid = false;
-        }
-      } else if (addresses && actionType === 'cancel' && addresses.length === 7) {
-        const feeRecipient = addresses[3];
-        if (feeRecipient.toLowerCase() !== NFTC_FEE_ADDRESS.toLowerCase()) {
-          isValid = false;
-        }
-      } else {
-        isValid = false;
-      }
-    } else {
-      isValid = false;
-    }
-  } else {
-    isValid = false;
-  }
-  return { isValid, from, buyer, seller, value };
-}
