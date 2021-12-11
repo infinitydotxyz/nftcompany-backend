@@ -31,24 +31,23 @@ export const getUserOffersReceived = async (req: Request<{ user: string }>, res:
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-  firestore.db
-    .collectionGroup(fstrCnstnts.OFFERS_COLL)
-    .where('metadata.asset.owner', '==', user)
-    // @ts-ignore
-    .orderBy('metadata.basePriceInEth', sortByPrice)
-    .orderBy('metadata.createdAt', 'desc')
-    .startAfter(startAfterMillis)
-    .limit(limit)
-    .get()
-    .then((data) => {
-      const resp = getOrdersResponse(data);
-      res.send(resp);
-    })
-    .catch((err) => {
-      error('Failed to get offers received by user ' + user);
-      error(err);
-      res.sendStatus(StatusCode.InternalServerError);
-    });
+
+  try {
+    const data = await firestore.db
+      .collectionGroup(fstrCnstnts.OFFERS_COLL)
+      .where('metadata.asset.owner', '==', user)
+      .orderBy('metadata.basePriceInEth', sortByPrice as OrderDirection)
+      .orderBy('metadata.createdAt', OrderDirection.Descending)
+      .startAfter(startAfterMillis)
+      .limit(limit)
+      .get();
+    const resp = getOrdersResponse(data);
+    res.send(resp);
+  } catch (err) {
+    error('Failed to get offers received by user ' + user);
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
 };
 
 export default router;
