@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { error, log } from '@utils/logger';
-import { deleteListing } from '../listings/deleteListings';
+import { deleteListing } from '../listings/deleteListing';
 import { deleteOffer } from '../offers/deleteOffer';
 
 export async function deleteExpiredOrder(doc: any) {

@@ -1,11 +1,11 @@
 import { OrderSide } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from '@services/infinity/orders/getUserTxn';
+import { waitForMissedTxn, waitForTxn } from '@services/infinity/users/getUserReward';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
-import { waitForTxn } from '../../../reward';
 
 export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
@@ -39,13 +39,23 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
     const [snapshot, missedTxnSnapshot] = await Promise.all([getTxnSnapshot(), getMissedTxnSnapshot()]);
 
     const txns = [];
-    for (const doc of [...snapshot.docs, ...missedTxnSnapshot.docs]) {
+    for (const doc of snapshot.docs) {
       const txn = doc.data();
       txn.id = doc.id;
       txns.push(txn);
       // check status
       if (txn.status === 'pending') {
         waitForTxn(user, txn);
+      }
+    }
+
+    for (const doc of missedTxnSnapshot.docs) {
+      const txn = doc.data();
+      txn.id = doc.id;
+      txns.push(txn);
+      // check status
+      if (txn.status === 'pending') {
+        waitForMissedTxn(user, txn);
       }
     }
 

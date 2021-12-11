@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
-import { prepareEmail } from '@routes/u/:user/reward';
 import { log } from '@utils/logger';
+import { prepareEmail } from '../email/prepareEmail';
 import { updateNumOrders } from '../orders/updateNumOrders';
 
 export async function postOffer(maker: string, payload: any, batch: any, numOrders: number, hasBonus: boolean) {

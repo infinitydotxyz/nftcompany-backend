@@ -1,10 +1,10 @@
-import { waitForTxn } from '@routes/u/:user/reward';
 import { error, log } from '@utils/logger';
 import { Request, Response } from 'express';
 import { StatusCode } from '@base/types/StatusCode';
 import { getTxnData } from '@services/infinity/orders/getTxnData';
 import { getUserTxnRef } from '@services/infinity/orders/getUserTxn';
 import { writeTxn } from '@services/infinity/orders/writeTxn';
+import { waitForTxn } from '@services/infinity/orders/waitForTxn';
 
 // check txn
 export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {
