@@ -1,0 +1,36 @@
+import { OrderSide } from '@base/types/NftInterface';
+import { fstrCnstnts } from '@constants';
+import { log } from '@utils/logger';
+import { getUserInfoRef } from '../users/getUser';
+
+export async function getUserOrdersFromTokenId(
+  userAddress: string,
+  tokenAddress: string,
+  tokenId: string,
+  side: OrderSide
+) {
+  log('Fetching order for', userAddress, tokenAddress, tokenId, side);
+
+  let collection = side === OrderSide.Buy ? fstrCnstnts.OFFERS_COLL : fstrCnstnts.LISTINGS_COLL;
+
+  const results = await getUserInfoRef(userAddress)
+    .collection(collection)
+    .where('metadata.asset.address', '==', tokenAddress)
+    .where('metadata.asset.id', '==', tokenId)
+    .where('side', '==', side)
+    .get();
+
+  if (results.empty) {
+    log('No matching orders');
+    return [];
+  }
+
+  const orders = [];
+  for (const doc of results.docs) {
+    const order = doc.data();
+    order.id = doc.id;
+    orders.push(order);
+  }
+
+  return orders;
+}
