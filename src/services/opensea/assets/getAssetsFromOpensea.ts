@@ -12,6 +12,10 @@ import { ethers } from 'ethers';
 import { openseaClient } from '../client';
 import { getOrderTypeFromRawSellOrder } from '../utils';
 
+export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: number, limit: number) {
+  return getAssetsFromOpensea(userAddress, undefined, undefined, undefined, undefined, undefined, offset, limit);
+}
+
 /**
  *
  * @param owner The address of the owner of the assets

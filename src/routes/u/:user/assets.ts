@@ -6,6 +6,9 @@ import { OPENSEA_API } from '@constants';
 import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
 import axios from 'axios';
+import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
+import { getAssetsFromUnmarshal } from '@services/unmarshal/getAssetsFromUnmarshal';
+import { getAssetsFromOpensea, getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
 
 export const getUserAssets = (req: Request<{ user: string }>, res: Response) => {
   fetchAssetsOfUser(req, res);
@@ -51,11 +54,6 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
 
 export async function getAssets(address: string, limit: number, offset: number, sourceName: NFTDataSource) {
   log('Fetching assets for', address);
-  const results = await getAssetsFromChain(address, limit, offset, sourceName);
-  return results;
-}
-
-export async function getAssetsFromChain(address: string, limit: number, offset: number, sourceName: NFTDataSource) {
   let data;
   switch (sourceName) {
     case NFTDataSource.Infinity:
@@ -65,80 +63,25 @@ export async function getAssetsFromChain(address: string, limit: number, offset:
       data = await getAssetsFromAlchemy(address, limit, offset);
       break;
     case NFTDataSource.Unmarshal:
-      data = await getAssetsFromUnmarshal(address, limit, offset);
+      data = await getAssetsFromUnmarshal(address);
       break;
     case NFTDataSource.OpenSea:
-      data = await getAssetsFromOpensea(address, limit, offset);
+      data = await getAssetsFromOpenSeaByUser(address, offset, limit);
       break;
     case NFTDataSource.Covalent:
-      data = await getAssetsFromCovalent(address, limit, offset);
+      data = await getAssetsFromCovalent(address);
       break;
     default:
       log('Invalid data source for fetching nft data of wallet');
+      throw new Error(`invalid data source ${sourceName}`);
   }
   return data;
 }
 
-export async function getAssetsFromNftc(address: string, limit: number, offset: number) {
+async function getAssetsFromNftc(address: string, limit: number, offset: number) {
   log('Fetching assets from nftc');
 }
 
-export async function getAssetsFromAlchemy(address: string, limit: number, offset: number) {
+async function getAssetsFromAlchemy(address: string, limit: number, offset: number) {
   log('Fetching assets from alchemy');
-}
-
-export async function getAssetsFromCovalent(address: string, limit: number, offset: number) {
-  log('Fetching assets from covalent');
-  const apiBase = 'https://api.covalenthq.com/v1/';
-  const chain = '137';
-  const authKey = process.env.covalentKey;
-  const url = apiBase + chain + '/address/' + address + '/balances_v2/?nft=true&no-nft-fetch=false&key=' + authKey;
-  try {
-    const { data } = await axios.get(url);
-    const items = data.data.items;
-    const resp: { count: number; assets: any[] } = { count: 0, assets: [] };
-    for (const item of items) {
-      const type = item.type;
-      if (type === 'nft') {
-        resp.count++;
-        resp.assets.push(item);
-      }
-    }
-    return resp;
-  } catch (err) {
-    error('Error occured while fetching assets from covalent');
-    error(err);
-  }
-}
-export async function getAssetsFromUnmarshal(address: string, limit: number, offset: number) {
-  log('Fetching assets from unmarshal');
-  const apiBase = 'https://api.unmarshal.com/v1/';
-  const chain = 'ethereum';
-  const authKey = process.env.unmarshalKey;
-  const url = apiBase + chain + '/address/' + address + '/nft-assets?auth_key=' + authKey;
-  try {
-    const { data } = await axios.get(url);
-    return data;
-  } catch (err) {
-    error('Error occured while fetching assets from unmarshal');
-    error(err);
-  }
-}
-
-export async function getAssetsFromOpensea(address: string, limit: number, offset: number) {
-  log('Fetching assets from opensea');
-  const authKey = process.env.openseaKey;
-  const url = OPENSEA_API + 'assets/?limit=' + limit + '&offset=' + offset + '&owner=' + address;
-  const options = {
-    headers: {
-      'X-API-KEY': authKey
-    }
-  };
-  try {
-    const { data } = await axios.get(url, options);
-    return data;
-  } catch (err) {
-    error('Error occured while fetching assets from opensea');
-    error(err);
-  }
 }

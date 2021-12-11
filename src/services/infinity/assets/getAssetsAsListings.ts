@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
-import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
+import { getAssetFromCovalent } from '@services/covalent/getAssetFromCovalent';
 import { getAssetFromOpensea } from '@services/opensea/assets/getAssetFromOpensea';
 import { error, log } from '@utils/logger';
 import { getAssetAsListing } from '../utils';
@@ -23,7 +23,7 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
         resp = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
       } else if (chainId === '137') {
         // get from covalent
-        resp = await getAssetsFromCovalent(chainId, tokenId, tokenAddress);
+        resp = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
       }
     } else {
       resp = await getAssetAsListing(docId, doc.data());

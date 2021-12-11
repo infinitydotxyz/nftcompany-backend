@@ -1,9 +1,10 @@
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
+import { getUserInfoRef } from '@services/infinity/users/getUserInfoRef';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
-import { Request, Router, Response } from 'express';
+import { Request, Response } from 'express';
 
 export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
@@ -14,12 +15,7 @@ export const getUserEmail = async (req: Request<{ user: string }>, res: Response
     return;
   }
 
-  const userDoc = await firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .get();
+  const userDoc = await getUserInfoRef(user).get();
 
   const data = userDoc.data();
   if (data?.profileInfo?.email?.address) {
