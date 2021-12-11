@@ -1,7 +1,6 @@
-import { firestore } from '@base/container';
 import { UsPersonAnswer } from '@base/types/Rewards';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';
 
@@ -20,12 +19,8 @@ export const postUsPerson = async (req: Request<{ user: string }>, res: Response
     return;
   }
 
-  firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .set(
+  try {
+    await getUserInfoRef(user).set(
       {
         profileInfo: {
           usResidentStatus: {
@@ -35,13 +30,12 @@ export const postUsPerson = async (req: Request<{ user: string }>, res: Response
         }
       },
       { merge: true }
-    )
-    .then(() => {
-      res.send({ usPerson: usPersonValue });
-    })
-    .catch((err) => {
-      error('Setting US person status failed');
-      error(err);
-      res.sendStatus(StatusCode.InternalServerError);
-    });
+    );
+
+    res.send({ usPerson: usPersonValue });
+  } catch (err) {
+    error('Setting US person status failed');
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
 };

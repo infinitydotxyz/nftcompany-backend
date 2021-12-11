@@ -1,7 +1,5 @@
-import { firestore } from '@base/container';
-import { lowRateLimit } from '@base/middleware/rateLimit';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';
 
@@ -16,12 +14,8 @@ export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res
   }
 
   const isSubscribed = data.subscribe;
-  firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .set(
+  try {
+    await getUserInfoRef(user).set(
       {
         profileInfo: {
           email: {
@@ -30,13 +24,12 @@ export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res
         }
       },
       { merge: true }
-    )
-    .then(() => {
-      res.send({ subscribed: isSubscribed });
-    })
-    .catch((err) => {
-      error('Subscribing email failed');
-      error(err);
-      res.sendStatus(StatusCode.InternalServerError);
-    });
+    );
+
+    res.send({ subscribed: isSubscribed });
+  } catch (err) {
+    error('Subscribing email failed');
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
 };

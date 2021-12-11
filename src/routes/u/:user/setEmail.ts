@@ -1,10 +1,10 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { API_BASE, fstrCnstnts } from '@constants';
+import { API_BASE } from '@constants';
+import { sendEmail } from '@services/infinity/email/sendEmail';
+import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { sendEmail } from './reward';
 
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
@@ -19,12 +19,8 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
   const guid = crypto.randomBytes(30).toString('hex');
 
   // store
-  firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user)
-    .set(
+  try {
+    await getUserInfoRef(user).set(
       {
         profileInfo: {
           email: {
@@ -36,19 +32,18 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
         }
       },
       { merge: true }
-    )
-    .then(() => {
-      // send email
-      const subject = 'Verify your email for Infinity';
-      const link = API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
-      const html =
-        '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
-      sendEmail(email, subject, html);
-      res.sendStatus(StatusCode.Ok);
-    })
-    .catch((err) => {
-      error('Error setting user email for user', user);
-      error(err);
-      res.sendStatus(StatusCode.InternalServerError);
-    });
+    );
+
+    // send email
+    const subject = 'Verify your email for Infinity';
+    const link = API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
+    const html =
+      '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
+    sendEmail(email, subject, html);
+    res.sendStatus(StatusCode.Ok);
+  } catch (err) {
+    error('Error setting user email for user', user);
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
 };
