@@ -504,27 +504,31 @@ async function getListingsByCollectionNameAndPrice(
       }
 
       if (traitType && traitValue) {
-        let traitQueryArr = [];
+        const traitQueryArr = [];
         if (traitType.indexOf(',') > 0) {
           // multi-trait query
           const typesArr = traitType.split(',');
           const valuesArr = traitValue.split(',');
           if (typesArr.length === valuesArr.length) {
             for (let j = 0; j < typesArr.length; j++) {
-              traitQueryArr.push({
-                traitType: typesArr[j],
-                traitValue: valuesArr[j]
-              });
+              const valArr = valuesArr[j].split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+              for (let v = 0; v < typesArr.length; v++) {
+                traitQueryArr.push({
+                  traitType: typesArr[j],
+                  traitValue: valArr[v]
+                });
+              }
             }
           }
         } else {
           // single-trait query
-          traitQueryArr = [
-            {
+          const valArr = traitValue.split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+          for (let v = 0; v < valArr.length; v++) {
+            traitQueryArr.push({
               traitType,
-              traitValue
-            }
-          ];
+              traitValue: valArr[v]
+            });
+          }
         }
         queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
       }
