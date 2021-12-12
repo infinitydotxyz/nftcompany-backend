@@ -1,6 +1,7 @@
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
+import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Router } from 'express';
 const router = Router();
@@ -19,11 +20,7 @@ router.get('/', async (req, res) => {
     return;
   }
 
-  const userDocRef = firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.USERS_COLL)
-    .doc(user);
+  const userDocRef = getUserInfoRef(user);
   const userDoc = await userDocRef.get();
   // check email
   const storedEmail = userDoc.data().profileInfo.email.address;

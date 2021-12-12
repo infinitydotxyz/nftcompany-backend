@@ -1,7 +1,5 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
-import { getUserInfoRef } from '@services/infinity/users/getUserInfoRef';
+import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';

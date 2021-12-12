@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { FEATURED_LIMIT, fstrCnstnts } from '@constants';
+import { FEATURED_LIMIT } from '@constants';
+import { getFeaturedCollectionsRef } from '@services/infinity/collections/getFeaturedCollections';
 import { docsToArray, jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { Router } from 'express';
@@ -10,7 +10,7 @@ const router = Router();
 router.get('/', async (req, res) => {
   log('fetch list of Featured Collections');
   try {
-    const result = await firestore.collection(fstrCnstnts.FEATURED_COLL).limit(FEATURED_LIMIT).get();
+    const result = await getFeaturedCollectionsRef(FEATURED_LIMIT).get();
 
     if (result.docs) {
       const { results: collections, count } = docsToArray(result.docs);

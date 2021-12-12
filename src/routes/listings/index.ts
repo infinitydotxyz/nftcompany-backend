@@ -11,6 +11,7 @@ import {
 } from '@services/infinity/listings/getListings';
 import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
 import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
+import { OrderDirection } from '@base/types/Queries';
 
 const router = Router();
 
@@ -56,7 +57,11 @@ router.get('/', async (req, res) => {
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfterMillis'],
-    [`${DEFAULT_ITEMS_PER_PAGE}`, sortByPriceDirection === 'asc' ? '0' : `${DEFAULT_MAX_ETH}`, `${Date.now()}`]
+    [
+      `${DEFAULT_ITEMS_PER_PAGE}`,
+      sortByPriceDirection === OrderDirection.Ascending ? '0' : `${DEFAULT_MAX_ETH}`,
+      `${Date.now()}`
+    ]
   ) as { limit?: number; startAfterPrice?: number; startAfterMillis?: number; error?: Error };
   if (err) {
     return;

@@ -1,9 +1,9 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts, OPENSEA_API } from '@constants';
+import { getOrdersByTokenId } from '@services/infinity/orders/getOrdersByTokenId';
+import { getOpenseaEvents } from '@services/opensea/events';
+import { getRawOpenseaOrdersByTokenAddress } from '@services/opensea/orders';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
-import axios from 'axios';
 import { Request, Router } from 'express';
 import qs from 'qs';
 
@@ -22,18 +22,7 @@ router.get('/', async (req, res) => {
       const data = await fetchOffersFromOSAndInfinity(req);
       respStr = jsonString(data);
     } else {
-      const authKey = process.env.openseaKey;
-      const url = OPENSEA_API + `events?${queryStr}`;
-      const options = {
-        headers: {
-          'X-API-KEY': authKey
-        }
-      };
-      const { data } = await axios.get(url, options);
-      // append chain id assuming opensea is only used for eth mainnet
-      for (const obj of data.asset_events) {
-        obj.chainId = '1';
-      }
+      const data = await getOpenseaEvents(queryStr);
       respStr = jsonString(data);
     }
     // to enable cdn cache
@@ -52,85 +41,57 @@ router.get('/', async (req, res) => {
 // fetches offers from both OS and Infinity
 export async function fetchOffersFromOSAndInfinity(req: Request) {
   const tokenAddress = req.query.asset_contract_address || '';
-  const tokenId = req.query.token_id;
-  const limit = +req.query.limit;
+  const tokenId = req.query.token_id || '';
+  const limit = +req.query.limit || 50;
   const offset = req.query.offset;
-  const authKey = process.env.openseaKey;
-  const url = 'https://api.opensea.io/wyvern/v1/orders';
-  const options: any = {
-    headers: {
-      'X-API-KEY': authKey
-    },
-    params: {
-      side: 0,
-      asset_contract_address: tokenAddress,
-      limit,
-      offset
-    }
-  };
 
-  if (tokenId) {
-    options.params.token_id = tokenId;
-  }
-
-  const result: { asset_events: any[] } = {
-    asset_events: []
-  };
   try {
-    // infinity offers
-    let query = firestore.db
-      .collectionGroup(fstrCnstnts.OFFERS_COLL)
-      .where('metadata.asset.address', '==', tokenAddress);
-    if (tokenId) {
-      query = query.where('metadata.asset.id', '==', tokenId);
-    }
-    query = query.orderBy('metadata.basePriceInEth', 'desc').limit(limit);
+    const getInfinityOrdersPromise = () => {
+      return getOrdersByTokenId(tokenAddress as string, tokenId as string, limit);
+    };
 
-    const snapshot = await query.get();
+    const getOpenseaOrdersPromise = async () => {
+      const data = await getRawOpenseaOrdersByTokenAddress(
+        tokenAddress as string,
+        limit,
+        offset as string,
+        tokenId as string
+      );
+      const assetEvents = [];
+      for (const order of data?.orders || []) {
+        const obj = {
+          asset: {
+            name: order.asset.name,
+            token_id: order.asset.token_id,
+            image_thumbnail_url: order.asset.image_thumbnail_url
+          },
+          from_account: {
+            address: order.maker.address
+          },
+          chainId: '1', // assuming opensea is only used for eth mainnet
+          created_date: order.listing_time * 1000,
+          offerSource: 'OpenSea',
+          bid_amount: order.base_price
+        };
 
-    for (const offer of snapshot.docs) {
-      const order = offer.data();
-      const obj = {
-        asset: {
-          token_id: order.metadata.asset.id,
-          image_thumbnail_url: order.metadata.asset.image,
-          name: order.metadata.asset.title
-        },
-        created_date: order.listingTime * 1000,
-        from_account: {
-          address: order.maker
-        },
-        chainId: order.metadata.chainId,
-        bid_amount: order.base_price,
-        offerSource: 'Infinity'
-      };
-      result.asset_events.push(obj);
-    }
+        assetEvents.push(obj);
+      }
 
-    // opensea offers
-    const { data } = await axios.get(url, options);
-    for (const order of data.orders) {
-      const obj = {
-        asset: {
-          name: order.asset.name,
-          token_id: order.asset.token_id,
-          image_thumbnail_url: order.asset.image_thumbnail_url
-        },
-        from_account: {
-          address: order.maker.address
-        },
-        chainId: '1', // assuming opensea is only used for eth mainnet
-        created_date: order.listing_time * 1000,
-        offerSource: 'OpenSea',
-        bid_amount: order.base_price
-      };
-      result.asset_events.push(obj);
-    }
+      return assetEvents;
+    };
+
+    const [infinityEvents, openseaEvents] = await Promise.all([getInfinityOrdersPromise(), getOpenseaOrdersPromise()]);
+
+    const infinityEventsArray = infinityEvents || [];
+    const openseaEventsArray = openseaEvents || [];
+
+    return {
+      asset_events: [...infinityEventsArray, ...openseaEventsArray]
+    };
   } catch (err) {
     error('Error occured while fetching events from opensea');
     error(err);
   }
-  return result;
 }
 
 export default router;

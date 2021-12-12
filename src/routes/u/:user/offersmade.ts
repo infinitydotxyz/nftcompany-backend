@@ -1,3 +1,4 @@
+import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { getUserOffersRef } from '@services/infinity/users/offers/getUserOffersRef';
 import { getOrdersResponse } from '@services/infinity/utils';
@@ -30,7 +31,7 @@ export const getUserOffersMade = async (req: Request<{ user: string }>, res: Res
 
   try {
     const data = await getUserOffersRef(user)
-      .orderBy('metadata.createdAt', 'desc')
+      .orderBy('metadata.createdAt', OrderDirection.Descending)
       .startAfter(startAfterMillis)
       .limit(limit)
       .get();

@@ -1,4 +1,5 @@
 import { firestore } from '@base/container';
+import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts } from '@constants';
 import { error } from '@utils/logger';
 import { getOrdersResponse } from '../utils';
@@ -16,8 +17,8 @@ export async function getListingsByCollection(
 
     const snapshot = await firestore.db
       .collectionGroup(fstrCnstnts.COLLECTION_LISTINGS_COLL)
-      .orderBy('metadata.hasBlueCheck', 'desc')
-      .orderBy('metadata.asset.searchCollectionName', 'asc')
+      .orderBy('metadata.hasBlueCheck', OrderDirection.Descending)
+      .orderBy('metadata.asset.searchCollectionName', OrderDirection.Ascending)
       .startAfter(startAfterBlueCheckBool, startAfterSearchCollectionName)
       .limit(limit)
       .get();

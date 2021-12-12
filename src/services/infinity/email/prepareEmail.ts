@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts, SITE_BASE } from '@constants';
 import { error, log } from '@utils/logger';
-import { getEmptyUserProfileInfo } from '../users/getUserReward';
+import { getEmptyUserProfileInfo } from '../utils';
 import { sendEmail } from './sendEmail';
 
 // right now emails are sent when an item is purchased, offer is made or an offer is accepted

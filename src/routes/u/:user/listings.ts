@@ -1,3 +1,4 @@
+import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { getUserListingsRef } from '@services/infinity/listings/getUserListing';
 import { getOrdersResponse } from '@services/infinity/utils';
@@ -29,7 +30,7 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
 
   try {
     const data = await getUserListingsRef(user)
-      .orderBy('metadata.createdAt', 'desc')
+      .orderBy('metadata.createdAt', OrderDirection.Descending)
       .startAfter(startAfterMillis)
       .limit(limit)
       .get();

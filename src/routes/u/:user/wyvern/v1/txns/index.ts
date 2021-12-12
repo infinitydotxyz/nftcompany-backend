@@ -1,7 +1,9 @@
 import { OrderSide } from '@base/types/NftInterface';
+import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from '@services/infinity/orders/getUserTxn';
-import { waitForMissedTxn, waitForTxn } from '@services/infinity/users/getUserReward';
+import { waitForMissedTxn } from '@services/infinity/orders/waitForMissedTxn';
+import { waitForTxn } from '@services/infinity/orders/waitForTxn';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
@@ -29,11 +31,19 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
   }
   try {
     const getTxnSnapshot = () => {
-      return getUserTxnsRef(user).orderBy('createdAt', 'desc').startAfter(startAfterMillis).limit(limit).get();
+      return getUserTxnsRef(user)
+        .orderBy('createdAt', OrderDirection.Descending)
+        .startAfter(startAfterMillis)
+        .limit(limit)
+        .get();
     };
 
     const getMissedTxnSnapshot = () => {
-      return getUserMissedTxnsRef(user).orderBy('createdAt', 'desc').startAfter(startAfterMillis).limit(limit).get();
+      return getUserMissedTxnsRef(user)
+        .orderBy('createdAt', OrderDirection.Descending)
+        .startAfter(startAfterMillis)
+        .limit(limit)
+        .get();
     };
 
     const [snapshot, missedTxnSnapshot] = await Promise.all([getTxnSnapshot(), getMissedTxnSnapshot()]);

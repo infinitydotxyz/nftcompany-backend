@@ -1,4 +1,5 @@
 import { firestore } from '@base/container';
+import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts } from '@constants';
 
 export async function getPurchaseLeaders(limit: number) {
@@ -6,7 +7,7 @@ export async function getPurchaseLeaders(limit: number) {
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
-    .orderBy('purchasesTotalNumeric', 'desc')
+    .orderBy('purchasesTotalNumeric', OrderDirection.Descending)
     .limit(limit)
     .get();
 

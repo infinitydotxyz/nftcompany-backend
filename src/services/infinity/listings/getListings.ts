@@ -138,7 +138,7 @@ export async function getListingsByCollectionNameAndPrice(
 
       queryRef = queryRef
         .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-        .orderBy('metadata.createdAt', 'desc')
+        .orderBy('metadata.createdAt', OrderDirection.Descending)
         .startAfter(startAfterPrice, startAfterMillis)
         .limit(limit);
 
@@ -148,7 +148,7 @@ export async function getListingsByCollectionNameAndPrice(
     let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });
     let results = data.docs;
     if (data.size < limit) {
-      const newStartAfterPrice = sortByPriceDirection === 'asc' ? 0 : DEFAULT_MAX_ETH;
+      const newStartAfterPrice = sortByPriceDirection === OrderDirection.Ascending ? 0 : DEFAULT_MAX_ETH;
       const newLimit = limit - data.size;
       data = await runQuery({
         hasBlueCheckValue: false,

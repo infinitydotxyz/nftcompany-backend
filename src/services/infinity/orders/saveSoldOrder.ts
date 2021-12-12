@@ -2,8 +2,8 @@ import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
 import { bn, toFixed5 } from '@utils/index';
 import { log, trace } from '@utils/logger';
-import { getEmptyUserInfo } from '../users/getUserReward';
 import firebaseAdmin from 'firebase-admin';
+import { getEmptyUserInfo } from '../utils';
 
 export async function saveSoldOrder(user: any, order: any, batch: any, numOrders: number) {
   log('Writing sale to firestore for user', user);

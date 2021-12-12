@@ -16,9 +16,9 @@ export async function getAllListings(
   try {
     let query = firestore.db
       .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-      .orderBy('metadata.hasBlueCheck', 'desc')
+      .orderBy('metadata.hasBlueCheck', OrderDirection.Descending)
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
-      .orderBy('metadata.createdAt', 'desc');
+      .orderBy('metadata.createdAt', OrderDirection.Descending);
 
     if (startAfterBlueCheck === undefined) {
       query = query.startAfter(true, startAfterPrice, startAfterMillis);

@@ -1,6 +1,5 @@
-import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { getVerifiedCollections } from '@services/infinity/collections/getVerifiedCollections';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
@@ -11,24 +10,7 @@ router.get('/', async (req, res) => {
   const limit = +(req.query.limit || 50);
 
   try {
-    let query = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .where('hasBlueCheck', '==', true)
-      .orderBy('name', 'asc');
-
-    if (startAfterName) {
-      query = query.startAfter(startAfterName);
-    }
-
-    const data = await query.limit(limit).get();
-
-    const collections = [];
-    for (const doc of data.docs) {
-      const data = doc.data();
-
-      data.id = doc.id;
-      collections.push(data);
-    }
+    const collections = await getVerifiedCollections(limit, startAfterName as string);
 
     const dataObj = {
       count: collections.length,

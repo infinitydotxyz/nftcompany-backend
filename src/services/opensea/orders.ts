@@ -24,6 +24,30 @@ import { ethers } from 'ethers';
 import { openseaClient } from './client';
 import { getOrderTypeFromRawSellOrder } from './utils';
 
+export async function getRawOpenseaOrdersByTokenAddress(
+  tokenAddress: string,
+  limit: number,
+  offset: number | string,
+  tokenId?: string
+) {
+  const url = 'https://api.opensea.io/wyvern/v1/orders';
+  const options: any = {
+    params: {
+      side: 0,
+      asset_contract_address: tokenAddress,
+      limit,
+      offset
+    }
+  };
+
+  if (tokenId) {
+    options.params.token_id = tokenId;
+  }
+
+  const { data } = await openseaClient.get(url, options);
+  return data;
+}
+
 export async function getOpenseaOrders({
   assetContractAddress,
   paymentTokenAddress,

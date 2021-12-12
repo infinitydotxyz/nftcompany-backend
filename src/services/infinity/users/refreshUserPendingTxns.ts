@@ -1,3 +1,4 @@
+import { OrderDirection } from '@base/types/Queries';
 import { error } from '@utils/logger';
 import { getUserMissedTxnsRef, getUserTxnsRef } from '../orders/getUserTxn';
 import { waitForMissedTxn } from '../orders/waitForMissedTxn';
@@ -8,11 +9,11 @@ export async function refreshUserPendingTxns(userAddress: string) {
     const limit = 50;
 
     const getTxnSnapshot = () => {
-      return getUserTxnsRef(userAddress).orderBy('createdAt', 'desc').limit(limit).get();
+      return getUserTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
     };
 
     const getMissedTxnSnapshot = () => {
-      return getUserMissedTxnsRef(userAddress).orderBy('createdAt', 'desc').limit(limit).get();
+      return getUserMissedTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
     };
 
     const [snapshot, missedTxnSnapshot] = await Promise.all([getTxnSnapshot(), getMissedTxnSnapshot()]);

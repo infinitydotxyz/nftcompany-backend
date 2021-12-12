@@ -3,8 +3,9 @@ import { fstrCnstnts } from '@constants';
 import { getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
 import { error, log, trace } from '@utils/logger';
-import { getEmptyUserInfo, isValidNftcTxn } from '../users/getUserReward';
 import firebaseAdmin from 'firebase-admin';
+import { getEmptyUserInfo } from '../utils';
+import { isValidNftcTxn } from './isValidNFTCTxn';
 
 export async function waitForMissedTxn(user: any, payload: any) {
   user = user.trim().toLowerCase();
