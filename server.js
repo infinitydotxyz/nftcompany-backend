@@ -361,7 +361,7 @@ async function openseaAssetDataToListing(chainId, data) {
       description,
       owner: data.owner.address,
       image: data.image_url,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       searchTitle: utils.getSearchFriendlyString(data.name),
       title: data.name,
@@ -504,27 +504,31 @@ async function getListingsByCollectionNameAndPrice(
       }
 
       if (traitType && traitValue) {
-        let traitQueryArr = [];
+        const traitQueryArr = [];
         if (traitType.indexOf(',') > 0) {
           // multi-trait query
           const typesArr = traitType.split(',');
           const valuesArr = traitValue.split(',');
           if (typesArr.length === valuesArr.length) {
             for (let j = 0; j < typesArr.length; j++) {
-              traitQueryArr.push({
-                traitType: typesArr[j],
-                traitValue: valuesArr[j]
-              });
+              const valArr = valuesArr[j].split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+              for (let v = 0; v < typesArr.length; v++) {
+                traitQueryArr.push({
+                  traitType: typesArr[j],
+                  traitValue: valArr[v]
+                });
+              }
             }
           }
         } else {
           // single-trait query
-          traitQueryArr = [
-            {
+          const valArr = traitValue.split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+          for (let v = 0; v < valArr.length; v++) {
+            traitQueryArr.push({
               traitType,
-              traitValue
-            }
-          ];
+              traitValue: valArr[v]
+            });
+          }
         }
         queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
       }
@@ -2694,7 +2698,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
               searchCollectionName: payload.metadata.asset.searchCollectionName,
               description: payload.metadata.asset.description,
               image: payload.metadata.asset.image,
-              imagePreview: payload.metadata.asset.imagePreview
+              imagePreview: payload.metadata.asset.imagePreview || payload.metadata.asset.image
             }
           }
         },
@@ -3052,7 +3056,7 @@ async function rawAssetDataToListingMetadata(data /*: RawAssetData */) /*: Promi
       image: data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       address: tokenAddress,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       traitTypes: traits?.map(({ traitType }) => traitType)
     }
   };

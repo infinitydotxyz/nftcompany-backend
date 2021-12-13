@@ -6,6 +6,28 @@ import { error } from '@utils/logger';
 import { Request, Response } from 'express';
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from '../metadataUtils';
 
+import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
+
+// todo: adi change this
+const dogeAbi = require('./abis/doge2048nft.json');
+
+// used for uploading the doge source images
+// and testing creating and uploading an NFT based on metadata
+// todo : adi remove in prod
+export const getSetup = async (req: Request<{ tokenAddress: string; tokenId: string }>, res: Response) => {
+  try {
+    // await uploadSourceImages();
+    // res.send('uploaded');
+
+    const result = await testUpload();
+    res.send(result);
+  } catch (err) {
+    console.log(err);
+
+    res.send(err);
+  }
+};
+
 // api to get metadata
 export const getAssetMetadata = async (req: Request<{ tokenAddress: string; tokenId: string }>, res: Response) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
@@ -38,9 +60,13 @@ export const getAssetMetadata = async (req: Request<{ tokenAddress: string; toke
       .where('metadata.chainId', '==', chainId)
       .get();
     if (snapshot.docs.length > 0) {
+      console.log(snapshot.docs);
     }
-    const metadataJson = generateDoge2048NftMetadata(score, numPlays, dogBalance);
-    res.sendStatus(StatusCode.Ok);
+
+    const url = await urlForDogeImage(score, numPlays, dogBalance);
+    const result = { nftUrl: url };
+
+    res.send(JSON.stringify(result));
   } catch (err) {
     error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
     error(err);

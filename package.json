@@ -27,6 +27,7 @@
   "dependencies": {
     "axios": "0.21.4",
     "bignumber.js": "9.0.1",
+    "canvas": "^2.8.0",
     "cors": "2.8.5",
     "csv-parse": "^4.16.3",
     "dotenv": "10.0.0",
@@ -37,11 +38,13 @@
     "helmet": "4.6.0",
     "lodash": "^4.17.21",
     "mime": "^1.6.0",
+    "reflect-metadata": "^0.1.13",
+    "tsyringe": "^4.6.0",
+    "md5": "^2.3.0",
     "nodemailer": "6.6.3",
     "pg": "8.7.1",
     "qs": "^6.7.0",
-    "reflect-metadata": "^0.1.13",
-    "tsyringe": "^4.6.0"
+    "stream-buffers": "^3.0.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",
@@ -51,6 +54,8 @@
     "@types/node": "^16.11.10",
     "@types/nodemailer": "^6.4.4",
     "concurrently": "^6.4.0",
+    "@types/md5": "^2.3.1",
+    "@types/stream-buffers": "^3.0.4",
     "copyfiles": "^2.4.1",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",

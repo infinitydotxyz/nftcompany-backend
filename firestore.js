@@ -14,7 +14,8 @@ const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-infinity-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
-  credential: firebaseAdmin.credential.cert(serviceAccount)
+  credential: firebaseAdmin.credential.cert(serviceAccount),
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 const types = require('./types');
@@ -45,6 +46,55 @@ async function importCsv(csvFileName) {
     process.exit(1);
   }
   console.log(`Processed ${records.length} records`);
+}
+
+async function airDropStats(csvFileName) {
+  const limit = 500;
+  const fileContents = await readFile(csvFileName, 'utf8');
+  const batchCommits = [];
+  let batch = db.batch();
+  // @ts-ignore
+  const records = await parse(fileContents, { columns: false });
+  records.forEach((record, i) => {
+    const [address, oldThreshold, oldEligible, isOSUser, transacted, newThreshold, newEligible, proportion, earnedTokens, finalEarnedTokens] = record;
+    const addressLower = address.trim().toLowerCase();
+    const oldThresholdNum = parseFloat(oldThreshold);
+    const oldEligibleNum = parseFloat(oldEligible);
+    const isOSUserBool = isOSUser.trim().toLowerCase() === 'true';
+    const transactedNum = parseFloat(transacted);
+    const newThresholdNum = parseFloat(newThreshold);
+    const newEligibleNum = parseFloat(newEligible);
+    const proportionNum = parseFloat(proportion);
+    const earnedTokensNum = parseFloat(earnedTokens);
+    if (isNaN(earnedTokensNum)) {
+      console.log('nan', earnedTokens, earnedTokensNum);
+    }
+    if (isNaN(proportionNum)) {
+      console.log('nan', proportion, proportionNum);
+    }
+    const finalEarnedTokensNum = parseFloat(finalEarnedTokens);
+    const obj = {
+      address: addressLower,
+      oldThreshold: oldThresholdNum,
+      oldEligible: oldEligibleNum,
+      isOSUser: isOSUserBool,
+      transacted: transactedNum,
+      newThreshold: newThresholdNum,
+      newEligible: newEligibleNum,
+      proportion: proportionNum,
+      earnedTokens: earnedTokensNum,
+      finalEarnedTokens: finalEarnedTokensNum
+    };
+    const ref = db.collection('airdropStats').doc(addressLower);
+    batch.set(ref, obj);
+    if ((i + 1) % limit === 0) {
+      console.log(`Writing record ${i + 1}`);
+      batchCommits.push(batch.commit());
+      batch = db.batch();
+    }
+  });
+  batchCommits.push(batch.commit());
+  await Promise.all(batchCommits);
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -374,7 +424,7 @@ async function calcTxnStatsHelper(records) {
       const sellerOSVol = sellerDoc.get('totalVolUSD');
       sellerTier = getUserRewardTier(sellerOSVol);
       isSellerOSUser = true;
-    } 
+    }
     const sellerThreshold = sellerTier.threshold;
     const sellerEligible = sellerTier.eligible;
     const sellerData = {
@@ -983,7 +1033,7 @@ async function getTxnStatsHelper(limit) {
   totalUsers += snapshot.docs.length;
   console.log('totalUsers so far', totalUsers);
 
-  const doc = snapshot.docs[snapshot.docs.length-1];
+  const doc = snapshot.docs[snapshot.docs.length - 1];
   const payload = doc.data();
   console.log(JSON.stringify(payload));
 
@@ -995,10 +1045,7 @@ async function getTxnStatsHelper(limit) {
     const threshold = payload.threshold;
     const transacted = payload.transacted;
 
-    appendFileSync(
-      './airdropStats.csv',
-      `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`
-    );
+    appendFileSync('./airdropStats.csv', `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`);
   }
 }
 
@@ -1022,7 +1069,9 @@ async function getTxnStatsHelper(limit) {
 
 // calcTxnStats(process.argv[2]).catch((e) => console.error(e));
 
-getTxnStats();
+// getTxnStats();
+
+airDropStats(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
