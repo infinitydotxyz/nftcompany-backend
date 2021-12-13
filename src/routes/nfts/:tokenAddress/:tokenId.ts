@@ -6,10 +6,12 @@ import { error } from '@utils/logger';
 import { Request, Response } from 'express';
 import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from '../metadataUtils';
 
-import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
+// import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
 
 // todo: adi change this
-const dogeAbi = require('./abis/doge2048nft.json');
+// const dogeAbi = require('./abis/doge2048nft.json');
+import dogeAbi from '@base/abi/doge2048nft.json';
+import { testUpload, urlForDogeImage } from './doge_builder/images';
 
 // used for uploading the doge source images
 // and testing creating and uploading an NFT based on metadata
@@ -18,7 +20,6 @@ export const getSetup = async (req: Request<{ tokenAddress: string; tokenId: str
   try {
     // await uploadSourceImages();
     // res.send('uploaded');
-
     const result = await testUpload();
     res.send(result);
   } catch (err) {

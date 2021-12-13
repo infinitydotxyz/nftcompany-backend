@@ -6,11 +6,11 @@ import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
 import { DogeMetadata, generateDoge2048NftMetadata } from '@routes/nfts/metadataUtils';
 const { loadImage } = Canvas;
-const { Readable } = require('stream');
 
-const utils = require('../../../utils');
-const firebaseAdmin = utils.getFirebaseAdmin();
-const bucket = firebaseAdmin.storage().bucket();
+import { Readable } from 'stream';
+
+import { firestore } from '@base/container';
+const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';
 
 const imageCache = new Map<string, Canvas.Image>();

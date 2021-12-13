@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import firebaseAdmin from 'firebase-admin';
+import { Bucket } from '@google-cloud/storage';
 import crypto from 'crypto';
 import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 
@@ -7,12 +8,18 @@ import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 export default class Firestore {
   db: FirebaseFirestore.Firestore;
 
+  firebaseAdmin: firebaseAdmin.app.App;
+
+  bucket: Bucket;
+
   constructor() {
     firebaseAdmin.initializeApp({
       // @ts-ignore
-      credential: firebaseAdmin.credential.cert(serviceAccount)
+      credential: firebaseAdmin.credential.cert(serviceAccount),
+      storageBucket: process.env.firebaseStorageBucket
     });
     this.db = firebaseAdmin.firestore();
+    this.bucket = firebaseAdmin.storage().bucket();
   }
 
   collection(collectionPath: string) {
