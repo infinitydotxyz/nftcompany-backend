@@ -2971,7 +2971,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: Ra
         const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
         if (baseOrder) {
           const infinityListing /*: ListingWithOrder */ = {
-            id,
+            id: getDocId({ tokenId, tokenAddress, basePrice: baseOrder.basePrice || '' }),
             metadata: listingMetadata,
             order: baseOrder,
             ...baseOrder,
