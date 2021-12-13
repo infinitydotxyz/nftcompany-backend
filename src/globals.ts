@@ -1,4 +1,4 @@
-Object.defineProperty(globalThis, '__stack', {
+Object.defineProperty(global, '__stack', {
   get: function () {
     const orig = Error.prepareStackTrace;
     Error.prepareStackTrace = function (_, stack) {
@@ -13,7 +13,7 @@ Object.defineProperty(globalThis, '__stack', {
   }
 });
 
-Object.defineProperty(globalThis, '__line', {
+Object.defineProperty(global, '__line', {
   get: function () {
     // @ts-ignore
     // eslint-disable-next-line no-undef

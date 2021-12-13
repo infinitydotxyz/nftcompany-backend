@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import './globals';
 import express from 'express';
 
 import helmet from 'helmet';
@@ -7,9 +8,6 @@ import router from '@routes/index.js';
 import { log } from '@utils/logger.js';
 import { requestErrorHandler } from '@base/middleware/errorHandler.js';
 import { requestLogger } from '@base/middleware/logger.js';
-
-// TODO fix redefining global
-// import './globals.js';
 
 const app = express();
 

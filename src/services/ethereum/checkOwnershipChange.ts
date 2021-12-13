@@ -1,8 +1,8 @@
 import { NULL_ADDRESS } from '@constants';
 import { getProvider } from '@utils/ethers';
 import { ethers } from 'ethers';
-import ERC721ABI from '@base/abi/ERC721.json';
-import ERC1155ABI from '@base/abi/ERC1155.json';
+import ERC721ABI from '@base/abi/erc721.json';
+import ERC1155ABI from '@base/abi/erc1155.json';
 import { error, log } from '@utils/logger';
 
 export async function checkOwnershipChange(doc: any) {
