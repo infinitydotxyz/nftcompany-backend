@@ -52,7 +52,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
               searchCollectionName: payload.metadata.asset.searchCollectionName,
               description: payload.metadata.asset.description,
               image: payload.metadata.asset.image,
-              imagePreview: payload.metadata.asset.imagePreview
+              imagePreview: payload.metadata.asset.imagePreview || payload.metadata.asset.image
             }
           }
         },

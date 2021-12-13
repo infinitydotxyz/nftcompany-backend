@@ -1,5 +1,15 @@
 import { firestore } from '@base/container';
-import { Asset, BaseOrder, ListingMetadata, ListingResponse, Trait } from '@base/types/ListingResponse';
+import {
+  Asset,
+  BaseOrder,
+  InfinityOrderData,
+  Listing,
+  ListingMetadata,
+  ListingResponse,
+  ListingWithOrder,
+  ListingWithoutOrder,
+  Trait
+} from '@base/types/ListingResponse';
 import { RawAssetData, RawSellOrder, RawTrait } from '@base/types/OSNftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { fstrCnstnts, OPENSEA_API } from '@constants';
@@ -13,7 +23,24 @@ import { openseaClient } from '../client';
 import { getOrderTypeFromRawSellOrder } from '../utils';
 
 export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: number, limit: number) {
-  return getAssetsFromOpensea(userAddress, undefined, undefined, undefined, undefined, undefined, offset, limit);
+  log('Fetching assets from opensea');
+  const url = OPENSEA_API + 'assets/';
+
+  const options = {
+    params: {
+      limit,
+      offset,
+      owner: userAddress
+    }
+  };
+
+  try {
+    const { data } = await openseaClient.get(url, options);
+    return data;
+  } catch (err) {
+    error('Error occured while fetching assets from opensea');
+    error(err);
+  }
 }
 
 /**
@@ -111,26 +138,29 @@ export async function convertOpenseaListingsToInfinityListings(
       listings: []
     };
   }
-  const listingMetadataPromises /*: Promise<ListingMetadata>[] */ = rawAssetDataArray.map(
-    async (rawAssetData /*: RawAssetData */) => {
+  const listingMetadataPromises: Promise<ListingMetadata>[] = rawAssetDataArray.map(
+    async (rawAssetData: RawAssetData) => {
       const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
       return listingMetadata;
     }
   );
 
   const listingMetadataPromiseResults = await Promise.allSettled(listingMetadataPromises);
-  const listingMetadataArray /*: ListingMetadata[] */ =
-    getFulfilledPromiseSettledResults(listingMetadataPromiseResults);
+  const listingMetadataArray: ListingMetadata[] = getFulfilledPromiseSettledResults(listingMetadataPromiseResults);
 
   const assetListings = listingMetadataArray.reduce((assetListings, listingMetadata) => {
     const tokenAddress = listingMetadata.asset.address.toLowerCase();
     const tokenId = listingMetadata.asset.id;
-    const docId = firestore.getDocId({ tokenId, tokenAddress, basePrice: '' });
+    const docId = firestore.getDocId({
+      tokenId,
+      tokenAddress,
+      basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
+    });
     try {
-      const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })); /* as {
-            count: number;
-            listings: ListingMetadata & { id: string };
-        }; */
+      const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })) as {
+        count: number;
+        listings: ListingMetadata & { id: string };
+      };
       return [...assetListings, assetListing];
     } catch {
       return assetListings;
@@ -140,18 +170,22 @@ export async function convertOpenseaListingsToInfinityListings(
   // async store in db
   saveRawOpenseaAssetBatchInDatabase(assetListings);
 
-  const listings /*: Listing[] */ = listingMetadataArray.reduce((listings, listingMetadata) => {
+  const listings: Listing[] = listingMetadataArray.reduce((listings, listingMetadata) => {
     const rawSellOrders: RawSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
     const tokenAddress = listingMetadata.asset.address.toLowerCase();
     const tokenId = listingMetadata.asset.id;
-    const id = firestore.getDocId({ tokenId, tokenAddress, basePrice: '' });
+    const id = firestore.getDocId({
+      tokenId,
+      tokenAddress,
+      basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
+    });
 
     const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
     if (rawSellOrders?.length > 0) {
-      const infinityListingsWithOrders /*: ListingWithOrder[] */ = rawSellOrders.reduce((listings, rawSellOrder) => {
+      const infinityListingsWithOrders: ListingWithOrder[] = rawSellOrders.reduce((listings, rawSellOrder) => {
         const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
         if (baseOrder) {
-          const infinityListing /*: ListingWithOrder */ = {
+          const infinityListing: ListingWithOrder = {
             id,
             metadata: listingMetadata,
             order: baseOrder,
@@ -165,7 +199,7 @@ export async function convertOpenseaListingsToInfinityListings(
 
       return [...listings, ...infinityListingsWithOrders];
     } else {
-      const listing /*: ListingWithoutOrder */ = {
+      const listing: ListingWithoutOrder = {
         metadata: listingMetadata,
         id,
         ...infinityOrderData
@@ -224,7 +258,7 @@ export function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder {
 
 export function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
   const chainId = '1';
-  const infinityOrder /*: InfinityOrderData */ = {
+  const infinityOrder: InfinityOrderData = {
     source: 1, // opensea
     tokenId: asset.id,
     tokenAddress: asset.address,
@@ -288,7 +322,7 @@ export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise
   const basePriceInEth = basePriceInWei ? Number(ethers.utils.formatEther(basePriceInWei)) : undefined;
   const listingType = getOrderTypeFromRawSellOrder(rawSellOrder);
 
-  const listing /*: ListingMetadata */ = {
+  const listing: ListingMetadata = {
     hasBonusReward: false,
     createdAt: new Date(assetContract.created_date).getTime(),
     basePriceInEth: basePriceInEth,

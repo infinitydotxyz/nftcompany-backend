@@ -188,7 +188,6 @@ export async function getOpenseaOrders({
   } catch (err) {
     error('Error occured while fetching orders from opensea');
     error(err);
-    console.log(err.request);
     return { success: false, error: err };
   }
 }
@@ -220,7 +219,11 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray: RawAs
   const assetListings = listingMetadataArray.reduce((assetListings, listingMetadata) => {
     const tokenAddress = listingMetadata.asset.address.toLowerCase();
     const tokenId = listingMetadata.asset.id;
-    const docId = firestore.getDocId({ tokenId, tokenAddress, basePrice: '' });
+    const docId = firestore.getDocId({
+      tokenId,
+      tokenAddress,
+      basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
+    });
     try {
       const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })) as {
         count: number;
@@ -239,7 +242,11 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray: RawAs
     const rawSellOrders: RawSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
     const tokenAddress = listingMetadata.asset.address.toLowerCase();
     const tokenId = listingMetadata.asset.id;
-    const id = firestore.getDocId({ tokenId, tokenAddress, basePrice: '' });
+    const id = firestore.getDocId({
+      tokenId,
+      tokenAddress,
+      basePrice: listingMetadata?.basePriceInEth?.toString?.() || ''
+    });
 
     const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
     if (rawSellOrders?.length > 0) {
@@ -247,7 +254,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray: RawAs
         const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
         if (baseOrder) {
           const infinityListing: ListingWithOrder = {
-            id,
+            id: firestore.getDocId({ tokenId, tokenAddress, basePrice: baseOrder.basePrice }),
             metadata: listingMetadata,
             order: baseOrder,
             ...baseOrder,

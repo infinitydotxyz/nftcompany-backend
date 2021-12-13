@@ -2,13 +2,11 @@ import { jsonString } from '@utils/formatters';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
-import { OPENSEA_API } from '@constants';
 import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
-import axios from 'axios';
 import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
 import { getAssetsFromUnmarshal } from '@services/unmarshal/getAssetsFromUnmarshal';
-import { getAssetsFromOpensea, getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
+import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
 
 export const getUserAssets = (req: Request<{ user: string }>, res: Response) => {
   fetchAssetsOfUser(req, res);
@@ -66,7 +64,7 @@ export async function getAssets(address: string, limit: number, offset: number, 
       data = await getAssetsFromUnmarshal(address);
       break;
     case NFTDataSource.OpenSea:
-      data = await getAssetsFromOpenSeaByUser(address, offset, limit);
+      data = getAssetsFromOpenSeaByUser(address, offset, limit);
       break;
     case NFTDataSource.Covalent:
       data = await getAssetsFromCovalent(address);
