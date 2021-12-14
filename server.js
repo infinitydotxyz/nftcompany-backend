@@ -2890,7 +2890,7 @@ async function getAssetsFromCovalent(address, limit, offset) {
 async function getAssetsFromUnmarshal(address, limit, offset) {
   utils.log('Fetching assets from unmarshal');
   const apiBase = 'https://api.unmarshal.com/v1/';
-  const chain = 'ethereum';
+  const chain = 'matic'; // ethereum
   const authKey = process.env.unmarshalKey;
   const url = apiBase + chain + '/address/' + address + '/nft-assets?auth_key=' + authKey;
   try {
