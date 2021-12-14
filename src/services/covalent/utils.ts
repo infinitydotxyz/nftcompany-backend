@@ -1,7 +1,19 @@
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getSearchFriendlyString } from '@utils/formatters';
+import axios from 'axios';
+import { CovalentNFTMetadata } from './types/CovalentNFTMetadata';
 
-export async function covalentAssetDataToListing(chainId: string, data: any) {
+const authKey = process.env.covalentKey;
+
+export const covalentClient = axios.create({
+  baseURL: 'https://api.covalenthq.com/v1/',
+  auth: {
+    username: authKey,
+    password: ''
+  }
+});
+
+export async function covalentAssetDataToListing(chainId: string, data: CovalentNFTMetadata) {
   const address = data.contract_address;
   const collectionName = data.contract_name;
   let id = '';

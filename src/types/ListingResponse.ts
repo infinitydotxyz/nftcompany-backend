@@ -15,6 +15,7 @@ export type ListingWithOrder = BaseOrder & ListingWithoutOrder;
 export interface ListingWithoutOrder extends InfinityOrderData {
   id: string;
   metadata: ListingMetadata;
+  rawData?: any;
 }
 
 export interface InfinityOrderData {

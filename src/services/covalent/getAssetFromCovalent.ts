@@ -1,14 +1,23 @@
+import { RawTrait } from '@base/types/OSNftInterface';
 import { saveRawCovalentAssetInDatabase } from '@services/infinity/assets/saveAsset';
 import { error, log } from '@utils/logger';
-import axios from 'axios';
+import { AxiosResponse } from 'axios';
+import { CovalentData } from './types/CovalentNFTMetadata';
+import { CovalentResponse } from './types/CovalentResponse';
+import { covalentClient } from './utils';
 
+/**
+ * Docs: https://www.covalenthq.com/docs/api/#/0/Class-A/Get-NFT-external-metadata-for-contract/lng=en
+ * @param chainId
+ * @param tokenId
+ * @param tokenAddress
+ * @returns
+ */
 export async function getAssetFromCovalent(chainId: string, tokenId: string, tokenAddress: string) {
   log('Getting asset from Covalent');
-  const apiBase = 'https://api.covalenthq.com/v1/';
-  const authKey = process.env.covalentKey;
-  const url = apiBase + chainId + '/tokens/' + tokenAddress + '/nft_metadata/' + tokenId + '/&key=' + authKey;
+  const path = `${chainId}/tokens/${tokenAddress}/nft_metadata/${tokenId}/`;
   try {
-    const { data } = await axios.get(url);
+    const { data } = (await covalentClient.get(path)) as AxiosResponse<CovalentResponse<CovalentData>>;
     const items = data.data.items;
 
     if (items.length > 0) {

@@ -1,15 +1,17 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
+import { CovalentNFTMetadata } from '@services/covalent/types/CovalentNFTMetadata';
 import { covalentAssetDataToListing } from '@services/covalent/utils';
 import { error } from '@utils/logger';
 import { getAssetAsListing } from '../utils';
 
-export async function saveRawCovalentAssetInDatabase(chainId: string, rawAssetData: any) {
+export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadata: CovalentNFTMetadata) {
   try {
-    const assetData: any = {};
-    const marshalledData = await covalentAssetDataToListing(chainId, rawAssetData);
-    assetData.metadata = marshalledData;
-    assetData.rawData = rawAssetData;
+    const marshalledData = await covalentAssetDataToListing(chainId, nftMetadata);
+    const assetData = {
+      metadata: marshalledData,
+      rawData: nftMetadata
+    };
 
     const tokenAddress = marshalledData.asset.address.toLowerCase();
     const tokenId = marshalledData.asset.id;

@@ -4,15 +4,16 @@
   "description": "",
   "scripts": {
     "watch": "tsc --watch",
-    "dev:ts": "concurrently 'npm run watch' 'TS_NODE_BASEURL=./dist/src nodemon -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js'",
-    "build:ts": "npm install && rimraf dist && tsc",
-    "start:ts": "npm run build:ts && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
-    "dev": "npm run build && nodemon server.js",
-    "start": "node server.js",
+    "dev": "concurrently 'npm run watch' 'TS_NODE_BASEURL=./dist/src nodemon -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js'",
+    "build": "npm install && rimraf dist && tsc",
+    "start": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
+    "script": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
+    "dev:js": "npm run build:js && nodemon server.js",
+    "start:js": "node server.js",
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "copy-files": "copyfiles utils.js constants.js dist",
-    "build": "npm install && rimraf dist && tsc && npm run copy-files"
+    "build:js": "npm install && rimraf dist && tsc && npm run copy-files"
   },
   "repository": {
     "type": "git",
