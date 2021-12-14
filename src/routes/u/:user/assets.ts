@@ -5,7 +5,7 @@ import { error, log } from '@utils/logger';
 import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
 import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
-import { getAssetsFromUnmarshal } from '@services/unmarshal/getAssetsFromUnmarshal';
+import { getUserAssetsFromUnmarshall } from '@services/unmarshal/getUserAssetsFromUnmarshal';
 import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
 
 export const getUserAssets = async (req: Request<{ user: string }>, res: Response) => {
@@ -57,10 +57,10 @@ export async function getAssets(address: string, limit: number, offset: number, 
       data = await getAssetsFromAlchemy(address, limit, offset);
       break;
     case NFTDataSource.Unmarshal:
-      data = await getAssetsFromUnmarshal(address);
+      data = await getUserAssetsFromUnmarshall(address);
       break;
     case NFTDataSource.OpenSea:
-      data = getAssetsFromOpenSeaByUser(address, offset, limit);
+      data = await getAssetsFromOpenSeaByUser(address, offset, limit);
       break;
     case NFTDataSource.Covalent:
       data = await getAssetsFromCovalent(address);
