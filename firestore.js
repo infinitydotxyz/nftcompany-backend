@@ -412,7 +412,7 @@ async function calcTxnStats(csvFileName) {
 // eslint-disable-next-line no-unused-vars
 async function calcTxnStatsHelper(records) {
   records.forEach(async (record, i) => {
-    const [seller, buyer, price, collAddr, date, txnHash] = record;
+    const [seller, buyer, price] = record;
     const transacted = +ethers.utils.formatEther(price);
     console.log(i, seller, buyer, transacted);
 
@@ -433,7 +433,7 @@ async function calcTxnStatsHelper(records) {
       eligible: sellerEligible,
       transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
     };
-    db.collection('airdropStats')
+    db.collection('airdropStats1')
       .doc(seller.trim().toLowerCase())
       .set(sellerData, { merge: true })
       .catch((err) => console.error(err));
@@ -455,7 +455,7 @@ async function calcTxnStatsHelper(records) {
       eligible: buyerEligible,
       transacted: firebaseAdmin.firestore.FieldValue.increment(transacted)
     };
-    db.collection('airdropStats')
+    db.collection('airdropStats1')
       .doc(buyer.trim().toLowerCase())
       .set(buyerData, { merge: true })
       .catch((err) => console.error(err));
@@ -1022,7 +1022,7 @@ async function getTxnStats() {
 
 // eslint-disable-next-line no-unused-vars
 async function getTxnStatsHelper(limit) {
-  const snapshot = await db.collection('airdropStats').get();
+  const snapshot = await db.collection('airdropStats1').get();
 
   console.log('docs so far', snapshot.docs.length);
 
@@ -1033,10 +1033,6 @@ async function getTxnStatsHelper(limit) {
   totalUsers += snapshot.docs.length;
   console.log('totalUsers so far', totalUsers);
 
-  const doc = snapshot.docs[snapshot.docs.length - 1];
-  const payload = doc.data();
-  console.log(JSON.stringify(payload));
-
   for (let i = 0; i < snapshot.docs.length; i++) {
     const doc = snapshot.docs[i];
     const payload = doc.data();
@@ -1045,7 +1041,7 @@ async function getTxnStatsHelper(limit) {
     const threshold = payload.threshold;
     const transacted = payload.transacted;
 
-    appendFileSync('./airdropStats.csv', `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`);
+    appendFileSync('./airdropStats1.csv', `${doc.id},${threshold},${eligible},${isOSUser},${transacted}\n`);
   }
 }
 
@@ -1071,7 +1067,7 @@ async function getTxnStatsHelper(limit) {
 
 // getTxnStats();
 
-airDropStats(process.argv[2]).catch((e) => console.error(e));
+// airDropStats(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
