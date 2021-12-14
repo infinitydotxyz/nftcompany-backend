@@ -24,7 +24,10 @@ export async function getAssetFromCovalent(chainId: string, tokenId: string, tok
       // save in db for future use
       return await saveRawCovalentAssetInDatabase(chainId, items[0]);
     } else {
-      return '';
+      return {
+        count: 0,
+        listings: []
+      };
     }
   } catch (err) {
     error('Error occured while fetching assets from covalent');

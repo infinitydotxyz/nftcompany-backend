@@ -1,3 +1,4 @@
+import { ListingMetadata } from '@base/types/ListingResponse';
 import { RewardTiers } from '@base/types/Rewards';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
 import { jsonString } from '@utils/formatters';
@@ -7,7 +8,7 @@ import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
 export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');
   try {
-    const listings = [];
+    const listings: (ListingMetadata & { id: string })[] = [];
     const listing = data;
     listing.id = docId;
     listings.push(listing);
@@ -15,7 +16,7 @@ export function getAssetAsListing(docId: string, data: any) {
       count: listings.length,
       listings
     };
-    return jsonString(resp);
+    return resp;
   } catch (err) {
     error('Failed to convert asset to listing');
     error(err);

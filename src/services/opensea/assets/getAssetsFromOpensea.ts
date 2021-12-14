@@ -157,10 +157,7 @@ export async function convertOpenseaListingsToInfinityListings(
       basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
     });
     try {
-      const assetListing = JSON.parse(getAssetAsListing(docId, { id: docId, metadata: listingMetadata })) as {
-        count: number;
-        listings: ListingMetadata & { id: string };
-      };
+      const assetListing = getAssetAsListing(docId, { id: docId, metadata: listingMetadata });
       return [...assetListings, assetListing];
     } catch {
       return assetListings;

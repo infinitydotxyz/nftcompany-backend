@@ -2,13 +2,13 @@ import { firestore } from '@base/container';
 import { fstrCnstnts } from '@constants';
 import { getAssetFromCovalent } from '@services/covalent/getAssetFromCovalent';
 import { getAssetFromOpensea } from '@services/opensea/assets/getAssetFromOpensea';
+import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getAssetAsListing } from '../utils';
 
 export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
   log('Getting asset as listing from db');
   try {
-    let resp = '';
     const docId = firestore.getAssetDocId({ chainId, tokenId, tokenAddress });
     const doc = await firestore.db
       .collection(fstrCnstnts.ROOT_COLL)
@@ -17,18 +17,19 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
       .doc(docId)
       .get();
 
+    let listings;
     if (!doc.exists) {
       if (chainId === '1') {
         // get from opensea
-        resp = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
+        listings = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
       } else if (chainId === '137') {
         // get from covalent
-        resp = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
+        listings = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
       }
     } else {
-      resp = await getAssetAsListing(docId, doc.data());
+      listings = getAssetAsListing(docId, doc.data());
     }
-    return resp;
+    return jsonString(listings);
   } catch (err) {
     error('Failed to get asset from db', tokenAddress, tokenId);
     error(err);
