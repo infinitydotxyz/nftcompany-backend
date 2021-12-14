@@ -1,6 +1,6 @@
 import qs from 'qs';
 
-export function jsonString(obj: object) {
+export function jsonString(obj?: object) {
   return JSON.stringify(obj, null, 2);
 }
 

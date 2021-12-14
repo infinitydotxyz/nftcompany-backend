@@ -14,7 +14,7 @@ export default class Firestore {
 
   constructor() {
     firebaseAdmin.initializeApp({
-      // @ts-ignore
+      // @ts-expect-error
       credential: firebaseAdmin.credential.cert(serviceAccount),
       storageBucket: process.env.firebaseStorageBucket
     });

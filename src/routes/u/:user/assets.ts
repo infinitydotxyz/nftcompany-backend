@@ -8,19 +8,15 @@ import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent'
 import { getAssetsFromUnmarshal } from '@services/unmarshal/getAssetsFromUnmarshal';
 import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
 
-export const getUserAssets = (req: Request<{ user: string }>, res: Response) => {
-  fetchAssetsOfUser(req, res);
+export const getUserAssets = async (req: Request<{ user: string }>, res: Response) => {
+  await fetchAssetsOfUser(req, res);
 };
 
 export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
-  const {
-    limit,
-    offset,
-    error: err
-  }: { limit?: number; offset?: number; error?: number } = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
-  if (err) {
+  const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
+  if ('error' in queries) {
     res.sendStatus(StatusCode.InternalServerError);
     return;
   }
@@ -36,7 +32,7 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     return;
   }
   try {
-    let resp = await getAssets(user, limit, offset, sourceName);
+    let resp = await getAssets(user, queries.limit, queries.offset, sourceName);
     resp = jsonString(resp);
     // to enable cdn cache
     res.set({

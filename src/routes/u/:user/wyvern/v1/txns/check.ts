@@ -65,7 +65,7 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
 
     if (txnDoc.exists) {
       // listen for txn mined or not mined
-      waitForTxn(from, txnDoc.data());
+      void waitForTxn(from, txnDoc.data());
       res.sendStatus(StatusCode.Ok);
       return;
     }

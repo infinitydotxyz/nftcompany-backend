@@ -72,7 +72,7 @@ router.get('/', async (req, res) => {
     }
   }
 
-  if (err) {
+  if (err != null) {
     error(err);
   }
   res.sendStatus(StatusCode.InternalServerError);

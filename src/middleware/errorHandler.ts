@@ -1,6 +1,5 @@
 import { StatusCode } from '@base/types/StatusCode.js';
 import { NextFunction, Request, Response } from 'express';
-import { stat } from 'fs';
 import { error, log } from '../utils/logger.js';
 import { getRequestLogPrefix } from './logger.js';
 

@@ -20,7 +20,7 @@ export async function getReward(userAddress: string) {
   const userOpenseaRef = await firestore.collection(fstrCnstnts.OPENSEA_COLL).doc(userAddress).get();
 
   let openseaVol = 0;
-  let rewardTier = {};
+  let rewardTier: Record<string, string | number> | null = {};
   let hasAirdrop = false;
   if (userOpenseaRef.exists) {
     openseaVol = userOpenseaRef.get('totalVolUSD');
@@ -33,7 +33,7 @@ export async function getReward(userAddress: string) {
 
   let usPerson = UsPersonAnswer.none;
   const userProfile = userStats.profileInfo;
-  if (userProfile && userProfile.usResidentStatus) {
+  if (userProfile?.usResidentStatus) {
     usPerson = userProfile.usResidentStatus.usPerson;
   }
 
@@ -57,7 +57,7 @@ export async function getReward(userAddress: string) {
   const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
   // initiate refresh pending txns
-  refreshUserPendingTxns(userAddress);
+  void refreshUserPendingTxns(userAddress);
 
   const resp = {
     numSales: numSales.toString(),

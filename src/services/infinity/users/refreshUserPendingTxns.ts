@@ -8,12 +8,12 @@ export async function refreshUserPendingTxns(userAddress: string) {
   try {
     const limit = 50;
 
-    const getTxnSnapshot = () => {
-      return getUserTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
+    const getTxnSnapshot = async () => {
+      return await getUserTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
     };
 
-    const getMissedTxnSnapshot = () => {
-      return getUserMissedTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
+    const getMissedTxnSnapshot = async () => {
+      return await getUserMissedTxnsRef(userAddress).orderBy('createdAt', OrderDirection.Descending).limit(limit).get();
     };
 
     const [snapshot, missedTxnSnapshot] = await Promise.all([getTxnSnapshot(), getMissedTxnSnapshot()]);
@@ -22,7 +22,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
       const txn = doc.data();
       // check status
       if (txn.status === 'pending') {
-        waitForTxn(userAddress, txn);
+        void waitForTxn(userAddress, txn);
       }
     }
 
@@ -30,7 +30,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
       const txn = doc.data();
       // check status
       if (txn.status === 'pending') {
-        waitForMissedTxn(userAddress, txn);
+        void waitForMissedTxn(userAddress, txn);
       }
     }
   } catch (err) {

@@ -9,17 +9,8 @@ import { Request, Response } from 'express';
 // fetch listings of user
 export const getUserListings = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const {
-    limit,
-    startAfterMillis,
-    error: err
-  }: { limit?: number; startAfterMillis?: number; error?: Error } = parseQueryFields(
-    res,
-    req,
-    ['limit', 'startAfterMillis'],
-    ['50', `${Date.now()}`]
-  );
-  if (err) {
+  const queries = parseQueryFields(res, req, ['limit', 'startAfterMillis'], ['50', `${Date.now()}`]);
+  if ('error' in queries) {
     return;
   }
   if (!user) {
@@ -31,8 +22,8 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
   try {
     const data = await getUserListingsRef(user)
       .orderBy('metadata.createdAt', OrderDirection.Descending)
-      .startAfter(startAfterMillis)
-      .limit(limit)
+      .startAfter(queries.startAfterMillis)
+      .limit(queries.limit)
       .get();
     const resp = getOrdersResponse(data);
     res.send(resp);

@@ -22,7 +22,7 @@ export async function deleteListing(batch: any, docRef: any) {
   // update num collection listings
   try {
     const tokenAddress = doc.data().metadata.asset.address;
-    firestore
+    await firestore
       .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
       .doc(tokenAddress)
       .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });

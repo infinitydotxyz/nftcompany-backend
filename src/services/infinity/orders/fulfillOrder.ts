@@ -75,12 +75,13 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
         .collection(fstrCnstnts.OFFERS_COLL)
         .doc(docId)
         .get();
-      if (!docSnap.exists) {
+
+      const doc = docSnap?.data?.();
+      if (!docSnap.exists || !doc) {
         log('No offer ' + docId + ' to fulfill');
         return;
       }
 
-      const doc = docSnap.data();
       doc.taker = taker;
       doc.metadata.salePriceInEth = salePriceInEth;
       doc.metadata.feesInEth = feesInEth;
@@ -101,7 +102,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       await deleteListingWithId(docId, taker, batch);
 
       // send email to maker that the offer is accepted
-      prepareEmail(maker, doc, 'offerAccepted');
+      void prepareEmail(maker, doc, 'offerAccepted');
     } else if (side === 1) {
       // taker bought a listing, maker is the seller
 
@@ -114,12 +115,12 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
         .collection(fstrCnstnts.LISTINGS_COLL)
         .doc(docId)
         .get();
-      if (!docSnap.exists) {
+      const doc = docSnap?.data?.();
+      if (!docSnap.exists || !doc) {
         log('No listing ' + docId + ' to fulfill');
         return;
       }
 
-      const doc = docSnap.data();
       doc.taker = taker;
       doc.metadata.salePriceInEth = salePriceInEth;
       doc.metadata.feesInEth = feesInEth;
@@ -137,7 +138,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       await deleteListingWithId(docId, maker, batch);
 
       // send email to maker that the item is purchased
-      prepareEmail(maker, doc, 'itemPurchased');
+      void prepareEmail(maker, doc, 'itemPurchased');
     }
   } catch (err) {
     error('Error in fufilling order');

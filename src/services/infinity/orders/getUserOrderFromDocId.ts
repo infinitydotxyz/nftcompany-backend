@@ -10,8 +10,8 @@ export function getUserOrderRefFromDocId(userAddress: string, docId: string, ord
 
 export async function getUserOrdersFromDocId(userAddress: string, docId: string, orderSide: OrderSide) {
   const orderDoc = await getUserOrderRefFromDocId(userAddress, docId, orderSide).get();
-  if (orderDoc.exists) {
-    const order = orderDoc.data();
+  const order = orderDoc?.data?.();
+  if (orderDoc.exists && order) {
     order.id = orderDoc.id;
     return [order];
   }

@@ -29,9 +29,7 @@ export async function saveSoldOrder(user: any, order: any, batch: any, numOrders
   const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
 
   // update user txn stats
-  // @ts-ignore
   const salesTotal = bn(userInfo.salesTotal).plus(salePriceInEth).toString();
-  // @ts-ignore
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);

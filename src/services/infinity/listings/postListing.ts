@@ -36,7 +36,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
 
   // update collection listings
   try {
-    firestore
+    await firestore
       .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
       .doc(tokenAddress)
       .set(

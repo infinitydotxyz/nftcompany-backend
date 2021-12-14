@@ -1,7 +1,7 @@
 import { RawTrait, RawTraitWithValues } from '@base/types/OSNftInterface';
 import { OPENSEA_API } from '@constants';
 import { ethers } from 'ethers';
-import { openseaClient } from '../client';
+import { openseaClient } from '../utils';
 
 export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (!ethers.utils.isAddress(contractAddress)) {
@@ -23,9 +23,9 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (data?.assets) {
     data.assets.forEach((item: any) => {
       item.traits.forEach((trait: RawTrait) => {
-        traitMap[trait.trait_type] = (traitMap[trait.trait_type] || trait) as RawTraitWithValues;
+        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
         traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
-        if (traitMap[trait.trait_type].values.indexOf(trait.value) < 0) {
+        if (!traitMap[trait.trait_type].values.includes(trait.value)) {
           traitMap[trait.trait_type].values.push(trait.value);
         }
       });

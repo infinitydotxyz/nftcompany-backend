@@ -1,6 +1,6 @@
-import { NFTDataSource, OrderDirection } from './types/Queries';
+import { OrderDirection } from './types/Queries';
 
-export const testRoot = process.env.firestoreTestRoot || 'testRoot';
+export const testRoot = process.env.firestoreTestRoot ?? 'testRoot';
 
 export const fstrCnstnts = {
   ROOT_COLL: testRoot,

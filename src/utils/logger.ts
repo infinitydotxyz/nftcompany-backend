@@ -2,15 +2,16 @@ const TRACE_LOG = process.env.TRACE_LOG === 'true';
 const INFO_LOG = process.env.INFO_LOG === 'true';
 const ERROR_LOG = process.env.ERROR_LOG === 'true';
 
-export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]) {
+export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]): void {
   if (ERROR_LOG) {
     let msg = '';
     for (const s of objs) {
-      msg += ' ' + s;
+      const str: string = typeof s === 'string' ? s : s?.toString?.();
+      msg = `${msg} ${str}`;
     }
-    console.error('[ERROR]: ' + obj + msg);
+    console.error(`[ERROR]: ${obj as string} ${msg}`);
     if (typeof obj === 'object') {
-      if (obj.message) {
+      if (obj.message.length > 0) {
         console.log('\nMessage: ' + obj.message);
       }
       if (obj.lineNumber) {

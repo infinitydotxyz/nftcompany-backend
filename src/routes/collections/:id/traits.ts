@@ -26,7 +26,9 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
         traits
       };
       // store in firestore for future use
-      saveCollectionTraits(contractAddress, traits);
+      if (traits) {
+        void saveCollectionTraits(contractAddress, traits);
+      }
 
       // return response
       const respStr = jsonString(resp);
@@ -38,7 +40,7 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
       return;
     }
 
-    if (err) {
+    if (err != null) {
       error('Error occured while fetching assets from opensea');
       error(err);
     }

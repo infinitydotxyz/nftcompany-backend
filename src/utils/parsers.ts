@@ -3,13 +3,19 @@ import { Request, Response } from 'express';
 import { error } from './logger.js';
 
 // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
-export function parseQueryFields(res: Response, req: Request, fieldArr: string[], defaultValues: string[]) {
-  const numberFields: Record<string, number> = {};
+export function parseQueryFields<K extends string>(
+  res: Response,
+  req: Request,
+  fieldArr: K[],
+  defaultValues: string[]
+): { [P in K]: number } | { error: string } {
+  const numberFields: { [P in K]: number } = {} as any;
   try {
     fieldArr.forEach((name, idx) => {
-      numberFields[name] = parseFloat((req.query[name] as string) || defaultValues[idx]);
+      const q = req.query?.[name] as string;
+      numberFields[name] = parseFloat(q.length > 0 ? q : defaultValues[idx]);
       if (isNaN(numberFields[name])) {
-        throw Error(`Invalid query param: ${name} = ${req.query[name]}`);
+        throw Error(`Invalid query param: ${name} = ${q}`);
       }
     });
   } catch (err) {

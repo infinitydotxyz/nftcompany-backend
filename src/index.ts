@@ -31,7 +31,7 @@ registerRoutes();
 // error handler should be the last middleware registered
 registerErrorHandler();
 
-const PORT = process.env.PORT || 9090;
+const PORT = process.env.PORT ?? 9090;
 app.listen(PORT, () => {
   log(`Server listening on port ${PORT}...`);
 });

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-extraneous-class */
+
+// an enum might make more sense here
 export class Backgrounds {
   static purple = 'images/doge2048/Backgrounds/Purple.png';
   static clouds = 'images/doge2048/Backgrounds/Clouds.GIF';

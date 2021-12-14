@@ -7,20 +7,20 @@ import { NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUN
 export async function isValidNftcTxn(txnHash: string, chainId: string, actionType: 'fulfill' | 'cancel') {
   let isValid = true;
   const provider = getProvider(chainId);
-  const txn = provider ? await provider.getTransaction(txnHash) : null;
-  if (txn) {
+  const txn = provider != null ? await provider.getTransaction(txnHash) : null;
+  if (txn != null) {
     const to = txn.to;
     const txnChainId = txn.chainId;
     const data = txn.data;
     const value = txn.value;
-    const openseaIface = new ethers.utils.Interface(openseaAbi as (JsonFragment | ethers.utils.Fragment)[]);
+    const openseaIface = new ethers.utils.Interface(openseaAbi as Array<JsonFragment | ethers.utils.Fragment>);
     const decodedData = openseaIface.parseTransaction({ data, value });
     const functionName = decodedData.name;
     const args = decodedData.args;
 
     // checks
     const exchangeAddress = getExchangeAddress(chainId);
-    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
+    if (to?.toLowerCase() !== exchangeAddress?.toLowerCase()) {
       isValid = false;
     }
     if (txnChainId !== +chainId) {

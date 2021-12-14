@@ -1,5 +1,5 @@
 import { OPENSEA_API } from '@constants';
-import { openseaClient } from './client';
+import { openseaClient } from './utils';
 
 export async function getOpenseaEvents(queryString: string) {
   const url = OPENSEA_API + `events?${queryString}`;

@@ -40,14 +40,14 @@ router.get('/', async (req, res) => {
 
 // fetches offers from both OS and Infinity
 export async function fetchOffersFromOSAndInfinity(req: Request) {
-  const tokenAddress = req.query.asset_contract_address || '';
-  const tokenId = req.query.token_id || '';
-  const limit = +req.query.limit || 50;
+  const tokenAddress = req.query.asset_contract_address ?? '';
+  const tokenId = req.query.token_id ?? '';
+  const limit = +(req.query.limit as string) ?? 50;
   const offset = req.query.offset;
 
   try {
-    const getInfinityOrdersPromise = () => {
-      return getOrdersByTokenId(tokenAddress as string, tokenId as string, limit);
+    const getInfinityOrdersPromise = async () => {
+      return await getOrdersByTokenId(tokenAddress as string, tokenId as string, limit);
     };
 
     const getOpenseaOrdersPromise = async () => {

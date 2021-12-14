@@ -1,15 +1,15 @@
 import { readdirSync, readFileSync, Dirent } from 'fs';
-import { UploadResponse, File } from '@google-cloud/storage';
+import { File } from '@google-cloud/storage';
 import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
 import { DogeMetadata, generateDoge2048NftMetadata } from '@routes/nfts/metadataUtils';
-const { loadImage } = Canvas;
 
 import { Readable } from 'stream';
 
 import { firestore } from '@base/container';
+const { loadImage } = Canvas;
 const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';
 
@@ -30,7 +30,7 @@ export const testUpload = async (): Promise<string> => {
   const numPlays = 132;
   const dogBalance = 121100;
 
-  return urlForDogeImage(score, numPlays, dogBalance);
+  return await urlForDogeImage(score, numPlays, dogBalance);
 };
 
 export const urlForDogeImage = async (score: number, numPlays: number, dogBalance: number): Promise<string> => {
@@ -40,7 +40,9 @@ export const urlForDogeImage = async (score: number, numPlays: number, dogBalanc
   const existsArray = await remoteFile.exists();
   if (existsArray && existsArray.length > 0 && !existsArray[0]) {
     const buffer = await buildImage(metadata);
-    await uploadImage(buffer, path);
+    if (buffer) {
+      await uploadImage(buffer, path);
+    }
   }
   return remoteFile.publicUrl();
 };
@@ -67,18 +69,18 @@ const mapToObj = (map: Map<string, string[]>) => {
 
 const downloadImage = async (file: File): Promise<Canvas.Image> => {
   // check cache
-  let result: Canvas.Image = imageCache.get(file.name);
-  if (result != null) {
+  const result: Canvas.Image | undefined = imageCache.get(file.name);
+  if (result) {
     return result;
   }
 
-  var memStream = new streamBuffers.WritableStreamBuffer({
+  const memStream = new streamBuffers.WritableStreamBuffer({
     initialSize: 100 * 1024, // start at 100 kilobytes.
     incrementAmount: 10 * 1024 // grow by 10 kilobytes each time buffer overflows.
   });
 
-  return new Promise((resolve, reject) => {
-    const res = file
+  return await new Promise((resolve, reject) => {
+    file
       .createReadStream()
       .pipe(memStream)
       .on('finish', async () => {
@@ -96,17 +98,16 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
   });
 };
 
-const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
+const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> => {
   const images: Canvas.Image[] = [];
   let file: File;
   let image: Canvas.Image;
-  let imagePath: string;
+  let imagePath: string = '';
 
   // ---------------
   // Background
   // ---------------
 
-  imagePath = null;
   switch (metadata.background) {
     case 'Background':
       switch (metadata.backgroundTraitValue) {
@@ -180,7 +181,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   // Eyes
   // ---------------
 
-  imagePath = null;
+  imagePath = '';
   switch (metadata.eyeTrait) {
     case 'Star Eyes':
       switch (metadata.eyeTraitValue) {
@@ -297,7 +298,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   // Head
   // ---------------
 
-  imagePath = null;
+  imagePath = '';
   switch (metadata.headTrait) {
     case 'Pirate Hat & Eye Patch':
       file = await bucket.file(Glasses.eyePatch);
@@ -356,7 +357,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
   // Neck
   // ---------------
 
-  imagePath = null;
+  imagePath = '';
   switch (metadata.neckTrait) {
     case 'Bowtie':
       switch (metadata.neckTraitValue) {
@@ -414,14 +415,14 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
 };
 
 const uploadImage = async (buffer: Buffer, path: string): Promise<File> => {
-  return uploadBuffer(buffer, path, 'image/jpeg');
+  return await uploadBuffer(buffer, path, 'image/jpeg');
 };
 
 const uploadString = async (str: string, path: string): Promise<File> => {
   const buffer = Buffer.from(str, 'utf8');
   buffer.write(str, 'utf8');
 
-  return uploadBuffer(buffer, path, 'application/json');
+  return await uploadBuffer(buffer, path, 'application/json');
 };
 
 const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
@@ -464,7 +465,7 @@ const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): 
   // no idea why exists() returns an array [boolean]
   const existsArray = await remoteFile.exists();
   if (existsArray && existsArray.length > 0 && !existsArray[0]) {
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
       Readable.from(buffer).pipe(
         remoteFile
           .createWriteStream({

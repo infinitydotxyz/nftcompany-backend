@@ -21,7 +21,7 @@ export class DogeMetadata {
 }
 
 export const generateDoge2048NftMetadata = (score: number, numPlays: number, dogBalance: number): DogeMetadata => {
-  let result: DogeMetadata = new DogeMetadata();
+  const result: DogeMetadata = new DogeMetadata();
 
   // get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {
@@ -59,7 +59,9 @@ export const generateDoge2048NftMetadata = (score: number, numPlays: number, dog
 };
 
 export const getDoge2048NftLevelId = (score: number, numPlays: number, dogBalance: number): string => {
-  let scoreLevel: string, playsLevel: string, dogBalanceLevel: string;
+  let scoreLevel: string = '';
+  let playsLevel: string = '';
+  let dogBalanceLevel: string = '';
   // get eye level
   for (const [key, val] of Object.entries(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {

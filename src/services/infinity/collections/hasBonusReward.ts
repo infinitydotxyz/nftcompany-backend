@@ -7,7 +7,7 @@ import { normalizeAddress } from '@utils/formatters';
  * @param address of the token to query
  */
 export async function hasBonusReward(address: string): Promise<boolean> {
-  let tokenAddress = normalizeAddress(address);
+  const tokenAddress = normalizeAddress(address);
   const doc = await firestore
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)

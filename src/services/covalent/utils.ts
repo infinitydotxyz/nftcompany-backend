@@ -8,7 +8,7 @@ const authKey = process.env.covalentKey;
 export const covalentClient = axios.create({
   baseURL: 'https://api.covalenthq.com/v1/',
   auth: {
-    username: authKey,
+    username: authKey ?? '',
     password: ''
   }
 });
@@ -37,12 +37,12 @@ export async function covalentAssetDataToListing(chainId: string, data: Covalent
     }
     const externalData = firstNftData.external_data;
     if (externalData) {
-      title = externalData.name;
-      description = externalData.description;
-      image = externalData.image;
-      imagePreview = externalData.image_512;
+      title = externalData.name ?? '';
+      description = externalData.description ?? '';
+      image = externalData.image ?? '';
+      imagePreview = externalData.image_512 ?? '';
       const attrs = externalData.attributes;
-      if (attrs && attrs.length > 0) {
+      if (attrs != null && attrs.length > 0) {
         for (const attr of attrs) {
           numTraits++;
           traits.push({ traitType: attr.trait_type, traitValue: String(attr.value) });

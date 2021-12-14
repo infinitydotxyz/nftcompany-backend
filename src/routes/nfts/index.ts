@@ -4,7 +4,7 @@ import { StatusCode } from '@base/types/StatusCode.js';
 import { getAssetMetadata } from './:tokenAddress/:tokenId';
 
 // todo: adi change this
-import dogeAbi from '@base/abi/doge2048nft.json';
+// import dogeAbi from '@base/abi/doge2048nft.json';
 
 const router = Router();
 

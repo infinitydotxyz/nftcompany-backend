@@ -11,7 +11,7 @@ export async function authorizeUser(req: Request<{ user: string }>, res: Respons
   const userId = req.params.user.trim().toLowerCase();
   const signature = req.header(auth.signature);
   const message = req.header(auth.message);
-  if (!signature) {
+  if (!signature || !message) {
     res.sendStatus(StatusCode.Unauthorized);
     return;
   }

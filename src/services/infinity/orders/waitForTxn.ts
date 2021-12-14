@@ -35,7 +35,7 @@ export async function waitForTxn(user: any, payload: any) {
     }
 
     const provider = getProvider(chainId);
-    if (!provider) {
+    if (provider == null) {
       error('Not waiting for txn since provider is null');
       return;
     }
@@ -87,7 +87,7 @@ export async function waitForTxn(user: any, payload: any) {
       batch.set(origTxnDocRef, { status: 'rejected', txnData }, { merge: true });
     }
     // if the txn failed due to replacement or cancellation or repricing
-    if (err && err.reason && err.replacement) {
+    if (err?.reason && err.replacement) {
       error('Txn with hash: ' + origTxnHash + ' rejected with reason ' + err.reason);
       error(err);
 

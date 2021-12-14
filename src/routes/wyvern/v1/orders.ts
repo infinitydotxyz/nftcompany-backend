@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   let docId;
 
   if (id) {
-    // @ts-ignore
+    // @ts-expect-error
     docId = id.trim(); // preserve case
   }
 

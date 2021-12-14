@@ -34,7 +34,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
     }
 
     const provider = getProvider(chainId);
-    if (!provider) {
+    if (provider == null) {
       error('Not waiting for txn since provider is null');
       return;
     }
@@ -139,15 +139,15 @@ export async function waitForMissedTxn(user: any, payload: any) {
           }
 
           // update user txn stats
-          // @ts-ignore
+          // @ts-expect-error
           const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
-          // @ts-ignore
+          // @ts-expect-error
           const purchasesTotalNumeric = toFixed5(purchasesTotal);
 
           // update user txn stats
-          // @ts-ignore
+          // @ts-expect-error
           const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
-          // @ts-ignore
+          // @ts-expect-error
           const salesTotalNumeric = toFixed5(salesTotal);
 
           trace(

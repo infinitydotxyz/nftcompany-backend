@@ -22,7 +22,8 @@ export async function getListingByTokenAddressAndId(
 
     if (snapshot.docs.length === 0) {
       // get from db
-      resp = await fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit);
+      const listing = await fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit);
+      resp = listing ?? '';
     } else {
       resp = getOrdersResponse(snapshot);
     }

@@ -4,13 +4,13 @@ import { fstrCnstnts } from '@constants';
 import { getProvider } from '@utils/ethers';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';
-import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from '../metadataUtils';
+// import { getDoge2048NftLevelId } from '../metadataUtils';
 
 // import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
 
 // todo: adi change this
 // const dogeAbi = require('./abis/doge2048nft.json');
-import dogeAbi from '@base/abi/doge2048nft.json';
+// import dogeAbi from '@base/abi/doge2048nft.json';
 import { testUpload, urlForDogeImage } from './doge_builder/images';
 
 // used for uploading the doge source images
@@ -37,7 +37,7 @@ export const getAssetMetadata = async (req: Request<{ tokenAddress: string; toke
   try {
     // read data from chain
     const provider = getProvider(chainId as string);
-    if (!provider) {
+    if (provider == null) {
       error('Chain provider is null for chain', chainId);
       res.sendStatus(StatusCode.BadRequest);
       return;
@@ -52,7 +52,7 @@ export const getAssetMetadata = async (req: Request<{ tokenAddress: string; toke
     const score = 1000;
     const numPlays = 10;
     const dogBalance = 10;
-    const levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
+    // const levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
     // check if metadata already generated
     const snapshot = await firestore
       .collection(fstrCnstnts.ASSETS_COLL)

@@ -8,7 +8,7 @@ import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
 export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');
   try {
-    const listings: (ListingMetadata & { id: string })[] = [];
+    const listings: Array<ListingMetadata & { id: string }> = [];
     const listing = data;
     listing.id = docId;
     listings.push(listing);
@@ -44,7 +44,7 @@ export function getOrdersResponseFromArray(docs: any) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
     try {
-      checkOwnershipChange(doc);
+      void checkOwnershipChange(doc);
     } catch (err) {
       error('Error checking ownership change info', err);
     }
@@ -52,7 +52,7 @@ export function getOrdersResponseFromArray(docs: any) {
       listing.id = doc.id;
       listings.push(listing);
     } else {
-      deleteExpiredOrder(doc);
+      void deleteExpiredOrder(doc);
     }
   }
   const resp = {
@@ -116,7 +116,7 @@ export function getEmptyUserRewardInfo() {
   };
 }
 
-export function getUserRewardTier(userVol: number) {
+export function getUserRewardTier(userVol: number): Record<string, string | number> | null {
   const rewardTiers = RewardTiers;
 
   if (userVol >= rewardTiers.t1.min && userVol < rewardTiers.t1.max) {

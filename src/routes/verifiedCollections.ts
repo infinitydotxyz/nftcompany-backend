@@ -6,8 +6,8 @@ import { Router } from 'express';
 const router = Router();
 
 router.get('/', async (req, res) => {
-  const startAfterName = req.query.startAfterName || '';
-  const limit = +(req.query.limit || 50);
+  const startAfterName = req.query.startAfterName ?? '';
+  const limit = +(req.query.limit ?? 50);
 
   try {
     const collections = await getVerifiedCollections(limit, startAfterName as string);

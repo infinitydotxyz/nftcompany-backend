@@ -1,7 +1,7 @@
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';
+import { openseaClient } from '../utils';
 import { saveRawOpenseaAssetInDatabase } from './getAssetsFromOpensea';
-import { openseaClient } from '../client';
 
 export async function getAssetFromOpensea(chainId: string, tokenId: string, tokenAddress: string) {
   log('Getting asset from Opensea');

@@ -27,5 +27,5 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
   updateNumOrders(batch, maker, numOrders, hasBonus, 0);
 
   // send email to taker that an offer is made
-  prepareEmail(taker, payload, 'offerMade');
+  void prepareEmail(taker, payload, 'offerMade');
 }

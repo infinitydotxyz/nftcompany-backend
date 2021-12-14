@@ -13,14 +13,15 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "strictNullChecks": true,
     "paths": {
-      "*": ["../node_modules/*", ],
+      "*": ["../node_modules/*"],
       "@utils/*": ["./utils/*"],
       "@routes/*": ["./routes/*"],
       "@constants": ["./constants.js"],
       "@services/*": ["./services/*"],
-      "@base/*": ["./*"],
+      "@base/*": ["./*"]
     }
   },
-  "include": ["src/", "src/**/*.json"],
+  "include": ["src/", "src/**/*.json"]
 }

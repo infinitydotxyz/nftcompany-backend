@@ -19,8 +19,7 @@ import { getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';
 import { ethers } from 'ethers';
-import { openseaClient } from '../client';
-import { getOrderTypeFromRawSellOrder } from '../utils';
+import { getOrderTypeFromRawSellOrder, openseaClient } from '../utils';
 
 export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: number, limit: number) {
   log('Fetching assets from opensea');
@@ -70,12 +69,12 @@ export async function getAssetsFromOpensea(
 
   const ownerQuery = owner ? { owner } : {};
 
-  const tokenIdsQuery = (tokenIds || []).length > 0 ? { token_ids: tokenIds } : {};
+  const tokenIdsQuery = (tokenIds ?? []).length > 0 ? { token_ids: tokenIds } : {};
   const assetContractAddressQuery = assetContractAddress ? { asset_contract_address: assetContractAddress } : {};
   const assetContractAddressesQuery =
-    (assetContractAddresses || []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
+    (assetContractAddresses ?? []).length > 0 ? { asset_contract_addresses: assetContractAddresses } : {};
 
-  const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy);
+  const isValidOrderByOption = ['sale_date', 'sale_count', 'sale_price'].includes(orderBy ?? '');
   const defaultOrderBy = 'sale_date';
   if (orderBy && !isValidOrderByOption) {
     error(`Invalid order by option passed while fetching assets from opensea`);
@@ -83,7 +82,9 @@ export async function getAssetsFromOpensea(
   }
   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
 
-  const isValidOrderDirection = [OrderDirection.Ascending, OrderDirection.Descending].includes(orderDirection);
+  const isValidOrderDirection = [OrderDirection.Ascending, OrderDirection.Descending].includes(
+    orderDirection as OrderDirection
+  );
   const defaultOrderDirection = OrderDirection.Descending;
   if (orderDirection && !isValidOrderDirection) {
     error(`Invalid order direction option passed while fetching assets from opensea`);
@@ -138,7 +139,7 @@ export async function convertOpenseaListingsToInfinityListings(
       listings: []
     };
   }
-  const listingMetadataPromises: Promise<ListingMetadata>[] = rawAssetDataArray.map(
+  const listingMetadataPromises: Array<Promise<ListingMetadata>> = rawAssetDataArray.map(
     async (rawAssetData: RawAssetData) => {
       const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
       return listingMetadata;
@@ -154,7 +155,7 @@ export async function convertOpenseaListingsToInfinityListings(
     const docId = firestore.getDocId({
       tokenId,
       tokenAddress,
-      basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
+      basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
     });
     try {
       const assetListing = getAssetAsListing(docId, { id: docId, metadata: listingMetadata });
@@ -165,7 +166,7 @@ export async function convertOpenseaListingsToInfinityListings(
   }, []);
 
   // async store in db
-  saveRawOpenseaAssetBatchInDatabase(assetListings);
+  void saveRawOpenseaAssetBatchInDatabase(assetListings);
 
   const listings: Listing[] = listingMetadataArray.reduce((listings, listingMetadata) => {
     const rawSellOrders: RawSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
@@ -174,7 +175,7 @@ export async function convertOpenseaListingsToInfinityListings(
     const id = firestore.getDocId({
       tokenId,
       tokenAddress,
-      basePrice: listingMetadata.basePriceInEth?.toString?.() || ''
+      basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
     });
 
     const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
@@ -216,7 +217,7 @@ export async function convertOpenseaListingsToInfinityListings(
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
-export function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder {
+export function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder | undefined {
   try {
     const baseOrder = {
       howToCall: Number(order.how_to_call),

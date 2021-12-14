@@ -11,8 +11,8 @@ export async function getTxnData(txnHash: string, chainId: string, actionType: '
   let seller = '';
   let value = bn(0);
   const provider = getProvider(chainId);
-  const txn = provider ? await provider.getTransaction(txnHash) : null;
-  if (txn) {
+  const txn = provider != null ? await provider.getTransaction(txnHash) : null;
+  if (txn != null) {
     from = txn.from ? txn.from.trim().toLowerCase() : '';
     const to = txn.to;
     const txnChainId = txn.chainId;
@@ -25,7 +25,7 @@ export async function getTxnData(txnHash: string, chainId: string, actionType: '
 
     // checks
     const exchangeAddress = getExchangeAddress(chainId);
-    if (to.toLowerCase() !== exchangeAddress.toLowerCase()) {
+    if (to?.toLowerCase() !== exchangeAddress?.toLowerCase()) {
       isValid = false;
     }
     if (txnChainId !== +chainId) {

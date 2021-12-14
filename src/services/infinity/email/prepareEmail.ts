@@ -16,10 +16,10 @@ export async function prepareEmail(user: any, order: any, type: any) {
 
   let profileInfo = getEmptyUserProfileInfo();
 
-  if (userDoc.data()) {
+  if (userDoc.data() != null) {
     profileInfo = {
       ...profileInfo,
-      ...userDoc.data().profileInfo
+      ...userDoc.data()?.profileInfo
     };
   }
 

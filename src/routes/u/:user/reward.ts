@@ -17,7 +17,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
     const doc = await firestore.collection('airdropStats').doc(user).get();
     const resp = doc.data();
     let respStr = '';
-    if (resp) {
+    if (resp != null) {
       respStr = jsonString(resp);
     }
     // to enable cdn cache

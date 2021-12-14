@@ -76,7 +76,7 @@ export async function getListingsByCollectionNameAndPrice(
       startAfterBlueCheckBool = startAfterBlueCheck === 'true';
     }
 
-    const runQuery = ({
+    const runQuery = async ({
       hasBlueCheckValue,
       startAfterPrice,
       startAfterMillis,
@@ -146,7 +146,7 @@ export async function getListingsByCollectionNameAndPrice(
         .startAfter(startAfterPrice, startAfterMillis)
         .limit(limit);
 
-      return queryRef.get();
+      return await queryRef.get();
     };
 
     let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });

@@ -16,17 +16,17 @@ export async function checkOwnershipChange(doc: any) {
     // listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, chainId, maker, address, id);
+      void checkERC721Ownership(doc, chainId, maker, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, chainId, maker, address, id);
+      void checkERC1155Ownership(doc, chainId, maker, address, id);
     }
   } else if (side === 0) {
     // offer
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
-      checkERC721Ownership(doc, chainId, owner, address, id);
+      void checkERC721Ownership(doc, chainId, owner, address, id);
     } else if (schema && schema.trim().toLowerCase() === 'erc1155') {
-      checkERC1155Ownership(doc, chainId, owner, address, id);
+      void checkERC1155Ownership(doc, chainId, owner, address, id);
     }
   }
 }
@@ -34,7 +34,7 @@ export async function checkOwnershipChange(doc: any) {
 export async function checkERC721Ownership(doc: any, chainId: string, owner: string, address: string, id: string) {
   try {
     const provider = getProvider(chainId);
-    if (!provider) {
+    if (provider == null) {
       error('Cannot check ERC721 ownership as provider is null');
       return;
     }
@@ -53,7 +53,7 @@ export async function checkERC721Ownership(doc: any, chainId: string, owner: str
     }
   } catch (err) {
     error('Checking ERC721 Ownership failed', err);
-    if (err && err.message && err.message.indexOf('nonexistent token') > 0) {
+    if (err?.message?.indexOf('nonexistent token') > 0) {
       doc.ref
         .delete()
         .then(() => {
@@ -69,7 +69,7 @@ export async function checkERC721Ownership(doc: any, chainId: string, owner: str
 export async function checkERC1155Ownership(doc: any, chainId: string, owner: string, address: string, id: string) {
   try {
     const provider = getProvider(chainId);
-    if (!provider) {
+    if (provider == null) {
       error('Cannot check ERC1155 ownership as provider is null');
       return;
     }

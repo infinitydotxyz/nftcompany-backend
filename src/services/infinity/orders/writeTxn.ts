@@ -51,11 +51,11 @@ export async function writeTxn(
   } else if (actionType === 'cancel') {
     cancelOrder();
   } else {
-    throw new Error(`invalid action type: ${actionType}`);
+    throw new Error(`invalid action type`);
   }
 
   // commit batch
   log('Committing the non-existent valid txn', txnData.txnHash, ' batch to firestore');
 
-  return batch.commit();
+  return await batch.commit();
 }

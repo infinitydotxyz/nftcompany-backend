@@ -31,29 +31,23 @@ router.get('/', async (req, res) => {
   if (!chainId) {
     chainId = '1'; // default eth mainnet
   }
-  // @ts-ignore
-  const tokenAddress = (req.query.tokenAddress || '').trim().toLowerCase();
-  // @ts-ignore
-  const collectionName = (req.query.collectionName || '').trim(); // preserve case
-  // @ts-ignore
-  const text = (req.query.text || '').trim(); // preserve case
-  // @ts-ignore
-  const startAfterSearchTitle = (req.query.startAfterSearchTitle || '').trim();
+  // @ts-expect-error
+  const tokenAddress = (req.query.tokenAddress ?? '').trim().toLowerCase();
+  // @ts-expect-error
+  const collectionName = (req.query.collectionName ?? '').trim(); // preserve case
+  // @ts-expect-error
+  const text = (req.query.text ?? '').trim(); // preserve case
+  // @ts-expect-error
+  const startAfterSearchTitle = (req.query.startAfterSearchTitle ?? '').trim();
   const startAfterBlueCheck = req.query.startAfterBlueCheck;
-  // @ts-ignore
-  const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName || '').trim();
-  // @ts-ignore
+  // @ts-expect-error
+  const startAfterSearchCollectionName = (req.query.startAfterSearchCollectionName ?? '').trim();
 
-  let priceMin = +(req.query.priceMin || 0);
-  let priceMax = +(req.query.priceMax || 0);
-  // @ts-ignore
-  const sortByPriceDirection = (req.query.sortByPrice || '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
-  const {
-    limit,
-    startAfterPrice,
-    startAfterMillis,
-    error: err
-  } = parseQueryFields(
+  let priceMin = +(req.query.priceMin ?? 0);
+  let priceMax = +(req.query.priceMax ?? 0);
+  // @ts-expect-error
+  const sortByPriceDirection = (req.query.sortByPrice ?? '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
+  const queries = parseQueryFields(
     res,
     req,
     ['limit', 'startAfterPrice', 'startAfterMillis'],
@@ -62,8 +56,8 @@ router.get('/', async (req, res) => {
       sortByPriceDirection === OrderDirection.Ascending ? '0' : `${DEFAULT_MAX_ETH}`,
       `${Date.now()}`
     ]
-  ) as { limit?: number; startAfterPrice?: number; startAfterMillis?: number; error?: Error };
-  if (err) {
+  );
+  if ('error' in queries) {
     return;
   }
 
@@ -80,7 +74,7 @@ router.get('/', async (req, res) => {
 
   let resp;
   if (tokenAddress && tokenId) {
-    resp = await getListingByTokenAddressAndId(chainId as string, tokenId as string, tokenAddress, limit);
+    resp = await getListingByTokenAddressAndId(chainId as string, tokenId as string, tokenAddress, queries.limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -90,11 +84,11 @@ router.get('/', async (req, res) => {
   } else if (text) {
     resp = await getListingsStartingWithText(
       text,
-      limit,
+      queries.limit,
       startAfterSearchTitle,
       startAfterSearchCollectionName,
-      startAfterMillis,
-      startAfterPrice,
+      queries.startAfterMillis,
+      queries.startAfterPrice,
       sortByPriceDirection
     );
     if (resp) {
@@ -116,9 +110,9 @@ router.get('/', async (req, res) => {
       priceMax,
       sortByPriceDirection,
       startAfterBlueCheck as string,
-      startAfterPrice,
-      startAfterMillis,
-      limit,
+      queries.startAfterPrice,
+      queries.startAfterMillis,
+      queries.limit,
       listType as ListingType,
       traitType as string,
       traitValue as string,
@@ -131,7 +125,7 @@ router.get('/', async (req, res) => {
       });
     }
   } else {
-    resp = await getListingsByCollection(startAfterBlueCheck as string, startAfterSearchCollectionName, limit);
+    resp = await getListingsByCollection(startAfterBlueCheck as string, startAfterSearchCollectionName, queries.limit);
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',

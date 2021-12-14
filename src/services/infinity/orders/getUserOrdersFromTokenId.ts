@@ -11,7 +11,7 @@ export async function getUserOrdersFromTokenId(
 ) {
   log('Fetching order for', userAddress, tokenAddress, tokenId, side);
 
-  let collection = side === OrderSide.Buy ? fstrCnstnts.OFFERS_COLL : fstrCnstnts.LISTINGS_COLL;
+  const collection = side === OrderSide.Buy ? fstrCnstnts.OFFERS_COLL : fstrCnstnts.LISTINGS_COLL;
 
   const results = await getUserInfoRef(userAddress)
     .collection(collection)

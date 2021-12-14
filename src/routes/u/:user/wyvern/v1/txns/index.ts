@@ -11,17 +11,9 @@ import { Request, Response } from 'express';
 
 export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const {
-    limit,
-    startAfterMillis,
-    error: err
-  }: { limit?: number; startAfterMillis?: number; error?: Error } = parseQueryFields(
-    res,
-    req,
-    ['limit', 'startAfterMillis'],
-    ['50', `${Date.now()}`]
-  );
-  if (err) {
+  const queries = parseQueryFields(res, req, ['limit', 'startAfterMillis'], ['50', `${Date.now()}`]);
+
+  if ('error' in queries) {
     return;
   }
   if (!user) {
@@ -30,19 +22,19 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
     return;
   }
   try {
-    const getTxnSnapshot = () => {
-      return getUserTxnsRef(user)
+    const getTxnSnapshot = async () => {
+      return await getUserTxnsRef(user)
         .orderBy('createdAt', OrderDirection.Descending)
-        .startAfter(startAfterMillis)
-        .limit(limit)
+        .startAfter(queries.startAfterMillis)
+        .limit(queries.limit)
         .get();
     };
 
-    const getMissedTxnSnapshot = () => {
-      return getUserMissedTxnsRef(user)
+    const getMissedTxnSnapshot = async () => {
+      return await getUserMissedTxnsRef(user)
         .orderBy('createdAt', OrderDirection.Descending)
-        .startAfter(startAfterMillis)
-        .limit(limit)
+        .startAfter(queries.startAfterMillis)
+        .limit(queries.limit)
         .get();
     };
 
@@ -55,7 +47,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
       txns.push(txn);
       // check status
       if (txn.status === 'pending') {
-        waitForTxn(user, txn);
+        void waitForTxn(user, txn);
       }
     }
 
@@ -65,7 +57,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
       txns.push(txn);
       // check status
       if (txn.status === 'pending') {
-        waitForMissedTxn(user, txn);
+        void waitForMissedTxn(user, txn);
       }
     }
 
@@ -175,7 +167,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
       .set(payload)
       .then(() => {
         // listen for txn mined or not mined
-        waitForTxn(user, payload);
+        void waitForTxn(user, payload);
         res.sendStatus(StatusCode.Ok);
       })
       .catch((err: Error) => {
