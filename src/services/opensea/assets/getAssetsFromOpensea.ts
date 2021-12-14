@@ -18,6 +18,7 @@ import { getAssetAsListing } from '@services/infinity/utils';
 import { getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getFulfilledPromiseSettledResults } from '@utils/promises';
+import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
 import { getOrderTypeFromRawSellOrder, openseaClient } from '../utils';
 
@@ -102,7 +103,7 @@ export async function getAssetsFromOpensea(
 
   const url = OPENSEA_API + 'assets/';
   try {
-    const { data } = await openseaClient.get(url, {
+    const { data }: AxiosResponse<{ assets: RawAssetData[] }> = await openseaClient.get(url, {
       params: {
         ...ownerQuery,
         ...tokenIdsQuery,
@@ -317,14 +318,15 @@ export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise
   const rawSellOrder = data.sell_orders?.[0];
   const basePriceInWei = rawSellOrder?.base_price;
 
-  const basePriceInEth = basePriceInWei ? Number(ethers.utils.formatEther(basePriceInWei)) : undefined;
+  const basePriceInEthObj = basePriceInWei ? { basePriceInEth: Number(ethers.utils.formatEther(basePriceInWei)) } : {};
   const listingType = getOrderTypeFromRawSellOrder(rawSellOrder);
+  const listingTypeObj = listingType ? { listingType } : {};
 
   const listing: ListingMetadata = {
     hasBonusReward: false,
     createdAt: new Date(assetContract.created_date).getTime(),
-    basePriceInEth: basePriceInEth,
-    listingType,
+    ...basePriceInEthObj,
+    ...listingTypeObj,
     schema,
     hasBlueCheck,
     chainId: '1', // Assuming opensea api is only used in mainnet
@@ -346,6 +348,7 @@ export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise
       traitTypes: traits?.map(({ traitType }) => traitType)
     }
   };
+
   return listing;
 }
 

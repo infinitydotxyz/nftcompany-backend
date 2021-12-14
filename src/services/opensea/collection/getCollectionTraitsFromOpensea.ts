@@ -8,7 +8,7 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
     return { success: false, error: new Error('invalid address') };
   }
 
-  const traitMap: { [trait_type: string]: RawTraitWithValues } = {}; // { name: { {info) }} }
+  const traitMap: { [trait_type: string]: RawTraitWithValues } = {};
   const url = OPENSEA_API + 'assets/';
 
   const { data } = await openseaClient.get(url, {

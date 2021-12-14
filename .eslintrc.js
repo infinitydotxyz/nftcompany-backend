@@ -20,7 +20,8 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/naming-convention': 0,
     '@typescript-eslint/no-misused-promises': 0,
-    '@typescript-eslint/restrict-template-expressions': 0
+    '@typescript-eslint/restrict-template-expressions': 0,
+    '@typescript-eslint/return-await': 0
   },
-  ignorePatterns: ['/dist/**', './*.js']
+  ignorePatterns: ['/dist/**']
 };

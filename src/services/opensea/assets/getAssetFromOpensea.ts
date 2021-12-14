@@ -1,5 +1,7 @@
+import { RawAssetData } from '@base/types/OSNftInterface';
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';
+import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 import { saveRawOpenseaAssetInDatabase } from './getAssetsFromOpensea';
 
@@ -8,9 +10,9 @@ export async function getAssetFromOpensea(chainId: string, tokenId: string, toke
   try {
     const url = OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
 
-    const { data } = await openseaClient.get(url);
+    const { data }: AxiosResponse<RawAssetData> = await openseaClient.get(url);
     // store asset for future use
-    return await saveRawOpenseaAssetInDatabase(chainId, data);
+    return saveRawOpenseaAssetInDatabase(chainId, data);
   } catch (err) {
     error('Failed to get asset from opensea', tokenAddress, tokenId);
     error(err);
