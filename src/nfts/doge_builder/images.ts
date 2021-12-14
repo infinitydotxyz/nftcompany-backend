@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, Dirent } from 'fs';
+import { readdirSync, writeFileSync, readFileSync, Dirent } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
 import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
 import { combineImages } from './imageMaker';
@@ -21,6 +21,8 @@ export const uploadSourceImages = async () => {
   await uploadDirectory(kStartDir, result);
 
   const jsonString = JSON.stringify(mapToObj(result), null, 2);
+
+  writeFileSync('./images.json', jsonString);
 
   await uploadString(jsonString, 'images/doge/images.json');
 };
@@ -111,28 +113,28 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
     case 'Background':
       switch (metadata.backgroundTraitValue) {
         case 'Trippy Swirl':
-          imagePath = Backgrounds.trippySwirl;
+          imagePath = Backgrounds.swirl;
           break;
         case 'Purple':
           imagePath = Backgrounds.purple;
           break;
         case 'Green':
-          imagePath = Backgrounds.greenScreen;
+          imagePath = Backgrounds.green;
           break;
         case 'Orange':
-          imagePath = Backgrounds.orange;
+          imagePath = Backgrounds.gradient; // no orange?
           break;
         case 'Pink Stripes':
-          imagePath = Backgrounds.pinkStripes;
+          imagePath = Backgrounds.pink;
           break;
         case 'Blue Stripes':
-          imagePath = Backgrounds.blueStripes;
+          imagePath = Backgrounds.blue;
           break;
         case 'Moon':
-          imagePath = Backgrounds.moon;
+          imagePath = Backgrounds.stars; // no moon?
           break;
         case 'Nyan':
-          imagePath = Backgrounds.nyan;
+          imagePath = Backgrounds.rainbow; // no nylan?
           break;
         case 'Tacos':
           imagePath = Backgrounds.tacos;
@@ -147,7 +149,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           imagePath = Backgrounds.matrix;
           break;
         case 'Night Club':
-          imagePath = Backgrounds.nightClub;
+          imagePath = Backgrounds.nightclub;
           break;
         case 'Clouds':
           imagePath = Backgrounds.clouds;
@@ -316,6 +318,28 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           break;
       }
       break;
+    case 'Top Hat':
+      switch (metadata.headTraitValue) {
+        case 'Green':
+          imagePath = Hats.greenTophat;
+          break;
+        case 'Black':
+          imagePath = Hats.blackTophat;
+          break;
+        case 'Purple':
+          imagePath = Hats.purpleTophat;
+          break;
+
+        case 'Gold':
+          imagePath = Hats.goldTophat;
+          break;
+        case 'Brown':
+          imagePath = Hats.brownTophat;
+          break;
+        default:
+          break;
+      }
+      break;
     case 'Items':
       switch (metadata.headTraitValue) {
         case 'BTC':
@@ -332,13 +356,13 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           break;
 
         case 'Crown':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.crownCap;
           break;
         case 'Rocker':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.rocketCap;
           break;
         case 'Heart':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.heartCap;
           break;
       }
       break;
