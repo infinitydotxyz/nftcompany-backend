@@ -1,16 +1,23 @@
 import { error, log } from '@utils/logger';
-import axios from 'axios';
+import { AxiosResponse } from 'axios';
+import { CovalentBalance } from './types/CovalentBalance';
+import { CovalentWalletBalanceItem } from './types/CovalentNftMetadata';
+import { CovalentResponse } from './types/CovalentResponse';
+import { covalentClient } from './utils';
 
 export async function getAssetsFromCovalent(address: string) {
   log('Fetching assets from covalent');
-  const apiBase = 'https://api.covalenthq.com/v1/';
-  const chain = '137';
-  const authKey = process.env.covalentKey;
-  const url = apiBase + chain + '/address/' + address + '/balances_v2/?nft=true&no-nft-fetch=false&key=' + authKey;
+  const chainId = '137';
+  const path = `${chainId}/address/${address}/balances_v2/`;
   try {
-    const { data } = await axios.get(url);
+    const { data } = (await covalentClient.get(path, {
+      params: {
+        nft: true,
+        'no-nft-fetch': false
+      }
+    })) as AxiosResponse<CovalentResponse<CovalentBalance>>;
     const items = data.data.items;
-    const resp: { count: number; assets: any[] } = { count: 0, assets: [] };
+    const resp: { count: number; assets: CovalentWalletBalanceItem[] } = { count: 0, assets: [] };
     for (const item of items) {
       const type = item.type;
       if (type === 'nft') {

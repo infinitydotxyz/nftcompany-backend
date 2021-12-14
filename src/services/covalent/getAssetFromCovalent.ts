@@ -1,8 +1,7 @@
-import { RawTrait } from '@base/types/OSNftInterface';
 import { saveRawCovalentAssetInDatabase } from '@services/infinity/assets/saveAsset';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
-import { CovalentData } from './types/CovalentNFTMetadata';
+import { CovalentNftMetadata } from './types/CovalentNftMetadata';
 import { CovalentResponse } from './types/CovalentResponse';
 import { covalentClient } from './utils';
 
@@ -17,7 +16,7 @@ export async function getAssetFromCovalent(chainId: string, tokenId: string, tok
   log('Getting asset from Covalent');
   const path = `${chainId}/tokens/${tokenAddress}/nft_metadata/${tokenId}/`;
   try {
-    const { data } = (await covalentClient.get(path)) as AxiosResponse<CovalentResponse<CovalentData>>;
+    const { data } = (await covalentClient.get(path)) as AxiosResponse<CovalentResponse<CovalentNftMetadata>>;
     const items = data.data.items;
 
     if (items.length > 0) {

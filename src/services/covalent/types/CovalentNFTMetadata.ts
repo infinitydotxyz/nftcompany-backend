@@ -1,7 +1,7 @@
 import { RawTrait } from '@base/types/OSNftInterface';
 import { CovalentPagination } from './CovalentPagination';
 
-export interface CovalentData {
+export interface CovalentNftMetadata {
   /**
    * ISO string date
    */
@@ -9,44 +9,44 @@ export interface CovalentData {
   /**
    * resulting items
    */
-  items: CovalentNFTMetadata[];
+  items: CovalentWalletBalanceItem[];
 
   pagination?: CovalentPagination;
 }
 
-export interface CovalentNFTMetadata {
+export interface CovalentWalletBalanceItem {
   contract_decimals: number;
   contract_name: string;
   contract_ticker_symbol: string;
   contract_address: string;
   supports_erc: string[];
   logo_url: string;
-  last_transferred_at?: any;
+  last_transferred_at?: string;
   type: string;
-  balance?: any;
-  balance_24h?: any;
-  quote_rate?: any;
-  quote_rate_24h?: any;
-  quote?: any;
-  quote_24h?: any;
-  nft_data: NFTMetadata[];
+  balance?: number;
+  balance_24h?: number;
+  quote_rate?: number;
+  quote_rate_24h?: number;
+  quote?: number;
+  quote_24h?: number;
+  nft_data: CovalentNftMetadataWithOwner[];
 }
 
-interface NFTMetadata {
+interface CovalentNftMetadataWithOwner {
   token_id: string;
   token_balance: string;
   token_url: string;
   supports_erc: string[];
-  token_price_wei?: any;
-  token_quote_rate_eth?: any;
+  token_price_wei?: number;
+  token_quote_rate_eth?: number;
   original_owner: string;
-  external_data: ExternalData;
+  external_data: CovalentExternalNftMetadata;
   owner: string;
-  owner_address: string;
+  owner_address?: string;
   burned: boolean;
 }
 
-interface ExternalData {
+interface CovalentExternalNftMetadata {
   name?: string;
   description?: string;
   image?: string;
@@ -56,5 +56,5 @@ interface ExternalData {
   animation_url?: string;
   external_url?: string;
   attributes?: RawTrait[];
-  owner?: unknown;
+  owner?: string;
 }

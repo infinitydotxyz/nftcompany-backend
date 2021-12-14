@@ -9,6 +9,7 @@ import { getAssetFromCovalent } from '@services/covalent/getAssetFromCovalent';
 import { writeFile as writeFileCB } from 'fs';
 import { promisify } from 'util';
 import { jsonString } from '@utils/formatters';
+import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
 
 const writeFile = promisify(writeFileCB);
 
@@ -21,7 +22,9 @@ async function main() {
 }
 
 async function covalent() {
-  const res = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
+  //   const res = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
+  //   console.log(jsonString(res));
+  const res = await getAssetsFromCovalent(tokenAddress);
   console.log(jsonString(res));
 }
 
