@@ -1,17 +1,18 @@
-import { RawTrait, RawTraitWithValues } from '@base/types/OSNftInterface';
+import { RawAssetData, RawTrait, RawTraitWithValues } from '@base/types/OSNftInterface';
 import { OPENSEA_API } from '@constants';
+import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
 import { openseaClient } from '../utils';
 
 export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (!ethers.utils.isAddress(contractAddress)) {
-    return { success: false, error: new Error('invalid address') };
+    throw new Error('invalid address');
   }
 
   const traitMap: { [trait_type: string]: RawTraitWithValues } = {};
   const url = OPENSEA_API + 'assets/';
 
-  const { data } = await openseaClient.get(url, {
+  const { data }: AxiosResponse<{ assets: RawAssetData[] }> = await openseaClient.get(url, {
     params: {
       asset_contract_address: contractAddress,
       limit: 50,
@@ -35,5 +36,5 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
     });
   }
 
-  return { success: true, data: traits };
+  return traits;
 }

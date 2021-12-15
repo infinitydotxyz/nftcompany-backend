@@ -5,13 +5,15 @@ import './globals';
  * npm run `script`
  */
 
-import { getAssetsFromOpensea } from '@services/opensea/assets/getAssetsFromOpensea';
-// const tokenAddress = '0xce25e60a89f200b1fa40f6c313047ffe386992c3';
+import { getRawOpenseaOrdersByTokenAddress } from '@services/opensea/orders';
+const tokenAddress = '0x9bf252f97891b907f002f2887eff9246e3054080';
 // const tokenId = '2381';
 // const chainId = '1';
 
 async function main() {
-  await getAssetsFromOpensea(undefined, ['2381'], '0xce25e60a89f200b1fa40f6c313047ffe386992c3');
+  //   await getAssetsFromOpensea(undefined, ['2381'], '0xce25e60a89f200b1fa40f6c313047ffe386992c3');
+
+  await getRawOpenseaOrdersByTokenAddress(tokenAddress, 50, 0, '2647');
 }
 
 void main();

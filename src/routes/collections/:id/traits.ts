@@ -19,32 +19,22 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   }
 
   try {
-    const { success, data: traits, error: err } = await getCollectionTraitsFromOpensea(contractAddress);
+    const traits = await getCollectionTraitsFromOpensea(contractAddress);
 
-    if (success) {
-      resp = {
-        traits
-      };
-      // store in firestore for future use
-      if (traits) {
-        void saveCollectionTraits(contractAddress, traits);
-      }
-
-      // return response
-      const respStr = jsonString(resp);
-      res.set({
-        'Cache-Control': 'must-revalidate, max-age=300',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
-      });
-      res.send(respStr);
-      return;
+    resp = {
+      traits
+    };
+    // store in firestore for future use
+    if (traits) {
+      void saveCollectionTraits(contractAddress, traits);
     }
 
-    if (err != null) {
-      error('Error occured while fetching assets from opensea');
-      error(err);
-    }
-    res.sendStatus(StatusCode.InternalServerError);
+    const respStr = jsonString(resp);
+    res.set({
+      'Cache-Control': 'must-revalidate, max-age=300',
+      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+    });
+    res.send(respStr);
     return;
   } catch (err) {
     error('Error occured while fetching assets from opensea');

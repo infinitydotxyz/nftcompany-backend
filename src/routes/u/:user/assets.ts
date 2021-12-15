@@ -6,7 +6,7 @@ import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
 import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
 import { getUserAssetsFromUnmarshall } from '@services/unmarshal/getUserAssetsFromUnmarshal';
-import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpensea';
+import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpenseaByUser';
 
 export const getUserAssets = async (req: Request<{ user: string }>, res: Response) => {
   await fetchAssetsOfUser(req, res);
@@ -32,8 +32,14 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     return;
   }
   try {
-    let resp = await getAssets(user, queries.limit, queries.offset, sourceName);
-    resp = jsonString(resp);
+    const assets = await getAssets(user, queries.limit, queries.offset, sourceName);
+
+    if (!assets) {
+      res.sendStatus(StatusCode.InternalServerError);
+      return;
+    }
+
+    const resp = jsonString(assets);
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',

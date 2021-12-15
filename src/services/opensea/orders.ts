@@ -1,10 +1,18 @@
 import { Listing, ListingResponse } from '@base/types/ListingResponse';
 import { OrderSide } from '@base/types/NftInterface';
+import { RawAssetData, RawSellOrder } from '@base/types/OSNftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { deepCopy } from '@utils/index';
 import { error, log } from '@utils/logger';
-import { convertOpenseaListingsToInfinityListings } from './assets/getAssetsFromOpensea';
-import { openseaClient } from './utils';
+import { AxiosResponse } from 'axios';
+import { convertOpenseaListingsToInfinityListings, openseaClient } from './utils';
+
+type OpenseaOrder = RawSellOrder & { asset: RawAssetData };
+
+interface OpenseaOrderResponse {
+  count: number;
+  orders: OpenseaOrder[];
+}
 
 export async function getRawOpenseaOrdersByTokenAddress(
   tokenAddress: string,
@@ -26,7 +34,7 @@ export async function getRawOpenseaOrdersByTokenAddress(
     options.params.token_id = tokenId;
   }
 
-  const { data } = await openseaClient.get(url, options);
+  const { data }: AxiosResponse<OpenseaOrderResponse> = await openseaClient.get(url, options);
   return data;
 }
 
@@ -70,7 +78,7 @@ export async function getOpenseaOrders({
   offset?: number;
   orderBy?: string;
   orderDirection?: OrderDirection;
-}): Promise<{ success: boolean; data?: { count: number; orders: Listing[] }; error?: Error }> {
+}): Promise<{ count: number; orders: Listing[] } | undefined> {
   log('Fetching Orders from OpenSea');
   const url = 'https://api.opensea.io/wyvern/v1/orders/';
   const options = {
@@ -98,30 +106,30 @@ export async function getOpenseaOrders({
   };
 
   try {
-    const { data } = await openseaClient.get(url, options);
-    if (data.orders && data.orders.length === 0) {
-      const x: { success: boolean; data: { count: number; orders: Listing[] } } = {
-        success: true,
-        data: {
-          count: 0,
-          orders: []
-        }
+    const { data }: AxiosResponse<OpenseaOrderResponse> = await openseaClient.get(url, options);
+    if (data?.orders?.length === 0) {
+      return {
+        count: 0,
+        orders: []
       };
-      return x;
     }
+
     // reduce to one asset per contract/tokenId with a list of openseaListings
     const assetIdToListingIndex: Record<string, number> = {};
-    const getOrderData = (listing: any) => {
-      const listingCopy = deepCopy(listing);
-      delete listingCopy.asset;
-      return listingCopy;
-    };
 
-    const convertOpenseaOrdersToOpenseaListings = (orders: any) => {
+    const convertOpenseaOrdersToOpenseaListings = (orders: OpenseaOrder[]) => {
+      const getOrderData = (listing: OpenseaOrder) => {
+        const listingCopy = deepCopy(listing);
+        delete listingCopy.asset;
+        return listingCopy;
+      };
       return orders.reduce(
-        (acc: { count: number; listings: any[] }, item: any) => {
+        (
+          acc: { count: number; listings: Array<RawAssetData & { sell_orders: RawSellOrder[] }> },
+          item: OpenseaOrder
+        ) => {
           if (item.asset) {
-            const id: string = item.asset.id;
+            const id: string = typeof item.asset.id === 'number' ? `${item.asset.id}` : '';
             if (!id) {
               return acc;
             }
@@ -167,10 +175,9 @@ export async function getOpenseaOrders({
 
     const result = aggregateListingAsOrders(listingsResponse.listings);
 
-    return { success: true, data: result };
+    return result;
   } catch (err) {
-    error('Error occured while fetching orders from opensea');
+    error('Error occurred while fetching orders from opensea');
     error(err);
-    return { success: false, error: err };
   }
 }
