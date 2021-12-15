@@ -2,21 +2,21 @@
 
 // an enum might make more sense here
 export class Backgrounds {
+  static blue = 'images/doge2048/Backgrounds/Blue.png';
+  static clouds = 'images/doge2048/Backgrounds/Clouds.png';
+  static gold = 'images/doge2048/Backgrounds/Gold.png';
+  static gradient = 'images/doge2048/Backgrounds/Gradient.png';
+  static green = 'images/doge2048/Backgrounds/Green.png';
+  static matrix = 'images/doge2048/Backgrounds/Matrix.png';
+  static nightclub = 'images/doge2048/Backgrounds/Nightclub.png';
+  static pink = 'images/doge2048/Backgrounds/Pink.png';
+  static pizza = 'images/doge2048/Backgrounds/Pizza.png';
   static purple = 'images/doge2048/Backgrounds/Purple.png';
-  static clouds = 'images/doge2048/Backgrounds/Clouds.GIF';
-  static gold = 'images/doge2048/Backgrounds/Gold.gif';
-  static greenScreen = 'images/doge2048/Backgrounds/Green screen.png';
-  static moon = 'images/doge2048/Backgrounds/Moon.gif';
-  static nightClub = 'images/doge2048/Backgrounds/Night club.gif';
-  static nyan = 'images/doge2048/Backgrounds/Nyan.gif';
-  static orange = 'images/doge2048/Backgrounds/Orange.png';
-  static pinkStripes = 'images/doge2048/Backgrounds/Pink stripes.gif';
-  static sushi = 'images/doge2048/Backgrounds/Sushi.gif';
-  static blueStripes = 'images/doge2048/Backgrounds/blue Stripes.gif';
-  static matrix = 'images/doge2048/Backgrounds/matrix.gif';
-  static pizza = 'images/doge2048/Backgrounds/pizza.gif';
-  static tacos = 'images/doge2048/Backgrounds/tacos.gif';
-  static trippySwirl = 'images/doge2048/Backgrounds/trippy swirl.gif';
+  static rainbow = 'images/doge2048/Backgrounds/Rainbow.png';
+  static stars = 'images/doge2048/Backgrounds/Stars.png';
+  static sushi = 'images/doge2048/Backgrounds/Sushi.png';
+  static swirl = 'images/doge2048/Backgrounds/Swirl.png';
+  static tacos = 'images/doge2048/Backgrounds/Tacos.png';
 }
 
 export class Bows {
@@ -88,12 +88,11 @@ export class Glasses {
 }
 
 export class Hats {
-  static whiteCap = 'images/doge2048/Hats/White_cap.png';
   static blackCap = 'images/doge2048/Hats/Black_cap.png';
-  static blackTopHat = 'images/doge2048/Hats/Black_top_hat.png';
+  static blackTophat = 'images/doge2048/Hats/Black_tophat.png';
   static blueCap = 'images/doge2048/Hats/Blue_cap.png';
   static bluePartyHat = 'images/doge2048/Hats/Blue_party_hat.png';
-  static brownTopHat = 'images/doge2048/Hats/Brown_top_hat.png';
+  static brownTophat = 'images/doge2048/Hats/Brown_tophat.png';
   static btcCap = 'images/doge2048/Hats/Btc_cap.png';
   static colorfulPartyHat = 'images/doge2048/Hats/Colorful_party_hat.png';
   static crownCap = 'images/doge2048/Hats/Crown_cap.png';
@@ -103,19 +102,20 @@ export class Hats {
   static fireCap = 'images/doge2048/Hats/Fire_cap.png';
   static frogCap = 'images/doge2048/Hats/Frog_cap.png';
   static goldPartyHat = 'images/doge2048/Hats/Gold_party_hat.png';
-  static goldTopHat = 'images/doge2048/Hats/Gold_top_hat.png';
+  static goldTophat = 'images/doge2048/Hats/Gold_tophat.png';
   static greenEthCap = 'images/doge2048/Hats/Green_eth_cap.png';
-  static greenTopHat = 'images/doge2048/Hats/Green_top_hat.png';
+  static greenTophat = 'images/doge2048/Hats/Green_tophat.png';
   static heartCap = 'images/doge2048/Hats/Heart_cap.png';
   static orangePartyHat = 'images/doge2048/Hats/Orange_party_hat.png';
   static pinkPartyHat = 'images/doge2048/Hats/Pink_party_hat.png';
   static pirateHat = 'images/doge2048/Hats/Pirate_hat.png';
   static plsdaoCap = 'images/doge2048/Hats/Plsdao_cap.png';
   static purpleEthCap = 'images/doge2048/Hats/Purple_eth_cap.png';
-  static purpleTopHat = 'images/doge2048/Hats/Purple_top_hat.png';
+  static purpleTophat = 'images/doge2048/Hats/Purple_tophat.png';
   static redCap = 'images/doge2048/Hats/Red_cap.png';
   static rocketCap = 'images/doge2048/Hats/Rocket_cap.png';
   static solCap = 'images/doge2048/Hats/Sol_cap.png';
+  static whiteCap = 'images/doge2048/Hats/White_cap.png';
   static yellowCap = 'images/doge2048/Hats/Yellow_cap.png';
 }
 
