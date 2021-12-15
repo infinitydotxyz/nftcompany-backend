@@ -17,7 +17,7 @@ export const metadata = {
       3: {
         traitType: 'Sunglasses',
         traitValues: ['Green', 'Pink'],
-        min: 45,
+        min: 125,
         max: 316
       },
       4: {
