@@ -8,7 +8,7 @@ import { unmarshalClient } from './utils';
  */
 export async function getUserAssetsFromUnmarshall(userAddress: string) {
   log('Fetching assets from unmarshal');
-  const chain = 'ethereum';
+  const chain = 'matic';
   const path = `${chain}/address/${userAddress}/nft-assets/`;
   try {
     const { data }: AxiosResponse<UnmarshallUserAsset> = await unmarshalClient.get(path);
