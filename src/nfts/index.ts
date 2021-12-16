@@ -41,7 +41,7 @@ router.get('/setup', async (req, res) => {
 router.get('/:tokenAddress/:tokenId', async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
-  const { chainId, score } = req.query;
+  const { chainId, score, numPlays } = req.query;
   try {
     // read data from chain
     const provider = utils.getChainProvider(chainId);
@@ -58,11 +58,12 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
     // const numPlays = contract.numPlays();
     // const dogBalance = contract.getTokenBalance();
     const finalScore: number = score ? parseInt(score as string) : 0;
+    const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
 
     // const score = 1000;
-    const numPlays = 10;
+    // const numPlays = 10;
     const dogBalance = 10;
-    const levelId = getDoge2048NftLevelId(finalScore, numPlays, dogBalance);
+    const levelId = getDoge2048NftLevelId(finalScore, finalNumPlays, dogBalance);
     // check if metadata already generated
     const snapshot = await db
       .collection(fstrCnstnts.ASSETS_COLL)
@@ -74,7 +75,7 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
       console.log(snapshot.docs);
     }
 
-    const url = await urlForDogeImage(finalScore, numPlays, dogBalance);
+    const url = await urlForDogeImage(finalScore, finalNumPlays, dogBalance);
     const result = { nftUrl: url };
 
     res.send(JSON.stringify(result));
