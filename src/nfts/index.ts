@@ -25,11 +25,11 @@ router.get('/', async (req, res) => {
 // todo : adi remove in prod
 router.get('/setup', async (req, res) => {
   try {
-    // await uploadSourceImages();
-    // res.send('uploaded');
+    await uploadSourceImages();
+    res.send('uploaded');
 
-    const result = await testUpload();
-    res.send(result);
+    // const result = await testUpload();
+    // res.send(result);
   } catch (err) {
     console.log(err);
 
@@ -86,8 +86,12 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
   }
 });
 
-router.post('/:nft/mint', async (req, res) => {});
+router.post('/:nft/mint', async (req, res) => {
+  // TODO: Adi do the mint
+});
 
-router.post('/:nft/state', async (req, res) => {});
+router.post('/:nft/state', async (req, res) => {
+  // TODO: Adi update the NFT state
+});
 
 export default router;
