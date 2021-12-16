@@ -1,4 +1,4 @@
-import { RawTrait } from '@base/types/OSNftInterface';
+import { WyvernTrait } from '@base/types/WyvernOrder';
 
 export interface UnmarshallUserAsset {
   asset_contract: string;
@@ -7,7 +7,7 @@ export interface UnmarshallUserAsset {
   external_link: string;
   type: string;
   balance: number;
-  nft_metadata: RawTrait[];
+  nft_metadata: WyvernTrait[];
   issuer_specific_data: IssuerSpecificData;
   price: string;
   animation_url: string;

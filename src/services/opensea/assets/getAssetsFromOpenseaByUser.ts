@@ -1,4 +1,4 @@
-import { RawAssetData } from '@base/types/OSNftInterface';
+import { WyvernAssetData } from '@base/types/WyvernOrder';
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
@@ -17,7 +17,7 @@ export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: nu
   };
 
   try {
-    const { data }: AxiosResponse<{ assets: RawAssetData[] }> = await openseaClient.get(url, options);
+    const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, options);
     return data;
   } catch (err) {
     error('Error occured while fetching assets from opensea');

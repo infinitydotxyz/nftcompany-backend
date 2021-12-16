@@ -1,4 +1,4 @@
-import { RawAssetData } from '@base/types/OSNftInterface';
+import { WyvernAssetData } from '@base/types/WyvernOrder';
 import { OrderDirection } from '@base/types/Queries';
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';
@@ -65,7 +65,7 @@ export async function getAssetsFromOpensea(
 
   const url = OPENSEA_API + 'assets/';
   try {
-    const { data }: AxiosResponse<{ assets: RawAssetData[] }> = await openseaClient.get(url, {
+    const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, {
       params: {
         ...ownerQuery,
         ...tokenIdsQuery,

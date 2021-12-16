@@ -1,17 +1,13 @@
 import { firestore } from '@base/container';
-import {
-  Asset,
-  BaseOrder,
-  InfinityOrderData,
-  Listing,
-  ListingMetadata,
-  ListingResponse,
-  ListingWithOrder,
-  ListingWithoutOrder,
-  Trait
-} from '@base/types/ListingResponse';
+import { Asset } from '@base/types/Asset';
+import { InfinityOrderData } from '@base/types/InfinityOrderData';
+import { Listing, ListingMetadata, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
+import { ListingResponse } from '@base/types/ListingResponse';
+
 import { ListingType } from '@base/types/NftInterface';
-import { RawAssetData, RawSellOrder, RawTrait } from '@base/types/OSNftInterface';
+import { Order } from '@base/types/Order';
+import { Trait } from '@base/types/Trait';
+import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/WyvernOrder';
 import { fstrCnstnts } from '@constants';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from '@services/infinity/utils';
@@ -31,7 +27,7 @@ export const openseaClient = axios.create({
   paramsSerializer: openseaParamSerializer
 });
 
-export function getOrderTypeFromRawSellOrder(order: RawSellOrder) {
+export function getOrderTypeFromRawSellOrder(order: WyvernSellOrder) {
   switch (order?.sale_kind) {
     case 0:
       if (order?.payment_token_contract?.symbol === 'ETH') {
@@ -51,7 +47,7 @@ export function getOrderTypeFromRawSellOrder(order: RawSellOrder) {
  * @returns an array of listings following the infinity schema
  */
 export async function convertOpenseaListingsToInfinityListings(
-  rawAssetDataArray: RawAssetData[]
+  rawAssetDataArray: WyvernAssetData[]
 ): Promise<ListingResponse> {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
     return {
@@ -60,7 +56,7 @@ export async function convertOpenseaListingsToInfinityListings(
     };
   }
   const listingMetadataPromises: Array<Promise<ListingMetadata>> = rawAssetDataArray.map(
-    async (rawAssetData: RawAssetData) => {
+    async (rawAssetData: WyvernAssetData) => {
       const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
       return listingMetadata;
     }
@@ -89,7 +85,7 @@ export async function convertOpenseaListingsToInfinityListings(
   void saveRawOpenseaAssetBatchInDatabase(assetListings);
 
   const listings: Listing[] = listingMetadataArray.reduce((listings, listingMetadata) => {
-    const rawSellOrders: RawSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
+    const rawSellOrders: WyvernSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
     const tokenAddress = listingMetadata.asset.address.toLowerCase();
     const tokenId = listingMetadata.asset.id;
     const id = firestore.getDocId({
@@ -137,7 +133,7 @@ export async function convertOpenseaListingsToInfinityListings(
  * @param asset metadata to set in the order.metadata.asset
  * @returns
  */
-export function rawSellOrderToBaseOrder(order: RawSellOrder): BaseOrder | undefined {
+export function rawSellOrderToBaseOrder(order: WyvernSellOrder): Order | undefined {
   try {
     const baseOrder = {
       howToCall: Number(order.how_to_call),
@@ -218,7 +214,7 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   }
 }
 
-export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise<ListingMetadata> {
+export async function rawAssetDataToListingMetadata(data: WyvernAssetData): Promise<ListingMetadata> {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
@@ -271,7 +267,7 @@ export async function rawAssetDataToListingMetadata(data: RawAssetData): Promise
   return listing;
 }
 
-export function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
+export function convertRawTraitsToInfinityTraits(traits: WyvernTrait[]): Trait[] {
   // eslint-disable-next-line camelcase
   return traits?.map(({ trait_type, value }) => {
     return {
@@ -281,7 +277,7 @@ export function convertRawTraitsToInfinityTraits(traits: RawTrait[]): Trait[] {
   });
 }
 
-export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: RawAssetData) {
+export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetData: WyvernAssetData) {
   try {
     const assetData: any = {};
     const marshalledData = await openseaAssetDataToListing(chainId, rawAssetData);
@@ -303,7 +299,7 @@ export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetDat
   }
 }
 
-export async function openseaAssetDataToListing(chainId: string, data: RawAssetData) {
+export async function openseaAssetDataToListing(chainId: string, data: WyvernAssetData) {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';

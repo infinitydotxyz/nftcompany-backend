@@ -1,4 +1,4 @@
-import { RawTraitWithValues } from './OSNftInterface';
+import { WyvernTraitWithValues } from './WyvernOrder';
 
 export enum OrderSide {
   Buy = 0,
@@ -17,7 +17,7 @@ export interface CollectionInfo {
   description: string;
   bannerImage: string;
   profileImage: string;
-  traits: RawTraitWithValues[];
+  traits: WyvernTraitWithValues[];
   hasBlueCheck: boolean;
   address: string;
   name: string;

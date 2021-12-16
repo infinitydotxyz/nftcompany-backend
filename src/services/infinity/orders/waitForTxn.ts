@@ -52,7 +52,7 @@ export async function waitForTxn(user: any, payload: any) {
           const txnData = JSON.parse(jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-          await txn.update(origTxnDocRef, { status: updatedStatus, txnData });
+          txn.update(origTxnDocRef, { status: updatedStatus, txnData });
           return txnSuceeded;
         } else {
           return false;

@@ -1,4 +1,4 @@
-import { RawTrait } from '@base/types/OSNftInterface';
+import { WyvernTrait } from '@base/types/WyvernOrder';
 import { CovalentPagination } from './CovalentPagination';
 
 export interface CovalentNftMetadata {
@@ -55,6 +55,6 @@ interface CovalentExternalNftMetadata {
   image_1024?: string;
   animation_url?: string;
   external_url?: string;
-  attributes?: RawTrait[];
+  attributes?: WyvernTrait[];
   owner?: string;
 }

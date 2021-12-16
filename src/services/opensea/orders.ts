@@ -1,13 +1,14 @@
-import { Listing, ListingResponse } from '@base/types/ListingResponse';
+import { Listing } from '@base/types/Listing';
+import { ListingResponse } from '@base/types/ListingResponse';
 import { OrderSide } from '@base/types/NftInterface';
-import { RawAssetData, RawSellOrder } from '@base/types/OSNftInterface';
 import { OrderDirection } from '@base/types/Queries';
+import { WyvernAssetData, WyvernSellOrder } from '@base/types/WyvernOrder';
 import { deepCopy } from '@utils/index';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from './utils';
 
-type OpenseaOrder = RawSellOrder & { asset: RawAssetData };
+type OpenseaOrder = WyvernSellOrder & { asset: WyvernAssetData };
 
 interface OpenseaOrderResponse {
   count: number;
@@ -125,7 +126,7 @@ export async function getOpenseaOrders({
       };
       return orders.reduce(
         (
-          acc: { count: number; listings: Array<RawAssetData & { sell_orders: RawSellOrder[] }> },
+          acc: { count: number; listings: Array<WyvernAssetData & { sell_orders: WyvernSellOrder[] }> },
           item: OpenseaOrder
         ) => {
           if (item.asset) {

@@ -1,4 +1,4 @@
-import { RawAssetData, RawTrait, RawTraitWithValues } from '@base/types/OSNftInterface';
+import { WyvernAssetData, WyvernTrait, WyvernTraitWithValues } from '@base/types/WyvernOrder';
 import { OPENSEA_API } from '@constants';
 import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
@@ -9,10 +9,10 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
     throw new Error('invalid address');
   }
 
-  const traitMap: { [trait_type: string]: RawTraitWithValues } = {};
+  const traitMap: { [trait_type: string]: WyvernTraitWithValues } = {};
   const url = OPENSEA_API + 'assets/';
 
-  const { data }: AxiosResponse<{ assets: RawAssetData[] }> = await openseaClient.get(url, {
+  const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, {
     params: {
       asset_contract_address: contractAddress,
       limit: 50,
@@ -20,10 +20,10 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
     }
   });
 
-  const traits: RawTraitWithValues[] = [];
+  const traits: WyvernTraitWithValues[] = [];
   if (data?.assets) {
     data.assets.forEach((item: any) => {
-      item.traits.forEach((trait: RawTrait) => {
+      item.traits.forEach((trait: WyvernTrait) => {
         traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
         traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
         if (!traitMap[trait.trait_type].values.includes(trait.value)) {

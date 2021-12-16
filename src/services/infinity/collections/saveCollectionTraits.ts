@@ -1,9 +1,9 @@
 import { firestore } from '@base/container';
-import { RawTraitWithValues } from '@base/types/OSNftInterface';
+import { WyvernTraitWithValues } from '@base/types/WyvernOrder';
 import { fstrCnstnts } from '@constants';
 import { ethers } from 'ethers';
 
-export async function saveCollectionTraits(contractAddress: string, traits: RawTraitWithValues[]) {
+export async function saveCollectionTraits(contractAddress: string, traits: WyvernTraitWithValues[]) {
   if (!ethers.utils.isAddress(contractAddress)) {
     return { success: false, error: new Error('invalid address') };
   }

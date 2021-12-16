@@ -8,7 +8,52 @@ import { ethers } from 'ethers';
 
 const router = Router();
 
-// fetch order to fulfill
+/**
+ * @swagger
+ *  /wyvern/v1/orders:
+ *    get:
+ *      summary: Fetch an order
+ *      parameters:
+ *       - in: query
+ *         name: maker
+ *         type: string
+ *         required: false
+ *       - in: query
+ *         name: id
+ *         type: string
+ *         required: false
+ *       - in: query
+ *         name: side
+ *         type: string
+ *         required: false
+ *       - in: query
+ *         name: tokenAddress
+ *         type: string
+ *         required: false
+ *       - in: query
+ *         name: tokenId
+ *         type: string
+ *         required: false
+ *
+ *      responses:
+ *        200:
+ *          description: Orders for an asset
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                properties:
+ *                  count:
+ *                    type: number
+ *                    description: Number of orders returned for the requested asset
+ *                    example: 1
+ *                  orders:
+ *                    type: array
+ *                    description: List of orders for the asset
+ *                    items:
+ *                      type: {BaseOrder}
+ *                      description: An order for the asset
+ */
 router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;

@@ -1,12 +1,12 @@
-export interface RawAssetData {
+export interface WyvernAssetData {
   asset_contract: AssetContract;
   token_id: string;
-  creator: OpenseaUser;
+  creator: WyvernUser;
   id: number;
   listing_date?: any;
   num_sales: number;
   transfer_fee_payment_token?: any;
-  collection: RawCollection;
+  collection: WyvernCollection;
   permalink: string;
   is_presale: boolean;
   description: string;
@@ -17,19 +17,19 @@ export interface RawAssetData {
   animation_url?: any;
   decimals: number;
   transfer_fee?: any;
-  owner: OpenseaUser;
+  owner: WyvernUser;
   token_metadata: string;
   background_color?: any;
   animation_original_url?: any;
   last_sale: LastSale;
   image_url: string;
-  traits: RawTrait[];
+  traits: WyvernTrait[];
   image_thumbnail_url: string;
-  sell_orders: RawSellOrder[];
+  sell_orders: WyvernSellOrder[];
   image_original_url: string;
 }
 
-export interface RawSellOrder {
+export interface WyvernSellOrder {
   payment_token: string;
   target: string;
   bounty_multiple: string;
@@ -97,13 +97,13 @@ export interface LastSale {
 }
 
 export interface Transaction {
-  to_account: OpenseaUser;
+  to_account: WyvernUser;
   transaction_hash: string;
   block_number: string;
   block_hash: string;
   id: number;
   timestamp: string;
-  from_account: OpenseaUser;
+  from_account: WyvernUser;
   transaction_index: string;
 }
 
@@ -125,7 +125,7 @@ export interface PaymentTokenContract {
   id: number;
 }
 
-export interface OpenseaUser {
+export interface WyvernUser {
   user: {
     username: string;
   };
@@ -134,7 +134,7 @@ export interface OpenseaUser {
   profile_img_url: string;
 }
 
-export interface RawTrait {
+export interface WyvernTrait {
   trait_type: string;
   trait_count: number;
   display_type?: any;
@@ -143,7 +143,7 @@ export interface RawTrait {
   max_value?: any;
 }
 
-export interface RawTraitWithValues {
+export interface WyvernTraitWithValues {
   trait_type: string;
   trait_count: number;
   display_type?: any;
@@ -152,7 +152,7 @@ export interface RawTraitWithValues {
   max_value?: any;
 }
 
-export interface RawCollection {
+export interface WyvernCollection {
   instagram_username?: any;
   large_image_url: string;
   default_to_fiat: boolean;
