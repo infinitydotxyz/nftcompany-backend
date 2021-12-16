@@ -636,7 +636,7 @@ const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): 
             reject(error);
           })
           .on('finish', () => {
-            console.log('done');
+            console.log(`uploaded: ${remoteFile.name}`);
 
             resolve(remoteFile);
           })
