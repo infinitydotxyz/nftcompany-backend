@@ -1,6 +1,6 @@
 import { readdirSync, writeFileSync, readFileSync, Dirent } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
-import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
+import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars, Diamonds, Lasers } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
@@ -233,6 +233,9 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
         case 'Yellow':
           imagePath = Glasses.yellowShades;
           break;
+        case 'Black':
+          imagePath = Glasses.blackShades;
+          break;
         case 'White':
           imagePath = Glasses.whiteShades;
           break;
@@ -284,7 +287,67 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           imagePath = Hearts.orangeHearts;
           break;
       }
-
+      break;
+    case 'Money Glasses':
+      switch (metadata.eyeTraitValue) {
+        case 'Gold':
+          imagePath = Glasses.goldMoneyShades;
+          break;
+        case 'Purple':
+          imagePath = Glasses.purpleMoneyShades;
+          break;
+        case 'Green':
+          imagePath = Glasses.greenMoneyShades;
+          break;
+        case 'Silver':
+          imagePath = Glasses.silverMoneyShades;
+          break;
+      }
+      break;
+    case 'Diamond Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Blue':
+          imagePath = Diamonds.blueDiamonds;
+          break;
+        case 'Green':
+          imagePath = Diamonds.greenDiamonds;
+          break;
+        case 'Pink':
+          imagePath = Diamonds.pinkDiamonds;
+          break;
+        case 'Purple':
+          imagePath = Diamonds.purpleDiamonds;
+          break;
+        case 'White':
+          imagePath = Diamonds.whiteDiamonds;
+          break;
+        case 'Gold':
+          imagePath = Diamonds.yellowGoldDiamonds;
+          break;
+      }
+      break;
+    case 'Laser Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Red':
+          imagePath = Lasers.redLasers;
+          break;
+        case 'Green':
+          imagePath = Lasers.greenLasers;
+          break;
+        case 'Blue':
+          imagePath = Lasers.blueLasers;
+          break;
+        case 'Purple':
+          imagePath = Lasers.purplelasers;
+          break;
+      }
+      break;
+    case 'Monacle':
+      switch (metadata.eyeTraitValue) {
+        case 'Monacle':
+          imagePath = Glasses.monocle;
+          break;
+      }
       break;
   }
   if (imagePath) {
