@@ -7,6 +7,33 @@ import { Router } from 'express';
 const router = Router();
 
 // get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
+
+/**
+ * @typedef {Object} FeaturedCollection
+ * @property {string} openseaUrl
+ * @property {string} chainId
+ * @property {string} cardImage
+ * @property {string} description
+ * @property {string} bannerImage
+ * @property {string} name
+ * @property {string} address
+ * @property {string} id
+ */
+
+/**
+ * @typedef {Object} FeaturedCollectionsResponse
+ * @property {number} count
+ * @property {array<FeaturedCollection>} collections
+ */
+
+/**
+ * GET /featured-collections
+ * @tags collections
+ * @summary Get featured collections
+ * @description Get a list of featured collections
+ * @return {FeaturedCollectionsResponse} 200 - Success response
+ * @return 500 - Server error response
+ */
 router.get('/', async (req, res) => {
   log('fetch list of Featured Collections');
   try {
@@ -20,9 +47,9 @@ router.get('/', async (req, res) => {
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
       });
       res.send(respStr);
-    } else {
-      res.sendStatus(StatusCode.NotFound);
+      return;
     }
+    res.sendStatus(StatusCode.InternalServerError);
   } catch (err) {
     error('Error fetching featured collections.');
     error(err);

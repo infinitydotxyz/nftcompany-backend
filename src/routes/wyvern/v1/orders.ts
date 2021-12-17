@@ -28,9 +28,9 @@ const router = Router();
  * @param {string} tokenId.query
  * @param {string} maker.query
  * @param {string} side.query
- * @return {OrderResponse} 200 - success response
- * @return 400 - invalid query parameters
- * @return 500 - internal server error
+ * @return {OrderResponse} 200 - Success response
+ * @return 400 - Bad request response
+ * @return 500 - Server error response
  */
 router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;

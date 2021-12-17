@@ -1,9 +1,0 @@
-{
-  "tags": {
-    "allowUnknownTags": ["optional"]
-  },
-  "plugins": ["./docs.js"],
-  "source": {
-    "includePattern": "\\.(jsx|js|ts|tsx)$"
-  }
-}

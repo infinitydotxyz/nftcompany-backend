@@ -28,22 +28,7 @@ export function registerDocs(app: Application) {
     // in the `example/configuration/swaggerOptions.js`
     swaggerUiOptions: {},
     // multiple option in case you want more that one instance
-    multiple: true,
-
-    components: {
-      schemas: {
-        User: {
-          properties: {
-            id: {
-              type: 'integer'
-            },
-            name: {
-              type: 'string'
-            }
-          }
-        }
-      }
-    }
+    multiple: true
   };
   expressJSDocSwagger(app)(options);
 }
