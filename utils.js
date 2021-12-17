@@ -12,7 +12,7 @@ const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount),
-  storageBucket: 'nftc-dev.appspot.com' // todo: adi change this in release
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 Object.defineProperty(global, '__stack', {
