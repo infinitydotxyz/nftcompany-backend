@@ -191,19 +191,6 @@
   },
   {
     "inputs": [],
-    "name": "level",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "nftFactory",
     "outputs": [
       {
@@ -270,11 +257,6 @@
         "internalType": "uint256",
         "name": "gameTokensPerPlay",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "newLevel",
-        "type": "uint8"
       },
       {
         "internalType": "uint32",

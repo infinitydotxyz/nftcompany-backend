@@ -232,5 +232,14 @@ module.exports = {
       return polygonProvider;
     }
     return null;
+  },
+
+  getChainId: function (chain) {
+    if (chain.trim().toLowerCase() === 'ethereum') {
+      return '1';
+    } else if (chain.trim().toLowerCase() === 'polygon') {
+      return '137';
+    }
+    return '';
   }
 };

@@ -16,6 +16,24 @@ import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
 
+// todo: adi constants
+const dogTokenAddress = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const tokensPerPlay = 1;
+const signerAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+
+router.all('/u/*', async (req, res, next) => {
+  const authorized = await utils.authorizeUser(
+    req.path,
+    req.header(constants.auth.signature),
+    req.header(constants.auth.message)
+  );
+  if (authorized) {
+    next();
+  } else {
+    res.status(401).send('Unauthorized');
+  }
+});
+
 router.get('/', async (req, res) => {
   res.send('nfts');
 });
@@ -38,7 +56,7 @@ router.get('/setup', async (req, res) => {
 });
 
 // api to get metadata
-router.get('/:tokenAddress/:tokenId', async (req, res) => {
+router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
   const { chainId, score, numPlays } = req.query;
@@ -86,12 +104,38 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
   }
 });
 
-router.post('/:nft/mint', async (req, res) => {
-  // TODO: Adi do the mint
-});
-
-router.post('/:nft/state', async (req, res) => {
+router.post('/u/:user/:chain/:instanceAddress/state', async (req, res) => {
   // TODO: Adi update the NFT state
+  const { chain, instanceAddress, user } = req.params;
+  const { score } = req.body;
+  const address = user.trim().toLowerCase();
+  try {
+    const chainId = utils.getChainId(chain);
+    const provider = utils.getChainProvider(chainId);
+    const signer = new ethers.Wallet(process.env.doge2048PrivKey, provider);
+    const contract = new ethers.Contract(instanceAddress, dogeAbi, signer);
+
+    // save state to chain
+    contract.saveState(dogTokenAddress, tokensPerPlay, score, signerAddress);
+
+    // save state to firestore
+    // todo: adi use constants
+    const ref = db.collecton('games/all/polygon/users').doc(address);
+    const data = await ref.get();
+    let scoreUpdate = data.score;
+    if (score > scoreUpdate) {
+      scoreUpdate = score;
+    }
+    const obj = {
+      score: scoreUpdate,
+      numPlays: firebaseAdmin.firestore.FieldValue.increment(1)
+    };
+    ref
+      .set(obj, { merge: true })
+      .catch((err: any) => utils.error('Error updating score in firestore for user', address, err));
+  } catch (err) {
+    utils.error('Error saving game state for nft instance', instanceAddress, err);
+  }
 });
 
 export default router;
