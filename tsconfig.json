@@ -10,6 +10,7 @@
     "outDir": "dist",
     "baseUrl": "./src",
     "allowJs": true,
+    "declaration": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

@@ -9,50 +9,28 @@ import { ethers } from 'ethers';
 const router = Router();
 
 /**
- * @swagger
- *  /wyvern/v1/orders:
- *    get:
- *      summary: Fetch an order
- *      parameters:
- *       - in: query
- *         name: maker
- *         type: string
- *         required: false
- *       - in: query
- *         name: id
- *         type: string
- *         required: false
- *       - in: query
- *         name: side
- *         type: string
- *         required: false
- *       - in: query
- *         name: tokenAddress
- *         type: string
- *         required: false
- *       - in: query
- *         name: tokenId
- *         type: string
- *         required: false
- *
- *      responses:
- *        200:
- *          description: Orders for an asset
- *          content:
- *            application/json:
- *              schema:
- *                type: object
- *                properties:
- *                  count:
- *                    type: number
- *                    description: Number of orders returned for the requested asset
- *                    example: 1
- *                  orders:
- *                    type: array
- *                    description: List of orders for the asset
- *                    items:
- *                      type: {BaseOrder}
- *                      description: An order for the asset
+ * @typedef { import("../../../types/Order").Order } Order
+ */
+
+/**
+ * @typedef {Object} OrderResponse
+ * @property {number} count
+ * @property {array<Order>} orders
+ */
+
+/**
+ * GET /wyvern/v1/orders
+ * @tags orders
+ * @summary Get orders for an asset
+ * @description Get orders for an asset by the asset id or get orders for an asset by the maker address, order side, token address and token id
+ * @param {string} id.query
+ * @param {string} tokenAddress.query
+ * @param {string} tokenId.query
+ * @param {string} maker.query
+ * @param {string} side.query
+ * @return {OrderResponse} 200 - success response
+ * @return 400 - invalid query parameters
+ * @return 500 - internal server error
  */
 router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;

@@ -8,6 +8,7 @@ import router from '@routes/index.js';
 import { log } from '@utils/logger.js';
 import { requestErrorHandler } from '@base/middleware/errorHandler.js';
 import { requestLogger } from '@base/middleware/logger.js';
+import { registerDocs } from './docs';
 
 const app = express();
 
@@ -26,6 +27,7 @@ const registerErrorHandler = () => {
   app.use(requestErrorHandler);
 };
 
+registerDocs(app);
 registerMiddleware();
 registerRoutes();
 // error handler should be the last middleware registered
