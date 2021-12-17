@@ -18,8 +18,6 @@ const dogeAbi = require('./abis/doge2048nft.json');
 
 // todo: adi constants
 const dogTokenAddress = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
-const tokensPerPlay = 1;
-const signerAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 router.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
@@ -32,10 +30,6 @@ router.all('/u/*', async (req, res, next) => {
   } else {
     res.status(401).send('Unauthorized');
   }
-});
-
-router.get('/', async (req, res) => {
-  res.send('nfts');
 });
 
 // used for uploading the doge source images
@@ -56,7 +50,7 @@ router.get('/setup', async (req, res) => {
 });
 
 // api to get metadata
-router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
+router.get('/:tokenAddress/:tokenId', async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
   const { chainId, score, numPlays } = req.query;
@@ -72,16 +66,15 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
     // todo: adi generalize this
     // todo: adi change this
     // const contract = new ethers.Contract(tokenAddress, dogeAbi, provider);
-    // const score = contract.score();
-    // const numPlays = contract.numPlays();
-    // const dogBalance = contract.getTokenBalance();
+    // const score = await contract.score();
+    // const numPlays = await contract.numPlays();
+    // const dogBalance = await contract.getTokenBalance(dogTokenAddress);
     const finalScore: number = score ? parseInt(score as string) : 0;
     const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
 
     // const score = 1000;
     // const numPlays = 10;
     const dogBalance = 10;
-    const levelId = getDoge2048NftLevelId(finalScore, finalNumPlays, dogBalance);
     // check if metadata already generated
     const snapshot = await db
       .collection(fstrCnstnts.ASSETS_COLL)
@@ -101,40 +94,6 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
     utils.error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
     utils.error(err);
     res.sendStatus(500);
-  }
-});
-
-router.post('/u/:user/:chain/:instanceAddress/state', async (req, res) => {
-  // TODO: Adi update the NFT state
-  const { chain, instanceAddress, user } = req.params;
-  const { score } = req.body;
-  const address = user.trim().toLowerCase();
-  try {
-    const chainId = utils.getChainId(chain);
-    const provider = utils.getChainProvider(chainId);
-    const signer = new ethers.Wallet(process.env.doge2048PrivKey, provider);
-    const contract = new ethers.Contract(instanceAddress, dogeAbi, signer);
-
-    // save state to chain
-    contract.saveState(dogTokenAddress, tokensPerPlay, score, signerAddress);
-
-    // save state to firestore
-    // todo: adi use constants
-    const ref = db.collecton('games/all/polygon/users').doc(address);
-    const data = await ref.get();
-    let scoreUpdate = data.score;
-    if (score > scoreUpdate) {
-      scoreUpdate = score;
-    }
-    const obj = {
-      score: scoreUpdate,
-      numPlays: firebaseAdmin.firestore.FieldValue.increment(1)
-    };
-    ref
-      .set(obj, { merge: true })
-      .catch((err: any) => utils.error('Error updating score in firestore for user', address, err));
-  } catch (err) {
-    utils.error('Error saving game state for nft instance', instanceAddress, err);
   }
 });
 
