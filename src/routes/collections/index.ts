@@ -7,12 +7,13 @@ import { getCollectionInfo } from './:slug';
 import { getTraits } from './:id/traits';
 import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
-
+import verified from './verified';
 const router = Router();
 
 router.get('/:id/traits', getTraits);
 router.get('/:slug', getCollectionInfo);
 router.get('/featured', featured);
+router.get('/verified', verified);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;

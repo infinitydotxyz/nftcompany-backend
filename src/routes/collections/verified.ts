@@ -28,9 +28,8 @@ const router = Router();
  */
 
 /**
- * GET /verifiedCollections
+ * GET /collections/verified
  * @tags collections
- * @deprecated
  * @summary Get verified collections
  * @description Get a list of verified collections
  * @param {string} startAfterName.query - used for pagination, pass in the last collection name received to get the next page
