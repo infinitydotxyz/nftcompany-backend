@@ -34,7 +34,7 @@ router.all('/u/*', async (req, res, next) => {
 
 // used for uploading the doge source images
 // and testing creating and uploading an NFT based on metadata
-// todo : adi remove in prod
+// todo: adi remove in prod
 router.get('/setup', async (req, res) => {
   try {
     await uploadSourceImages();
@@ -51,6 +51,7 @@ router.get('/setup', async (req, res) => {
 
 // api to get metadata
 router.get('/:tokenAddress/:tokenId', async (req, res) => {
+  console.log('image url called');
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
   const { chainId, score, numPlays } = req.query;
@@ -87,6 +88,7 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
     }
 
     const url = await urlForDogeImage(finalScore, finalNumPlays, dogBalance);
+    console.log('image url', url);
     const result = { nftUrl: url };
 
     res.send(JSON.stringify(result));
