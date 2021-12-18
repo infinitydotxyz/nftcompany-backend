@@ -13,7 +13,7 @@ export function parseQueryFields<K extends string>(
   try {
     fieldArr.forEach((name, idx) => {
       const q = req.query?.[name] as string;
-      numberFields[name] = parseFloat(q.length > 0 ? q : defaultValues[idx]);
+      numberFields[name] = parseFloat(q?.length > 0 ? q : defaultValues[idx]);
       if (isNaN(numberFields[name])) {
         throw Error(`Invalid query param: ${name} = ${q}`);
       }

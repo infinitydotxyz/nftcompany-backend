@@ -22,7 +22,10 @@ const router = Router();
  * GET /wyvern/v1/orders
  * @tags orders
  * @summary Get orders for an asset
- * @description Get orders for an asset by the asset id or get orders for an asset by the maker address, order side, token address and token id
+ * @description Get orders for an asset
+ * ### Queries
+ * - by asset id
+ * - by token address, token id,  maker address and order side
  * @param {string} id.query
  * @param {string} tokenAddress.query
  * @param {string} tokenId.query

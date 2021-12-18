@@ -25,6 +25,53 @@ router.use('/import', importListings);
 - supports all listings
 - support title
 */
+
+/**
+ * @typedef {Object} ListingsResponse
+ * @property {number} count
+ * @property {array<object>} listings
+ */
+
+/**
+ * GET /listings
+ * @tags listings
+ * @summary Get listing
+ * @description Get listings
+ * ### Queries (ordered from most to least restrictive)
+ * - supports tokenId and tokenAddress query
+ * - supports collectionName, priceMin and priceMax query ordered by price
+ * - supports all listings
+ * - support title
+ * ### Pagination
+ * - startAfterSearchTitle
+ * - startAfterBlueCheck
+ * - startAfterSearchCollectionName
+ * - startAfterPrice
+ * - startAfterMillis
+ * ### Sorting
+ * - sortByPrice
+ * @param {string} tokenId.query
+ * @param {string} tokenAddress.query
+ * @param {string} collectionName.query
+ * @param {string} listType.query
+ * @param {string} traitType.query
+ * @param {string} traitValue.query
+ * @param {string} collectionIds.query
+ * @param {string} chainId.query
+ * @param {string} text.query
+ * @param {string} startAfterSearchTitle.query
+ * @param {boolean} startAfterBlueCheck.query
+ * @param {string} startAfterSearchCollectionName.query
+ * @param {number} startAterPrice.query
+ * @param {number} startAfterMillis.query
+ * @param {number} priceMin.query
+ * @param {number} priceMax.query
+ * @param {string} sortByPrice.query - asc or desc
+ * @param {number} limit.query - number of listings to get
+ * @return {ListingsResponse} 200 - Success response
+ * @return 400 - Bad request response
+ * @return 500 - Server error response
+ */
 router.get('/', async (req, res) => {
   const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;

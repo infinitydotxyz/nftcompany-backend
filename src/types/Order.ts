@@ -1,6 +1,6 @@
 /**
  * @typedef {Object} Order
- * @property {string} listingTime
+ * @param {string} listingTime
  * @property {number} v
  * @property {string} extra
  * @property {string} takerRelayerFee

@@ -1,4 +1,4 @@
-import { ListingMetadata } from '@base/types/ListingResponse';
+import { ListingMetadata } from '@base/types/ListingMetadata';
 import { RewardTiers } from '@base/types/Rewards';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
 import { jsonString } from '@utils/formatters';

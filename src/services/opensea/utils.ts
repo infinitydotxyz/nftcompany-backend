@@ -1,7 +1,8 @@
 import { firestore } from '@base/container';
 import { Asset } from '@base/types/Asset';
 import { InfinityOrderData } from '@base/types/InfinityOrderData';
-import { Listing, ListingMetadata, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
+import { Listing, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
+import { ListingMetadata } from '@base/types/ListingMetadata';
 import { ListingResponse } from '@base/types/ListingResponse';
 
 import { ListingType } from '@base/types/NftInterface';

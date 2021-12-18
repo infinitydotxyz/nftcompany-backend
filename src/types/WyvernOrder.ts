@@ -4,24 +4,24 @@
  * @property {string} token_id
  * @property {WyvernUser} creator
  * @property {number} id
- * @property {*} [listing_date]
+ * @property {string} listing_date
  * @property {number} num_sales
- * @property {*} [transfer_fee_payment_token]
+ * @property {string} transfer_fee_payment_token
  * @property {WyvernCollection} collection
  * @property {string} permalink
  * @property {boolean} is_presale
  * @property {string} description
- * @property {*} [external_link]
+ * @property {string} external_link
  * @property {string} name
  * @property {string} image_preview_url
- * @property {*} [top_bid]
- * @property {*} [animation_url]
+ * @property {string} top_bid
+ * @property {string} animation_url
  * @property {number} decimals
- * @property {*} [transfer_fee]
+ * @property {number} transfer_fee
  * @property {WyvernUser} owner
  * @property {string} token_metadata
- * @property {*} [background_color]
- * @property {*} [animation_original_url]
+ * @property {string} background_color
+ * @property {string} animation_original_url
  * @property {LastSale} last_sale
  * @property {string} image_url
  * @property {WyvernTrait[]} traits
