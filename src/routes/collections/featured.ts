@@ -27,9 +27,8 @@ const router = Router();
  */
 
 /**
- * GET /featured-collections
+ * GET /collections/featured
  * @tags collections
- * @deprecated
  * @summary Get featured collections
  * @description Get a list of featured collections
  * @return {FeaturedCollectionsResponse} 200 - Success response

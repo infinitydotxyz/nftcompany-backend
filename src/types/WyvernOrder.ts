@@ -274,25 +274,27 @@ export interface WyvernTrait {
   trait_count: number;
   display_type?: any;
   value: string;
-  order?: any;
   max_value?: any;
 }
 
 /**
- * @typedef {Object} WyvernTraitWithValue
+ * @typedef {Object} Basic
+ * @property {string} traitType
+ */
+
+/**
+ * @typedef {Object} WyvernTraitWithValues
  * @property {string} trait_type
  * @property {number} trait_count
- * @property {*} [display_type]
- * @property {string[]} values
- * @property {*} [order]
- * @property {*} [max_value]
+ * @property {string} display_type
+ * @property {string} values
+ * @property {string} max_value
  */
 export interface WyvernTraitWithValues {
   trait_type: string;
   trait_count: number;
-  display_type?: any;
+  display_type?: string;
   values: string[];
-  order?: any;
   max_value?: any;
 }
 

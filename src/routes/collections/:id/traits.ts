@@ -7,7 +7,26 @@ import { error, log } from '@utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
-// get traits & their values of a collection
+/**
+ * @typedef { import("../../../types/wyvern").WyvernTraitWithValues } WyvernTraitWithValues
+ */
+
+/**
+ * @typedef {Object} TraitsResponse
+ * @property {number} count
+ * @property {array<WyvernTraitWithValues>} traits
+ */
+
+/**
+ * GET /collections/{address}/traits
+ * @tags collections
+ * @summary Get the traits for a collection
+ * @description Get the traits for a collection via the collection address
+ * @param {string} address.path.required
+ * @return {TraitsResponse} 200 - Success response
+ * @return 400 - Bad request response
+ * @return 500 - Server error response
+ */
 const getTraits = async (req: Request<{ id: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
   const contractAddress = req.params.id.trim().toLowerCase();
