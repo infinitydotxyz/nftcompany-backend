@@ -6,18 +6,18 @@ const router = express.Router();
 
 const utils = require('../../utils');
 const constants = require('../../constants');
-const fstrCnstnts = constants.firestore;
 const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
-import { generateDoge2048NftMetadata, getDoge2048NftLevelId } from './metadataUtils';
 import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
+// todo: adi change this
+const factoryAbi = require('./abis/infinityFactory.json');
 
 // todo: adi constants
-const dogTokenAddress = '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6';
+const dogTokenAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
 
 router.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
@@ -50,13 +50,13 @@ router.get('/setup', async (req, res) => {
 });
 
 // api to get metadata
-router.get('/:tokenAddress/:tokenId', async (req, res) => {
-  console.log('image url called');
+router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
   const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
   const tokenId = req.params.tokenId;
-  const { chainId, score, numPlays } = req.query;
+  const chain = req.params.chain.trim().toLowerCase();
   try {
     // read data from chain
+    const chainId = utils.getChainId(chain);
     const provider = utils.getChainProvider(chainId);
     if (!provider) {
       utils.error('Chain provider is null for chain', chainId);
@@ -65,35 +65,36 @@ router.get('/:tokenAddress/:tokenId', async (req, res) => {
     }
 
     // todo: adi generalize this
-    // todo: adi change this
-    // const contract = new ethers.Contract(tokenAddress, dogeAbi, provider);
-    // const score = await contract.score();
-    // const numPlays = await contract.numPlays();
-    // const dogBalance = await contract.getTokenBalance(dogTokenAddress);
-    const finalScore: number = score ? parseInt(score as string) : 0;
-    const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
+    const factoryContract = new ethers.Contract(tokenAddress, factoryAbi, provider);
+    const instanceAddress = await factoryContract.tokenIdToInstance(+tokenId);
 
-    // const score = 1000;
-    // const numPlays = 10;
-    const dogBalance = 10;
-    // check if metadata already generated
-    const snapshot = await db
-      .collection(fstrCnstnts.ASSETS_COLL)
-      .where('metadata.asset.address', '==', tokenAddress)
-      .where('metadata.asset.id', '==', tokenId)
-      .where('metadata.chainId', '==', chainId)
-      .get();
-    if (snapshot.docs.length > 0) {
-      console.log(snapshot.docs);
-    }
-
-    const url = await urlForDogeImage(finalScore, finalNumPlays, dogBalance);
-    console.log('image url', url);
-    const result = { nftUrl: url };
-
+    const contract = new ethers.Contract(instanceAddress, dogeAbi, provider);
+    const score = await contract.score();
+    const numPlays = await contract.numPlays();
+    const dogBalance = await contract.getTokenBalance(dogTokenAddress);
+    const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
+    const url = await urlForDogeImage(score, numPlays, finalDogBalance);
+    const result = { image: url, name: 'Doge 2048', description: 'NFT based 2048 game with much wow' };
     res.send(JSON.stringify(result));
   } catch (err) {
-    utils.error('Failed fetching metadata for', tokenAddress, tokenId, chainId);
+    utils.error('Failed fetching metadata for', tokenAddress, tokenId);
+    utils.error(err);
+    res.sendStatus(500);
+  }
+});
+
+// api to get grid images
+router.get('/doge2048/level-images', async (req, res) => {
+  const { score, numPlays, dogBalance } = req.query;
+  try {
+    const finalScore: number = score ? parseInt(score as string) : 0;
+    const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
+    const finalDogBalance: number = dogBalance ? parseInt(dogBalance as string) : 1;
+    const url = await urlForDogeImage(finalScore, finalNumPlays, finalDogBalance);
+    const result = { image: url };
+    res.send(JSON.stringify(result));
+  } catch (err) {
+    utils.error('Failed fetching grid images');
     utils.error(err);
     res.sendStatus(500);
   }

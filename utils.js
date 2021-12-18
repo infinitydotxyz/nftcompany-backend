@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
 const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
+const localHostProvider = new ethers.providers.JsonRpcProvider(process.env.localhostRpc);
 
 const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
@@ -230,6 +231,8 @@ module.exports = {
       return ethProvider;
     } else if (chainId === '137') {
       return polygonProvider;
+    } else if (chainId === '31337') {
+      return localHostProvider;
     }
     return null;
   },
@@ -239,6 +242,8 @@ module.exports = {
       return '1';
     } else if (chain.trim().toLowerCase() === 'polygon') {
       return '137';
+    } else if (chain.trim().toLowerCase() === 'localhost') {
+      return '31337';
     }
     return '';
   }
