@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 /**
- * @typedef { import("../../../types/wyvern").WyvernTraitWithValues } WyvernTraitWithValues
+ * @typedef { import("../../../types/wyvern/TraitWithValues").WyvernTraitWithValues } WyvernTraitWithValues
  */
 
 /**
@@ -22,9 +22,9 @@ import { Request, Response } from 'express';
  * @tags collections
  * @summary Get the traits for a collection
  * @description Get the traits for a collection via the collection address
- * @param {string} address.path.required
+ * @param {string} address.path.required - address of the collection to get traits for
  * @return {TraitsResponse} 200 - Success response
- * @return 400 - Bad request response
+ * @return 400 - Bad request response (invalid address)
  * @return 500 - Server error response
  */
 const getTraits = async (req: Request<{ id: string }>, res: Response) => {

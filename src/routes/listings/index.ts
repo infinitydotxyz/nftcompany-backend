@@ -17,15 +17,6 @@ const router = Router();
 
 router.use('/import', importListings);
 
-// fetch listings (for Explore page)
-/*
-- supports the following queries - from most to least restrictive
-- supports tokenId and tokenAddress query
-- supports collectionName, priceMin and priceMax query ordered by price
-- supports all listings
-- support title
-*/
-
 /**
  * @typedef {Object} ListingsResponse
  * @property {number} count
@@ -49,11 +40,11 @@ router.use('/import', importListings);
  * - startAfterPrice
  * - startAfterMillis
  * ### Sorting
- * - sortByPrice
+ * - sortByPrice - asc or desc
  * @param {string} tokenId.query
  * @param {string} tokenAddress.query
  * @param {string} collectionName.query
- * @param {string} listType.query
+ * @param {string} listType.query - fixedPrice | dutchAuction | englishAuction
  * @param {string} traitType.query
  * @param {string} traitValue.query
  * @param {string} collectionIds.query
@@ -66,7 +57,7 @@ router.use('/import', importListings);
  * @param {number} startAfterMillis.query
  * @param {number} priceMin.query
  * @param {number} priceMax.query
- * @param {string} sortByPrice.query - asc or desc
+ * @param {string} sortByPrice.query - asc | desc
  * @param {number} limit.query - number of listings to get
  * @return {ListingsResponse} 200 - Success response
  * @return 400 - Bad request response
