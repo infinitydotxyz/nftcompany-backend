@@ -27,14 +27,6 @@ export const uploadSourceImages = async () => {
   await uploadString(jsonString, 'images/doge/images.json');
 };
 
-export const testUpload = async (): Promise<string> => {
-  const score = 2110;
-  const numPlays = 132;
-  const dogBalance = 121100;
-
-  return urlForDogeImage(0, score, numPlays, dogBalance);
-};
-
 export const urlForDogeImage = async (tokenId: number, score: number, numPlays: number, dogBalance: number): Promise<string> => {
   const metadata = generateDoge2048NftMetadata(tokenId, score, numPlays, dogBalance);
   const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
