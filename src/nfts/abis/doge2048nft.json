@@ -212,11 +212,6 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "gameTokensPerPlay",
-        "type": "uint256"
-      },
-      {
         "internalType": "uint32",
         "name": "newScore",
         "type": "uint32"
