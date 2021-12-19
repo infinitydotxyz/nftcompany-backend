@@ -9,7 +9,7 @@ const constants = require('../../constants');
 const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
-import { uploadSourceImages, testUpload, urlForDogeImage } from './doge_builder/images';
+import { urlForDogeImage } from './doge_builder/images';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
