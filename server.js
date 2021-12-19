@@ -2794,7 +2794,7 @@ function getOrdersResponseFromArray(docs) {
 
 async function fetchAssetsOfUser(req, res) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { source } = req.query;
+  const { source, contract } = req.query;
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
     return;
@@ -2811,7 +2811,7 @@ async function fetchAssetsOfUser(req, res) {
     return;
   }
   try {
-    let resp = await getAssets(user, limit, offset, sourceName);
+    let resp = await getAssets(user, limit, offset, sourceName, contract);
     resp = utils.jsonString(resp);
     // to enable cdn cache
     res.set({
@@ -2825,13 +2825,13 @@ async function fetchAssetsOfUser(req, res) {
   }
 }
 
-async function getAssets(address, limit, offset, sourceName) {
+async function getAssets(address, limit, offset, sourceName, contract) {
   utils.log('Fetching assets for', address);
-  const results = await getAssetsFromChain(address, limit, offset, sourceName);
+  const results = await getAssetsFromChain(address, limit, offset, sourceName, contract);
   return results;
 }
 
-async function getAssetsFromChain(address, limit, offset, sourceName) {
+async function getAssetsFromChain(address, limit, offset, sourceName, contract) {
   let data;
   switch (sourceName) {
     case 'nftc':
@@ -2841,7 +2841,7 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
       data = await getAssetsFromAlchemy(address, limit, offset);
       break;
     case 'unmarshal':
-      data = await getAssetsFromUnmarshal(address, limit, offset);
+      data = await getAssetsFromUnmarshal(address, limit, offset, contract);
       break;
     case 'opensea':
       data = await getAssetsFromOpensea(address, limit, offset);
@@ -2887,12 +2887,12 @@ async function getAssetsFromCovalent(address, limit, offset) {
   }
 }
 
-async function getAssetsFromUnmarshal(address, limit, offset) {
+async function getAssetsFromUnmarshal(address, limit, offset, contract) {
   utils.log('Fetching assets from unmarshal');
   const apiBase = 'https://api.unmarshal.com/v1/';
   const chain = 'matic'; // ethereum
   const authKey = process.env.unmarshalKey;
-  const url = apiBase + chain + '/address/' + address + '/nft-assets?auth_key=' + authKey;
+  const url = apiBase + chain + '/address/' + address + '/nft-assets?contract=' + contract + '&auth_key=' + authKey;
   try {
     const { data } = await axios.get(url);
     return data;

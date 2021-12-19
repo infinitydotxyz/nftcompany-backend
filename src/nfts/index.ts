@@ -17,7 +17,7 @@ const dogeAbi = require('./abis/doge2048nft.json');
 const factoryAbi = require('./abis/infinityFactory.json');
 
 // todo: adi constants
-const dogTokenAddress = '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853';
+const dogTokenAddress = '0x3604035F54e5fe0875652842024b49D1Fea11C7C';
 
 router.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
