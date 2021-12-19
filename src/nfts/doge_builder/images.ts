@@ -7,6 +7,7 @@ import Canvas from 'canvas';
 const { loadImage } = Canvas;
 const { Readable } = require('stream');
 import { generateDoge2048NftMetadata, DogeMetadata } from '../metadataUtils';
+import { NftMetadata } from '../types/NftMetadata';
 
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
@@ -27,8 +28,31 @@ export const uploadSourceImages = async () => {
   await uploadString(jsonString, 'images/doge/images.json');
 };
 
-export const urlForDogeImage = async (tokenId: number, score: number, numPlays: number, dogBalance: number): Promise<string> => {
+export const metadataForDoge2048Nft = async (
+  tokenId: number,
+  score: number,
+  numPlays: number,
+  dogBalance: number
+): Promise<NftMetadata> => {
   const metadata = generateDoge2048NftMetadata(tokenId, score, numPlays, dogBalance);
+
+  const eyesAttribute = {
+    trait_type: 'eyes',
+    value: metadata.eyeTraitValue
+  };
+  const headAttribute = {
+    trait_type: 'head',
+    value: metadata.headTraitValue
+  };
+  const neckAttribute = {
+    trait_type: 'neck',
+    value: metadata.neckTraitValue
+  };
+  const backgroundAttribute = {
+    trait_type: 'background',
+    value: metadata.backgroundTraitValue
+  };
+
   const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
   const remoteFile: File = bucket.file(path);
   const existsArray = await remoteFile.exists();
@@ -36,7 +60,10 @@ export const urlForDogeImage = async (tokenId: number, score: number, numPlays: 
     const buffer = await buildImage(metadata);
     await uploadImage(buffer, path);
   }
-  return remoteFile.publicUrl();
+
+  const image = remoteFile.publicUrl();
+  const attributes = [eyesAttribute, headAttribute, neckAttribute, backgroundAttribute];
+  return { image, attributes };
 };
 
 // =================================================

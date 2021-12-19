@@ -9,7 +9,7 @@ const constants = require('../../constants');
 const firebaseAdmin = utils.getFirebaseAdmin();
 const db = firebaseAdmin.firestore();
 
-import { urlForDogeImage } from './doge_builder/images';
+import { metadataForDoge2048Nft } from './doge_builder/images';
 
 // todo: adi change this
 const dogeAbi = require('./abis/doge2048nft.json');
@@ -55,8 +55,13 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
     const numPlays = await contract.numPlays();
     const dogBalance = await contract.getTokenBalance(dogTokenAddress);
     const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
-    const url = await urlForDogeImage(+tokenId, score, numPlays, finalDogBalance);
-    const result = { image: url, name: 'Doge 2048', description: 'NFT based 2048 game with much wow' };
+    const metadata = await metadataForDoge2048Nft(+tokenId, score, numPlays, finalDogBalance);
+    const result = {
+      image: metadata.image,
+      name: 'Doge 2048',
+      description: 'NFT based 2048 game with much wow',
+      attributes: metadata.attributes
+    };
     res.send(JSON.stringify(result));
   } catch (err) {
     utils.error('Failed fetching metadata for', tokenAddress, tokenId, chain);
@@ -72,8 +77,8 @@ router.get('/doge2048/level-images', async (req, res) => {
     const finalScore: number = score ? parseInt(score as string) : 0;
     const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
     const finalDogBalance: number = dogBalance ? parseInt(dogBalance as string) : 1;
-    const url = await urlForDogeImage(0, finalScore, finalNumPlays, finalDogBalance);
-    const result = { image: url };
+    const metadata = await metadataForDoge2048Nft(0, finalScore, finalNumPlays, finalDogBalance);
+    const result = { image: metadata.image };
     res.send(JSON.stringify(result));
   } catch (err) {
     utils.error('Failed fetching grid images');
