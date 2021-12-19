@@ -17,7 +17,7 @@ const dogeAbi = require('./abis/doge2048nft.json');
 const factoryAbi = require('./abis/infinityFactory.json');
 
 // todo: adi constants
-const dogTokenAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const dogTokenAddress = '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853';
 
 router.all('/u/*', async (req, res, next) => {
   const authorized = await utils.authorizeUser(
@@ -50,17 +50,16 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
     // todo: adi generalize this
     const factoryContract = new ethers.Contract(tokenAddress, factoryAbi, provider);
     const instanceAddress = await factoryContract.tokenIdToInstance(+tokenId);
-
     const contract = new ethers.Contract(instanceAddress, dogeAbi, provider);
     const score = await contract.score();
     const numPlays = await contract.numPlays();
     const dogBalance = await contract.getTokenBalance(dogTokenAddress);
     const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
-    const url = await urlForDogeImage(score, numPlays, finalDogBalance);
+    const url = await urlForDogeImage(+tokenId, score, numPlays, finalDogBalance);
     const result = { image: url, name: 'Doge 2048', description: 'NFT based 2048 game with much wow' };
     res.send(JSON.stringify(result));
   } catch (err) {
-    utils.error('Failed fetching metadata for', tokenAddress, tokenId);
+    utils.error('Failed fetching metadata for', tokenAddress, tokenId, chain);
     utils.error(err);
     res.sendStatus(500);
   }
@@ -73,7 +72,7 @@ router.get('/doge2048/level-images', async (req, res) => {
     const finalScore: number = score ? parseInt(score as string) : 0;
     const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
     const finalDogBalance: number = dogBalance ? parseInt(dogBalance as string) : 1;
-    const url = await urlForDogeImage(finalScore, finalNumPlays, finalDogBalance);
+    const url = await urlForDogeImage(0, finalScore, finalNumPlays, finalDogBalance);
     const result = { image: url };
     res.send(JSON.stringify(result));
   } catch (err) {

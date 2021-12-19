@@ -32,11 +32,11 @@ export const testUpload = async (): Promise<string> => {
   const numPlays = 132;
   const dogBalance = 121100;
 
-  return urlForDogeImage(score, numPlays, dogBalance);
+  return urlForDogeImage(0, score, numPlays, dogBalance);
 };
 
-export const urlForDogeImage = async (score: number, numPlays: number, dogBalance: number): Promise<string> => {
-  const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
+export const urlForDogeImage = async (tokenId: number, score: number, numPlays: number, dogBalance: number): Promise<string> => {
+  const metadata = generateDoge2048NftMetadata(tokenId, score, numPlays, dogBalance);
   const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
   const remoteFile: File = bucket.file(path);
   const existsArray = await remoteFile.exists();
