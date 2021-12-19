@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
 const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
+const localHostProvider = new ethers.providers.JsonRpcProvider(process.env.localhostRpc);
 
 const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
@@ -12,7 +13,7 @@ const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
 firebaseAdmin.initializeApp({
   // @ts-ignore
   credential: firebaseAdmin.credential.cert(serviceAccount),
-  storageBucket: 'nftc-dev.appspot.com' // todo: adi change this in release
+  storageBucket: 'nftc-dev.appspot.com'
 });
 
 Object.defineProperty(global, '__stack', {
@@ -230,7 +231,20 @@ module.exports = {
       return ethProvider;
     } else if (chainId === '137') {
       return polygonProvider;
+    } else if (chainId === '31337') {
+      return localHostProvider;
     }
     return null;
+  },
+
+  getChainId: function (chain) {
+    if (chain.trim().toLowerCase() === 'ethereum') {
+      return '1';
+    } else if (chain.trim().toLowerCase() === 'polygon') {
+      return '137';
+    } else if (chain.trim().toLowerCase() === 'localhost') {
+      return '31337';
+    }
+    return '';
   }
 };

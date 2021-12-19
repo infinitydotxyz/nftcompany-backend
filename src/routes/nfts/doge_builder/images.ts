@@ -1,6 +1,6 @@
 import { readdirSync, writeFileSync, readFileSync, Dirent } from 'fs';
 import { File } from '@google-cloud/storage';
-import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
+import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars, Diamonds, Lasers, Crowns } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
@@ -234,6 +234,9 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
         case 'Yellow':
           imagePath = Glasses.yellowShades;
           break;
+        case 'Black':
+          imagePath = Glasses.blackShades;
+          break;
         case 'White':
           imagePath = Glasses.whiteShades;
           break;
@@ -285,7 +288,67 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
           imagePath = Hearts.orangeHearts;
           break;
       }
-
+      break;
+    case 'Money Glasses':
+      switch (metadata.eyeTraitValue) {
+        case 'Gold':
+          imagePath = Glasses.goldMoneyShades;
+          break;
+        case 'Purple':
+          imagePath = Glasses.purpleMoneyShades;
+          break;
+        case 'Green':
+          imagePath = Glasses.greenMoneyShades;
+          break;
+        case 'Silver':
+          imagePath = Glasses.silverMoneyShades;
+          break;
+      }
+      break;
+    case 'Diamond Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Blue':
+          imagePath = Diamonds.blueDiamonds;
+          break;
+        case 'Green':
+          imagePath = Diamonds.greenDiamonds;
+          break;
+        case 'Pink':
+          imagePath = Diamonds.pinkDiamonds;
+          break;
+        case 'Purple':
+          imagePath = Diamonds.purpleDiamonds;
+          break;
+        case 'White':
+          imagePath = Diamonds.whiteDiamonds;
+          break;
+        case 'Gold':
+          imagePath = Diamonds.yellowGoldDiamonds;
+          break;
+      }
+      break;
+    case 'Laser Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Red':
+          imagePath = Lasers.redLasers;
+          break;
+        case 'Green':
+          imagePath = Lasers.greenLasers;
+          break;
+        case 'Blue':
+          imagePath = Lasers.blueLasers;
+          break;
+        case 'Purple':
+          imagePath = Lasers.purplelasers;
+          break;
+      }
+      break;
+    case 'Monacle':
+      switch (metadata.eyeTraitValue) {
+        case 'Monacle':
+          imagePath = Glasses.monocle;
+          break;
+      }
       break;
   }
   if (imagePath) {
@@ -364,6 +427,77 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
           break;
         case 'Heart':
           imagePath = Hats.heartCap;
+          break;
+      }
+      break;
+
+    case 'Regular':
+      switch (metadata.headTraitValue) {
+        case 'Cyan':
+          imagePath = Hats.cyancap;
+          break;
+        case 'Yellow':
+          imagePath = Hats.yellowCap;
+          break;
+        case 'White':
+          imagePath = Hats.whiteCap;
+          break;
+        case 'Red':
+          imagePath = Hats.redCap;
+          break;
+        case 'Blue':
+          imagePath = Hats.blueCap;
+          break;
+        case 'Pink':
+          imagePath = Hats.pinkPartyHat;
+          break;
+      }
+      break;
+
+    case 'Flower Crown':
+      switch (metadata.headTraitValue) {
+        case 'Blue':
+          imagePath = Crowns.blueFlowerCrown;
+          break;
+        case 'Yellow':
+          imagePath = Crowns.yellowFlowerCrown;
+          break;
+        case 'White':
+          imagePath = Crowns.whiteFlowerCrown;
+          break;
+        case 'Red':
+          imagePath = Crowns.redFlowerCrown;
+          break;
+        case 'Purple':
+          imagePath = Crowns.purpleFlowerCrown;
+          break;
+        case 'Pink':
+          imagePath = Crowns.pinkFlowerCrown;
+          break;
+      }
+      break;
+
+    case 'Halo & Wings':
+      switch (metadata.headTraitValue) {
+        case 'Silver':
+          imagePath = Crowns.silverWings;
+          break;
+        case 'Gold':
+          imagePath = Crowns.goldWings;
+          break;
+      }
+      break;
+
+    case 'Crown & Sceptor':
+      switch (metadata.headTraitValue) {
+        case 'Silver':
+          imagePath = Crowns.silverCrown;
+          break;
+        case 'Gold':
+          imagePath = Crowns.goldCrown;
+          break;
+        case 'Bronze':
+          imagePath = Crowns.bronzeCrown;
           break;
       }
       break;
@@ -503,7 +637,7 @@ const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): 
             reject(error);
           })
           .on('finish', () => {
-            console.log('done');
+            console.log(`uploaded: ${remoteFile.name}`);
 
             resolve(remoteFile);
           })
