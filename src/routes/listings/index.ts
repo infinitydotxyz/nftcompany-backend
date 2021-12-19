@@ -47,7 +47,7 @@ router.use('/import', importListings);
  * @param {string} listType.query - fixedPrice | dutchAuction | englishAuction
  * @param {string} traitType.query
  * @param {string} traitValue.query
- * @param {string} collectionIds.query
+ * @param {string} collectionIds.query - string of comma separated collection ids
  * @param {string} chainId.query
  * @param {string} text.query
  * @param {string} startAfterSearchTitle.query

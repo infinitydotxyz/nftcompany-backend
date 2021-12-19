@@ -13,8 +13,7 @@
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "copy-files": "copyfiles utils.js constants.js dist",
-    "build:js": "npm install && rimraf dist && tsc && npm run copy-files",
-    "docs": "jsdoc ./src/types/Order.ts -r -c ./ts-to-jsdoc/jsdoc.json -d docs"
+    "build:js": "npm install && rimraf dist && tsc && npm run copy-files"
   },
   "repository": {
     "type": "git",

@@ -6,6 +6,7 @@ export function registerDocs(app: Application) {
     info: {
       version: '1.0.0',
       title: 'Infinity API',
+      description: '',
       license: {
         name: 'MIT'
       }
