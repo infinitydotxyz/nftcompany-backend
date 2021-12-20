@@ -47,3 +47,4 @@ export const DEFAULT_MAX_ETH = 1000000; // for listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
+export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel

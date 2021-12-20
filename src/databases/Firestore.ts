@@ -3,6 +3,7 @@ import firebaseAdmin from 'firebase-admin';
 import { Bucket } from '@google-cloud/storage';
 import crypto from 'crypto';
 import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
+import { FB_STORAGE_BUCKET } from '../constants';
 
 @singleton()
 export default class Firestore {
@@ -16,7 +17,7 @@ export default class Firestore {
     firebaseAdmin.initializeApp({
       // @ts-expect-error
       credential: firebaseAdmin.credential.cert(serviceAccount),
-      storageBucket: process.env.firebaseStorageBucket
+      storageBucket: FB_STORAGE_BUCKET
     });
     this.db = firebaseAdmin.firestore();
     this.bucket = firebaseAdmin.storage().bucket();

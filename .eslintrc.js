@@ -23,5 +23,5 @@ module.exports = {
     '@typescript-eslint/restrict-template-expressions': 0,
     '@typescript-eslint/return-await': 0
   },
-  ignorePatterns: ['/dist/**']
+  ignorePatterns: ['/dist/**', '**/node_modules/**']
 };
