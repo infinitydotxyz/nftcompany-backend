@@ -8,12 +8,8 @@
     "build": "npm install && rimraf dist && tsc",
     "start": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
     "script": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
-    "dev:js": "npm run build:js && nodemon server.js",
-    "start:js": "node server.js",
     "lint": "eslint .",
-    "lintfix": "eslint --fix .",
-    "copy-files": "copyfiles utils.js constants.js dist",
-    "build:js": "npm install && rimraf dist && tsc && npm run copy-files"
+    "lintfix": "eslint --fix ."
   },
   "repository": {
     "type": "git",
