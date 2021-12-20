@@ -13,6 +13,7 @@ export class DogeMetadata {
   headTraitValue?: string;
   neckTrait?: string;
   neckTraitValue?: string;
+  levelId?: string;
 
   toString = (): string => {
     return `${this.chainId} ${this.tokenAddress} ${this.tokenId} ${this.background} ${this.backgroundTraitValue} ${this.eyeTrait} ${this.eyeTraitValue} ${this.headTrait} ${this.headTraitValue} ${this.neckTrait} ${this.neckTraitValue}`;
@@ -35,6 +36,7 @@ export const generateDoge2048NftMetadata = (
   result.chainId = chainId;
   result.tokenId = tokenId;
   result.tokenAddress = tokenAddress;
+  result.levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
 
   // get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {
@@ -91,7 +93,7 @@ export const getDoge2048NftLevelId = (score: number, numPlays: number, dogBalanc
       dogBalanceLevel = key;
     }
   }
-  return 'score:' + scoreLevel + '::numPlays:' + playsLevel + '::dogBalance:' + dogBalanceLevel;
+  return md5('score:' + scoreLevel + '::numPlays:' + playsLevel + '::dogBalance:' + dogBalanceLevel);
 };
 
 const pickRandomItemFromArray = (arr: string[]): string => {

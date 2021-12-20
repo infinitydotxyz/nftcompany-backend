@@ -6,11 +6,14 @@ import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
 const { loadImage } = Canvas;
 const { Readable } = require('stream');
-import { generateDoge2048NftMetadata, DogeMetadata } from '../metadataUtils';
+import { generateDoge2048NftMetadata, DogeMetadata, getDoge2048NftLevelId } from '../metadataUtils';
 import { NftMetadata } from '../types/NftMetadata';
 
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
+const constants = require('../../constants');
+const fstrCnstnts = constants.firestore;
+const db = firebaseAdmin.firestore();
 const bucket = firebaseAdmin.storage().bucket();
 const kStartDir = './src/nfts/doge_builder/images';
 
@@ -36,31 +39,81 @@ export const metadataForDoge2048Nft = async (
   numPlays: number,
   dogBalance: number
 ): Promise<NftMetadata> => {
+  // check if already generated
   const tokenAddr = tokenAddress.trim().toLowerCase();
-  const metadata = generateDoge2048NftMetadata(chainId, tokenAddr, tokenId, score, numPlays, dogBalance);
+  const levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
+  let levelIdExists = false;
+  let levelValues = new DogeMetadata();
 
+  const docId = utils.getAssetDocId({ chainId, tokenId, tokenAddress });
+  const assetDocRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.ASSETS_COLL)
+    .doc(docId);
+
+  const assetDoc = await assetDocRef.get();
+
+  if (assetDoc.exists) {
+    const data = assetDoc.data();
+    const gameData = data.metadata?.gameData as DogeMetadata;
+    if (gameData) {
+      const lvlId = gameData.levelId;
+      if (lvlId === levelId) {
+        levelIdExists = true;
+        levelValues.levelId = lvlId;
+        levelValues.eyeTrait = gameData.eyeTrait;
+        levelValues.eyeTraitValue = gameData.eyeTraitValue;
+        levelValues.headTrait = gameData.headTrait;
+        levelValues.headTraitValue = gameData.headTraitValue;
+        levelValues.neckTrait = gameData.neckTrait;
+        levelValues.neckTraitValue = gameData.neckTraitValue;
+        levelValues.background = gameData.background;
+        levelValues.backgroundTraitValue = gameData.backgroundTraitValue;
+      }
+    }
+  }
+
+  let dogeMetadata: DogeMetadata = null;
+  if (levelIdExists) {
+    dogeMetadata = levelValues;
+    dogeMetadata.chainId = chainId;
+    dogeMetadata.tokenId = tokenId;
+    dogeMetadata.tokenAddress = tokenAddress;
+  } else {
+    dogeMetadata = generateDoge2048NftMetadata(chainId, tokenAddr, tokenId, score, numPlays, dogBalance);
+    // store in firestore
+    const obj = {
+      metadata: {
+        gameData: dogeMetadata
+      }
+    };
+    assetDocRef
+      .set(obj, { merge: true })
+      .catch((err: any) => utils.error('Error storing doge 2048 metadata for', chainId, tokenAddr, tokenId, err));
+  }
   const eyesAttribute = {
-    trait_type: 'eyes',
-    value: metadata.eyeTraitValue
+    trait_type: dogeMetadata.eyeTrait,
+    value: dogeMetadata.eyeTraitValue
   };
   const headAttribute = {
-    trait_type: 'head',
-    value: metadata.headTraitValue
+    trait_type: dogeMetadata.headTrait,
+    value: dogeMetadata.headTraitValue
   };
   const neckAttribute = {
-    trait_type: 'neck',
-    value: metadata.neckTraitValue
+    trait_type: dogeMetadata.neckTrait,
+    value: dogeMetadata.neckTraitValue
   };
   const backgroundAttribute = {
-    trait_type: 'background',
-    value: metadata.backgroundTraitValue
+    trait_type: dogeMetadata.background,
+    value: dogeMetadata.backgroundTraitValue
   };
 
-  const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
+  const path = `images/polygon/doge2048/${dogeMetadata.hash()}.jpg`;
   const remoteFile: File = bucket.file(path);
   const existsArray = await remoteFile.exists();
   if (existsArray && existsArray.length > 0 && !existsArray[0]) {
-    const buffer = await buildImage(metadata);
+    const buffer = await buildImage(dogeMetadata);
     await uploadImage(buffer, path);
   }
 

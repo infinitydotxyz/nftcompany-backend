@@ -6,6 +6,7 @@ const localHostProvider = new ethers.providers.JsonRpcProvider(process.env.local
 const rateLimit = require('express-rate-limit');
 const { uniqBy } = require('lodash');
 const qs = require('qs');
+const crypto = require('crypto');
 
 const firebaseAdmin = require('firebase-admin');
 const serviceAccount = require('./creds/nftc-dev-firebase-creds.json');
@@ -246,5 +247,10 @@ module.exports = {
       return '31337';
     }
     return '';
+  },
+
+  getAssetDocId: function ({ chainId, tokenId, tokenAddress }) {
+    const data = tokenAddress.trim() + tokenId.trim() + chainId;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 };
