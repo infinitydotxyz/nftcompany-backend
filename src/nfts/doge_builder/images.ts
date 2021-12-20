@@ -45,7 +45,8 @@ export const metadataForDoge2048Nft = async (
   let levelIdExists = false;
   let levelValues = new DogeMetadata();
 
-  const docId = utils.getAssetDocId({ chainId, tokenId, tokenAddress });
+  const docId = utils.getAssetDocId({ chainId, tokenId: String(tokenId), tokenAddress });
+  console.log('docid', docId);
   const assetDocRef = db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -85,7 +86,8 @@ export const metadataForDoge2048Nft = async (
     // store in firestore
     const obj = {
       metadata: {
-        gameData: dogeMetadata
+        // vagaries of firestore
+        gameData: JSON.parse(JSON.stringify(dogeMetadata))
       }
     };
     assetDocRef
