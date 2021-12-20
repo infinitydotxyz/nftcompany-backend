@@ -5,8 +5,6 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 // todo: adi change this
-
-// todo: adi change this
 import dogeAbi from '@base/abi/doge2048nft.json';
 // todo: adi change this
 import factoryAbi from '@base/abi/infinityFactory.json';
@@ -14,7 +12,7 @@ import { metadataForDoge2048Nft } from '@routes/nfts/doge_builder/images';
 import { jsonString } from '@utils/formatters';
 
 // todo: adi constants
-const dogTokenAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+const dogTokenAddress = '0x3604035F54e5fe0875652842024b49D1Fea11C7C';
 
 // api to get metadata
 export const getAssetMetadata = async (
