@@ -6,7 +6,7 @@
     "watch": "tsc --watch",
     "dev": "concurrently 'npm run watch' 'TS_NODE_BASEURL=./dist/src nodemon -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js'",
     "build": "npm install && rimraf dist && tsc",
-    "start": "TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
+    "start": "node dist/src/index.js",
     "script": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
     "lint": "eslint .",
     "lintfix": "eslint --fix ."
