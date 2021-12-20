@@ -2,6 +2,8 @@ import { metadata as doge2048NftMetadata } from './metadata/doge2048nft';
 import md5 from 'md5';
 
 export class DogeMetadata {
+  chainId?: string;
+  tokenAddress?: string;
   tokenId?: number;
   background?: string;
   backgroundTraitValue?: string;
@@ -13,7 +15,7 @@ export class DogeMetadata {
   neckTraitValue?: string;
 
   toString = (): string => {
-    return `${this.tokenId} ${this.background} ${this.backgroundTraitValue} ${this.eyeTrait} ${this.eyeTraitValue} ${this.headTrait} ${this.headTraitValue} ${this.neckTrait} ${this.neckTraitValue}`;
+    return `${this.chainId} ${this.tokenAddress} ${this.tokenId} ${this.background} ${this.backgroundTraitValue} ${this.eyeTrait} ${this.eyeTraitValue} ${this.headTrait} ${this.headTraitValue} ${this.neckTrait} ${this.neckTraitValue}`;
   };
 
   hash = (): string => {
@@ -22,13 +24,18 @@ export class DogeMetadata {
 }
 
 export const generateDoge2048NftMetadata = (
+  chainId: string,
+  tokenAddress: string,
   tokenId: number,
   score: number,
   numPlays: number,
   dogBalance: number
 ): DogeMetadata => {
   let result: DogeMetadata = new DogeMetadata();
+  result.chainId = chainId;
   result.tokenId = tokenId;
+  result.tokenAddress = tokenAddress;
+
   // get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {

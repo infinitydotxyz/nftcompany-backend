@@ -29,12 +29,15 @@ export const uploadSourceImages = async () => {
 };
 
 export const metadataForDoge2048Nft = async (
+  chainId: string,
+  tokenAddress: string,
   tokenId: number,
   score: number,
   numPlays: number,
   dogBalance: number
 ): Promise<NftMetadata> => {
-  const metadata = generateDoge2048NftMetadata(tokenId, score, numPlays, dogBalance);
+  const tokenAddr = tokenAddress.trim().toLowerCase();
+  const metadata = generateDoge2048NftMetadata(chainId, tokenAddr, tokenId, score, numPlays, dogBalance);
 
   const eyesAttribute = {
     trait_type: 'eyes',

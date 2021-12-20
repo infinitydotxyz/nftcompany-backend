@@ -6,8 +6,6 @@ const router = express.Router();
 
 const utils = require('../../utils');
 const constants = require('../../constants');
-const firebaseAdmin = utils.getFirebaseAdmin();
-const db = firebaseAdmin.firestore();
 
 import { metadataForDoge2048Nft } from './doge_builder/images';
 
@@ -55,7 +53,7 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
     const numPlays = await contract.numPlays();
     const dogBalance = await contract.getTokenBalance(dogTokenAddress);
     const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
-    const metadata = await metadataForDoge2048Nft(+tokenId, score, numPlays, finalDogBalance);
+    const metadata = await metadataForDoge2048Nft(chainId, tokenAddress, +tokenId, score, numPlays, finalDogBalance);
     const result = {
       image: metadata.image,
       name: 'Doge 2048',
@@ -72,12 +70,12 @@ router.get('/:chain/:tokenAddress/:tokenId', async (req, res) => {
 
 // api to get grid images
 router.get('/doge2048/level-images', async (req, res) => {
-  const { score, numPlays, dogBalance } = req.query;
+  const { score, numPlays, dogBalance, tokenAddress, chainId } = req.query;
   try {
     const finalScore: number = score ? parseInt(score as string) : 0;
     const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
     const finalDogBalance: number = dogBalance ? parseInt(dogBalance as string) : 1;
-    const metadata = await metadataForDoge2048Nft(0, finalScore, finalNumPlays, finalDogBalance);
+    const metadata = await metadataForDoge2048Nft(chainId as string, tokenAddress as string, 0, finalScore, finalNumPlays, finalDogBalance);
     const result = { image: metadata.image };
     res.send(JSON.stringify(result));
   } catch (err) {
