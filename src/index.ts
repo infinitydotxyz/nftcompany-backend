@@ -9,12 +9,16 @@ import { log } from '@utils/logger.js';
 import { requestErrorHandler } from '@base/middleware/errorHandler.js';
 import { requestLogger } from '@base/middleware/logger.js';
 import { registerDocs } from './docs';
+import { ORIGIN } from '@constants';
 
 const app = express();
 
 const registerMiddleware = () => {
   app.use(express.json());
-  app.use(cors());
+  const corsOptions: cors.CorsOptions = {
+    origin: ORIGIN
+  };
+  app.use(cors(corsOptions));
   app.use(helmet());
   app.use(requestLogger);
 };

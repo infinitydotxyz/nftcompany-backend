@@ -48,3 +48,6 @@ export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
 export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
+export const ORIGIN = /http:\/\/localhost:\d+/; // todo: adi change this for dev/prod
+// export const ORIGIN = 'https://dev.nftcompany.com'
+// export const ORIGIN = 'https://infinity.xyz'
