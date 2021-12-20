@@ -2,7 +2,7 @@ import { Listing } from '@base/types/Listing';
 import { ListingResponse } from '@base/types/ListingResponse';
 import { OrderSide } from '@base/types/NftInterface';
 import { OrderDirection } from '@base/types/Queries';
-import { WyvernAssetData, WyvernSellOrder } from '@base/types/WyvernOrder';
+import { WyvernAssetData, WyvernSellOrder } from '@base/types/wyvern/WyvernOrder';
 import { deepCopy } from '@utils/index';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';

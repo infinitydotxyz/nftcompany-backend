@@ -15,6 +15,7 @@ export const getUserAssets = async (req: Request<{ user: string }>, res: Respons
 export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
+  const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if ('error' in queries) {
     res.sendStatus(StatusCode.InternalServerError);
@@ -32,7 +33,7 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     return;
   }
   try {
-    const assets = await getAssets(user, queries.limit, queries.offset, sourceName);
+    const assets = await getAssets(user, queries.limit, queries.offset, sourceName, contract as string);
 
     if (!assets) {
       res.sendStatus(StatusCode.InternalServerError);
@@ -52,7 +53,13 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
   }
 }
 
-export async function getAssets(address: string, limit: number, offset: number, sourceName: NFTDataSource) {
+export async function getAssets(
+  address: string,
+  limit: number,
+  offset: number,
+  sourceName: NFTDataSource,
+  contract?: string
+) {
   log('Fetching assets for', address);
   let data;
   switch (sourceName) {
@@ -63,7 +70,7 @@ export async function getAssets(address: string, limit: number, offset: number, 
       data = await getAssetsFromAlchemy(address, limit, offset);
       break;
     case NFTDataSource.Unmarshal:
-      data = await getUserAssetsFromUnmarshall(address);
+      data = await getUserAssetsFromUnmarshall(address, contract);
       break;
     case NFTDataSource.OpenSea:
       data = await getAssetsFromOpenSeaByUser(address, offset, limit);

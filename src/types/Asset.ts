@@ -1,4 +1,4 @@
-import { WyvernAssetData } from './WyvernOrder';
+import { WyvernAssetData } from './wyvern/WyvernOrder';
 import { Trait } from './Trait';
 
 export interface Asset {

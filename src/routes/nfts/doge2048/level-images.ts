@@ -1,18 +1,25 @@
 import { StatusCode } from '@base/types/StatusCode';
 import { error } from '@utils/logger';
 import { Router } from 'express';
-import { urlForDogeImage } from '../doge_builder/images';
+import { metadataForDoge2048Nft } from '../doge_builder/images';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
-  const { score, numPlays, dogBalance } = req.query;
+  const { score, numPlays, dogBalance, tokenAddress, chainId } = req.query;
   try {
     const finalScore: number = score ? parseInt(score as string) : 0;
     const finalNumPlays: number = numPlays ? parseInt(numPlays as string) : 1;
     const finalDogBalance: number = dogBalance ? parseInt(dogBalance as string) : 1;
-    const url = await urlForDogeImage(finalScore, finalNumPlays, finalDogBalance);
-    const result = { image: url };
+    const metadata = await metadataForDoge2048Nft(
+      chainId as string,
+      tokenAddress as string,
+      0,
+      finalScore,
+      finalNumPlays,
+      finalDogBalance
+    );
+    const result = { image: metadata.image };
     res.send(JSON.stringify(result));
   } catch (err) {
     error('Failed fetching grid images');

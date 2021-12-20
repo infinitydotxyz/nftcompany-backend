@@ -8,7 +8,7 @@ import { ListingResponse } from '@base/types/ListingResponse';
 import { ListingType } from '@base/types/NftInterface';
 import { Order } from '@base/types/Order';
 import { Trait } from '@base/types/Trait';
-import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/WyvernOrder';
+import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/wyvern/WyvernOrder';
 import { fstrCnstnts } from '@constants';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from '@services/infinity/utils';

@@ -1,4 +1,4 @@
-import { WyvernTraitWithValues } from './WyvernOrder';
+import { WyvernTraitWithValues } from './wyvern/WyvernOrder';
 
 export enum OrderSide {
   Buy = 0,

@@ -1,4 +1,4 @@
-import { WyvernAssetData } from '@base/types/WyvernOrder';
+import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
 import { OrderDirection } from '@base/types/Queries';
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';

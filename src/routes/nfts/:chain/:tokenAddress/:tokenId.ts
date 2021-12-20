@@ -5,12 +5,13 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 // todo: adi change this
-import { urlForDogeImage } from '../../doge_builder/images';
 
 // todo: adi change this
 import dogeAbi from '@base/abi/doge2048nft.json';
 // todo: adi change this
 import factoryAbi from '@base/abi/infinityFactory.json';
+import { metadataForDoge2048Nft } from '@routes/nfts/doge_builder/images';
+import { jsonString } from '@utils/formatters';
 
 // todo: adi constants
 const dogTokenAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
@@ -36,17 +37,21 @@ export const getAssetMetadata = async (
     // todo: adi generalize this
     const factoryContract = new ethers.Contract(tokenAddress, factoryAbi, provider);
     const instanceAddress = await factoryContract.tokenIdToInstance(+tokenId);
-
     const contract = new ethers.Contract(instanceAddress, dogeAbi, provider);
     const score = await contract.score();
     const numPlays = await contract.numPlays();
     const dogBalance = await contract.getTokenBalance(dogTokenAddress);
     const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
-    const url = await urlForDogeImage(score, numPlays, finalDogBalance);
-    const result = { image: url, name: 'Doge 2048', description: 'NFT based 2048 game with much wow' };
-    res.send(JSON.stringify(result));
+    const metadata = await metadataForDoge2048Nft(chainId, tokenAddress, +tokenId, score, numPlays, finalDogBalance);
+    const result = {
+      image: metadata.image,
+      name: 'Doge 2048',
+      description: 'NFT based 2048 game with much wow',
+      attributes: metadata.attributes
+    };
+    res.send(jsonString(result));
   } catch (err) {
-    error('Failed fetching metadata for', tokenAddress, tokenId);
+    error('Failed fetching metadata for', tokenAddress, tokenId, chain);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }

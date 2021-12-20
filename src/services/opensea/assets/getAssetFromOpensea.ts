@@ -1,4 +1,4 @@
-import { WyvernAssetData } from '@base/types/WyvernOrder';
+import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
 import { OPENSEA_API } from '@constants';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
