@@ -195,6 +195,13 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
       const tokenId = listing.metadata.asset.id;
       const chainId = listing.metadata.chainId;
 
+      for (const key of Object.keys(listing.metadata.asset)) {
+        if (!listing.metadata.asset[key]) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete listing.metadata.asset[key];
+        }
+      }
+
       const newDoc = firestore
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
