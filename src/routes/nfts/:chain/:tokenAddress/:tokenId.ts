@@ -5,8 +5,6 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 // todo: adi change this
-
-// todo: adi change this
 import dogeAbi from '@base/abi/doge2048nft.json';
 // todo: adi change this
 import factoryAbi from '@base/abi/infinityFactory.json';
