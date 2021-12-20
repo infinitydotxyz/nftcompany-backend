@@ -2896,7 +2896,10 @@ async function getAssetsFromUnmarshal(address, limit, offset, contract) {
   const url = apiBase + chain + '/address/' + address + '/nft-assets?contract=' + contract + '&auth_key=' + authKey;
   try {
     const { data } = await axios.get(url);
-    const resp = { count: data.length, assets: data };
+    let resp = { count: 0, assets: [] };
+    if (data) {
+      resp = { count: data.length, assets: data };
+    }
     return resp;
   } catch (err) {
     utils.error('Error occured while fetching assets from unmarshal');
