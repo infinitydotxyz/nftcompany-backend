@@ -45,25 +45,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "gameTokenBalances",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
     "name": "getNonce",
     "outputs": [
@@ -150,24 +131,6 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "gameToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "initializeGameTokenBalance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes32",
         "name": "permissionHash",
         "type": "bytes32"
@@ -191,12 +154,12 @@
   },
   {
     "inputs": [],
-    "name": "level",
+    "name": "name",
     "outputs": [
       {
-        "internalType": "uint8",
+        "internalType": "string",
         "name": "",
-        "type": "uint8"
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -249,42 +212,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "reduceGameTokenBalance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "gameToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "gameTokensPerPlay",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "newLevel",
-        "type": "uint8"
-      },
-      {
         "internalType": "uint32",
         "name": "newScore",
         "type": "uint32"
-      },
-      {
-        "internalType": "address",
-        "name": "pool",
-        "type": "address"
       }
     ],
     "name": "saveState",
@@ -303,24 +233,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "gameToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "topupGameTokenBalance",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

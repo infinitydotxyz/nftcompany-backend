@@ -1,15 +1,19 @@
-import { readdirSync, readFileSync, Dirent } from 'fs';
+import { readdirSync, writeFileSync, readFileSync, Dirent } from 'fs';
 import { UploadResponse, File } from '@google-cloud/storage';
-import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars } from './dogeImages';
+import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars, Diamonds, Lasers, Crowns } from './dogeImages';
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
 const { loadImage } = Canvas;
 const { Readable } = require('stream');
-import { generateDoge2048NftMetadata, DogeMetadata } from '../metadataUtils';
+import { generateDoge2048NftMetadata, DogeMetadata, getDoge2048NftLevelId } from '../metadataUtils';
+import { NftMetadata } from '../types/NftMetadata';
 
 const utils = require('../../../utils');
 const firebaseAdmin = utils.getFirebaseAdmin();
+const constants = require('../../constants');
+const fstrCnstnts = constants.firestore;
+const db = firebaseAdmin.firestore();
 const bucket = firebaseAdmin.storage().bucket();
 const kStartDir = './src/nfts/doge_builder/images';
 
@@ -22,27 +26,102 @@ export const uploadSourceImages = async () => {
 
   const jsonString = JSON.stringify(mapToObj(result), null, 2);
 
+  writeFileSync('./images.json', jsonString);
+
   await uploadString(jsonString, 'images/doge/images.json');
 };
 
-export const testUpload = async (): Promise<string> => {
-  const score = 2110;
-  const numPlays = 132;
-  const dogBalance = 121100;
+export const metadataForDoge2048Nft = async (
+  chainId: string,
+  tokenAddress: string,
+  tokenId: number,
+  score: number,
+  numPlays: number,
+  dogBalance: number
+): Promise<NftMetadata> => {
+  // check if already generated
+  const tokenAddr = tokenAddress.trim().toLowerCase();
+  const levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
+  let levelIdExists = false;
+  let levelValues = new DogeMetadata();
 
-  return urlForDogeImage(score, numPlays, dogBalance);
-};
+  const docId = utils.getAssetDocId({ chainId, tokenId: String(tokenId), tokenAddress });
+  console.log('docid', docId);
+  const assetDocRef = db
+    .collection(fstrCnstnts.ROOT_COLL)
+    .doc(fstrCnstnts.INFO_DOC)
+    .collection(fstrCnstnts.ASSETS_COLL)
+    .doc(docId);
 
-export const urlForDogeImage = async (score: number, numPlays: number, dogBalance: number): Promise<string> => {
-  const metadata = generateDoge2048NftMetadata(score, numPlays, dogBalance);
-  const path = `images/polygon/doge2048/${metadata.hash()}.jpg`;
+  const assetDoc = await assetDocRef.get();
+
+  if (assetDoc.exists) {
+    const data = assetDoc.data();
+    const gameData = data.metadata?.gameData as DogeMetadata;
+    if (gameData) {
+      const lvlId = gameData.levelId;
+      if (lvlId === levelId) {
+        levelIdExists = true;
+        levelValues.levelId = lvlId;
+        levelValues.eyeTrait = gameData.eyeTrait;
+        levelValues.eyeTraitValue = gameData.eyeTraitValue;
+        levelValues.headTrait = gameData.headTrait;
+        levelValues.headTraitValue = gameData.headTraitValue;
+        levelValues.neckTrait = gameData.neckTrait;
+        levelValues.neckTraitValue = gameData.neckTraitValue;
+        levelValues.background = gameData.background;
+        levelValues.backgroundTraitValue = gameData.backgroundTraitValue;
+      }
+    }
+  }
+
+  let dogeMetadata: DogeMetadata = null;
+  if (levelIdExists) {
+    dogeMetadata = levelValues;
+    dogeMetadata.chainId = chainId;
+    dogeMetadata.tokenId = tokenId;
+    dogeMetadata.tokenAddress = tokenAddress;
+  } else {
+    dogeMetadata = generateDoge2048NftMetadata(chainId, tokenAddr, tokenId, score, numPlays, dogBalance);
+    // store in firestore
+    const obj = {
+      metadata: {
+        // vagaries of firestore
+        gameData: JSON.parse(JSON.stringify(dogeMetadata))
+      }
+    };
+    assetDocRef
+      .set(obj, { merge: true })
+      .catch((err: any) => utils.error('Error storing doge 2048 metadata for', chainId, tokenAddr, tokenId, err));
+  }
+  const eyesAttribute = {
+    trait_type: dogeMetadata.eyeTrait,
+    value: dogeMetadata.eyeTraitValue
+  };
+  const headAttribute = {
+    trait_type: dogeMetadata.headTrait,
+    value: dogeMetadata.headTraitValue
+  };
+  const neckAttribute = {
+    trait_type: dogeMetadata.neckTrait,
+    value: dogeMetadata.neckTraitValue
+  };
+  const backgroundAttribute = {
+    trait_type: dogeMetadata.background,
+    value: dogeMetadata.backgroundTraitValue
+  };
+
+  const path = `images/polygon/doge2048/${dogeMetadata.hash()}.jpg`;
   const remoteFile: File = bucket.file(path);
   const existsArray = await remoteFile.exists();
   if (existsArray && existsArray.length > 0 && !existsArray[0]) {
-    const buffer = await buildImage(metadata);
+    const buffer = await buildImage(dogeMetadata);
     await uploadImage(buffer, path);
   }
-  return remoteFile.publicUrl();
+
+  const image = remoteFile.publicUrl();
+  const attributes = [eyesAttribute, headAttribute, neckAttribute, backgroundAttribute];
+  return { image, attributes };
 };
 
 // =================================================
@@ -111,28 +190,28 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
     case 'Background':
       switch (metadata.backgroundTraitValue) {
         case 'Trippy Swirl':
-          imagePath = Backgrounds.trippySwirl;
+          imagePath = Backgrounds.swirl;
           break;
         case 'Purple':
           imagePath = Backgrounds.purple;
           break;
         case 'Green':
-          imagePath = Backgrounds.greenScreen;
+          imagePath = Backgrounds.green;
           break;
         case 'Orange':
-          imagePath = Backgrounds.orange;
+          imagePath = Backgrounds.gradient; // no orange?
           break;
         case 'Pink Stripes':
-          imagePath = Backgrounds.pinkStripes;
+          imagePath = Backgrounds.pink;
           break;
         case 'Blue Stripes':
-          imagePath = Backgrounds.blueStripes;
+          imagePath = Backgrounds.blue;
           break;
         case 'Moon':
-          imagePath = Backgrounds.moon;
+          imagePath = Backgrounds.stars; // no moon?
           break;
         case 'Nyan':
-          imagePath = Backgrounds.nyan;
+          imagePath = Backgrounds.rainbow; // no nylan?
           break;
         case 'Tacos':
           imagePath = Backgrounds.tacos;
@@ -147,7 +226,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           imagePath = Backgrounds.matrix;
           break;
         case 'Night Club':
-          imagePath = Backgrounds.nightClub;
+          imagePath = Backgrounds.nightclub;
           break;
         case 'Clouds':
           imagePath = Backgrounds.clouds;
@@ -231,6 +310,9 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
         case 'Yellow':
           imagePath = Glasses.yellowShades;
           break;
+        case 'Black':
+          imagePath = Glasses.blackShades;
+          break;
         case 'White':
           imagePath = Glasses.whiteShades;
           break;
@@ -282,7 +364,67 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           imagePath = Hearts.orangeHearts;
           break;
       }
-
+      break;
+    case 'Money Glasses':
+      switch (metadata.eyeTraitValue) {
+        case 'Gold':
+          imagePath = Glasses.goldMoneyShades;
+          break;
+        case 'Purple':
+          imagePath = Glasses.purpleMoneyShades;
+          break;
+        case 'Green':
+          imagePath = Glasses.greenMoneyShades;
+          break;
+        case 'Silver':
+          imagePath = Glasses.silverMoneyShades;
+          break;
+      }
+      break;
+    case 'Diamond Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Blue':
+          imagePath = Diamonds.blueDiamonds;
+          break;
+        case 'Green':
+          imagePath = Diamonds.greenDiamonds;
+          break;
+        case 'Pink':
+          imagePath = Diamonds.pinkDiamonds;
+          break;
+        case 'Purple':
+          imagePath = Diamonds.purpleDiamonds;
+          break;
+        case 'White':
+          imagePath = Diamonds.whiteDiamonds;
+          break;
+        case 'Gold':
+          imagePath = Diamonds.yellowGoldDiamonds;
+          break;
+      }
+      break;
+    case 'Laser Eyes':
+      switch (metadata.eyeTraitValue) {
+        case 'Red':
+          imagePath = Lasers.redLasers;
+          break;
+        case 'Green':
+          imagePath = Lasers.greenLasers;
+          break;
+        case 'Blue':
+          imagePath = Lasers.blueLasers;
+          break;
+        case 'Purple':
+          imagePath = Lasers.purplelasers;
+          break;
+      }
+      break;
+    case 'Monacle':
+      switch (metadata.eyeTraitValue) {
+        case 'Monacle':
+          imagePath = Glasses.monocle;
+          break;
+      }
       break;
   }
   if (imagePath) {
@@ -316,6 +458,28 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           break;
       }
       break;
+    case 'Top Hat':
+      switch (metadata.headTraitValue) {
+        case 'Green':
+          imagePath = Hats.greenTophat;
+          break;
+        case 'Black':
+          imagePath = Hats.blackTophat;
+          break;
+        case 'Purple':
+          imagePath = Hats.purpleTophat;
+          break;
+
+        case 'Gold':
+          imagePath = Hats.goldTophat;
+          break;
+        case 'Brown':
+          imagePath = Hats.brownTophat;
+          break;
+        default:
+          break;
+      }
+      break;
     case 'Items':
       switch (metadata.headTraitValue) {
         case 'BTC':
@@ -332,13 +496,84 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer> => {
           break;
 
         case 'Crown':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.crownCap;
           break;
         case 'Rocker':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.rocketCap;
           break;
         case 'Heart':
-          imagePath = Hats.fireCap;
+          imagePath = Hats.heartCap;
+          break;
+      }
+      break;
+
+    case 'Regular':
+      switch (metadata.headTraitValue) {
+        case 'Cyan':
+          imagePath = Hats.cyancap;
+          break;
+        case 'Yellow':
+          imagePath = Hats.yellowCap;
+          break;
+        case 'White':
+          imagePath = Hats.whiteCap;
+          break;
+        case 'Red':
+          imagePath = Hats.redCap;
+          break;
+        case 'Blue':
+          imagePath = Hats.blueCap;
+          break;
+        case 'Pink':
+          imagePath = Hats.pinkPartyHat;
+          break;
+      }
+      break;
+
+    case 'Flower Crown':
+      switch (metadata.headTraitValue) {
+        case 'Blue':
+          imagePath = Crowns.blueFlowerCrown;
+          break;
+        case 'Yellow':
+          imagePath = Crowns.yellowFlowerCrown;
+          break;
+        case 'White':
+          imagePath = Crowns.whiteFlowerCrown;
+          break;
+        case 'Red':
+          imagePath = Crowns.redFlowerCrown;
+          break;
+        case 'Purple':
+          imagePath = Crowns.purpleFlowerCrown;
+          break;
+        case 'Pink':
+          imagePath = Crowns.pinkFlowerCrown;
+          break;
+      }
+      break;
+
+    case 'Halo & Wings':
+      switch (metadata.headTraitValue) {
+        case 'Silver':
+          imagePath = Crowns.silverWings;
+          break;
+        case 'Gold':
+          imagePath = Crowns.goldWings;
+          break;
+      }
+      break;
+
+    case 'Crown & Sceptor':
+      switch (metadata.headTraitValue) {
+        case 'Silver':
+          imagePath = Crowns.silverCrown;
+          break;
+        case 'Gold':
+          imagePath = Crowns.goldCrown;
+          break;
+        case 'Bronze':
+          imagePath = Crowns.bronzeCrown;
           break;
       }
       break;
@@ -478,7 +713,7 @@ const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): 
             reject(error);
           })
           .on('finish', () => {
-            console.log('done');
+            console.log(`uploaded: ${remoteFile.name}`);
 
             resolve(remoteFile);
           })

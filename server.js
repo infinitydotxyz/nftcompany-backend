@@ -361,7 +361,7 @@ async function openseaAssetDataToListing(chainId, data) {
       description,
       owner: data.owner.address,
       image: data.image_url,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       searchTitle: utils.getSearchFriendlyString(data.name),
       title: data.name,
@@ -504,27 +504,31 @@ async function getListingsByCollectionNameAndPrice(
       }
 
       if (traitType && traitValue) {
-        let traitQueryArr = [];
+        const traitQueryArr = [];
         if (traitType.indexOf(',') > 0) {
           // multi-trait query
           const typesArr = traitType.split(',');
           const valuesArr = traitValue.split(',');
           if (typesArr.length === valuesArr.length) {
             for (let j = 0; j < typesArr.length; j++) {
-              traitQueryArr.push({
-                traitType: typesArr[j],
-                traitValue: valuesArr[j]
-              });
+              const valArr = valuesArr[j].split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+              for (let v = 0; v < typesArr.length; v++) {
+                traitQueryArr.push({
+                  traitType: typesArr[j],
+                  traitValue: valArr[v]
+                });
+              }
             }
           }
         } else {
           // single-trait query
-          traitQueryArr = [
-            {
+          const valArr = traitValue.split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+          for (let v = 0; v < valArr.length; v++) {
+            traitQueryArr.push({
               traitType,
-              traitValue
-            }
-          ];
+              traitValue: valArr[v]
+            });
+          }
         }
         queryRef = queryRef.where('metadata.asset.traits', 'array-contains-any', traitQueryArr);
       }
@@ -2696,7 +2700,7 @@ async function postListing(maker, payload, batch, numOrders, hasBonus) {
               searchCollectionName: payload.metadata.asset.searchCollectionName,
               description: payload.metadata.asset.description,
               image: payload.metadata.asset.image,
-              imagePreview: payload.metadata.asset.imagePreview
+              imagePreview: payload.metadata.asset.imagePreview || payload.metadata.asset.image
             }
           }
         },
@@ -2793,6 +2797,7 @@ function getOrdersResponseFromArray(docs) {
 async function fetchAssetsOfUser(req, res) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source } = req.query;
+  const contract = req.query.contract || '';
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
     return;
@@ -2809,7 +2814,7 @@ async function fetchAssetsOfUser(req, res) {
     return;
   }
   try {
-    let resp = await getAssets(user, limit, offset, sourceName);
+    let resp = await getAssets(user, limit, offset, sourceName, contract);
     resp = utils.jsonString(resp);
     // to enable cdn cache
     res.set({
@@ -2823,13 +2828,13 @@ async function fetchAssetsOfUser(req, res) {
   }
 }
 
-async function getAssets(address, limit, offset, sourceName) {
+async function getAssets(address, limit, offset, sourceName, contract) {
   utils.log('Fetching assets for', address);
-  const results = await getAssetsFromChain(address, limit, offset, sourceName);
+  const results = await getAssetsFromChain(address, limit, offset, sourceName, contract);
   return results;
 }
 
-async function getAssetsFromChain(address, limit, offset, sourceName) {
+async function getAssetsFromChain(address, limit, offset, sourceName, contract) {
   let data;
   switch (sourceName) {
     case 'nftc':
@@ -2839,7 +2844,7 @@ async function getAssetsFromChain(address, limit, offset, sourceName) {
       data = await getAssetsFromAlchemy(address, limit, offset);
       break;
     case 'unmarshal':
-      data = await getAssetsFromUnmarshal(address, limit, offset);
+      data = await getAssetsFromUnmarshal(address, limit, offset, contract);
       break;
     case 'opensea':
       data = await getAssetsFromOpensea(address, limit, offset);
@@ -2885,15 +2890,16 @@ async function getAssetsFromCovalent(address, limit, offset) {
   }
 }
 
-async function getAssetsFromUnmarshal(address, limit, offset) {
+async function getAssetsFromUnmarshal(address, limit, offset, contract) {
   utils.log('Fetching assets from unmarshal');
   const apiBase = 'https://api.unmarshal.com/v1/';
-  const chain = 'ethereum';
+  const chain = 'matic'; // ethereum
   const authKey = process.env.unmarshalKey;
-  const url = apiBase + chain + '/address/' + address + '/nft-assets?auth_key=' + authKey;
+  const url = apiBase + chain + '/address/' + address + '/nft-assets?contract=' + contract + '&auth_key=' + authKey;
   try {
     const { data } = await axios.get(url);
-    return data;
+    const resp = { count: data.length, assets: data };
+    return resp;
   } catch (err) {
     utils.error('Error occured while fetching assets from unmarshal');
     utils.error(err);
@@ -2926,7 +2932,7 @@ async function getAssetsFromOpensea(address, limit, offset) {
  */
 async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: RawAssetData[] */) {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
-    return [];
+    return { count: 0, listings: [] };
   }
   const listingMetadataPromises /*: Promise<ListingMetadata>[] */ = rawAssetDataArray.map(
     async (rawAssetData /*: RawAssetData */) => {
@@ -2969,7 +2975,7 @@ async function convertOpenseaListingsToInfinityListings(rawAssetDataArray /*: Ra
         const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
         if (baseOrder) {
           const infinityListing /*: ListingWithOrder */ = {
-            id,
+            id: getDocId({ tokenId, tokenAddress, basePrice: baseOrder.basePrice || '' }),
             metadata: listingMetadata,
             order: baseOrder,
             ...baseOrder,
@@ -3054,7 +3060,7 @@ async function rawAssetDataToListingMetadata(data /*: RawAssetData */) /*: Promi
       image: data.image_url,
       searchCollectionName: utils.getSearchFriendlyString(collectionName),
       address: tokenAddress,
-      imagePreview: data.image_preview_url,
+      imagePreview: data.image_preview_url || data.image_url,
       traitTypes: traits?.map(({ traitType }) => traitType)
     }
   };
