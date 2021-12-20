@@ -16,7 +16,8 @@ const app = express();
 const registerMiddleware = () => {
   app.use(express.json());
   const corsOptions: cors.CorsOptions = {
-    origin: ORIGIN
+    origin: ORIGIN,
+    optionsSuccessStatus: 200
   };
   app.use(cors(corsOptions));
   app.use(helmet());
