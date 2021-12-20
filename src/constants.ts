@@ -48,3 +48,4 @@ export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
 export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
+export const ORIGIN = 'https://dev.nftcompany.com'

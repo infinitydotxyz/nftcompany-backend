@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getVerifiedBonusReward } from './:tokenAddress/verifiedBonusReward.js';
+import { getVerifiedBonusReward } from './_tokenAddress/verifiedBonusReward.js';
 const router = Router();
 
 router.get('/:tokenAddress/verifiedBonusReward', getVerifiedBonusReward);
