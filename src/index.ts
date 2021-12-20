@@ -15,7 +15,7 @@ const app = express();
 const registerMiddleware = () => {
   app.use(express.json());
   const corsOptions: cors.CorsOptions = {
-    origin: ['https://dev.nftcompany.com', 'https://infinity.xyz', /http:\/\/localhost:\d+/]
+    origin: /.*/
   };
   app.use(cors(corsOptions));
   app.use(helmet());
