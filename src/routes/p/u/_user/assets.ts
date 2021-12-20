@@ -1,4 +1,4 @@
-import { fetchAssetsOfUser } from '@routes/u/:user/assets';
+import { fetchAssetsOfUser } from '@routes/u/_user/assets';
 import { Request, Response } from 'express';
 
 export const getUserAssets = async (req: Request<{ user: string }>, res: Response) => {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { StatusCode } from '@base/types/StatusCode.js';
-import { getAssetMetadata } from './:chain/:tokenAddress/:tokenId';
+import { getAssetMetadata } from './_chain/_tokenAddress/_tokenId';
 import levelImages from './doge2048/level-images';
 
 const router = Router();
