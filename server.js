@@ -1,4 +1,4 @@
-const nfts = require('./dist/nfts/index').default;
+// const nfts = require('./dist/nfts/index').default;
 
 require('dotenv').config();
 const { ethers } = require('ethers');
@@ -24,7 +24,7 @@ app.use(cors());
 app.use(helmet());
 
 // other routes
-app.use('/nfts', nfts);
+// app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
@@ -3094,7 +3094,7 @@ function getInfinityOrderData(asset /*: Asset */, hasBlueCheck /*: boolean */) {
 
 /**
  *
- * @param order metadata to set in the order.metadata.asset
+ * @param order
  * @returns
  */
 function rawSellOrderToBaseOrder(order /* : RawSellOrder */) /*: BaseOrder */ {

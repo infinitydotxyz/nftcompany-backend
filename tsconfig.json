@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
@@ -8,12 +8,21 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "allowJs": true,
+    "declaration": true,
     "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictNullChecks": true,
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["../node_modules/*"],
+      "@utils/*": ["./utils/*"],
+      "@routes/*": ["./routes/*"],
+      "@constants": ["./constants.js"],
+      "@services/*": ["./services/*"],
+      "@base/*": ["./*"]
     }
   },
-  "include": ["src/", "src/**/*.json"],
+  "include": ["src/", "src/**/*.json"]
 }
