@@ -1,4 +1,4 @@
-const nfts = require('./dist/nfts/index').default;
+// const nfts = require('./dist/nfts/index').default;
 
 require('dotenv').config();
 const { ethers } = require('ethers');
@@ -24,7 +24,7 @@ app.use(cors());
 app.use(helmet());
 
 // other routes
-app.use('/nfts', nfts);
+// app.use('/nfts', nfts);
 
 const constants = require('./constants');
 const fstrCnstnts = constants.firestore;
@@ -2898,7 +2898,10 @@ async function getAssetsFromUnmarshal(address, limit, offset, contract) {
   const url = apiBase + chain + '/address/' + address + '/nft-assets?contract=' + contract + '&auth_key=' + authKey;
   try {
     const { data } = await axios.get(url);
-    const resp = { count: data.length, assets: data };
+    let resp = { count: 0, assets: [] };
+    if (data) {
+      resp = { count: data.length, assets: data };
+    }
     return resp;
   } catch (err) {
     utils.error('Error occured while fetching assets from unmarshal');
@@ -3093,7 +3096,7 @@ function getInfinityOrderData(asset /*: Asset */, hasBlueCheck /*: boolean */) {
 
 /**
  *
- * @param order metadata to set in the order.metadata.asset
+ * @param order
  * @returns
  */
 function rawSellOrderToBaseOrder(order /* : RawSellOrder */) /*: BaseOrder */ {

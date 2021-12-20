@@ -1,0 +1,58 @@
+import { StatusCode } from '@base/types/StatusCode';
+import { getChainId, getProvider } from '@utils/ethers';
+import { error } from '@utils/logger';
+import { ethers } from 'ethers';
+import { Request, Response } from 'express';
+
+// todo: adi change this
+
+// todo: adi change this
+import dogeAbi from '@base/abi/doge2048nft.json';
+// todo: adi change this
+import factoryAbi from '@base/abi/infinityFactory.json';
+import { metadataForDoge2048Nft } from '@routes/nfts/doge_builder/images';
+import { jsonString } from '@utils/formatters';
+
+// todo: adi constants
+const dogTokenAddress = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9';
+
+// api to get metadata
+export const getAssetMetadata = async (
+  req: Request<{ tokenAddress: string; tokenId: string; chain: string }>,
+  res: Response
+) => {
+  const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
+  const tokenId = req.params.tokenId;
+  const chain = req.params.chain.trim().toLowerCase();
+  try {
+    // read data from chain
+    const chainId = getChainId(chain);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      error('Chain provider is null for chain', chainId);
+      res.sendStatus(StatusCode.BadRequest);
+      return;
+    }
+
+    // todo: adi generalize this
+    const factoryContract = new ethers.Contract(tokenAddress, factoryAbi, provider);
+    const instanceAddress = await factoryContract.tokenIdToInstance(+tokenId);
+    const contract = new ethers.Contract(instanceAddress, dogeAbi, provider);
+    const score = await contract.score();
+    const numPlays = await contract.numPlays();
+    const dogBalance = await contract.getTokenBalance(dogTokenAddress);
+    const finalDogBalance: number = dogBalance ? parseInt(ethers.utils.formatEther(dogBalance)) : 0;
+    const metadata = await metadataForDoge2048Nft(chainId, tokenAddress, +tokenId, score, numPlays, finalDogBalance);
+    const result = {
+      image: metadata.image,
+      name: 'Doge 2048',
+      description: 'NFT based 2048 game with much wow',
+      attributes: metadata.attributes
+    };
+    res.send(jsonString(result));
+  } catch (err) {
+    error('Failed fetching metadata for', tokenAddress, tokenId, chain);
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
+};
