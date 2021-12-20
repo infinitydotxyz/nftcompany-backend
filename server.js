@@ -2794,7 +2794,8 @@ function getOrdersResponseFromArray(docs) {
 
 async function fetchAssetsOfUser(req, res) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { source, contract } = req.query;
+  const { source } = req.query;
+  const contract = req.query.contract || '';
   const { limit, offset, error } = utils.parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if (error) {
     return;
@@ -2895,7 +2896,8 @@ async function getAssetsFromUnmarshal(address, limit, offset, contract) {
   const url = apiBase + chain + '/address/' + address + '/nft-assets?contract=' + contract + '&auth_key=' + authKey;
   try {
     const { data } = await axios.get(url);
-    return data;
+    const resp = { count: data.length, assets: data };
+    return resp;
   } catch (err) {
     utils.error('Error occured while fetching assets from unmarshal');
     utils.error(err);
