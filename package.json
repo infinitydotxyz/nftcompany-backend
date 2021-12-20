@@ -6,7 +6,7 @@
     "watch": "tsc --watch",
     "dev": "concurrently 'npm run watch' 'TS_NODE_BASEURL=./dist/src nodemon -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js'",
     "build": "npm install && rimraf dist && tsc",
-    "start": "node dist/src/index.js",
+    "start": "TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
     "script": "npm run build && TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
     "lint": "eslint .",
     "lintfix": "eslint --fix ."
@@ -42,6 +42,8 @@
     "qs": "^6.7.0",
     "reflect-metadata": "^0.1.13",
     "stream-buffers": "^3.0.2",
+    "ts-node": "^10.4.0",
+    "tsconfig-paths": "^3.12.0",
     "tsyringe": "^4.6.0"
   },
   "devDependencies": {
@@ -67,8 +69,6 @@
     "eslint-plugin-promise": "^5.2.0",
     "nodemon": "2.0.12",
     "rimraf": "^3.0.2",
-    "ts-node": "^10.4.0",
-    "tsconfig-paths": "^3.12.0",
     "typescript": "^4.5.4"
   },
   "prettier": {
