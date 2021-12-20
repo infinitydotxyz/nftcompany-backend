@@ -16,7 +16,7 @@ export async function getUserAssetsFromUnmarshall(userAddress: string, contract?
         contract
       }
     });
-    return { count: data.length, assets: data };
+    return data;
   } catch (err) {
     error('Error occured while fetching assets from unmarshal');
     error(err);

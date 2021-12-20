@@ -60,7 +60,7 @@ export async function getAssets(
   sourceName: NFTDataSource,
   contract?: string
 ) {
-  log('Fetching assets for', address);
+  log(`Fetching assets for: ${address} From ${sourceName}`);
   let data;
   switch (sourceName) {
     case NFTDataSource.Infinity:
@@ -82,7 +82,8 @@ export async function getAssets(
       log('Invalid data source for fetching nft data of wallet');
       throw new Error(`invalid data source ${sourceName}`);
   }
-  return data;
+  data = data || [];
+  return { count: data.length, assets: data };
 }
 
 async function getAssetsFromNftc(address: string, limit: number, offset: number) {

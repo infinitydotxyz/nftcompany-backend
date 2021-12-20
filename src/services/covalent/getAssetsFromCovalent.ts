@@ -13,16 +13,8 @@ export async function getAssetsFromCovalent(address: string) {
         'no-nft-fetch': false
       }
     });
-    const items = data.data.items;
-    const resp: { count: number; assets: CovalentWalletBalanceItem[] } = { count: 0, assets: [] };
-    for (const item of items) {
-      const type = item.type;
-      if (type === 'nft') {
-        resp.count++;
-        resp.assets.push(item);
-      }
-    }
-    return resp;
+    const items: CovalentWalletBalanceItem[] = data.data.items;
+    return items;
   } catch (err) {
     error('Error occured while fetching assets from covalent');
     error(err);

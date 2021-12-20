@@ -18,7 +18,7 @@ export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: nu
 
   try {
     const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, options);
-    return { count: data.assets.length, assets: data.assets };
+    return data?.assets;
   } catch (err) {
     error('Error occured while fetching assets from opensea');
     error(err);
