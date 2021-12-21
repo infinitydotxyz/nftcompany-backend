@@ -25,7 +25,7 @@ module.exports = {
     project: './tsconfig.json'
   },
   rules: {
-    eqeqeq: 2,
+    // try commenting out some one of these and fixing any errors worth fixing
     '@typescript-eslint/strict-boolean-expressions': 0,
     '@typescript-eslint/restrict-plus-operands': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
