@@ -16,7 +16,7 @@ module.exports = {
   rules: {
     eqeqeq: 2,
     '@typescript-eslint/strict-boolean-expressions': 0,
-    '@typescript-eslint/restrict-plus-operands': 0,
+    // '@typescript-eslint/restrict-plus-operands': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/naming-convention': 0,
     '@typescript-eslint/no-misused-promises': 0,

@@ -36,13 +36,13 @@ export async function prepareEmail(user: any, order: any, type: any) {
   let subject = '';
   let link = SITE_BASE;
   if (type === 'offerMade') {
-    subject = 'You received a ' + price + ' ETH offer at Infinity';
+    subject = `You received a ${price} ETH offer at Infinity`;
     link += '/offers-received';
   } else if (type === 'offerAccepted') {
-    subject = 'Your offer of ' + price + ' ETH has been accepted at Infinity';
+    subject = `Your offer of ${price} ETH has been accepted at Infinity`;
     link += '/purchases';
   } else if (type === 'itemPurchased') {
-    subject = 'Your item has been purchased for ' + price + ' ETH at Infinity';
+    subject = `Your item has been purchased for ${price} ETH at Infinity`;
     link += '/sales';
   } else {
     error('Cannot prepare email for unknown action type');

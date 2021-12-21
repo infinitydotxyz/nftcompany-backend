@@ -40,7 +40,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
     const numOrders = 1;
 
     if (side !== 0 && side !== 1) {
-      error('Unknown order side ' + side + ' , not fulfilling it');
+      error(`Unknown order side ${side} , not fulfilling it`);
       return;
     }
 
@@ -78,7 +78,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
 
       const doc = docSnap?.data?.();
       if (!docSnap.exists || !doc) {
-        log('No offer ' + docId + ' to fulfill');
+        log(`No offer ${docId} to fulfill`);
         return;
       }
 
@@ -87,7 +87,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       doc.metadata.feesInEth = feesInEth;
       doc.metadata.txnHash = txnHash;
 
-      log('Item bought by ' + maker + ' sold by ' + taker);
+      log(`Item bought by ${maker} sold by ${taker}`);
 
       // write to bought by maker; multiple items possible
       await saveBoughtOrder(maker, doc, batch, numOrders);
@@ -117,7 +117,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
         .get();
       const doc = docSnap?.data?.();
       if (!docSnap.exists || !doc) {
-        log('No listing ' + docId + ' to fulfill');
+        log(`No listing ${docId} to fulfill`);
         return;
       }
 
@@ -126,7 +126,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       doc.metadata.feesInEth = feesInEth;
       doc.metadata.txnHash = txnHash;
 
-      log('Item bought by ' + taker + ' sold by ' + maker);
+      log(`Item bought by ${taker} sold by ${maker}`);
 
       // write to bought by taker; multiple items possible
       await saveBoughtOrder(taker, doc, batch, numOrders);

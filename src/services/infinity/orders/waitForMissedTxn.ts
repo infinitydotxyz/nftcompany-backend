@@ -71,7 +71,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
           const sellerStatus = sellerTxnDoc.get('status');
           if (buyerStatus === 'pending' && sellerStatus === 'pending') {
             // orig txn confirmed
-            log('Missed fulfill txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            log(`Missed fulfill txn: ${txnHash} confirmed after ${receipt.confirmations} block(s)`);
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
             const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
@@ -94,7 +94,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
           const status = doc.get('status');
           if (status === 'pending') {
             // orig txn confirmed
-            log('Missed cancel txn: ' + txnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+            log(`Missed cancel txn: ${txnHash} confirmed after ${receipt.confirmations} block(s)`);
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
             const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';

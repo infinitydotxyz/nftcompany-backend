@@ -7,7 +7,7 @@ import { error, log } from '@utils/logger';
 export async function deleteListing(batch: any, docRef: any) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    log('No listing to delete: ' + docRef.id);
+    log(`No listing to delete: ${docRef.id}`);
     return;
   }
   const listing = doc.id;

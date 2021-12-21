@@ -48,7 +48,7 @@ export async function waitForTxn(user: any, payload: any) {
         const status = txnDoc.get('status');
         if (status === 'pending') {
           // orig txn confirmed
-          log('Txn: ' + origTxnHash + ' confirmed after ' + receipt.confirmations + ' block(s)');
+          log(`Txn: ${origTxnHash} confirmed after ${receipt.confirmations} block(s)`);
           const txnData = JSON.parse(jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
           const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
@@ -77,10 +77,10 @@ export async function waitForTxn(user: any, payload: any) {
       error(err);
     }
   } catch (err) {
-    error('Txn: ' + origTxnHash + ' was rejected');
+    error(`Txn: ${origTxnHash} was rejected`);
     // if the txn failed, err.receipt.status = 0
     if (err.receipt && err.receipt.status === 0) {
-      error('Txn with hash: ' + origTxnHash + ' rejected');
+      error(`Txn with hash: ${origTxnHash} rejected`);
       error(err);
 
       const txnData = JSON.parse(jsonString(err.receipt));
@@ -88,7 +88,7 @@ export async function waitForTxn(user: any, payload: any) {
     }
     // if the txn failed due to replacement or cancellation or repricing
     if (err?.reason && err.replacement) {
-      error('Txn with hash: ' + origTxnHash + ' rejected with reason ' + err.reason);
+      error(`Txn with hash: ${origTxnHash} rejected with reason ${err.reason}`);
       error(err);
 
       const replacementTxnHash = err.replacement.hash;
@@ -100,7 +100,7 @@ export async function waitForTxn(user: any, payload: any) {
         batch.set(origTxnDocRef, { status: 'replaced', replaceTxnHash: replacementTxnHash }, { merge: true });
       }
       // write a new pending txn in firestore
-      log('Writing replacement txn: ' + replacementTxnHash + ' to firestore');
+      log(`Writing replacement txn: ${replacementTxnHash} to firestore`);
       const newTxnDocRef = userTxnCollRef.doc(replacementTxnHash);
       payload.createdAt = Date.now();
       const newPayload = {
