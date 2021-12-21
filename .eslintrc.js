@@ -8,9 +8,11 @@ module.exports = {
   plugins: ['promise', '@typescript-eslint'],
   extends: [
     'standard',
-    // 'standard-with-typescript',
+    'standard-with-typescript',
     // 'plugin:@typescript-eslint/recommended',
     // 'plugin:promise/recommended',
+
+    // this one maybe useless, but take a look
     // 'plugin:node/recommended',
     'prettier'
   ],
