@@ -6,7 +6,7 @@ import { error, log } from '@utils/logger';
 import { cancelListing } from '../listings/cancelListing';
 import { cancelOffer } from '../offers/cancelOffer';
 import { fulfillOrder } from './fulfillOrder';
-import { isValidNftcTxn } from './isValidNFTCTxn';
+import { isValidNftcTxn } from './isValidNftcTxn';
 
 export async function waitForTxn(user: any, payload: any) {
   user = user.trim().toLowerCase();

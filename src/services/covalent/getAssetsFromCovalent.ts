@@ -1,5 +1,5 @@
 import { error, log } from '@utils/logger';
-import { CovalentWalletBalanceItem } from './types/CovalentNftMetadata';
+import { CovalentWalletBalanceItem } from './types/CovalentNFTMetadata';
 import { covalentClient } from './utils';
 
 export async function getAssetsFromCovalent(address: string) {

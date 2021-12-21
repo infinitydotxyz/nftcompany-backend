@@ -4,14 +4,24 @@ module.exports = {
     es6: true,
     node: true
   },
-  extends: ['standard', 'standard-with-typescript', 'prettier'],
+  parser: '@typescript-eslint/parser',
+  plugins: ['promise', '@typescript-eslint'],
+  extends: [
+    'standard',
+    'standard-with-typescript',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:promise/recommended',
+    'plugin:node/recommended',
+    'prettier'
+  ],
   globals: {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly'
   },
   parserOptions: {
-    ecmaVersion: 2020,
-    project: './tsconfig.json'
+    ecmaVersion: 2020
+    // this doesn't work, not sure why, not sure if even needed
+    // project: './tsconfig.json'
   },
   rules: {
     eqeqeq: 2,

@@ -1,4 +1,4 @@
-import { CovalentWalletBalanceItem } from './CovalentNftMetadata';
+import { CovalentWalletBalanceItem } from './CovalentNFTMetadata';
 import { CovalentPagination } from './CovalentPagination';
 
 export interface CovalentBalance {
