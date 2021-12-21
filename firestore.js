@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /* eslint-disable no-unused-vars */
 require('dotenv').config();
 const { ethers } = require('ethers');
@@ -88,7 +90,18 @@ async function airDropStats(csvFileName) {
     //   `${address},${thr},${elig},${isOSUser},${transacted},${newThreshold},${newEligible}\n`
     // );
 
-    const [address, oldThreshold, oldEligible, isOSUser, transacted, newThreshold, newEligible, proportion, earnedTokens, finalEarnedTokens] = record;
+    const [
+      address,
+      oldThreshold,
+      oldEligible,
+      isOSUser,
+      transacted,
+      newThreshold,
+      newEligible,
+      proportion,
+      earnedTokens,
+      finalEarnedTokens
+    ] = record;
     const addressLower = address.trim().toLowerCase();
     const oldThresholdNum = parseFloat(oldThreshold);
     const oldEligibleNum = parseFloat(oldEligible);

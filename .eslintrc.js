@@ -8,10 +8,10 @@ module.exports = {
   plugins: ['promise', '@typescript-eslint'],
   extends: [
     'standard',
-    'standard-with-typescript',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:promise/recommended',
-    'plugin:node/recommended',
+    // 'standard-with-typescript',
+    // 'plugin:@typescript-eslint/recommended',
+    // 'plugin:promise/recommended',
+    // 'plugin:node/recommended',
     'prettier'
   ],
   globals: {
@@ -19,9 +19,8 @@ module.exports = {
     SharedArrayBuffer: 'readonly'
   },
   parserOptions: {
-    ecmaVersion: 2020
-    // this doesn't work, not sure why, not sure if even needed
-    // project: './tsconfig.json'
+    ecmaVersion: 2020,
+    project: './tsconfig.json'
   },
   rules: {
     eqeqeq: 2,
