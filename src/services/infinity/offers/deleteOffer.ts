@@ -4,7 +4,7 @@ import { updateNumOrders } from '../orders/updateNumOrders';
 export async function deleteOffer(batch: any, docRef: any) {
   const doc = await docRef.get();
   if (!doc.exists) {
-    log('No offer to delete: ' + docRef.id);
+    log(`No offer to delete: ${docRef.id}`);
     return;
   }
   const offer = doc.id;

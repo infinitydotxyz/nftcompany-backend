@@ -12,10 +12,10 @@ export function error(obj: string | (Error & { lineNumber?: number | string }), 
     console.error(`[ERROR]: ${obj as string} ${msg}`);
     if (typeof obj === 'object') {
       if (obj.message.length > 0) {
-        console.log('\nMessage: ' + obj.message);
+        console.log(`\nMessage: ${obj.message}`);
       }
       if (obj.lineNumber) {
-        console.log('Error line number ' + obj.lineNumber);
+        console.log(`Error line number ${obj.lineNumber}`);
       }
       if (obj.stack) {
         console.log('\nStacktrace:');
@@ -28,20 +28,14 @@ export function error(obj: string | (Error & { lineNumber?: number | string }), 
 
 export function trace(obj: string, ...objs: any[]) {
   if (TRACE_LOG) {
-    let msg = '';
-    for (const s of objs) {
-      msg += ' ' + s;
-    }
+    const msg = objs.join(' ');
     console.log('[TRACE]: ' + obj + msg);
   }
 }
 
 export function log(obj: any, ...objs: any[]) {
   if (INFO_LOG) {
-    let msg = '';
-    for (const s of objs) {
-      msg += ' ' + s;
-    }
-    console.log('[INFO]: ' + obj + msg);
+    const msg = objs.join(' ');
+    console.log(`[INFO]: ${obj} ${msg}`);
   }
 }

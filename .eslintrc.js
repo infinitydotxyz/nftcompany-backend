@@ -27,12 +27,10 @@ module.exports = {
   rules: {
     // try commenting out some one of these and fixing any errors worth fixing
     '@typescript-eslint/strict-boolean-expressions': 0,
-    '@typescript-eslint/restrict-plus-operands': 0,
     '@typescript-eslint/explicit-function-return-type': 0,
     '@typescript-eslint/naming-convention': 0,
     '@typescript-eslint/no-misused-promises': 0,
-    '@typescript-eslint/restrict-template-expressions': 0,
-    '@typescript-eslint/return-await': 0
+    '@typescript-eslint/restrict-template-expressions': 0
   },
   ignorePatterns: ['/dist/**', '**/node_modules/**']
 };

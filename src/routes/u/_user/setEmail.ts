@@ -36,7 +36,7 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
 
     // send email
     const subject = 'Verify your email for Infinity';
-    const link = API_BASE + '/verifyEmail?email=' + email + '&user=' + user + '&guid=' + guid;
+    const link = `${API_BASE}/verifyEmail?email=${email}&user=${user}&guid=${guid}`;
     const html =
       '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
     sendEmail(email, subject, html);
