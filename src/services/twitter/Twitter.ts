@@ -1,4 +1,5 @@
 import { Concrete } from '@base/types/Manipulators';
+import { error } from '@utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { SearchResponse } from './types/SearchResponse';
 import { Tweet } from './types/Tweet';
@@ -34,6 +35,24 @@ type CollectionTweetsUser = Concrete<Pick<User, 'id' | 'name' | 'username' | 'pu
 
 type CollectionTweetsIncludes = Record<'users', CollectionTweetsUser[]>;
 
+interface InfinityTwitterAccount {
+  id: string;
+  name: string;
+  username: string;
+  followersCount: number;
+  followingCount: number;
+  tweetCount: number;
+  listedCount: number;
+}
+
+interface InfinityTweet {
+  author: InfinityTwitterAccount;
+  createdAt: string;
+  tweetId: string;
+  text: string;
+  url: string;
+}
+
 export class Twitter {
   private readonly client: AxiosInstance;
   constructor() {
@@ -49,17 +68,18 @@ export class Twitter {
 
   /**
    *
-   * @param collectionTwitterAccount
+   * @param username
    */
-  async getCollectionTweets(collectionUsername: string) {
+  async getVerifiedAccountMentions(username: string): Promise<{
+    account?: InfinityTwitterAccount;
+    tweets: InfinityTweet[];
+  }> {
     try {
       /**
        * match any tweet that mentions the given username
        * and where the tweeter is verified
-       *
-       * can we get the mentioned account followers from here?
        */
-      const query = `@${collectionUsername} is:verified`;
+      const query = `@${username} is:verified`;
       const response: AxiosResponse<SearchResponse<CollectionTweets, CollectionTweetsIncludes>> = await this.client.get(
         Enpoint.SearchTweets,
         {
@@ -73,17 +93,59 @@ export class Twitter {
       );
       const jsonBody = response.data;
       if ('data' in jsonBody && jsonBody.data.length > 0) {
-        console.log(response.data);
-        const tweets = jsonBody.data;
-        const first = tweets[0];
-        const mentionone = first.entities.mentions[0];
-      } else {
-        /**
-         *
-         */
+        const tweets = jsonBody.data ?? []; // ordered in reverse chronological order
+        const users = jsonBody.includes?.users ?? [];
+
+        const formattedTweets = tweets
+          .map((tweet) => {
+            const user = users.find((u) => u.id === tweet.author_id);
+            const tweetUrl = user?.username ? this.getTweetLink(user?.username ?? '', tweet.id) : '';
+            const author: InfinityTwitterAccount = {
+              id: tweet.author_id,
+              name: user?.name ?? '',
+              username: user?.username ?? '',
+              followersCount: user?.public_metrics?.followers_count ?? 0,
+              followingCount: user?.public_metrics?.following_count ?? 0,
+              tweetCount: user?.public_metrics.tweet_count ?? 0,
+              listedCount: user?.public_metrics.listed_count ?? 0
+            };
+            return {
+              author,
+              createdAt: tweet.created_at,
+              tweetId: tweet.id,
+              text: tweet.text,
+              url: tweetUrl
+            };
+          })
+          .filter((tweet) => {
+            return !!tweet.url;
+          });
+
+        const accountUser = users.find((user) => user.username === username);
+        const accountInfo: InfinityTwitterAccount = {
+          id: accountUser?.id ?? '',
+          name: accountUser?.name ?? '',
+          username,
+          followersCount: accountUser?.public_metrics.followers_count ?? 0,
+          followingCount: accountUser?.public_metrics.following_count ?? 0,
+          tweetCount: accountUser?.public_metrics.tweet_count ?? 0,
+          listedCount: accountUser?.public_metrics.listed_count ?? 0
+        };
+        return {
+          account: accountInfo,
+          tweets: formattedTweets
+        };
       }
+      return {
+        account: undefined,
+        tweets: []
+      };
     } catch (err) {
-      console.log(err);
+      error(err);
+      return {
+        account: undefined,
+        tweets: []
+      };
     }
   }
 

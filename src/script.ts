@@ -11,8 +11,8 @@ import './globals';
  */
 async function main() {
   const twitter = new Twitter();
-  const handle = 'developer_dao';
-  await twitter.getCollectionTweets(handle);
+  const handle = 'cryptoadzNFT';
+  await twitter.getVerifiedAccountMentions(handle);
 }
 
 void main();
