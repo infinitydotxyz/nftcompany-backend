@@ -1,3 +1,4 @@
+import { Twitter } from '@services/twitter/Twitter';
 import 'reflect-metadata';
 import './globals';
 /**
@@ -8,7 +9,10 @@ import './globals';
  * note: if a script should be saved write it in a different file and call it from here when using it
  *
  */
-
-async function main() {}
+async function main() {
+  const twitter = new Twitter();
+  const handle = 'developer_dao';
+  await twitter.getCollectionTweets(handle);
+}
 
 void main();
