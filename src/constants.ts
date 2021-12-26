@@ -54,3 +54,5 @@ export const INFINITY_EMAIL = 'hi@infinity.xyz';
 export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
 export const ORIGIN = /http:\/\/localhost:\d+/; // todo: adi change this for dev/prod
 // export const ORIGIN = 'https://infinity.xyz'
+
+export const MIN_TWITTER_UPDATE_INTERVAL = 3_600_000; // ms

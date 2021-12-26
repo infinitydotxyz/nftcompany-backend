@@ -1,3 +1,4 @@
+import { InfinityTweet, InfinityTwitterAccount } from '@services/twitter/Twitter';
 import { WyvernTraitWithValues } from './wyvern/WyvernOrder';
 
 export enum OrderSide {
@@ -24,4 +25,31 @@ export interface CollectionInfo {
   cardImage: string;
   openseaUrl: string;
   chainId: '1' | string;
+  /**
+   * link to the collections twitter
+   */
+  twitter?: string;
+  twitterSnippet?: TwitterSnippet;
+}
+
+export interface TwitterSnippet {
+  /**
+   * time the twitter snippet was last updated
+   */
+  updatedAt: number;
+
+  /**
+   * the collection's twitter account
+   */
+  account?: InfinityTwitterAccount;
+
+  /**
+   * recent tweets by verified users mentioning the collection
+   */
+  recentTweets?: InfinityTweet[];
+
+  /**
+   * twitter users with the most followers that have mentioned the collection
+   */
+  topMentions?: InfinityTwitterAccount[];
 }

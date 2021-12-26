@@ -7,13 +7,11 @@ import { getTraits } from './_id/traits';
 import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
-import CollectionsController from '@services/infinity/collections/CollectionsController';
+import { getCollectionInfo } from './_slug';
 const router = Router();
 
-const collectionsController = new CollectionsController();
-
 router.get('/:id/traits', getTraits);
-router.get('/:slug', collectionsController.getCollectionInfo.bind(collectionsController));
+router.get('/:slug', getCollectionInfo);
 router.use('/featured', featured);
 router.use('/verified', verified);
 
