@@ -1,6 +1,7 @@
-import { Twitter } from '@services/twitter/Twitter';
 import 'reflect-metadata';
 import './globals';
+import { getCollectionByAddress } from '@services/infinity/collections/getCollectionByAddress';
+
 /**
  * an entry point for calling scripts
  *
@@ -10,9 +11,12 @@ import './globals';
  *
  */
 async function main() {
-  const twitter = new Twitter();
-  const handle = 'cryptoadzNFT';
-  await twitter.getVerifiedAccountMentions(handle);
+  const onOne = '0x3bf2922f4520a8ba0c2efc3d2a1539678dad5e9d';
+  const collection = await getCollectionByAddress(onOne);
+  console.log(collection);
+  //   const twitter = new Twitter();
+  //   const handle = 'cryptoadzNFT';
+  //   await twitter.getVerifiedAccountMentions(handle);
 }
 
 void main();

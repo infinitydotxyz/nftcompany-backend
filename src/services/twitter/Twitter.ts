@@ -35,7 +35,7 @@ type CollectionTweetsUser = Concrete<Pick<User, 'id' | 'name' | 'username' | 'pu
 
 type CollectionTweetsIncludes = Record<'users', CollectionTweetsUser[]>;
 
-interface InfinityTwitterAccount {
+export interface InfinityTwitterAccount {
   id: string;
   name: string;
   username: string;
@@ -45,9 +45,9 @@ interface InfinityTwitterAccount {
   listedCount: number;
 }
 
-interface InfinityTweet {
+export interface InfinityTweet {
   author: InfinityTwitterAccount;
-  createdAt: string;
+  createdAt: number;
   tweetId: string;
   text: string;
   url: string;
@@ -109,9 +109,10 @@ export class Twitter {
               tweetCount: user?.public_metrics.tweet_count ?? 0,
               listedCount: user?.public_metrics.listed_count ?? 0
             };
+            const createdAt = new Date(tweet.created_at).getTime();
             return {
               author,
-              createdAt: tweet.created_at,
+              createdAt: createdAt,
               tweetId: tweet.id,
               text: tweet.text,
               url: tweetUrl
@@ -121,7 +122,7 @@ export class Twitter {
             return !!tweet.url;
           });
 
-        const accountUser = users.find((user) => user.username === username);
+        const accountUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
         const accountInfo: InfinityTwitterAccount = {
           id: accountUser?.id ?? '',
           name: accountUser?.name ?? '',
@@ -131,6 +132,7 @@ export class Twitter {
           tweetCount: accountUser?.public_metrics.tweet_count ?? 0,
           listedCount: accountUser?.public_metrics.listed_count ?? 0
         };
+
         return {
           account: accountInfo,
           tweets: formattedTweets

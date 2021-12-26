@@ -17,7 +17,11 @@ export const fstrCnstnts = {
   SALES_COLL: 'sales',
   TXNS_COLL: 'txns',
   MISSED_TXNS_COLL: 'missedTxns',
-  FEATURED_COLL: 'featuredCollections'
+  FEATURED_COLL: 'featuredCollections',
+  TWITTER_COLL: 'twitter',
+  TWEETS_COLL: 'tweets',
+  MENTIONS_COLL: 'mentions',
+  HISTORICAL_TWITTER_ACCOUNT: 'historical'
 };
 
 export const auth = {

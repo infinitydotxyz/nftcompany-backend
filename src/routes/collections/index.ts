@@ -3,17 +3,19 @@ import { getUniqueItemsByProperties } from '@utils/index.js';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
-import { getCollectionInfo } from './_slug';
 import { getTraits } from './_id/traits';
 import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
+import CollectionsController from '@services/infinity/collections/CollectionsController';
 const router = Router();
 
+const collectionsController = new CollectionsController();
+
 router.get('/:id/traits', getTraits);
-router.get('/:slug', getCollectionInfo);
-router.get('/featured', featured);
-router.get('/verified', verified);
+router.get('/:slug', collectionsController.getCollectionInfo.bind(collectionsController));
+router.use('/featured', featured);
+router.use('/verified', verified);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
