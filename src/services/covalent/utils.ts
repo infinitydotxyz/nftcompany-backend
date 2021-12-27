@@ -1,7 +1,7 @@
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getSearchFriendlyString } from '@utils/formatters';
 import axios from 'axios';
-import { CovalentWalletBalanceItem } from './types/CovalentNftMetadata';
+import { CovalentWalletBalanceItem } from './types/CovalentNFTMetadata';
 
 const authKey = process.env.covalentKey;
 

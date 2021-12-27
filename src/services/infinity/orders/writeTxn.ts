@@ -20,7 +20,7 @@ export async function writeTxn(
   }
 ) {
   const batch = firestore.db.batch();
-  const valueInEth = +ethers.utils.formatEther('' + txnData.value);
+  const valueInEth = +ethers.utils.formatEther(txnData.value?.toString?.() ?? '');
 
   const txnPayload = {
     txnHash: txnData.txnHash,

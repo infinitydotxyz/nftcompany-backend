@@ -107,7 +107,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
     let inputError = '';
     const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
     if (actionType !== 'fulfill' && actionType !== 'cancel') {
-      inputError += 'Invalid actionType: ' + actionType + ' ';
+      inputError += `Invalid actionType: ${actionType} `;
     }
 
     const txnHash = payload.txnHash.trim(); // preserve case
@@ -117,7 +117,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
 
     const side = +payload.side;
     if (side !== OrderSide.Buy && side !== OrderSide.Sell) {
-      inputError += 'Unknown order side: ' + side + ' ';
+      inputError += `Unknown order side: ${side} `;
     }
 
     const orderId = payload.orderId.trim(); // preserve case
@@ -129,12 +129,12 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
     if (actionType === 'fulfill') {
       const salePriceInEth = +payload.salePriceInEth;
       if (Number.isNaN(salePriceInEth)) {
-        inputError += 'Invalid salePriceInEth: ' + salePriceInEth + ' ';
+        inputError += `Invalid salePriceInEth: ${salePriceInEth} `;
       }
 
       const feesInEth = +payload.feesInEth;
       if (Number.isNaN(feesInEth)) {
-        inputError += 'Invalid feesInEth: ' + feesInEth + ' ';
+        inputError += `Invalid feesInEth: ${feesInEth} `;
       }
 
       const maker = payload.maker.trim().toLowerCase();
@@ -154,7 +154,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
     const doc = await docRef.get();
     if (doc.exists) {
       error('Txn already exists in firestore', txnHash);
-      res.status(StatusCode.InternalServerError).send('Txn already exists: ' + txnHash);
+      res.status(StatusCode.InternalServerError).send(`Txn already exists: ${txnHash}`);
       return;
     }
 
