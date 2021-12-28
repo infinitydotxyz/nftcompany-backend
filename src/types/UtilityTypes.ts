@@ -4,3 +4,5 @@
 export type Concrete<Type> = {
   [Key in keyof Type]-?: Type[Key];
 };
+
+export type StringNumber = `${number}`;

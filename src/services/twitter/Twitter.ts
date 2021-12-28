@@ -1,4 +1,4 @@
-import { Concrete } from '@base/types/Manipulators';
+import { Concrete } from '@base/types/UtilityTypes';
 import { error } from '@utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { SearchResponse } from './types/SearchResponse';

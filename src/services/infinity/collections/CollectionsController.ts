@@ -8,6 +8,8 @@ import { firestore } from '@base/container';
 import { fstrCnstnts, MIN_TWITTER_UPDATE_INTERVAL } from '@constants';
 import { CollectionInfo, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
+import { OrderDirection } from '@base/types/Queries';
+import { HistoricalWeek } from '@base/types/Historical';
 
 export default class CollectionsController {
   /**
@@ -170,6 +172,7 @@ export default class CollectionsController {
           batch.set(
             weekDocRef,
             {
+              aggregated: { timestamp },
               [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount, timestamp }
             },
             { merge: true }
@@ -187,16 +190,40 @@ export default class CollectionsController {
     return twitterSnippet;
   }
 
-  //   private aggreagteHistorticalData(
-  //     historicalRef: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>
-  //   ) {
+  private async aggreagteHistorticalData(
+    historicalRef: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>
+  ) {
+    // const twitterRef = firestore
+    //   .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    //   .doc('asdf')
+    //   .collection('socials')
+    //   .doc('twitter')
+    //   .collection('historical');
+    const weeklyDocs = historicalRef.orderBy('aggreagted.timestamp', OrderDirection.Descending).limit(10);
 
-  //     // const twitterRef = firestore
-  //     // .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-  //     // .doc('asdf')
-  //     // .collection('socials')
-  //     // .doc('twitter').collection('historical');
-  //     historicalRef.
+    type HistoricalTwitterData = HistoricalWeek<{ followersCount: number; timestamp: number }, { timestamp: number }>;
+    const weeklyData: HistoricalTwitterData[] = ((await weeklyDocs.get())?.docs ?? [])?.map((doc) =>
+      doc.data()
+    ) as HistoricalTwitterData[];
+    console.log(weeklyData);
 
-  //   }
+    /**
+     * aggregated data
+     *
+     * 24 hour datapoints
+     * 10 weeks of datapoints (1 point per day)
+     */
+    // let twentyFourHourChange;
+    // const previousWeek = weeklyData[0];
+
+    // for (const week of weeklyData) {
+    //   const aggreagated = week.aggregated;
+    //   console.log(aggreagated);
+    //   const hours = Object.entries(week).filter(([key]) => key !== 'aggregated');
+    //   const sum = 0;
+    //   for (const hour of hours) {
+    //     console.log(hour);
+    //   }
+    // }
+  }
 }
