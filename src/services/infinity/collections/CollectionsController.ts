@@ -10,6 +10,8 @@ import { CollectionInfo, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys } from '@base/types/UtilityTypes';
 import { aggreagteHistorticalData } from '../aggregateHistoricalData';
+import { getCollectionLinks } from '@services/opensea/collection/getCollection';
+import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 
 interface FollowerData {
   followersCount: number;
@@ -35,7 +37,7 @@ export default class CollectionsController {
     try {
       log('Fetching collection info for', slugOrAddress);
 
-      let collectionData;
+      let collectionData: CollectionInfo | undefined;
       if (ethers.utils.isAddress(slugOrAddress)) {
         collectionData = await this.getCollectionInfoByAddress(slugOrAddress);
       } else {
@@ -43,8 +45,18 @@ export default class CollectionsController {
         collectionData = data?.[0];
       }
 
-      if (collectionData) {
-        collectionData = await this.getTwitterSnippet(collectionData.address, collectionData.twitter ?? '');
+      if (collectionData?.address) {
+        const linksAndStats = await this.getLinksAndStats(collectionData.address);
+        if (linksAndStats?.links) {
+          collectionData.links = linksAndStats.links;
+        }
+        if (linksAndStats?.stats) {
+          collectionData.stats = linksAndStats.stats;
+        }
+      }
+
+      if (collectionData?.twitter) {
+        collectionData.twitterSnippet = await this.getTwitterSnippet(collectionData.address, collectionData.twitter);
       }
 
       const respStr = jsonString(collectionData);
@@ -58,6 +70,28 @@ export default class CollectionsController {
     } catch (err) {
       error('Failed to get collection info for', slugOrAddress, err);
       res.sendStatus(StatusCode.InternalServerError);
+    }
+  }
+
+  async getLinksAndStats(collectionAddress?: string) {
+    if (!collectionAddress) {
+      return { links: undefined, stats: undefined };
+    }
+    try {
+      const links = await getCollectionLinks(collectionAddress);
+      const stats = await (links?.slug ? getCollectionStats(links?.slug) : undefined);
+      const linksWithTS = { ...links, timestamp: new Date(new Date().toISOString()).getTime() };
+      let statsWithTS;
+      if (stats) {
+        statsWithTS = { ...stats, timestamp: new Date(new Date().toISOString()).getTime() };
+      }
+      return {
+        links: linksWithTS,
+        stats: statsWithTS
+      };
+    } catch (err) {
+      error('error occurred while getting collection links and stats');
+      error(err);
     }
   }
 
@@ -95,7 +129,7 @@ export default class CollectionsController {
 
   async getTwitterSnippet(collectionAddress: string, twitterLink: string) {
     if (!collectionAddress || !twitterLink) {
-      return {};
+      return;
     }
     // get snippet
     const twitterRef = firestore

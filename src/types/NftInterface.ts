@@ -30,6 +30,51 @@ export interface CollectionInfo {
    */
   twitter?: string;
   twitterSnippet?: TwitterSnippet;
+
+  links?: {
+    timestamp: number;
+    twitter?: string;
+    discord?: string;
+    external?: string;
+    medium?: string;
+    slug?: string;
+    telegram?: string;
+    instagram?: string;
+    wiki?: string;
+  };
+
+  stats?: {
+    oneDay: {
+      volume: number;
+      change: number;
+      sales: number;
+      averagePrice: number;
+    };
+    sevenDay: {
+      volume: number;
+      change: number;
+      sales: number;
+      averagePrice: number;
+    };
+    thrityDay: {
+      volume: number;
+      change: number;
+      sales: number;
+      averagePrice: number;
+    };
+    total: {
+      volume: number;
+      sales: number;
+      supply: number;
+    };
+    count: number;
+    owners: number;
+    averagePrice: number;
+    reports: number;
+    marketCap: number;
+    floorPrice: number;
+    timestamp: number;
+  };
 }
 
 export interface TwitterSnippet {
