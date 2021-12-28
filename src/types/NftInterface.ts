@@ -35,8 +35,9 @@ export interface CollectionInfo {
 export interface TwitterSnippet {
   /**
    * time the twitter snippet was last updated
+   * UTC epoch
    */
-  updatedAt: number;
+  timestamp: number;
 
   /**
    * the collection's twitter account
