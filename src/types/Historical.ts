@@ -17,6 +17,6 @@ export interface WithTimestamp {
   timestamp: number;
 }
 
-export type HistoricalWeek<Data, Aggregated extends WithTimestamp> = Hourly<Data> & {
+export type HistoricalWeek<Data extends WithTimestamp, Aggregated extends WithTimestamp> = Hourly<Data> & {
   aggregated: Aggregated;
 };

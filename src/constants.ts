@@ -55,4 +55,6 @@ export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
 export const ORIGIN = /http:\/\/localhost:\d+/; // todo: adi change this for dev/prod
 // export const ORIGIN = 'https://infinity.xyz'
 
-export const MIN_TWITTER_UPDATE_INTERVAL = 3_600_000; // ms
+export const ONE_HOUR = 3_600_000; // in ms
+export const ONE_DAY = ONE_HOUR * 24;
+export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // in ms
