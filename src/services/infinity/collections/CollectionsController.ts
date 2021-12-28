@@ -5,12 +5,11 @@ import { error, log } from '@utils/logger';
 import { jsonString } from '@utils/formatters';
 import { StatusCode } from '@base/types/StatusCode';
 import { firestore } from '@base/container';
-import { fstrCnstnts, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '@constants';
+import { fstrCnstnts, MIN_TWITTER_UPDATE_INTERVAL } from '@constants';
 import { CollectionInfo, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
-import { OrderDirection } from '@base/types/Queries';
-import { HistoricalWeek, WithTimestamp } from '@base/types/Historical';
 import { Keys } from '@base/types/UtilityTypes';
+import { aggreagteHistorticalData } from '../aggregateHistoricalData';
 
 interface FollowerData {
   followersCount: number;
@@ -106,7 +105,7 @@ export default class CollectionsController {
       .doc('twitter');
     const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
-    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink, true);
+    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink);
 
     return updatedTwitterSnippet;
   }
@@ -156,7 +155,6 @@ export default class CollectionsController {
             account: twitterData.account
           };
 
-          // Get a new write batch
           const batch = firestore.db.batch();
 
           const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
@@ -192,13 +190,14 @@ export default class CollectionsController {
             { merge: true }
           );
 
+          // commit this batch so the updated data is available to aggregate the historical data
           await batch.commit();
 
           const batch2 = firestore.db.batch();
 
           const historicalRef = twitterRef.collection('historical');
 
-          const aggregated = await this.aggreagteHistorticalData<FollowerData, AggregatedFollowerData>(
+          const aggregated = await aggreagteHistorticalData<FollowerData, AggregatedFollowerData>(
             historicalRef,
             10,
             batch2
@@ -230,107 +229,5 @@ export default class CollectionsController {
       error(err);
     }
     return twitterSnippet;
-  }
-
-  private async aggreagteHistorticalData<Data extends WithTimestamp, Aggregate extends WithTimestamp>(
-    historicalRef: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>,
-    weekLimit: number,
-    batch: FirebaseFirestore.WriteBatch
-  ) {
-    const weeklyDocs = historicalRef.orderBy('aggregated.timestamp', OrderDirection.Descending).limit(weekLimit);
-
-    type HistoricalData = HistoricalWeek<Data, Aggregate>;
-    type DataKeys = Keys<Data>;
-    type DataKeysOmitTimestamp = Keys<Omit<Data, 'timestamp'>>;
-
-    const weeklyData: Array<HistoricalData & { id: string }> = ((await weeklyDocs.get())?.docs ?? [])?.map((doc) => {
-      return { ...doc.data(), id: doc.id };
-    }) as Array<HistoricalData & { id: string }>;
-
-    let lastDataPointWithinTwentyFourHours;
-    let mostRecentDataPoint;
-
-    const weekly: Array<{
-      weekStart?: Data;
-      weekEnd?: Data;
-      timestamp?: number;
-      averages?: Record<DataKeysOmitTimestamp, number>;
-    }> = [];
-
-    const weekIndex = 0;
-    /**
-     * iterate through the data from most recent to the oldest
-     */
-    for (const week of weeklyData) {
-      const { aggregated } = week;
-
-      if (!(aggregated as any).weekEnd || weekIndex === 0) {
-        let weekStart;
-        let weekEnd;
-        const weekAverage: Record<DataKeysOmitTimestamp, number> = {} as any;
-        const weekSum: Record<DataKeysOmitTimestamp, { count: number; sum: number }> = {} as any;
-        // 168 hours in one week
-        for (let hour = 168; hour >= 0; hour -= 1) {
-          const hourData = week[`${hour}`];
-          if (hourData) {
-            if (!weekEnd) {
-              weekEnd = hourData;
-            }
-
-            if (!mostRecentDataPoint) {
-              mostRecentDataPoint = hourData;
-            }
-
-            if (mostRecentDataPoint && mostRecentDataPoint.timestamp - hourData.timestamp < ONE_DAY) {
-              lastDataPointWithinTwentyFourHours = hourData;
-            }
-
-            weekStart = hourData;
-            const keys: DataKeys[] = Object.keys(hourData) as DataKeys[];
-            for (const key of keys) {
-              const data = hourData[key];
-              if (key !== 'timestamp' && typeof data === 'number') {
-                const k = key as DataKeysOmitTimestamp;
-                const currentCount: number = weekSum[k]?.count ? weekSum[k].count : 0;
-                const currentSum: number = weekSum[k]?.sum ? weekSum[k].sum : 0;
-                weekSum[k] = {
-                  count: currentCount + 1,
-                  sum: currentSum + data
-                };
-              }
-            }
-          }
-        }
-
-        for (const key of Object.keys(weekSum)) {
-          const dataKey = key as DataKeysOmitTimestamp;
-          weekAverage[dataKey] = weekSum[dataKey].sum / weekSum[dataKey].count;
-        }
-
-        const weeklyAggregated = {
-          weekStart,
-          weekEnd,
-          timestamp: weekEnd?.timestamp,
-          averages: weekAverage
-        };
-        weekly.push(weeklyAggregated);
-
-        batch.set(
-          historicalRef.doc(week.id),
-          {
-            aggregated: weeklyAggregated
-          },
-          { merge: true }
-        );
-      } else {
-        weekly.push(aggregated);
-      }
-    }
-
-    return {
-      current: mostRecentDataPoint,
-      oneDayAgo: lastDataPointWithinTwentyFourHours,
-      weekly
-    };
   }
 }
