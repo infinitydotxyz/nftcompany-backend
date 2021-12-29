@@ -59,3 +59,5 @@ export const ONE_HOUR = 3_600_000; // in ms
 export const ONE_DAY = ONE_HOUR * 24;
 export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // in ms
 export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
+export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
+export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min

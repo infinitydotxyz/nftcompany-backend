@@ -5,8 +5,14 @@ import { error, log } from '@utils/logger';
 import { jsonString } from '@utils/formatters';
 import { StatusCode } from '@base/types/StatusCode';
 import { firestore } from '@base/container';
-import { fstrCnstnts, MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL } from '@constants';
-import { CollectionInfo, DiscordSnippet, TwitterSnippet } from '@base/types/NftInterface';
+import {
+  fstrCnstnts,
+  MIN_COLLECTION_STATS_UPDATE_INTERVAL,
+  MIN_DISCORD_UPDATE_INTERVAL,
+  MIN_LINK_UPDATE_INTERVAL,
+  MIN_TWITTER_UPDATE_INTERVAL
+} from '@constants';
+import { CollectionInfo, DiscordSnippet, Links, CollectionStats, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys } from '@base/types/UtilityTypes';
 import { aggreagteHistorticalData } from '../aggregateHistoricalData';
@@ -38,7 +44,8 @@ export default class CollectionsController {
     try {
       log('Fetching collection info for', slugOrAddress);
 
-      let collectionData: CollectionInfo | undefined;
+      type CollectionData = CollectionInfo & { links?: Links; stats?: CollectionStats };
+      let collectionData: CollectionData | undefined;
       if (ethers.utils.isAddress(slugOrAddress)) {
         collectionData = await this.getCollectionInfoByAddress(slugOrAddress);
       } else {
@@ -100,22 +107,106 @@ export default class CollectionsController {
     if (!collectionAddress) {
       return { links: undefined, stats: undefined };
     }
+
+    const linkRef = firestore
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .doc(collectionAddress)
+      .collection('socials')
+      .doc('links');
+
+    let links: Links | undefined = (await linkRef.get())?.data() as Links;
+
+    links = await this.updateLinks(links, collectionAddress, false);
+
+    const statsRef = firestore
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .doc(collectionAddress)
+      .collection('stats')
+      .doc('opensea');
+
+    let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
+
+    if (links?.slug) {
+      stats = await this.updateStats(stats, collectionAddress, links.slug, false);
+    }
+
     try {
-      const links = await getCollectionLinks(collectionAddress);
-      const stats = await (links?.slug ? getCollectionStats(links?.slug) : undefined);
-      const linksWithTS = { ...links, timestamp: new Date(new Date().toISOString()).getTime() };
-      let statsWithTS;
-      if (stats) {
-        statsWithTS = { ...stats, timestamp: new Date(new Date().toISOString()).getTime() };
-      }
       return {
-        links: linksWithTS,
-        stats: statsWithTS
+        links,
+        stats
       };
     } catch (err) {
       error('error occurred while getting collection links and stats');
       error(err);
     }
+  }
+
+  private async updateStats(stats: CollectionStats, collectionAddress: string, openseaSlug: string, force = false) {
+    const now = new Date().getTime();
+
+    const updatedAt = stats?.timestamp ? stats?.timestamp : 0;
+    const shouldUpdate = now - updatedAt > MIN_COLLECTION_STATS_UPDATE_INTERVAL;
+
+    try {
+      if (shouldUpdate || force) {
+        const updatedStats = await getCollectionStats(openseaSlug);
+
+        if (updatedStats) {
+          const statsRef = firestore
+            .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+            .doc(collectionAddress)
+            .collection('stats')
+            .doc('opensea');
+
+          void (await statsRef.set(
+            {
+              ...updatedStats
+            },
+            { merge: true }
+          ));
+
+          return updatedStats;
+        }
+      }
+    } catch (err) {
+      error('error occurred while updating stats');
+      error(err);
+    }
+
+    return stats;
+  }
+
+  private async updateLinks(links: Links, collectionAddress: string, force = false) {
+    const now = new Date().getTime();
+
+    const updatedAt = links?.timestamp ? links?.timestamp : 0;
+    const shouldUpdate = now - updatedAt > MIN_LINK_UPDATE_INTERVAL;
+
+    try {
+      if (shouldUpdate || force) {
+        const updatedLinks = await getCollectionLinks(collectionAddress);
+        if (updatedLinks) {
+          const linkRef = firestore
+            .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+            .doc(collectionAddress)
+            .collection('socials')
+            .doc('links');
+          await linkRef.set(
+            {
+              ...updatedLinks
+            },
+            { merge: true }
+          );
+
+          return updatedLinks;
+        }
+      }
+    } catch (err) {
+      error('error occurred while updating links');
+      error(err);
+    }
+
+    return links;
   }
 
   /**

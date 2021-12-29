@@ -1,3 +1,4 @@
+import { Links } from '@base/types/NftInterface';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
@@ -65,13 +66,14 @@ interface Displaydata {
   card_display_style: string;
 }
 
-export async function getCollectionLinks(collectionAddress: string) {
+export async function getCollectionLinks(collectionAddress: string): Promise<Links | undefined> {
   try {
     const collectionRespone: AxiosResponse<CollectionResponse> = await openseaClient.get(
       `https://api.opensea.io/api/v1/asset_contract/${collectionAddress}`
     );
     const data = collectionRespone?.data?.collection;
     return {
+      timestamp: new Date().getTime(),
       discord: data.discord_url ?? '',
       external: data.external_url ?? '',
       medium: data?.medium_username ? `https://medium.com/${data.medium_username}` : '',

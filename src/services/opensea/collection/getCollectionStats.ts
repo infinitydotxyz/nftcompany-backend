@@ -1,3 +1,4 @@
+import { CollectionStats } from '@base/types/NftInterface';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
@@ -30,13 +31,14 @@ interface Stats {
   floor_price: number;
 }
 
-export async function getCollectionStats(openseaCollectionSlug: string) {
+export async function getCollectionStats(openseaCollectionSlug: string): Promise<CollectionStats | undefined> {
   try {
     const collectionRespone: AxiosResponse<CollectionStatsResponse> = await openseaClient.get(
       `https://api.opensea.io/api/v1/collection/${openseaCollectionSlug}/stats`
     );
     const stats = collectionRespone.data.stats;
     return {
+      timestamp: new Date().getTime(),
       oneDay: {
         volume: stats.one_day_volume,
         change: stats.one_day_change,
