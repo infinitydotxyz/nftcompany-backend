@@ -7,12 +7,18 @@ import { ONE_DAY } from '@constants';
  *  expects the database to be formatted as below
  *
  *   - collection of historical data (the ref that gets passed to this function)
+ *
  *     - [year-week] (document containing one week of data example docId: 2021-52)
+ *
  *        {
+ *
+ *            // a map contining a data point for hours of the week (key is the hour of the week) and an aggregated field
+ *            // contining the timestamp of when the aggregated data was last updated
+ *
  *            [hour of the week]: // e.g. 50: { data }
  *            aggreagated: { timestamp, data }
- *        } // a map contining a data point for hours of the week (key is the hour of the week) and an aggregated field
- *          // contining the timestamp of when the aggregated data was last updated
+ *
+ *        }
  *
  * @param historicalRef a reference to the collection storing historical documents
  * @param weekLimit number of weeks to aggregate
@@ -57,7 +63,8 @@ export async function aggreagteHistorticalData<Data extends WithTimestamp, Aggre
       const weekAverage: Record<DataKeysOmitTimestamp, number> = {} as any;
       const weekSum: Record<DataKeysOmitTimestamp, { count: number; sum: number }> = {} as any;
       // 168 hours in one week
-      for (let hour = 168; hour >= 0; hour -= 1) {
+      const HOURS_IN_ONE_WEEK = 168;
+      for (let hour = HOURS_IN_ONE_WEEK; hour >= 0; hour -= 1) {
         const hourData = week[`${hour}`];
         if (hourData) {
           if (!weekEnd) {

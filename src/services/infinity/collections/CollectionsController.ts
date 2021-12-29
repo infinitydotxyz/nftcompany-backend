@@ -32,12 +32,10 @@ interface AggregatedFollowerData {
   timestamp: number;
   averages: FollowerDataAverages;
 }
+
 export default class CollectionsController {
   /**
-   *
-   * @param req
-   * @param res
-   * @returns
+   * getCollectionInfo handles a request for collection info by slug or collection address
    */
   async getCollectionInfo(req: Request<{ slug: string }>, res: Response) {
     const slugOrAddress = req.params.slug;
@@ -45,7 +43,12 @@ export default class CollectionsController {
       log('Fetching collection info for', slugOrAddress);
 
       type CollectionData = CollectionInfo & { links?: Links; stats?: CollectionStats };
+
       let collectionData: CollectionData | undefined;
+
+      /**
+       * get base collection info
+       */
       if (ethers.utils.isAddress(slugOrAddress)) {
         collectionData = await this.getCollectionInfoByAddress(slugOrAddress);
       } else {
@@ -53,6 +56,10 @@ export default class CollectionsController {
         collectionData = data?.[0];
       }
 
+      /**
+       * get links and stats
+       * links are required for updating discord and twitter snippets
+       */
       if (collectionData?.address) {
         const linksAndStats = await this.getLinksAndStats(collectionData.address);
         if (linksAndStats?.links) {
@@ -66,16 +73,18 @@ export default class CollectionsController {
       const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
       let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
       if (collectionData?.links?.discord) {
-        discordSnippetPromise = this.getDiscordSnippet(collectionData?.address, collectionData?.links.discord);
+        discordSnippetPromise = this.getDiscordSnippet(collectionData.address, collectionData.links.discord);
         promises.push(discordSnippetPromise);
       }
 
       let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
-      if (collectionData?.twitter) {
-        twitterSnippetPromise = this.getTwitterSnippet(collectionData.address, collectionData.twitter);
+      if (collectionData?.links?.twitter) {
+        twitterSnippetPromise = this.getTwitterSnippet(collectionData.address, collectionData.links.twitter);
         promises.push(twitterSnippetPromise);
       }
-
+      /**
+       * pulled/updated concurrently
+       */
       const results = await Promise.all(promises);
 
       for (const result of results) {
@@ -271,7 +280,7 @@ export default class CollectionsController {
     try {
       const now = new Date().getTime();
       const updatedAt: number = typeof twitterSnippet?.timestamp === 'number' ? twitterSnippet?.timestamp : 0;
-      if (force || (twitterLink && updatedAt + MIN_TWITTER_UPDATE_INTERVAL < now)) {
+      if (force || (twitterLink && now - updatedAt > MIN_TWITTER_UPDATE_INTERVAL)) {
         let username = twitterSnippet?.account?.username;
         if (!username) {
           const twitterUsernameRegex = /twitter.com\/([a-zA-Z0-9_]*)/;
@@ -291,11 +300,10 @@ export default class CollectionsController {
           );
           const topMentions = mentionsSortedByFollowerCount.slice(0, 10);
           const date = new Date(now);
-          const timestamp = now;
 
           const updatedTwitterSnippet: TwitterSnippet = {
             recentTweets: twitterData.tweets,
-            timestamp,
+            timestamp: now,
             topMentions: topMentions,
             account: twitterData.account
           };
@@ -329,8 +337,8 @@ export default class CollectionsController {
           batch.set(
             weekDocRef,
             {
-              aggregated: { timestamp },
-              [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount, timestamp }
+              aggregated: { timestamp: now },
+              [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount, timestamp: now }
             },
             { merge: true }
           );
@@ -355,7 +363,7 @@ export default class CollectionsController {
             twitterRef,
             {
               twitterSnippet: {
-                ...twitterSnippet,
+                ...updatedTwitterSnippet,
                 aggregated
               }
             },
