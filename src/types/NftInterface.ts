@@ -31,6 +31,8 @@ export interface CollectionInfo {
   twitter?: string;
   twitterSnippet?: TwitterSnippet;
 
+  discordSnippet?: DiscordSnippet;
+
   links?: {
     timestamp: number;
     twitter?: string;
@@ -80,7 +82,6 @@ export interface CollectionInfo {
 export interface TwitterSnippet {
   /**
    * time the twitter snippet was last updated
-   * UTC epoch
    */
   timestamp: number;
 
@@ -98,4 +99,21 @@ export interface TwitterSnippet {
    * twitter users with the most followers that have mentioned the collection
    */
   topMentions?: InfinityTwitterAccount[];
+}
+
+export interface DiscordSnippet {
+  /**
+   * time the discord snippet was last updated
+   */
+  timestamp: number;
+
+  /**
+   * number of members in the discord
+   */
+  membersCount: number;
+
+  /**
+   * presence (number of active members)
+   */
+  presenceCount: number;
 }

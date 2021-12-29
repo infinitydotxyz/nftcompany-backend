@@ -72,14 +72,14 @@ export async function getCollectionLinks(collectionAddress: string) {
     );
     const data = collectionRespone?.data?.collection;
     return {
-      discordUrl: data.discord_url ?? '',
-      externalUrl: data.external_url ?? '',
+      discord: data.discord_url ?? '',
+      external: data.external_url ?? '',
       medium: data?.medium_username ? `https://medium.com/${data.medium_username}` : '',
       slug: data?.slug ?? '',
-      telegramUrl: data.telegram_url ?? '',
-      twitterUrl: data?.twitter_username ? `https://twitter.com/${data.twitter_username}` : '',
-      instagramUrl: data?.instagram_username ? `https://instagram.com/${data.instagram_username}` : '',
-      wikiUrl: data?.wiki_url ?? ''
+      telegram: data.telegram_url ?? '',
+      twitter: data?.twitter_username ? `https://twitter.com/${data.twitter_username}` : '',
+      instagram: data?.instagram_username ? `https://instagram.com/${data.instagram_username}` : '',
+      wiki: data?.wiki_url ?? ''
     };
   } catch (e) {
     error('Error occurred while fetching collection from opensea');

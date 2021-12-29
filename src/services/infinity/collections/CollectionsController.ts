@@ -5,13 +5,14 @@ import { error, log } from '@utils/logger';
 import { jsonString } from '@utils/formatters';
 import { StatusCode } from '@base/types/StatusCode';
 import { firestore } from '@base/container';
-import { fstrCnstnts, MIN_TWITTER_UPDATE_INTERVAL } from '@constants';
-import { CollectionInfo, TwitterSnippet } from '@base/types/NftInterface';
+import { fstrCnstnts, MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL } from '@constants';
+import { CollectionInfo, DiscordSnippet, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys } from '@base/types/UtilityTypes';
 import { aggreagteHistorticalData } from '../aggregateHistoricalData';
 import { getCollectionLinks } from '@services/opensea/collection/getCollection';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
+import { DiscordAPI } from '@services/discord/DiscordAPI';
 
 interface FollowerData {
   followersCount: number;
@@ -55,8 +56,29 @@ export default class CollectionsController {
         }
       }
 
+      const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
+      let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
+      if (collectionData?.links?.discord) {
+        discordSnippetPromise = this.getDiscordSnippet(collectionData?.address, collectionData?.links.discord);
+        promises.push(discordSnippetPromise);
+      }
+
+      let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
       if (collectionData?.twitter) {
-        collectionData.twitterSnippet = await this.getTwitterSnippet(collectionData.address, collectionData.twitter);
+        twitterSnippetPromise = this.getTwitterSnippet(collectionData.address, collectionData.twitter);
+        promises.push(twitterSnippetPromise);
+      }
+
+      const results = await Promise.all(promises);
+
+      for (const result of results) {
+        if (result && collectionData) {
+          if ('membersCount' in result) {
+            collectionData.discordSnippet = result;
+          } else if (result) {
+            collectionData.twitterSnippet = result;
+          }
+        }
       }
 
       const respStr = jsonString(collectionData);
@@ -68,7 +90,8 @@ export default class CollectionsController {
       res.send(respStr);
       return;
     } catch (err) {
-      error('Failed to get collection info for', slugOrAddress, err);
+      error('Failed to get collection info for', slugOrAddress);
+      error(err);
       res.sendStatus(StatusCode.InternalServerError);
     }
   }
@@ -155,11 +178,8 @@ export default class CollectionsController {
     force = false
   ): Promise<TwitterSnippet> {
     try {
-      const now = new Date(new Date().toISOString()).getTime();
-      const updatedAt: number =
-        typeof twitterSnippet?.timestamp === 'number'
-          ? twitterSnippet?.timestamp
-          : new Date(new Date(0).toISOString()).getTime();
+      const now = new Date().getTime();
+      const updatedAt: number = typeof twitterSnippet?.timestamp === 'number' ? twitterSnippet?.timestamp : 0;
       if (force || (twitterLink && updatedAt + MIN_TWITTER_UPDATE_INTERVAL < now)) {
         let username = twitterSnippet?.account?.username;
         if (!username) {
@@ -263,5 +283,126 @@ export default class CollectionsController {
       error(err);
     }
     return twitterSnippet;
+  }
+
+  async getDiscordSnippet(collectionAddress: string, inviteLink: string) {
+    if (!collectionAddress) {
+      return;
+    }
+    try {
+      const discordRef = firestore
+        .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+        .doc(collectionAddress)
+        .collection('socials')
+        .doc('discord');
+      let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
+
+      discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink);
+
+      return discordSnippet;
+    } catch (err) {
+      error('error occurred while getting disocrd snippet');
+      error(err);
+    }
+  }
+
+  async updateDiscordSnippet(
+    discordSnippet: DiscordSnippet,
+    collectionAddress: string,
+    inviteLink: string,
+    force = false
+  ) {
+    try {
+      const now = new Date().getTime();
+
+      const updatedAt: number = typeof discordSnippet?.timestamp === 'number' ? discordSnippet?.timestamp : 0;
+      const shouldUpdate = now - updatedAt > MIN_DISCORD_UPDATE_INTERVAL;
+
+      if (shouldUpdate || force) {
+        const discord = new DiscordAPI();
+        const res = await discord.getMembers(inviteLink);
+        if (res) {
+          const updatedSnippet: DiscordSnippet = {
+            membersCount: res.members,
+            presenceCount: res.presence,
+            timestamp: new Date().getTime()
+          };
+
+          const batch = firestore.db.batch();
+
+          const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
+          const discordRef = collectionInfoRef.collection('socials').doc('discord');
+
+          /**
+           * update collection info tweet snippet
+           */
+          batch.set(
+            discordRef,
+            {
+              discordSnippet: updatedSnippet
+            },
+            { merge: true }
+          );
+
+          const date = new Date(now);
+          const [year, week] = getWeekNumber(date);
+          const docId = `${year}-${week}`;
+
+          const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
+
+          const weekDocRef = discordRef.collection('historical').doc(docId);
+
+          /**
+           * update historical data
+           */
+          batch.set(
+            weekDocRef,
+            {
+              aggregated: { timestamp: now },
+              [hourOfTheWeek]: updatedSnippet
+            },
+            { merge: true }
+          );
+
+          // commit this batch so the updated data is available to aggregate the historical data
+          await batch.commit();
+
+          const batch2 = firestore.db.batch();
+
+          const historicalRef = discordRef.collection('historical');
+
+          const aggregated = await aggreagteHistorticalData<FollowerData, AggregatedFollowerData>(
+            historicalRef,
+            10,
+            batch2
+          );
+
+          /**
+           *  update snippet with aggregated data
+           */
+          batch2.set(
+            discordRef,
+            {
+              discordSnippet: {
+                ...updatedSnippet,
+                aggregated
+              }
+            },
+            { merge: true }
+          );
+
+          await batch2.commit();
+
+          return {
+            ...updatedSnippet
+          };
+        }
+      }
+    } catch (err) {
+      error('error occurred while getting disocrd snippet');
+      error(err);
+    }
+
+    return discordSnippet;
   }
 }
