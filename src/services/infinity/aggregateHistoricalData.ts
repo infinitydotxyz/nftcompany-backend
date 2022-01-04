@@ -1,4 +1,4 @@
-import { HistoricalWeek, WithTimestamp } from '@base/types/Historical';
+import { HistoricalWeek, Hourly, WithTimestamp } from '@base/types/Historical';
 import { OrderDirection } from '@base/types/Queries';
 import { Keys } from '@base/types/UtilityTypes';
 import { ONE_DAY } from '@constants';
@@ -127,4 +127,53 @@ export async function aggreagteHistorticalData<Data extends WithTimestamp, Aggre
     weekly,
     timestamp: mostRecentDataPoint?.timestamp
   };
+}
+
+/**
+ * averageHistoricalData averages all number fields (except the timestamp) of the hourly data passed
+ * and returns an object contining these averages using the original keys
+ *
+ * @param hourlyData containing fields to calculate the average of
+ */
+export function averageHistoricalData<Data extends WithTimestamp>(hourlyData: Hourly<Data>, hoursPerInterval: number) {
+  const HOURS_IN_ONE_WEEK = 168;
+  let totalsObj: Record<Keys<Data>, { count: number; sum: number }> = {} as any;
+
+  const intervalData: Array<Record<keyof Data, number>> = [];
+  const saveAverage = () => {
+    const keys = Object.keys(totalsObj);
+    if (keys.length > 0) {
+      const averages: Record<Keys<Data>, number> = {} as any;
+      for (const key of keys) {
+        const dataKey = key as Keys<Data>;
+        averages[dataKey] = totalsObj[dataKey].sum / totalsObj[dataKey].count;
+      }
+      intervalData.push(averages);
+      totalsObj = {} as any;
+    }
+  };
+  for (let hour = 1; hour <= HOURS_IN_ONE_WEEK; hour += 1) {
+    if (hour % hoursPerInterval === 0) {
+      saveAverage();
+    }
+    const hourData = hourlyData[`${hour}`];
+    if (hourData) {
+      const keys = Object.keys(hourData) as Array<Keys<Data>>;
+      for (const key of keys) {
+        const data = hourData[key];
+        if (typeof data === 'number') {
+          const currentCount: number = totalsObj[key]?.count ? totalsObj[key].count : 0;
+          const currentSum: number = totalsObj[key]?.sum ? totalsObj[key].sum : 0;
+          totalsObj[key] = {
+            count: currentCount + 1,
+            sum: currentSum + data
+          };
+        }
+      }
+    }
+  }
+
+  saveAverage();
+
+  return intervalData;
 }

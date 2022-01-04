@@ -8,9 +8,13 @@ import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearc
 import featured from './featured';
 import verified from './verified';
 import { getCollectionInfo } from './_slug';
+import { getHistoricalTwitterData } from './_id/twitter';
+import { getHistoricalDiscordData } from './_id/discord';
 const router = Router();
 
 router.get('/:id/traits', getTraits);
+router.get('/:id/discord', getHistoricalDiscordData);
+router.get('/:id/twitter', getHistoricalTwitterData);
 router.get('/:slug', getCollectionInfo);
 router.use('/featured', featured);
 router.use('/verified', verified);

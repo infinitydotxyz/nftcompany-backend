@@ -37,4 +37,8 @@ export default class Firestore {
     const data = tokenAddress.trim() + tokenId.trim() + chainId;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
+
+  getHistoricalDocId(year: number, week: number) {
+    return `${year}-${week}`;
+  }
 }

@@ -45,3 +45,8 @@ export function getWeekNumber(d: Date) {
   // Return array of year and week number
   return [d.getUTCFullYear(), weekNo];
 }
+
+export function getNextWeek(weekNumber: number, year: number) {
+  const nextWeek = (weekNumber + 1) % 53;
+  return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
+}

@@ -10,15 +10,17 @@ import {
   MIN_COLLECTION_STATS_UPDATE_INTERVAL,
   MIN_DISCORD_UPDATE_INTERVAL,
   MIN_LINK_UPDATE_INTERVAL,
-  MIN_TWITTER_UPDATE_INTERVAL
+  MIN_TWITTER_UPDATE_INTERVAL,
+  ONE_DAY
 } from '@constants';
 import { CollectionInfo, DiscordSnippet, Links, CollectionStats, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys } from '@base/types/UtilityTypes';
-import { aggreagteHistorticalData } from '../aggregateHistoricalData';
+import { aggreagteHistorticalData, averageHistoricalData } from '../aggregateHistoricalData';
 import { getCollectionLinks } from '@services/opensea/collection/getCollection';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
+import { WithTimestamp } from '@base/types/Historical';
 
 interface FollowerData {
   followersCount: number;
@@ -31,6 +33,16 @@ interface AggregatedFollowerData {
   weekEnd: FollowerData;
   timestamp: number;
   averages: FollowerDataAverages;
+}
+
+interface DiscordHistoricalData {
+  timestamp: number;
+  presenceCount: number;
+  membersCount: number;
+}
+interface TwitterHistoricalData {
+  timestamp: number;
+  followers: number;
 }
 
 export default class CollectionsController {
@@ -112,7 +124,131 @@ export default class CollectionsController {
     }
   }
 
-  async getLinksAndStats(collectionAddress?: string) {
+  getHistoricalData(source: 'discord' | 'twitter') {
+    return async (
+      req: Request<
+        { id: string },
+        any,
+        any,
+        { from?: number; to?: number; interval?: 'hourly' | 'daily' | 'weekly'; startAt?: number }
+      >,
+      res: Response
+    ) => {
+      const interval = req.query.interval ?? 'hourly';
+      const ONE_WEEK = ONE_DAY * 7;
+      const address = req.params.id;
+
+      let to;
+      let from;
+      let startAt;
+      const limit = 100;
+
+      type Data = DiscordHistoricalData | TwitterHistoricalData;
+
+      let historicalData: Array<Record<keyof Data, number>> = [];
+      const FOUR_WEEKS = 4 * ONE_WEEK;
+      const EIGHT_WEEKS = 8 * ONE_WEEK;
+      const maxRange = EIGHT_WEEKS;
+      try {
+        switch (interval) {
+          case 'hourly':
+            from = Number(req.query.from ?? Date.now() - ONE_WEEK);
+            startAt = Number(req.query.startAt ?? from);
+            to = Number(req.query.to ?? from + ONE_WEEK);
+            if (to - startAt > maxRange) {
+              to = startAt + maxRange;
+            }
+            historicalData = await this.fetchHistoricalData<Data>(source, address, startAt, to, limit, 'hourly');
+            break;
+          case 'daily':
+            from = Number(req.query.from ?? Date.now() - FOUR_WEEKS);
+            startAt = Number(req.query.startAt ?? from);
+            to = Number(req.query.to ?? from + FOUR_WEEKS);
+            if (to - startAt > maxRange) {
+              to = startAt + maxRange;
+            }
+            historicalData = await this.fetchHistoricalData<Data>(source, address, startAt, to, limit, 'daily');
+            break;
+          case 'weekly':
+            from = Number(req.query.from ?? Date.now() - EIGHT_WEEKS);
+            startAt = Number(req.query.startAt ?? from);
+            to = Number(req.query.to ?? from + EIGHT_WEEKS);
+            if (to - startAt > maxRange) {
+              to = startAt + maxRange;
+            }
+            historicalData = await this.fetchHistoricalData<Data>(source, address, startAt, to, limit, 'weekly');
+            break;
+          default:
+            res.sendStatus(StatusCode.BadRequest);
+            return;
+        }
+
+        historicalData.sort((itemA, itemB) => itemA.timestamp - itemB.timestamp);
+
+        const respStr = jsonString(historicalData);
+        // to enable cdn cache
+        res.set({
+          'Cache-Control': 'must-revalidate, max-age=60',
+          'Content-Length': Buffer.byteLength(respStr, 'utf8')
+        });
+        res.send(respStr);
+        return;
+      } catch (err) {
+        error('error occurred while getting historical twitter data');
+        error(err);
+        res.sendStatus(StatusCode.InternalServerError);
+      }
+    };
+  }
+
+  async fetchHistoricalData<Data extends WithTimestamp>(
+    source: 'twitter' | 'discord',
+    address: string,
+    startAt: number,
+    to: number,
+    limit: number,
+    interval: 'hourly' | 'daily' | 'weekly'
+  ) {
+    const historicalDocId = source;
+    const historicalCollectionRef = firestore
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .doc(address)
+      .collection('socials')
+      .doc(historicalDocId)
+      .collection('historical');
+    let timestamp: number = Number(startAt);
+
+    let dataPoints: Array<Record<keyof Data, number>> = [];
+    let dataPointLimit = limit;
+    const maxTimestamp = to > Date.now() ? Date.now() : to;
+    while (dataPointLimit > 0 && timestamp < maxTimestamp) {
+      console.log({ timestamp }, new Date(Number(timestamp)), typeof timestamp);
+
+      const [year, week] = getWeekNumber(new Date(Number(timestamp)));
+      console.log(year, week);
+
+      const docId = firestore.getHistoricalDocId(year, week);
+      const data = (await historicalCollectionRef.doc(docId).get()).data();
+      if (data) {
+        switch (interval) {
+          case 'hourly':
+            dataPoints = [...dataPoints, ...averageHistoricalData<Data>(data, 1)];
+            break;
+          case 'daily':
+            dataPoints = [...dataPoints, ...averageHistoricalData<Data>(data, 24)];
+            break;
+          case 'weekly':
+            dataPoints = [...dataPoints, ...averageHistoricalData<Data>(data, 168)];
+        }
+      }
+      timestamp += ONE_DAY * 7;
+
+      dataPointLimit = limit - dataPoints.length;
+    }
+    return dataPoints;
+  }
+
+  private async getLinksAndStats(collectionAddress?: string) {
     if (!collectionAddress) {
       return { links: undefined, stats: undefined };
     }
@@ -325,7 +461,7 @@ export default class CollectionsController {
           );
 
           const [year, week] = getWeekNumber(date);
-          const docId = `${year}-${week}`;
+          const docId = firestore.getHistoricalDocId(year, week);
 
           const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
 
@@ -445,7 +581,7 @@ export default class CollectionsController {
 
           const date = new Date(now);
           const [year, week] = getWeekNumber(date);
-          const docId = `${year}-${week}`;
+          const docId = firestore.getHistoricalDocId(year, week);
 
           const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
 
