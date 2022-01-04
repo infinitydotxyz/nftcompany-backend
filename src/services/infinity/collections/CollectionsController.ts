@@ -57,7 +57,6 @@ export default class CollectionsController {
       type CollectionData = CollectionInfo & { links?: Links; stats?: CollectionStats };
 
       let collectionData: CollectionData | undefined;
-
       /**
        * get base collection info
        */
@@ -221,11 +220,8 @@ export default class CollectionsController {
     let dataPoints: Array<Record<keyof Data, number>> = [];
     let dataPointLimit = limit;
     const maxTimestamp = to > Date.now() ? Date.now() : to;
-    while (dataPointLimit > 0 && timestamp < maxTimestamp) {
-      console.log({ timestamp }, new Date(Number(timestamp)), typeof timestamp);
-
+    while (dataPointLimit > 0 && timestamp < maxTimestamp + ONE_DAY * 7) {
       const [year, week] = getWeekNumber(new Date(Number(timestamp)));
-      console.log(year, week);
 
       const docId = firestore.getHistoricalDocId(year, week);
       const data = (await historicalCollectionRef.doc(docId).get()).data();
@@ -241,10 +237,12 @@ export default class CollectionsController {
             dataPoints = [...dataPoints, ...averageHistoricalData<Data>(data, 168)];
         }
       }
+      dataPoints = dataPoints.filter((item) => item.timestamp >= startAt);
       timestamp += ONE_DAY * 7;
 
       dataPointLimit = limit - dataPoints.length;
     }
+
     return dataPoints;
   }
 

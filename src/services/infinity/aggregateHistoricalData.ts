@@ -153,9 +153,6 @@ export function averageHistoricalData<Data extends WithTimestamp>(hourlyData: Ho
     }
   };
   for (let hour = 1; hour <= HOURS_IN_ONE_WEEK; hour += 1) {
-    if (hour % hoursPerInterval === 0) {
-      saveAverage();
-    }
     const hourData = hourlyData[`${hour}`];
     if (hourData) {
       const keys = Object.keys(hourData) as Array<Keys<Data>>;
@@ -170,6 +167,9 @@ export function averageHistoricalData<Data extends WithTimestamp>(hourlyData: Ho
           };
         }
       }
+    }
+    if (hour % hoursPerInterval === 0) {
+      saveAverage();
     }
   }
 
