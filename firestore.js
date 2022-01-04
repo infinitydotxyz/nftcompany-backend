@@ -478,7 +478,7 @@ async function calcTxns(csvFileName) {
 async function calcTxnsHelper(startAfterCreatedAt, limit) {
   console.log('starting after', startAfterCreatedAt);
   const snapshot = await db
-    .collectionGroup(fstrCnstnts.MISSED_TXNS_COLL)
+    .collectionGroup(fstrCnstnts.TXNS_COLL)
     .orderBy('createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit)
@@ -542,7 +542,7 @@ async function calcListingsHelper(startAfterCreatedAt, limit) {
   console.log('starting after', startAfterCreatedAt);
   const snapshot = await db
     .collectionGroup(fstrCnstnts.LISTINGS_COLL)
-    .orderBy('createdAt', 'desc')
+    .orderBy('metadata.createdAt', 'desc')
     .startAfter(startAfterCreatedAt)
     .limit(limit)
     .get();
@@ -556,20 +556,12 @@ async function calcListingsHelper(startAfterCreatedAt, limit) {
   for (let i = 0; i < snapshot.docs.length; i++) {
     const doc = snapshot.docs[i];
     const payload = doc.data();
-    let salePriceInEth = payload.salePriceInEth;
-    if (isNaN(salePriceInEth)) {
-      console.log(salePriceInEth);
-      salePriceInEth = 0;
-    }
-
-    totalVol += salePriceInEth;
 
     if ((i + 1) % limit === 0) {
-      writeFileSync('./lastItem', `${doc.id},${payload.createdAt}\n`);
+      writeFileSync('./lastItem', `${doc.id},${payload.metadata.createdAt}\n`);
     }
   }
-  console.log('totalNumTxns so far', totalNumTxns);
-  console.log('totalVol so far', totalVol);
+  console.log('totalNumListings so far', totalNumListings);
 }
 
 async function calcTxnStats(csvFileName) {
@@ -1253,7 +1245,9 @@ async function getTxnStatsHelper(limit) {
 
 // airDropStats(process.argv[2]).catch((e) => console.error(e));
 
-calcTxns(process.argv[2]).catch((e) => console.error(e));
+// calcTxns(process.argv[2]).catch((e) => console.error(e));
+
+// calcListings(process.argv[2]).catch((e) => console.error(e));
 
 // =================================================== HELPERS ===========================================================
 
