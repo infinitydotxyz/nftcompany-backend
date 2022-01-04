@@ -7,9 +7,7 @@ const ethersProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJ
 
 const { readFile } = require('fs').promises;
 const { writeFileSync, appendFileSync } = require('fs');
-const { promisify } = require('util');
-const parse = promisify(require('csv-parse'));
-const axios = require('axios').default;
+const parse = require('csv-parse/sync').parse;
 
 const firebaseAdmin = require('firebase-admin');
 
@@ -20,16 +18,29 @@ firebaseAdmin.initializeApp({
   storageBucket: 'nftc-dev.appspot.com'
 });
 
-const types = require('./types');
-
 if (process.argv.length < 3) {
   console.error('Please include a path to a csv file');
   process.exit(1);
 }
 const db = firebaseAdmin.firestore();
 
-const constants = require('./constants');
-const fstrCnstnts = constants.firestore;
+const fstrCnstnts = {
+  ROOT_COLL: 'root',
+  OPENSEA_COLL: 'combinedOpenseaSnapshot',
+  INFO_DOC: 'info',
+  COLLECTION_LISTINGS_COLL: 'collectionListings',
+  ALL_COLLECTIONS_COLL: 'allCollections',
+  BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
+  USERS_COLL: 'users',
+  LISTINGS_COLL: 'listings',
+  OFFERS_COLL: 'offers',
+  ASSETS_COLL: 'assets',
+  PURCHASES_COLL: 'purchases',
+  SALES_COLL: 'sales',
+  TXNS_COLL: 'txns',
+  MISSED_TXNS_COLL: 'missedTxns',
+  FEATURED_COLL: 'featuredCollections'
+};
 
 const erc721Abi = require('./abi/erc721.json');
 const erc1155Abi = require('./abi/erc1155.json');
@@ -309,7 +320,7 @@ async function populateCollectionListings(startAfterSearchCollectionName, startA
 // eslint-disable-next-line no-unused-vars
 async function main(csvFileName) {
   try {
-    const limit = 5000;
+    const limit = 1000;
 
     if (readComplete) {
       console.log('totalListings', totalListings);
@@ -431,6 +442,134 @@ async function calcUserStatsHelper(startAfterCreatedAt, limit) {
   console.log('thresholdUsers so far', thresholdUsers);
   console.log('nonThresholdUsers so far', nonThresholdUsers);
   console.log('thresholdDiff so far', thresholdDiff);
+}
+
+let totalNumTxns = 0;
+let totalVol = 0;
+// eslint-disable-next-line no-unused-vars
+async function calcTxns(csvFileName) {
+  try {
+    const limit = 1000;
+
+    if (readComplete) {
+      console.log('totalNumTxns', totalNumTxns);
+      console.log('totalVol', totalVol);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await calcTxnsHelper(+startAfterCreatedAt, limit);
+    await calcTxns(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function calcTxnsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const snapshot = await db
+    .collectionGroup(fstrCnstnts.MISSED_TXNS_COLL)
+    .orderBy('createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit)
+    .get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalNumTxns += snapshot.docs.length;
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const payload = doc.data();
+    let salePriceInEth = payload.salePriceInEth;
+    if (isNaN(salePriceInEth)) {
+      console.log(salePriceInEth);
+      salePriceInEth = 0;
+    }
+
+    totalVol += salePriceInEth;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${payload.createdAt}\n`);
+    }
+  }
+  console.log('totalNumTxns so far', totalNumTxns);
+  console.log('totalVol so far', totalVol);
+}
+
+let totalNumListings = 0;
+// eslint-disable-next-line no-unused-vars
+async function calcListings(csvFileName) {
+  try {
+    const limit = 1000;
+
+    if (readComplete) {
+      console.log('totalNumListings', totalNumListings);
+      return;
+    }
+    console.log('============================================================================');
+    console.log('num recurses', ++numRecurses);
+
+    const fileContents = await readFile(csvFileName, 'utf8');
+    // @ts-ignore
+    const records = await parse(fileContents, { columns: false });
+    let startAfterCreatedAt = records[0][1];
+    if (!startAfterCreatedAt) {
+      startAfterCreatedAt = Date.now();
+    }
+    await calcListingsHelper(+startAfterCreatedAt, limit);
+    await calcListings(csvFileName);
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function calcListingsHelper(startAfterCreatedAt, limit) {
+  console.log('starting after', startAfterCreatedAt);
+  const snapshot = await db
+    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .orderBy('createdAt', 'desc')
+    .startAfter(startAfterCreatedAt)
+    .limit(limit)
+    .get();
+
+  if (snapshot.docs.length < limit) {
+    readComplete = true;
+  }
+
+  totalNumListings += snapshot.docs.length;
+
+  for (let i = 0; i < snapshot.docs.length; i++) {
+    const doc = snapshot.docs[i];
+    const payload = doc.data();
+    let salePriceInEth = payload.salePriceInEth;
+    if (isNaN(salePriceInEth)) {
+      console.log(salePriceInEth);
+      salePriceInEth = 0;
+    }
+
+    totalVol += salePriceInEth;
+
+    if ((i + 1) % limit === 0) {
+      writeFileSync('./lastItem', `${doc.id},${payload.createdAt}\n`);
+    }
+  }
+  console.log('totalNumTxns so far', totalNumTxns);
+  console.log('totalVol so far', totalVol);
 }
 
 async function calcTxnStats(csvFileName) {
@@ -1114,6 +1253,8 @@ async function getTxnStatsHelper(limit) {
 
 // airDropStats(process.argv[2]).catch((e) => console.error(e));
 
+calcTxns(process.argv[2]).catch((e) => console.error(e));
+
 // =================================================== HELPERS ===========================================================
 
 function getSearchFriendlyString(input) {
@@ -1126,7 +1267,38 @@ function getSearchFriendlyString(input) {
 }
 
 function getUserRewardTier(userVol) {
-  const rewardTiers = types.RewardTiers;
+  const rewardTiers = {
+    t1: {
+      min: 0,
+      max: 1000,
+      eligible: 70,
+      threshold: 0.02
+    },
+    t2: {
+      min: 1000,
+      max: 20000,
+      eligible: 1088,
+      threshold: 2
+    },
+    t3: {
+      min: 20000,
+      max: 100000,
+      eligible: 2636,
+      threshold: 5
+    },
+    t4: {
+      min: 100000,
+      max: 500000,
+      eligible: 7337,
+      threshold: 15
+    },
+    t5: {
+      min: 500000,
+      max: Infinity,
+      eligible: 16678,
+      threshold: 30
+    }
+  };
 
   if (userVol >= rewardTiers.t1.min && userVol < rewardTiers.t1.max) {
     return rewardTiers.t1;
