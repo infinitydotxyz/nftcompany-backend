@@ -427,7 +427,16 @@ export default class CollectionsController {
           const twitterData = await twitterClient.getVerifiedAccountMentions(username);
 
           const newMentions = (twitterData?.tweets || []).map((item) => item.author);
-          const mentions = [...(twitterSnippet?.topMentions ?? []), ...newMentions];
+          const ids = new Set();
+          const mentions = [...(twitterSnippet?.topMentions ?? []), ...newMentions]
+            .sort((itemA, itemB) => itemB.followersCount - itemA.followersCount)
+            .filter((item) => {
+              if (!ids.has(item.id)) {
+                ids.add(item.id);
+                return true;
+              }
+              return false;
+            });
           const mentionsSortedByFollowerCount = mentions.sort(
             (userOne: InfinityTwitterAccount, userTwo: InfinityTwitterAccount) =>
               userTwo.followersCount - userOne.followersCount
