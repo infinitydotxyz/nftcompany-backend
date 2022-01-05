@@ -61,7 +61,7 @@ export default class CollectionsController {
        * get base collection info
        */
       if (ethers.utils.isAddress(slugOrAddress)) {
-        collectionData = await this.getCollectionInfoByAddress(slugOrAddress);
+        collectionData = await this.getCollectionInfoByAddress(slugOrAddress.toLowerCase());
       } else {
         const data = await this.getCollectionInfoByName(slugOrAddress, 1);
         collectionData = data?.[0];
@@ -123,6 +123,48 @@ export default class CollectionsController {
     }
   }
 
+  /**
+   * getCollectionVotes is a proxy for getting votes for a collection
+   *
+   * **NOTE** votes should only be available to those that are authenticated, therefore requesting votes
+   * for a collection is handled by the votes endpoint under the authenticated user path
+   *
+   * @param collectionAddress of the votes to get
+   * @returns a promise of an object containing the number of votes for or against the collection
+   */
+  async getCollectionVotes(collectionAddress: string): Promise<{ votesFor: number; votesAgainst: number }> {
+    const votes = await this.countVotes(collectionAddress);
+    return votes;
+  }
+
+  private async countVotes(collectionAddress: string) {
+    const votesRef = firestore
+      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .doc(collectionAddress)
+      .collection(fstrCnstnts.VOTES_COLL);
+
+    const stream = votesRef.stream();
+    return await new Promise<{ votesFor: number; votesAgainst: number }>((resolve) => {
+      let votesFor = 0;
+      let votesAgainst = 0;
+      stream.on('data', (data: { timestamp: number; vote: boolean }) => {
+        if (data.vote) {
+          votesFor += 1;
+        } else {
+          votesAgainst += 1;
+        }
+      });
+
+      stream.on('end', () => {
+        resolve({ votesFor, votesAgainst });
+      });
+    });
+  }
+
+  /**
+   * @param source of the data to get
+   * @returns a request handler for querying historical data
+   */
   getHistoricalData(source: 'discord' | 'twitter') {
     return async (
       req: Request<
@@ -135,7 +177,7 @@ export default class CollectionsController {
     ) => {
       const interval = req.query.interval ?? 'hourly';
       const ONE_WEEK = ONE_DAY * 7;
-      const address = req.params.id;
+      const address = req.params.id.toLowerCase();
 
       let to;
       let from;
@@ -200,7 +242,7 @@ export default class CollectionsController {
     };
   }
 
-  async fetchHistoricalData<Data extends WithTimestamp>(
+  private async fetchHistoricalData<Data extends WithTimestamp>(
     source: 'twitter' | 'discord',
     address: string,
     startAt: number,
@@ -212,9 +254,9 @@ export default class CollectionsController {
     const historicalCollectionRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
       .doc(address)
-      .collection('socials')
+      .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
       .doc(historicalDocId)
-      .collection('historical');
+      .collection(fstrCnstnts.HISTORICAL_COLL);
     let timestamp: number = Number(startAt);
 
     let dataPoints: Array<Record<keyof Data, number>> = [];
@@ -254,7 +296,7 @@ export default class CollectionsController {
     const linkRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
       .doc(collectionAddress)
-      .collection('socials')
+      .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
       .doc('links');
 
     let links: Links | undefined = (await linkRef.get())?.data() as Links;
@@ -264,8 +306,8 @@ export default class CollectionsController {
     const statsRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
       .doc(collectionAddress)
-      .collection('stats')
-      .doc('opensea');
+      .collection(fstrCnstnts.COLLECTION_STATS_COLL)
+      .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
 
     let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
 
@@ -298,8 +340,8 @@ export default class CollectionsController {
           const statsRef = firestore
             .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
             .doc(collectionAddress)
-            .collection('stats')
-            .doc('opensea');
+            .collection(fstrCnstnts.COLLECTION_STATS_COLL)
+            .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
 
           void (await statsRef.set(
             {
@@ -332,7 +374,7 @@ export default class CollectionsController {
           const linkRef = firestore
             .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
             .doc(collectionAddress)
-            .collection('socials')
+            .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
             .doc('links');
           await linkRef.set(
             {
@@ -392,8 +434,8 @@ export default class CollectionsController {
     const twitterRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
       .doc(collectionAddress)
-      .collection('socials')
-      .doc('twitter');
+      .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+      .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
     const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
     const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink);
@@ -454,7 +496,9 @@ export default class CollectionsController {
           const batch = firestore.db.batch();
 
           const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
-          const twitterRef = collectionInfoRef.collection('socials').doc('twitter');
+          const twitterRef = collectionInfoRef
+            .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+            .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
 
           /**
            * update collection info tweet snippet
@@ -535,8 +579,8 @@ export default class CollectionsController {
       const discordRef = firestore
         .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
         .doc(collectionAddress)
-        .collection('socials')
-        .doc('discord');
+        .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+        .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
       let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
       discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink);
@@ -573,7 +617,9 @@ export default class CollectionsController {
           const batch = firestore.db.batch();
 
           const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
-          const discordRef = collectionInfoRef.collection('socials').doc('discord');
+          const discordRef = collectionInfoRef
+            .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+            .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
 
           /**
            * update collection info tweet snippet

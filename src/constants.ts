@@ -21,7 +21,13 @@ export const fstrCnstnts = {
   TWITTER_COLL: 'twitter',
   TWEETS_COLL: 'tweets',
   MENTIONS_COLL: 'mentions',
-  HISTORICAL_TWITTER_ACCOUNT: 'historical'
+  HISTORICAL_COLL: 'historical',
+  VOTES_COLL: 'votes',
+  COLLECTION_STATS_COLL: 'stats',
+  COLLECTION_OPENSEA_STATS_DOC: 'opensea',
+  COLLECTION_SOCIALS_COLL: 'socials',
+  COLLECTION_TWITTER_DOC: 'twitter',
+  COLLECTION_DISCORD_DOC: 'discord'
 };
 
 export const auth = {
