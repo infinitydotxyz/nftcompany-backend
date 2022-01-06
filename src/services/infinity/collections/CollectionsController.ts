@@ -138,17 +138,20 @@ export default class CollectionsController {
   }
 
   private async countVotes(collectionAddress: string) {
+    const address = collectionAddress.toLowerCase();
     const votesRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(collectionAddress)
+      .doc(address)
       .collection(fstrCnstnts.VOTES_COLL);
 
     const stream = votesRef.stream();
+
     return await new Promise<{ votesFor: number; votesAgainst: number }>((resolve) => {
       let votesFor = 0;
       let votesAgainst = 0;
-      stream.on('data', (data: { timestamp: number; vote: boolean }) => {
-        if (data.vote) {
+      stream.on('data', (snapshot) => {
+        const data = snapshot.data();
+        if (data.votedFor) {
           votesFor += 1;
         } else {
           votesAgainst += 1;

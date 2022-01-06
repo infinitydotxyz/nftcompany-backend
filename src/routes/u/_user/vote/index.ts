@@ -4,7 +4,6 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import CollectionsController from '@services/infinity/collections/CollectionsController';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { convertOpenseaListingsToInfinityListings } from '@services/opensea/utils';
 import { error } from '@utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
@@ -31,7 +30,6 @@ export async function getUserVotes(
 
   try {
     if (collectionAddress) {
-      console.log('getting votes for collection ', collectionAddress);
       const userVoteInCollection = (await userVotes.doc(collectionAddress).get()).data();
       // user has not voted  on this collection
       if (!userVoteInCollection) {
@@ -44,7 +42,6 @@ export async function getUserVotes(
       res.send({ votes: collectionVotes, userVote: userVoteInCollection });
       return;
     } else {
-      console.log('getting all user votes ');
       const allUserVotes = ((await userVotes.get())?.docs ?? [])?.map?.((doc) => {
         return { ...doc.data(), collectionAddress: doc.id };
       });
@@ -57,6 +54,7 @@ export async function getUserVotes(
   } catch (err) {
     error('error occurred while getting user votes');
     error(err);
+    res.sendStatus(StatusCode.InternalServerError);
   }
 }
 
