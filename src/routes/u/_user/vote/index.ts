@@ -4,6 +4,7 @@ import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
 import CollectionsController from '@services/infinity/collections/CollectionsController';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
+import { convertOpenseaListingsToInfinityListings } from '@services/opensea/utils';
 import { error } from '@utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
@@ -30,12 +31,20 @@ export async function getUserVotes(
 
   try {
     if (collectionAddress) {
+      console.log('getting votes for collection ', collectionAddress);
       const userVoteInCollection = (await userVotes.doc(collectionAddress).get()).data();
+      // user has not voted  on this collection
+      if (!userVoteInCollection) {
+        // users must vote before they can see votes
+        res.send({});
+        return;
+      }
       const collectionsController = new CollectionsController();
       const collectionVotes = await collectionsController.getCollectionVotes(collectionAddress);
       res.send({ votes: collectionVotes, userVote: userVoteInCollection });
       return;
     } else {
+      console.log('getting all user votes ');
       const allUserVotes = ((await userVotes.get())?.docs ?? [])?.map?.((doc) => {
         return { ...doc.data(), collectionAddress: doc.id };
       });
@@ -51,6 +60,9 @@ export async function getUserVotes(
   }
 }
 
+/**
+ * postUserVote can be used to set/update a user's vote for a collection
+ */
 export async function postUserVote(
   req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean }>,
   res: Response
