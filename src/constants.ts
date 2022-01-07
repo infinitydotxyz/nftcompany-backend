@@ -27,7 +27,11 @@ export const fstrCnstnts = {
   COLLECTION_OPENSEA_STATS_DOC: 'opensea',
   COLLECTION_SOCIALS_COLL: 'socials',
   COLLECTION_TWITTER_DOC: 'twitter',
-  COLLECTION_DISCORD_DOC: 'discord'
+  COLLECTION_DISCORD_DOC: 'discord',
+  AUTH_COLL: 'auth',
+  EDITORS_DOC: 'editors',
+  CREATOR_DOC: 'creator',
+  ADMINS_DOC: 'admins'
 };
 
 export const auth = {

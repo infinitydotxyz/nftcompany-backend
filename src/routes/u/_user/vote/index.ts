@@ -2,7 +2,7 @@
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
 import { fstrCnstnts } from '@constants';
-import CollectionsController from '@services/infinity/collections/CollectionsController';
+import CollectionsController from '@base/controllers/CollectionsController';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { ethers } from 'ethers';

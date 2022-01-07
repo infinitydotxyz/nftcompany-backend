@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authorizeUser } from '@base/middleware/auth.js';
+import { authenticateUser } from '@base/middleware/auth.js';
 import { postTxnCheck } from './_user/wyvern/v1/txns/check';
 import { getUserTxns, postUserTxn } from './_user/wyvern/v1/txns';
 import { postUserOrders } from './_user/wyvern/v1/orders';
@@ -14,10 +14,15 @@ import { postSubscribeUserEmail } from './_user/subscribeEmail';
 import { postUsPerson } from './_user/usperson';
 import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
+// import { getCollectionInfo } from './_collection/_user';
 
 const router = Router();
 
-router.use('/:user', authorizeUser);
+// router.use('/:collection/:user', authenticateUser);
+// router.use('/:collection/:user', authorizeCollectionEditor);
+// router.get('/:collection/:user', getCollectionInfo);
+
+router.use('/:user', authenticateUser);
 
 router.get('/:user/wyvern/v1/txns', getUserTxns);
 router.get('/:user/assets', getUserAssets);

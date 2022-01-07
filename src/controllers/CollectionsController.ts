@@ -16,7 +16,7 @@ import {
 import { CollectionInfo, DiscordSnippet, Links, CollectionStats, TwitterSnippet } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys } from '@base/types/UtilityTypes';
-import { aggreagteHistorticalData, averageHistoricalData } from '../aggregateHistoricalData';
+import { aggreagteHistorticalData, averageHistoricalData } from '../services/infinity/aggregateHistoricalData';
 import { getCollectionLinks } from '@services/opensea/collection/getCollection';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
