@@ -24,6 +24,7 @@ export const fstrCnstnts = {
   HISTORICAL_COLL: 'historical',
   VOTES_COLL: 'votes',
   COLLECTION_STATS_COLL: 'stats',
+  COLLECTION_LINKS_DOC: 'links',
   COLLECTION_OPENSEA_STATS_DOC: 'opensea',
   COLLECTION_SOCIALS_COLL: 'socials',
   COLLECTION_TWITTER_DOC: 'twitter',

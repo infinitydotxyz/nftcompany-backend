@@ -692,7 +692,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
   result.set(relativePath, names);
 };
 
-const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<File> => {
+export const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<File> => {
   const remoteFile: File = bucket.file(path);
 
   // no idea why exists() returns an array [boolean]

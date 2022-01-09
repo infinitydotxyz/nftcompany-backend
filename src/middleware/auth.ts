@@ -31,12 +31,20 @@ export async function authenticateUser(req: Request<{ user: string }>, res: Resp
   res.sendStatus(StatusCode.Unauthorized);
 }
 
+export enum CollectionAuthType {
+  Editor = 'editor',
+  Creator = 'creator',
+  Admin = 'admin'
+}
+
 /**
  * ASSUMES AUTHENTICATION HAS ALREADY BEEN HANDLED
+ *
+ * adds the authType property to locals
  */
 export function authorizeCollectionEditor(
   req: Request<{ user: string; collection: string }>,
-  res: Response,
+  res: Response<any, { authType: CollectionAuthType }>,
   next: NextFunction
 ) {
   const asyncHandler = async () => {
@@ -59,7 +67,8 @@ export function authorizeCollectionEditor(
       const creationTx = txHistory.find((tx) => {
         return (tx as any)?.creates?.toLowerCase?.() === contractAddress;
       });
-      const creator = creationTx?.from ?? '';
+
+      const creator = creationTx?.from?.toLowerCase?.() ?? '';
       const hash = creationTx?.hash ?? '';
       creatorObj = {
         creator,
@@ -71,6 +80,7 @@ export function authorizeCollectionEditor(
 
     if (userAddress === creatorObj.creator) {
       // creator is authorized
+      res.locals.authType = CollectionAuthType.Creator;
       next();
       return;
     }
@@ -84,6 +94,7 @@ export function authorizeCollectionEditor(
     const editors = (await editorsDocRef.get()).data();
     if (editors?.[userAddress]?.authorized) {
       // editor is authorized
+      res.locals.authType = CollectionAuthType.Editor;
       next();
       return;
     }
@@ -94,6 +105,7 @@ export function authorizeCollectionEditor(
 
     if (admins?.[userAddress]?.authorized) {
       // admin is authorized
+      res.locals.authType = CollectionAuthType.Admin;
       next();
       return;
     }

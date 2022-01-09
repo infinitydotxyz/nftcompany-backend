@@ -1,9 +1,10 @@
 import { singleton } from 'tsyringe';
 import firebaseAdmin from 'firebase-admin';
-import { Bucket } from '@google-cloud/storage';
+import { Bucket, File } from '@google-cloud/storage';
 import crypto from 'crypto';
 import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from '../constants';
+import { Readable } from 'stream';
 
 @singleton()
 export default class Firestore {
@@ -40,5 +41,36 @@ export default class Firestore {
 
   getHistoricalDocId(year: number, week: number) {
     return `${year}-${week}`;
+  }
+
+  async uploadBuffer(buffer: Buffer, path: string, contentType: string): Promise<File> {
+    const remoteFile = this.bucket.file(path);
+
+    // no idea why exists() returns an array [boolean]
+    const existsArray = await remoteFile.exists();
+    if (existsArray && existsArray.length > 0 && !existsArray[0]) {
+      return await new Promise<File>((resolve, reject) => {
+        Readable.from(buffer).pipe(
+          remoteFile
+            .createWriteStream({
+              metadata: {
+                contentType
+              }
+            })
+            .on('error', (error) => {
+              console.log('error', error);
+
+              reject(error);
+            })
+            .on('finish', () => {
+              console.log(`uploaded: ${remoteFile.name}`);
+
+              resolve(remoteFile);
+            })
+        );
+      });
+    }
+
+    return remoteFile;
   }
 }

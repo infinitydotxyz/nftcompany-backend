@@ -13,25 +13,70 @@ export enum ListingType {
 }
 
 export interface CollectionInfo {
+  isClaimed?: boolean;
+
   chain: 'Ethereum' | string;
+
   searchCollectionName: string;
+
   description: string;
+
   bannerImage: string;
+
   profileImage: string;
+
   traits: WyvernTraitWithValues[];
+
   hasBlueCheck: boolean;
+
   address: string;
+
   name: string;
+
   cardImage: string;
+
   openseaUrl: string;
+
   chainId: '1' | string;
-  /**
-   * link to the collections twitter
-   */
-  twitter?: string;
+
+  benefits?: string[];
+
+  partnerships?: Array<{ name: string; link: string }>;
+
   twitterSnippet?: TwitterSnippet;
 
   discordSnippet?: DiscordSnippet;
+}
+
+export type CollectionData = CollectionInfo & { links?: Links; stats?: CollectionStats };
+
+export type EditableCollectionData = Pick<
+  CollectionData,
+  'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships' | 'links'
+>;
+
+export interface UpdateCollectionDataRequest {
+  profileImage: {
+    /**
+     * file is passed through req.files.profileImage
+     */
+    /**
+     * whether the image was deleted
+     */
+    isDeleted: boolean;
+  };
+  name: string;
+  description: string;
+  twitter: string;
+  discord: string;
+  instagram: string;
+  facebook: string;
+  external: string;
+  medium: string;
+  wiki: string;
+  telegram: string;
+  benefits: string[];
+  partnerships: Array<{ name: string; link: string }>;
 }
 
 export interface TwitterSnippet {

@@ -14,13 +14,8 @@ import { postSubscribeUserEmail } from './_user/subscribeEmail';
 import { postUsPerson } from './_user/usperson';
 import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
-// import { getCollectionInfo } from './_collection/_user';
 
 const router = Router();
-
-// router.use('/:collection/:user', authenticateUser);
-// router.use('/:collection/:user', authorizeCollectionEditor);
-// router.get('/:collection/:user', getCollectionInfo);
 
 router.use('/:user', authenticateUser);
 

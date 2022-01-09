@@ -13,14 +13,25 @@ import {
   MIN_TWITTER_UPDATE_INTERVAL,
   ONE_DAY
 } from '@constants';
-import { CollectionInfo, DiscordSnippet, Links, CollectionStats, TwitterSnippet } from '@base/types/NftInterface';
+import {
+  CollectionInfo,
+  DiscordSnippet,
+  Links,
+  CollectionStats,
+  TwitterSnippet,
+  CollectionData,
+  EditableCollectionData,
+  UpdateCollectionDataRequest
+} from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
-import { Keys } from '@base/types/UtilityTypes';
-import { aggreagteHistorticalData, averageHistoricalData } from '../services/infinity/aggregateHistoricalData';
+import { Keys, Optional } from '@base/types/UtilityTypes';
+import { aggreagteHistorticalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
 import { getCollectionLinks } from '@services/opensea/collection/getCollection';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
 import { WithTimestamp } from '@base/types/Historical';
+import { CollectionAuthType } from '@base/middleware/auth';
+import { UploadedFile } from 'express-fileupload';
 
 interface FollowerData {
   followersCount: number;
@@ -28,6 +39,7 @@ interface FollowerData {
 }
 
 type FollowerDataAverages = Record<Keys<Omit<FollowerData, 'timestamp'>>, number>;
+
 interface AggregatedFollowerData {
   weekStart: FollowerData;
   weekEnd: FollowerData;
@@ -40,6 +52,7 @@ interface DiscordHistoricalData {
   presenceCount: number;
   membersCount: number;
 }
+
 interface TwitterHistoricalData {
   timestamp: number;
   followers: number;
@@ -54,58 +67,20 @@ export default class CollectionsController {
     try {
       log('Fetching collection info for', slugOrAddress);
 
-      type CollectionData = CollectionInfo & { links?: Links; stats?: CollectionStats };
-
-      let collectionData: CollectionData | undefined;
+      let collectionInfo: CollectionInfo | undefined;
       /**
        * get base collection info
        */
       if (ethers.utils.isAddress(slugOrAddress)) {
-        collectionData = await this.getCollectionInfoByAddress(slugOrAddress.toLowerCase());
+        collectionInfo = await this.getCollectionInfoByAddress(slugOrAddress.toLowerCase());
       } else {
         const data = await this.getCollectionInfoByName(slugOrAddress, 1);
-        collectionData = data?.[0];
+        collectionInfo = data?.[0];
       }
 
-      /**
-       * get links and stats
-       * links are required for updating discord and twitter snippets
-       */
-      if (collectionData?.address) {
-        const linksAndStats = await this.getLinksAndStats(collectionData.address);
-        if (linksAndStats?.links) {
-          collectionData.links = linksAndStats.links;
-        }
-        if (linksAndStats?.stats) {
-          collectionData.stats = linksAndStats.stats;
-        }
-      }
-
-      const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
-      let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
-      if (collectionData?.links?.discord) {
-        discordSnippetPromise = this.getDiscordSnippet(collectionData.address, collectionData.links.discord);
-        promises.push(discordSnippetPromise);
-      }
-
-      let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
-      if (collectionData?.links?.twitter) {
-        twitterSnippetPromise = this.getTwitterSnippet(collectionData.address, collectionData.links.twitter);
-        promises.push(twitterSnippetPromise);
-      }
-      /**
-       * pulled/updated concurrently
-       */
-      const results = await Promise.all(promises);
-
-      for (const result of results) {
-        if (result && collectionData) {
-          if ('membersCount' in result) {
-            collectionData.discordSnippet = result;
-          } else if (result) {
-            collectionData.twitterSnippet = result;
-          }
-        }
+      let collectionData: CollectionData | undefined;
+      if (collectionInfo) {
+        collectionData = await this.getCollectionDataFromCollectionInfo(collectionInfo);
       }
 
       const respStr = jsonString(collectionData);
@@ -121,6 +96,185 @@ export default class CollectionsController {
       error(err);
       res.sendStatus(StatusCode.InternalServerError);
     }
+  }
+
+  /**
+   * getCollectionInfo handles a request for collection info by slug or collection address
+   */
+  async getCollectionInformationForEditor(
+    req: Request<{ collection: string; user: string }>,
+    res: Response<any, { authType: CollectionAuthType }>
+  ) {
+    const address = req.params.collection.trim().toLowerCase();
+
+    /**
+     * this can be used for controlling permissions based on if the
+     * user is a contract creator, editor or infinity admin
+     */
+    // const authType = res.locals.authType;
+
+    if (!ethers.utils.isAddress(address)) {
+      res.sendStatus(StatusCode.BadRequest);
+      return;
+    }
+
+    try {
+      log('Fetching collection info for', address);
+
+      /**
+       * get base collection info
+       */
+      const collectionInfo = await this.getCollectionInfoByAddress(address);
+
+      let collectionData: CollectionData | undefined;
+      if (collectionInfo) {
+        collectionData = await this.getCollectionDataFromCollectionInfo(collectionInfo);
+      }
+
+      const respStr = jsonString(collectionData);
+      // to enable cdn cache
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      });
+      res.send(respStr);
+      return;
+    } catch (err) {
+      error('Failed to get collection info for', address);
+      error(err);
+      res.sendStatus(StatusCode.InternalServerError);
+    }
+  }
+
+  async postCollectionInformation(
+    req: Request<{ collection: string; user: string }, any, { data: string }>,
+    res: Response<any, { authType: CollectionAuthType }>
+  ) {
+    const collectionAddress = req.params.collection.trim().toLowerCase();
+    // const editor = req.params.user.trim().toLowerCase();
+    // const editorType = res.locals.authType;
+
+    try {
+      const data: UpdateCollectionDataRequest = JSON.parse(req.body.data);
+      const profileImageFile: UploadedFile = req?.files?.profileImage as UploadedFile;
+      let profileImageUpdate = {};
+      /**
+       * upload profile image to google cloud storage bucket
+       */
+      if (profileImageFile) {
+        const hash = profileImageFile.md5;
+        const fileExtension = profileImageFile.mimetype.split('/')?.[1];
+        if (!fileExtension) {
+          res.sendStatus(StatusCode.BadRequest);
+          return;
+        }
+        const path = `images/collections/${collectionAddress}/${hash}.${fileExtension}`;
+        const buffer = profileImageFile.data;
+
+        const remoteFile = firestore.bucket.file(path);
+        const existsArray = await remoteFile.exists();
+        if (existsArray && existsArray.length > 0 && !existsArray[0]) {
+          const remoteFile = await firestore.uploadBuffer(buffer, path, profileImageFile.mimetype);
+          const publicUrl = remoteFile.publicUrl();
+          if (publicUrl) {
+            profileImageUpdate = {
+              profileImage: publicUrl
+            };
+          }
+        }
+      } else if (data.profileImage.isDeleted) {
+        profileImageUpdate = { profileImage: '' };
+      }
+
+      const collectionInfoUpdate: Optional<
+        Pick<EditableCollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
+        'profileImage'
+      > = {
+        name: data.name ?? '',
+        description: data.description ?? '',
+        benefits: data.benefits ?? [],
+        partnerships: data.partnerships ?? [],
+        ...profileImageUpdate
+      };
+
+      const collectionLinkUpdate: Links = {
+        timestamp: Date.now(),
+        twitter: data.twitter ?? '',
+        discord: data.discord ?? '',
+        external: data.external ?? '',
+        medium: data.medium ?? '',
+        telegram: data.telegram ?? '',
+        instagram: data.instagram ?? '',
+        wiki: data.wiki ?? ''
+      };
+
+      const batch = firestore.db.batch();
+      const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
+      const collectionLinksRef = collectionInfoRef
+        .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+        .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
+
+      batch.set(collectionInfoRef, collectionInfoUpdate, { merge: true });
+
+      batch.set(collectionLinksRef, collectionLinkUpdate, { merge: true });
+
+      await batch.commit();
+
+      res.sendStatus(StatusCode.Created);
+      return;
+    } catch (err) {
+      error(`error occurred while updating collection info`);
+      error(err);
+      res.sendStatus(StatusCode.InternalServerError);
+    }
+  }
+
+  async getCollectionDataFromCollectionInfo(collectionInfo: CollectionInfo) {
+    const collectionData: CollectionData = {
+      ...collectionInfo
+    };
+    /**
+     * get links and stats
+     * links are required for updating discord and twitter snippets
+     */
+    if (collectionInfo?.address) {
+      const linksAndStats = await this.getLinksAndStats(collectionInfo.address);
+      if (linksAndStats?.links) {
+        collectionData.links = linksAndStats.links;
+      }
+      if (linksAndStats?.stats) {
+        collectionData.stats = linksAndStats.stats;
+      }
+    }
+
+    const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
+    let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
+    if (collectionData?.links?.discord) {
+      discordSnippetPromise = this.getDiscordSnippet(collectionData.address, collectionData.links.discord);
+      promises.push(discordSnippetPromise);
+    }
+
+    let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
+    if (collectionData?.links?.twitter) {
+      twitterSnippetPromise = this.getTwitterSnippet(collectionData.address, collectionData.links.twitter);
+      promises.push(twitterSnippetPromise);
+    }
+    /**
+     * pulled/updated concurrently
+     */
+    const results = await Promise.all(promises);
+
+    for (const result of results) {
+      if (result && collectionData) {
+        if ('membersCount' in result) {
+          collectionData.discordSnippet = result;
+        } else if (result) {
+          collectionData.twitterSnippet = result;
+        }
+      }
+    }
+
+    return collectionData;
   }
 
   /**
@@ -300,7 +454,7 @@ export default class CollectionsController {
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
       .doc(collectionAddress)
       .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-      .doc('links');
+      .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
 
     let links: Links | undefined = (await linkRef.get())?.data() as Links;
 
@@ -378,7 +532,7 @@ export default class CollectionsController {
             .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
             .doc(collectionAddress)
             .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-            .doc('links');
+            .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
           await linkRef.set(
             {
               ...updatedLinks
