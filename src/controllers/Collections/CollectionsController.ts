@@ -248,7 +248,8 @@ export default class CollectionsController {
      * links are required for updating discord and twitter snippets
      */
     if (collectionInfo?.address) {
-      const linksAndStats = await this.getLinksAndStats(collectionInfo.address);
+      const isClaimed = collectionInfo.isClaimed ?? false;
+      const linksAndStats = await this.getLinksAndStats(collectionInfo.address, isClaimed);
       if (linksAndStats?.links) {
         collectionData.links = linksAndStats.links;
       }
@@ -455,7 +456,7 @@ export default class CollectionsController {
     return dataPoints;
   }
 
-  private async getLinksAndStats(collectionAddress?: string) {
+  private async getLinksAndStats(collectionAddress?: string, isClaimed?: boolean) {
     if (!collectionAddress) {
       return { links: undefined, stats: undefined };
     }
@@ -468,7 +469,10 @@ export default class CollectionsController {
 
     let links: Links | undefined = (await linkRef.get())?.data() as Links;
 
-    links = await this.updateLinks(links, collectionAddress, false);
+    if (!isClaimed) {
+      // once claimed the editors must update their collection info
+      links = await this.updateLinks(links, collectionAddress, false);
+    }
 
     const statsRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
