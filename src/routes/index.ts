@@ -12,6 +12,7 @@ import featuredCollections from './featured-collections';
 import titles from './titles';
 import verifiedCollections from './verifiedCollections';
 import verifyEmail from './verifyEmail';
+import collection from './collection';
 
 const router = Router();
 
@@ -27,6 +28,8 @@ router.use('/featured-collections', featuredCollections);
 router.use('/titles', titles);
 router.use('/verifiedCollections', verifiedCollections);
 router.use('/verifyEmail', verifyEmail);
+router.use('/collection', collection);
+
 /**
  * require auth
  */

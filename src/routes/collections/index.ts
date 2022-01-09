@@ -3,17 +3,21 @@ import { getUniqueItemsByProperties } from '@utils/index.js';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';
-import { getCollectionInfo } from './_slug';
 import { getTraits } from './_id/traits';
 import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
+import { getCollectionInfo } from './_slug';
+import { getHistoricalTwitterData } from './_id/twitter';
+import { getHistoricalDiscordData } from './_id/discord';
 const router = Router();
 
 router.get('/:id/traits', getTraits);
+router.get('/:id/discord', getHistoricalDiscordData);
+router.get('/:id/twitter', getHistoricalTwitterData);
 router.get('/:slug', getCollectionInfo);
-router.get('/featured', featured);
-router.get('/verified', verified);
+router.use('/featured', featured);
+router.use('/verified', verified);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
