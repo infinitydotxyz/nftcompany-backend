@@ -161,4 +161,5 @@ export interface Links {
   telegram?: string;
   instagram?: string;
   wiki?: string;
+  facebook?: string;
 }

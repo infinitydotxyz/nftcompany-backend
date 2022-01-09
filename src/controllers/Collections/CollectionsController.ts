@@ -107,11 +107,13 @@ export default class CollectionsController {
   ) {
     const address = req.params.collection.trim().toLowerCase();
 
+    const editorType = res.locals.authType;
+    const isCreator = editorType === CollectionAuthType.Creator;
+
     /**
      * this can be used for controlling permissions based on if the
      * user is a contract creator, editor or infinity admin
      */
-    // const authType = res.locals.authType;
 
     if (!ethers.utils.isAddress(address)) {
       res.sendStatus(StatusCode.BadRequest);
@@ -125,13 +127,20 @@ export default class CollectionsController {
        * get base collection info
        */
       const collectionInfo = await this.getCollectionInfoByAddress(address);
-
       let collectionData: CollectionData | undefined;
       if (collectionInfo) {
         collectionData = await this.getCollectionDataFromCollectionInfo(collectionInfo);
       }
 
-      const respStr = jsonString(collectionData);
+      /**
+       * creator clicked edit button for the first time
+       */
+      if (!collectionData?.isClaimed && isCreator) {
+        const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address);
+        await collectionInfoRef.set({ isClaimed: true }, { merge: true });
+      }
+
+      const respStr = jsonString(collectionData ?? {});
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -205,7 +214,8 @@ export default class CollectionsController {
         medium: data.medium ?? '',
         telegram: data.telegram ?? '',
         instagram: data.instagram ?? '',
-        wiki: data.wiki ?? ''
+        wiki: data.wiki ?? '',
+        facebook: data.facebook ?? ''
       };
 
       const batch = firestore.db.batch();
