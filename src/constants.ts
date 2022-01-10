@@ -17,7 +17,22 @@ export const fstrCnstnts = {
   SALES_COLL: 'sales',
   TXNS_COLL: 'txns',
   MISSED_TXNS_COLL: 'missedTxns',
-  FEATURED_COLL: 'featuredCollections'
+  FEATURED_COLL: 'featuredCollections',
+  TWITTER_COLL: 'twitter',
+  TWEETS_COLL: 'tweets',
+  MENTIONS_COLL: 'mentions',
+  HISTORICAL_COLL: 'historical',
+  VOTES_COLL: 'votes',
+  COLLECTION_STATS_COLL: 'stats',
+  COLLECTION_LINKS_DOC: 'links',
+  COLLECTION_OPENSEA_STATS_DOC: 'opensea',
+  COLLECTION_SOCIALS_COLL: 'socials',
+  COLLECTION_TWITTER_DOC: 'twitter',
+  COLLECTION_DISCORD_DOC: 'discord',
+  AUTH_COLL: 'auth',
+  EDITORS_DOC: 'editors',
+  CREATOR_DOC: 'creator',
+  ADMINS_DOC: 'admins'
 };
 
 export const auth = {
@@ -47,5 +62,12 @@ export const DEFAULT_MAX_ETH = 1000000; // for listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
-export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
-export const ORIGIN = 'https://dev.nftcompany.com'
+export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
+export const ORIGIN = 'https://dev.nftcompany.com';
+
+export const ONE_HOUR = 3_600_000; // in ms
+export const ONE_DAY = ONE_HOUR * 24;
+export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // in ms
+export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
+export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
+export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min
