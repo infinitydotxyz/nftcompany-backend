@@ -166,6 +166,7 @@ export interface CollectionStats {
   votesAgainst?: number;
   name?: string;
   profileImage?: string;
+  searchCollectionName?: string;
 }
 
 export interface Links {
