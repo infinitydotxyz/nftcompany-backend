@@ -249,7 +249,12 @@ export default class CollectionsController {
      */
     if (collectionInfo?.address) {
       const isClaimed = collectionInfo.isClaimed ?? false;
-      const linksAndStats = await this.getLinksAndStats(collectionInfo.address, isClaimed);
+      const linksAndStats = await this.getLinksAndStats(
+        collectionInfo.address,
+        isClaimed,
+        collectionData?.profileImage,
+        collectionData?.searchCollectionName
+      );
       if (linksAndStats?.links) {
         collectionData.links = linksAndStats.links;
       }
@@ -456,7 +461,12 @@ export default class CollectionsController {
     return dataPoints;
   }
 
-  private async getLinksAndStats(collectionAddress?: string, isClaimed?: boolean) {
+  private async getLinksAndStats(
+    collectionAddress?: string,
+    isClaimed?: boolean,
+    profileImage?: string,
+    searchCollectionName?: string
+  ) {
     if (!collectionAddress) {
       return { links: undefined, stats: undefined };
     }
@@ -483,7 +493,7 @@ export default class CollectionsController {
     let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
 
     if (links?.slug) {
-      stats = await this.updateStats(stats, collectionAddress, links.slug, false);
+      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, false);
     }
 
     try {
@@ -497,7 +507,14 @@ export default class CollectionsController {
     }
   }
 
-  private async updateStats(stats: CollectionStats, collectionAddress: string, openseaSlug: string, force = false) {
+  private async updateStats(
+    stats: CollectionStats,
+    collectionAddress: string,
+    openseaSlug: string,
+    profileImage?: string,
+    searchCollectionName?: string,
+    force = false
+  ) {
     const now = new Date().getTime();
 
     const updatedAt = stats?.timestamp ? stats?.timestamp : 0;
@@ -516,7 +533,10 @@ export default class CollectionsController {
 
           void (await statsRef.set(
             {
-              ...updatedStats
+              ...updatedStats,
+              collectionAddress,
+              profileImage: profileImage ?? '',
+              searchCollectionName: searchCollectionName ?? ''
             },
             { merge: true }
           ));
