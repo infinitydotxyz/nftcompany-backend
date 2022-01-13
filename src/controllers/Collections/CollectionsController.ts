@@ -500,7 +500,7 @@ export default class CollectionsController {
     let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
 
     if (links?.slug) {
-      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, true);
+      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, false);
     }
 
     try {
@@ -570,8 +570,8 @@ export default class CollectionsController {
                 'thirtyDay.sales',
                 'thirtyDay.volume',
                 'total.sales',
+                'total.volume',
                 'total.supply',
-                'oneDay.volume',
                 'votesFor',
                 'votesAgainst'
               ]
@@ -666,7 +666,7 @@ export default class CollectionsController {
       .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
     const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
-    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink);
+    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink, true);
 
     return updatedTwitterSnippet;
   }
@@ -843,7 +843,7 @@ export default class CollectionsController {
         .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
       let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
-      discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink);
+      discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, true);
 
       return discordSnippet;
     } catch (err) {

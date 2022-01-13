@@ -12,8 +12,7 @@ const router = Router();
 enum OrderBy {
   Twitter = 'twitter',
   Discord = 'discord',
-  //   Votes = 'votes',
-  Floor = 'floor',
+  //   Floor = 'floor', // TODO add floor
   Volume = 'volume',
   AveragePrice = 'averagePrice'
 }
@@ -25,15 +24,6 @@ enum Interval {
   Total = 'total'
 }
 
-/**
- * twitter followers
- * discord followers
- * votes
- * price
- * volume
- * items
- * owners
- */
 router.get(
   '/',
   async (
@@ -51,7 +41,7 @@ router.get(
     >,
     res
   ) => {
-    // const startAfter = req.query.startAfter ?? '';
+    const startAfter = req.query.startAfter ?? '';
     const queryFields = parseQueryFields(res, req, ['limit'], [`${DEFAULT_ITEMS_PER_PAGE}`]);
     if ('error' in queryFields) {
       return;
@@ -85,64 +75,75 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let stats;
+      let statsQuery;
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
           // eslint-disable-next-line no-case-declarations
           if (interval === Interval.Total) {
-            stats = firestore.db
+            statsQuery = firestore.db
               .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`averagePrice`, orderDirection)
-              .limit(limit);
+              .orderBy(`averagePrice`, orderDirection);
           } else {
-            stats = firestore.db
+            statsQuery = firestore.db
               .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.averagePrice`, orderDirection)
-              .limit(limit);
+              .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
 
         case OrderBy.Volume:
-          stats = firestore.db
+          statsQuery = firestore.db
             .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-            .orderBy(`${interval}.volume`, orderDirection)
-            .limit(limit);
+            .orderBy(`${interval}.volume`, orderDirection);
+
           break;
-        //   .where('opensea.averagePrice', '>=', 0)
-        //   .orderBy('opensea.averagePrice', 'desc')
-        //   .limit(50);
 
-        // eslint-disable-next-line no-case-declarations
+        case OrderBy.Discord:
+          if (interval === Interval.Total) {
+            statsQuery = firestore.db
+              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .orderBy(`discordMembers`, orderDirection);
+          } else {
+            statsQuery = firestore.db
+              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .orderBy(`${interval}.discordMembers`, orderDirection);
+          }
 
-        //   case OrderBy.Discord:
+          break;
 
-        //   break;
+        case OrderBy.Twitter:
+          if (interval === Interval.Total) {
+            statsQuery = firestore.db
+              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .orderBy(`twitterFollowers`, orderDirection);
+          } else {
+            statsQuery = firestore.db
+              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .orderBy(`${interval}.twitterFollowers`, orderDirection);
+          }
 
-        //   case OrderBy.Twitter:
-
-        //   break;
-
-        //   case OrderBy.Floor:
-
-        //   case OrderBy.Volume:
-
-        //   case OrderBy.Votes:
-
-        //   case OrderBy.Items:
-
-        //   case OrderBy.Owners:
+          break;
 
         default:
           res.sendStatus(StatusCode.BadRequest);
           return;
       }
 
-      const results = await stats.get();
+      if (startAfter) {
+        statsQuery = statsQuery.startAfter(startAfter);
+      }
 
-      console.log(results);
+      const results = await statsQuery.limit(limit).get();
 
-      const data = (results.docs ?? []).map((item) => item.data());
+      const data = (results.docs ?? []).map((item) => {
+        return item.data();
+      });
+
+      console.log(
+        `Found: ${data.length} results. \nStarting with: ${data?.[0]?.collectionAddress} \nEnding with: ${
+          data?.[data.length - 1]?.collectionAddress
+        }`
+      );
 
       const respStr = jsonString(data);
 
