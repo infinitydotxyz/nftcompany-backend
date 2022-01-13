@@ -131,7 +131,7 @@ export interface CollectionStats {
     sales: number;
     averagePrice: number;
   };
-  thrityDay: {
+  thirtyDay: {
     volume: number;
     change: number;
     sales: number;

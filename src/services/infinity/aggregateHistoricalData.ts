@@ -25,7 +25,7 @@ import { ONE_DAY } from '@constants';
  * @param batch to be used to update any week documents that have not been aggregated
  * @returns the aggregated data to be stored in a higher level snippet
  */
-export async function aggreagteHistorticalData<Data extends WithTimestamp, Aggregate extends WithTimestamp>(
+export async function aggregateHistoricalData<Data extends WithTimestamp, Aggregate extends WithTimestamp>(
   historicalRef: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>,
   weekLimit: number,
   batch: FirebaseFirestore.WriteBatch

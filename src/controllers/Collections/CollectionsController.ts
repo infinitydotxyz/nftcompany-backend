@@ -25,7 +25,7 @@ import {
 } from '@base/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
 import { Keys, Optional } from '@base/types/UtilityTypes';
-import { aggreagteHistorticalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
+import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
 import { getCollectionLinks } from '@services/opensea/collection/getCollection';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
@@ -47,6 +47,13 @@ interface AggregatedFollowerData {
   averages: FollowerDataAverages;
 }
 
+type DiscordDataAverages = Record<Keys<Omit<DiscordSnippet, 'timestamp'>>, number>;
+interface AggregatedDiscordData {
+  weekStart: DiscordSnippet;
+  weekEnd: DiscordSnippet;
+  timestamp: number;
+  averages: DiscordDataAverages;
+}
 interface DiscordHistoricalData {
   timestamp: number;
   presenceCount: number;
@@ -493,7 +500,7 @@ export default class CollectionsController {
     let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
 
     if (links?.slug) {
-      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, false);
+      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, true);
     }
 
     try {
@@ -538,7 +545,33 @@ export default class CollectionsController {
               profileImage: profileImage ?? '',
               searchCollectionName: searchCollectionName ?? ''
             },
-            { merge: true }
+            {
+              mergeFields: [
+                'averagePrice',
+                'collectionAddress',
+                'profileImage',
+                'searchCollectionName',
+                'count',
+                'floorPrice',
+                'marketCap',
+                'owners',
+                'oneDay.averagePrice',
+                'oneDay.change',
+                'oneDay.sales',
+                'oneDay.volume',
+                'sevenDay.averagePrice',
+                'sevenDay.change',
+                'sevenDay.sales',
+                'sevenDay.volume',
+                'thirtyDay.averagePrice',
+                'thirtyDay.change',
+                'thirtyDay.sales',
+                'thirtyDay.volume',
+                'total.sales',
+                'total.supply',
+                'oneDay.volume'
+              ]
+            }
           ));
 
           return updatedStats;
@@ -586,7 +619,7 @@ export default class CollectionsController {
   }
 
   /**
-   * getCollectionInfoByAddress takes an addrss and returns the matching collection
+   * getCollectionInfoByAddress takes an address and returns the matching collection
    * info object if it exists
    *
    */
@@ -728,7 +761,7 @@ export default class CollectionsController {
 
           const historicalRef = twitterRef.collection('historical');
 
-          const aggregated = await aggreagteHistorticalData<FollowerData, AggregatedFollowerData>(
+          const aggregated = await aggregateHistoricalData<FollowerData, AggregatedFollowerData>(
             historicalRef,
             10,
             batch2
@@ -746,6 +779,38 @@ export default class CollectionsController {
               }
             },
             { merge: true }
+          );
+
+          const currentFollowers = aggregated?.current?.followersCount ?? 0;
+          const oneDayAgo = currentFollowers - (aggregated?.oneDayAgo?.followersCount ?? 0);
+          const sevenDaysAgo = currentFollowers - (aggregated?.weekly?.[0].weekStart?.followersCount ?? 0);
+          const thirtyDaysAgo = currentFollowers - (aggregated?.weekly?.[5]?.weekEnd?.followersCount ?? 0);
+
+          const statsRef = collectionInfoRef
+            .collection(fstrCnstnts.COLLECTION_STATS_COLL)
+            .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
+          batch2.set(
+            statsRef,
+            {
+              oneDay: {
+                twitterFollowers: oneDayAgo
+              },
+              sevenDay: {
+                twitterFollowers: sevenDaysAgo
+              },
+              thirtyDay: {
+                twitterFollowers: thirtyDaysAgo
+              },
+              twitterFollowers: currentFollowers
+            },
+            {
+              mergeFields: [
+                'oneDay.twitterFollowers',
+                'sevenDay.twitterFollowers',
+                'thirtyDay.twitterFollowers',
+                'twitterFollowers'
+              ]
+            }
           );
 
           await batch2.commit();
@@ -778,7 +843,7 @@ export default class CollectionsController {
 
       return discordSnippet;
     } catch (err) {
-      error('error occurred while getting disocrd snippet');
+      error('error occurred while getting discord snippet');
       error(err);
     }
   }
@@ -850,7 +915,7 @@ export default class CollectionsController {
 
           const historicalRef = discordRef.collection('historical');
 
-          const aggregated = await aggreagteHistorticalData<FollowerData, AggregatedFollowerData>(
+          const aggregated = await aggregateHistoricalData<DiscordSnippet, AggregatedDiscordData>(
             historicalRef,
             10,
             batch2
@@ -870,6 +935,51 @@ export default class CollectionsController {
             { merge: true }
           );
 
+          const currentMembers = aggregated?.current?.membersCount ?? 0;
+          const oneDayAgoMembers = currentMembers - (aggregated?.oneDayAgo?.membersCount ?? 0);
+          const sevenDaysAgoMembers = currentMembers - (aggregated?.weekly?.[0].weekStart?.membersCount ?? 0);
+          const thirtyDaysAgoMembers = currentMembers - (aggregated?.weekly?.[5]?.weekEnd?.membersCount ?? 0);
+
+          const currentPresence = aggregated?.current?.presenceCount ?? 0;
+          const oneDayAgoPresence = currentMembers - (aggregated?.oneDayAgo?.presenceCount ?? 0);
+          const sevenDaysAgoPresence = currentMembers - (aggregated?.weekly?.[0].weekStart?.presenceCount ?? 0);
+          const thirtyDaysAgoPresence = currentMembers - (aggregated?.weekly?.[5]?.weekEnd?.presenceCount ?? 0);
+
+          const statsRef = collectionInfoRef
+            .collection(fstrCnstnts.COLLECTION_STATS_COLL)
+            .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
+          batch2.set(
+            statsRef,
+            {
+              oneDay: {
+                discordMembers: oneDayAgoMembers,
+                discordPresence: oneDayAgoPresence
+              },
+              sevenDay: {
+                discordMembers: sevenDaysAgoMembers,
+                discordPresence: sevenDaysAgoPresence
+              },
+              thirtyDay: {
+                discordMembers: thirtyDaysAgoMembers,
+                discordPresence: thirtyDaysAgoPresence
+              },
+              discordMembers: currentMembers,
+              discordPresence: currentPresence
+            },
+            {
+              mergeFields: [
+                'oneDay.discordMembers',
+                'oneDay.discordPresence',
+                'sevenDay.discordMembers',
+                'sevenDay.discordPresence',
+                'thirtyDay.discordMembers',
+                'thirtyDay.discordPresence',
+                'discordMembers',
+                'discordPresence'
+              ]
+            }
+          );
+
           await batch2.commit();
 
           return {
@@ -878,7 +988,7 @@ export default class CollectionsController {
         }
       }
     } catch (err) {
-      error('error occurred while getting disocrd snippet');
+      error('error occurred while getting discord snippet');
       error(err);
     }
 

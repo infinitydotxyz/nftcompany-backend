@@ -15,8 +15,6 @@ enum OrderBy {
   //   Votes = 'votes',
   Floor = 'floor',
   Volume = 'volume',
-  //   Items = 'items',
-  //   Owners = 'owners',
   AveragePrice = 'averagePrice'
 }
 
