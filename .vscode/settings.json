@@ -5,5 +5,5 @@
   "eslint.validate": ["javascript"],
   "editor.formatOnSave": true,
   "js/ts.implicitProjectConfig.checkJs": true,
-  "cSpell.words": ["Cnstnts", "fstr"]
+  "cSpell.words": ["Cnstnts", "Extradata", "fstr", "Millis"]
 }

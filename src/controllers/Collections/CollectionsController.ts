@@ -90,7 +90,7 @@ export default class CollectionsController {
         collectionData = await this.getCollectionDataFromCollectionInfo(collectionInfo);
       }
 
-      const respStr = jsonString(collectionData);
+      const respStr = jsonString(collectionData ?? {});
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -260,7 +260,8 @@ export default class CollectionsController {
         collectionInfo.address,
         isClaimed,
         collectionData?.profileImage,
-        collectionData?.searchCollectionName
+        collectionData?.searchCollectionName,
+        collectionData?.name
       );
       if (linksAndStats?.links) {
         collectionData.links = linksAndStats.links;
@@ -472,7 +473,8 @@ export default class CollectionsController {
     collectionAddress?: string,
     isClaimed?: boolean,
     profileImage?: string,
-    searchCollectionName?: string
+    searchCollectionName?: string,
+    collectionName?: string
   ) {
     if (!collectionAddress) {
       return { links: undefined, stats: undefined };
@@ -500,7 +502,15 @@ export default class CollectionsController {
     let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
 
     if (links?.slug) {
-      stats = await this.updateStats(stats, collectionAddress, links.slug, profileImage, searchCollectionName, false);
+      stats = await this.updateStats(
+        stats,
+        collectionAddress,
+        links.slug,
+        profileImage,
+        searchCollectionName,
+        collectionName,
+        false
+      );
     }
 
     try {
@@ -520,6 +530,7 @@ export default class CollectionsController {
     openseaSlug: string,
     profileImage?: string,
     searchCollectionName?: string,
+    collectionName?: string,
     force = false
   ) {
     const now = new Date().getTime();
@@ -545,6 +556,7 @@ export default class CollectionsController {
               collectionAddress,
               profileImage: profileImage ?? '',
               searchCollectionName: searchCollectionName ?? '',
+              name: collectionName ?? '',
               ...votes
             },
             {
@@ -573,7 +585,8 @@ export default class CollectionsController {
                 'total.volume',
                 'total.supply',
                 'votesFor',
-                'votesAgainst'
+                'votesAgainst',
+                'name'
               ]
             }
           ));
@@ -666,7 +679,7 @@ export default class CollectionsController {
       .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
     const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
-    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink, true);
+    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collectionAddress, twitterLink, false);
 
     return updatedTwitterSnippet;
   }
@@ -843,7 +856,7 @@ export default class CollectionsController {
         .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
       let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
-      discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, true);
+      discordSnippet = await this.updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, false);
 
       return discordSnippet;
     } catch (err) {

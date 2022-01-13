@@ -12,11 +12,11 @@ import { ONE_DAY } from '@constants';
  *
  *        {
  *
- *            // a map contining a data point for hours of the week (key is the hour of the week) and an aggregated field
- *            // contining the timestamp of when the aggregated data was last updated
+ *            // a map containing a data point for hours of the week (key is the hour of the week) and an aggregated field
+ *            // containing the timestamp of when the aggregated data was last updated
  *
  *            [hour of the week]: // e.g. 50: { data }
- *            aggreagated: { timestamp, data }
+ *            aggregated: { timestamp, data }
  *
  *        }
  *
@@ -131,7 +131,7 @@ export async function aggregateHistoricalData<Data extends WithTimestamp, Aggreg
 
 /**
  * averageHistoricalData averages all number fields (except the timestamp) of the hourly data passed
- * and returns an object contining these averages using the original keys
+ * and returns an object containing these averages using the original keys
  *
  * @param hourlyData containing fields to calculate the average of
  */

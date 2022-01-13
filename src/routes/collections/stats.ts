@@ -139,12 +139,6 @@ router.get(
         return item.data();
       });
 
-      console.log(
-        `Found: ${data.length} results. \nStarting with: ${data?.[0]?.collectionAddress} \nEnding with: ${
-          data?.[data.length - 1]?.collectionAddress
-        }`
-      );
-
       const respStr = jsonString(data);
 
       if (respStr) {
