@@ -530,6 +530,7 @@ export default class CollectionsController {
     try {
       if (shouldUpdate || force) {
         const updatedStats = await getCollectionStats(openseaSlug);
+        const votes = await this.getCollectionVotes(collectionAddress);
 
         if (updatedStats) {
           const statsRef = firestore
@@ -543,7 +544,8 @@ export default class CollectionsController {
               ...updatedStats,
               collectionAddress,
               profileImage: profileImage ?? '',
-              searchCollectionName: searchCollectionName ?? ''
+              searchCollectionName: searchCollectionName ?? '',
+              ...votes
             },
             {
               mergeFields: [
@@ -569,7 +571,9 @@ export default class CollectionsController {
                 'thirtyDay.volume',
                 'total.sales',
                 'total.supply',
-                'oneDay.volume'
+                'oneDay.volume',
+                'votesFor',
+                'votesAgainst'
               ]
             }
           ));
