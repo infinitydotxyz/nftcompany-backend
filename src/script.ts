@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import './globals';
-import { getCollectionByAddress } from '@services/infinity/collections/getCollectionByAddress';
+import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
 
 /**
  * an entry point for calling scripts
@@ -11,12 +11,7 @@ import { getCollectionByAddress } from '@services/infinity/collections/getCollec
  *
  */
 async function main() {
-  const onOne = '0x3bf2922f4520a8ba0c2efc3d2a1539678dad5e9d';
-  const collection = await getCollectionByAddress(onOne);
-  console.log(collection);
-  //   const twitter = new Twitter();
-  //   const handle = 'cryptoadzNFT';
-  //   await twitter.getVerifiedAccountMentions(handle);
+  await updateSearchCollectionName(200);
 }
 
 void main();
