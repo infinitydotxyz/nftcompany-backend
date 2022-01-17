@@ -139,6 +139,11 @@ router.get(
         return item.data();
       });
 
+      // const collectionsToUpdate = data.filter((collection) => Date.now() > collection.timestamp + ONE_HOUR);
+      // for (const collection of data) {
+      //   // update collection
+      // }
+
       const respStr = jsonString(data);
 
       if (respStr) {
