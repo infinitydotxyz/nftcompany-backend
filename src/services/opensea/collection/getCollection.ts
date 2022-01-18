@@ -1,10 +1,43 @@
-import { Links } from '@base/types/NftInterface';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
-
+import { Collection } from './getContract';
 interface CollectionResponse {
-  collection: Collection;
+  collection: FullCollection;
+}
+
+interface FullCollection extends Collection {
+  editors: string[];
+  payment_tokens: Paymenttoken[];
+  primary_asset_contracts: Primaryassetcontract[];
+  traits: Record<string, { [value: string]: number }>;
+  stats: Stats;
+}
+
+interface Stats {
+  one_day_volume: number;
+  one_day_change: number;
+  one_day_sales: number;
+  one_day_average_price: number;
+  seven_day_volume: number;
+  seven_day_change: number;
+  seven_day_sales: number;
+  seven_day_average_price: number;
+  thirty_day_volume: number;
+  thirty_day_change: number;
+  thirty_day_sales: number;
+  thirty_day_average_price: number;
+  total_volume: number;
+  total_sales: number;
+  total_supply: number;
+  count: number;
+  num_owners: number;
+  average_price: number;
+  num_reports: number;
+  market_cap: number;
+  floor_price: number;
+}
+interface Primaryassetcontract {
   address: string;
   asset_contract_type: string;
   created_date: string;
@@ -14,7 +47,7 @@ interface CollectionResponse {
   owner: number;
   schema_name: string;
   symbol: string;
-  total_supply?: any;
+  total_supply: string;
   description: string;
   external_link: string;
   image_url: string;
@@ -26,63 +59,26 @@ interface CollectionResponse {
   opensea_seller_fee_basis_points: number;
   buyer_fee_basis_points: number;
   seller_fee_basis_points: number;
-  payout_address?: any;
+  payout_address: string;
 }
 
-interface Collection {
-  banner_image_url: string;
-  chat_url?: any;
-  created_date: string;
-  default_to_fiat: boolean;
-  description: string;
-  dev_buyer_fee_basis_points: string;
-  dev_seller_fee_basis_points: string;
-  discord_url: string;
-  display_data: Displaydata;
-  external_url: string;
-  featured: boolean;
-  featured_image_url: string;
-  hidden: boolean;
-  safelist_request_status: string;
+interface Paymenttoken {
+  id: number;
+  symbol: string;
+  address: string;
   image_url: string;
-  is_subject_to_whitelist: boolean;
-  large_image_url: string;
-  medium_username?: any;
   name: string;
-  only_proxied_transfers: boolean;
-  opensea_buyer_fee_basis_points: string;
-  opensea_seller_fee_basis_points: string;
-  payout_address?: any;
-  require_email: boolean;
-  short_description?: any;
-  slug: string;
-  telegram_url?: any;
-  twitter_username: string;
-  instagram_username?: any;
-  wiki_url: string;
+  decimals: number;
+  eth_price: number;
+  usd_price: number;
 }
 
-interface Displaydata {
-  card_display_style: string;
-}
-
-export async function getCollectionLinks(collectionAddress: string): Promise<Links | undefined> {
+export async function getCollectionFromOpensea(openseaCollectionSlug: string): Promise<FullCollection | undefined> {
   try {
     const collectionRespone: AxiosResponse<CollectionResponse> = await openseaClient.get(
-      `https://api.opensea.io/api/v1/asset_contract/${collectionAddress}`
+      `https://api.opensea.io/api/v1/collection/${openseaCollectionSlug}/stats`
     );
-    const data = collectionRespone?.data?.collection;
-    return {
-      timestamp: new Date().getTime(),
-      discord: data.discord_url ?? '',
-      external: data.external_url ?? '',
-      medium: data?.medium_username ? `https://medium.com/${data.medium_username}` : '',
-      slug: data?.slug ?? '',
-      telegram: data.telegram_url ?? '',
-      twitter: data?.twitter_username ? `https://twitter.com/${data.twitter_username}` : '',
-      instagram: data?.instagram_username ? `https://instagram.com/${data.instagram_username}` : '',
-      wiki: data?.wiki_url ?? ''
-    };
+    return collectionRespone.data.collection;
   } catch (e) {
     error('Error occurred while fetching collection from opensea');
     error(e);

@@ -12,7 +12,7 @@ const router = Router();
 // transaction events (for a collection or a token)
 // todo: adi take chainId
 router.get('/', async (req, res) => {
-  const queryStr = decodeURIComponent(qs.stringify(req.query));
+  const queryStr = decodeURIComponent(qs.stringify(req.query, { arrayFormat: 'repeat' }));
   const tokenId = req.query.token_id;
   const eventType = req.query.event_type;
   let respStr = '';
