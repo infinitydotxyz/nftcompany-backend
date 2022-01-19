@@ -156,9 +156,18 @@ export function getUserRewardTier(userVol: number): Record<string, string | numb
   }
 }
 
-export async function validateOrder(doc: any) {
+/**
+ *
+ * @param doc
+ * @returns a promise of a boolean indicating whether the order is valid
+ */
+export async function validateOrder(doc: any): Promise<boolean> {
   try {
     const order = doc?.data?.();
+    /**
+     * we use order hash to verify that this listing
+     * has an actual order
+     */
     if (!order.hash) {
       return true;
     }
@@ -218,7 +227,7 @@ export async function validateOrder(doc: any) {
   }
 }
 
-async function handleStaleListing(doc: any) {
+async function handleStaleListing(doc: any): Promise<void> {
   try {
     const order = doc.data();
     const batch = firestore.db.batch();
@@ -241,7 +250,8 @@ async function handleStaleListing(doc: any) {
         maker: order.maker,
         side: order.side,
         metadata: order.metadata,
-        expirationTime: order.expirationTime
+        expirationTime: order.expirationTime,
+        createdAt: Date.now()
       };
 
       const staleListingId = firestore.getStaleListingDocId({
