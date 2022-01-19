@@ -1,6 +1,6 @@
 import { StatusCode } from '@base/types/StatusCode';
 import { Request, Response } from 'express';
-import { error } from './logger.js';
+import { error } from './logger';
 
 // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
 export function parseQueryFields<K extends string>(

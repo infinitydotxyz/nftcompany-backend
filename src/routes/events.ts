@@ -57,7 +57,7 @@ export async function fetchOffersFromOSAndInfinity(req: Request) {
         offset as string,
         tokenId as string
       );
-      const assetEvents = [];
+      const assetEvents: any[] = [];
       for (const order of data?.orders || []) {
         const obj = {
           asset: {

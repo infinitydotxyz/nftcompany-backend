@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { OrderSide } from '@base/types/NftInterface';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { log } from '@utils/logger';
 import firebaseAdmin from 'firebase-admin';
 

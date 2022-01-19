@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 
 export async function getSaleLeaders(limit: number) {
   const sales = await firestore
@@ -11,7 +11,7 @@ export async function getSaleLeaders(limit: number) {
     .limit(limit)
     .get();
 
-  const saleLeaders = [];
+  const saleLeaders: any[] = [];
   for (const doc of sales.docs) {
     const docData = doc.data();
     const result = {

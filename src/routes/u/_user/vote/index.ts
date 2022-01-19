@@ -1,7 +1,7 @@
 // import { firestore } from '@base/container';
 import { firestore } from '@base/container';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import CollectionsController from '@base/controllers/Collections/CollectionsController';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';

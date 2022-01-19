@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    let orders = [];
+    let orders: any[] = [];
 
     const normalizedMaker = (maker as string)?.trim?.()?.toLowerCase?.();
     const orderSide = Number(side as string) as OrderSide;

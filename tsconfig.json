@@ -4,7 +4,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
@@ -19,7 +19,6 @@
       "*": ["../node_modules/*"],
       "@utils/*": ["./utils/*"],
       "@routes/*": ["./routes/*"],
-      "@constants": ["./constants.js"],
       "@services/*": ["./services/*"],
       "@base/*": ["./*"]
     }

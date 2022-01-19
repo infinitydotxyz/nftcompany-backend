@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
 
 export async function fuzzySearchCollection(startsWithQuery: string, limit: number) {

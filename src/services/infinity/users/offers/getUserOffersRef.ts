@@ -1,4 +1,4 @@
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getUserInfoRef } from '../getUser';
 
 export function getUserOffersRef(userAddress: string) {

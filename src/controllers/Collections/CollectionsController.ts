@@ -12,7 +12,7 @@ import {
   MIN_LINK_UPDATE_INTERVAL,
   MIN_TWITTER_UPDATE_INTERVAL,
   ONE_DAY
-} from '@constants';
+} from '@base/constants';
 import {
   CollectionInfo,
   DiscordSnippet,

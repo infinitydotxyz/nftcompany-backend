@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { UsPersonAnswer } from '@base/types/Rewards';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { bn } from '@utils/index';
 import { error, log } from '@utils/logger';
 import { getEmptyUserInfo, getUserRewardTier } from '../utils';

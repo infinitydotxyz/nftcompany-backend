@@ -1,6 +1,6 @@
 import { ListingMetadata } from '@base/types/ListingMetadata';
 import { RewardTiers } from '@base/types/Rewards';
-import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@constants';
+import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
 import { getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
@@ -45,7 +45,7 @@ export function getOrdersResponse(data: any) {
 }
 
 export function getOrdersResponseFromArray(docs: any) {
-  const listings = [];
+  const listings: any[] = [];
   for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
