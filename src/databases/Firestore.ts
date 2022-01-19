@@ -34,6 +34,21 @@ export default class Firestore {
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
+  getStaleListingDocId({
+    tokenAddress,
+    tokenId,
+    basePrice,
+    listingTime
+  }: {
+    tokenAddress: string;
+    tokenId: string;
+    basePrice: string;
+    listingTime: number;
+  }) {
+    const data = `${tokenAddress.trim()}${tokenId.trim()}${basePrice}${listingTime}`;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  }
+
   getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
     const data = tokenAddress.trim() + tokenId.trim() + chainId;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
