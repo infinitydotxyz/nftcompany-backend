@@ -1,4 +1,4 @@
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { firestore } from '@base/container';
 
 export async function getCollectionByAddress(address: string) {

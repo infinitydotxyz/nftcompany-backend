@@ -1,7 +1,7 @@
 import { HistoricalWeek, Hourly, WithTimestamp } from '@base/types/Historical';
 import { OrderDirection } from '@base/types/Queries';
 import { Keys } from '@base/types/UtilityTypes';
-import { ONE_DAY } from '@constants';
+import { ONE_DAY } from '@base/constants';
 
 /**
  *  expects the database to be formatted as below

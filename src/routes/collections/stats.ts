@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
-import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '@constants';
+import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '@base/constants';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';

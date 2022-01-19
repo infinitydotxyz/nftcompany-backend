@@ -1,5 +1,5 @@
 import { WyvernAssetData, WyvernTrait, WyvernTraitWithValues } from '@base/types/wyvern/WyvernOrder';
-import { OPENSEA_API } from '@constants';
+import { OPENSEA_API } from '@base/constants';
 import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
 import { openseaClient } from '../utils';

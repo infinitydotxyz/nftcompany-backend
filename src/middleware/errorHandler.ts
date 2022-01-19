@@ -1,7 +1,7 @@
-import { StatusCode } from '@base/types/StatusCode.js';
+import { StatusCode } from '@base/types/StatusCode';
 import { NextFunction, Request, Response } from 'express';
-import { error, log } from '../utils/logger.js';
-import { getRequestLogPrefix } from './logger.js';
+import { error, log } from '../utils/logger';
+import { getRequestLogPrefix } from './logger';
 
 /**
  * express middleware error handler

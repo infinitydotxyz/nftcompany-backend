@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getAssetFromCovalent } from '@services/covalent/getAssetFromCovalent';
 import { getAssetFromOpensea } from '@services/opensea/assets/getAssetFromOpensea';
 import { jsonString } from '@utils/formatters';
