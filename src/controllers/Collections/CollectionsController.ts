@@ -26,12 +26,14 @@ import {
 import { getWeekNumber } from '@utils/index';
 import { Keys, Optional } from '@base/types/UtilityTypes';
 import { aggreagteHistorticalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
-import { getCollectionLinks } from '@services/opensea/collection/getCollection';
+import { getCollectionInfoFromOpensea, getCollectionLinks } from '@services/opensea/collection/getContract';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
 import { WithTimestamp } from '@base/types/Historical';
 import { CollectionAuthType } from '@base/middleware/auth';
 import { UploadedFile } from 'express-fileupload';
+import { getCollectionFromOpensea } from '@services/opensea/collection/getCollection';
+import { getChainId } from '@utils/ethers';
 
 interface FollowerData {
   followersCount: number;
@@ -59,6 +61,42 @@ interface TwitterHistoricalData {
 }
 
 export default class CollectionsController {
+  async updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
+    let collectionInfo = await getCollectionInfoFromOpensea(address);
+    if (!collectionInfo) {
+      return;
+    }
+
+    try {
+      if (collectionInfo.slug) {
+        const collection = await getCollectionFromOpensea(collectionInfo.slug);
+        const chain =
+          (collection?.payment_tokens ?? []).findIndex((item) => item.symbol === 'ETH') >= 0 ? 'Ethereum' : 'Polygon';
+
+        collectionInfo = {
+          ...collectionInfo,
+          chain,
+          chainId: getChainId(chain)
+        };
+
+        try {
+          await firestore
+            .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+            .doc(address)
+            .set(collectionInfo, { merge: true });
+        } catch (err) {
+          error('Error occurred while setting collection info in firestore');
+          error(err);
+        }
+
+        return collectionInfo;
+      }
+    } catch (err) {
+      error('Error occurred while getting traits from opensea');
+      error(err);
+    }
+  }
+
   /**
    * getCollectionInfo handles a request for collection info by slug or collection address
    */
@@ -72,10 +110,23 @@ export default class CollectionsController {
        * get base collection info
        */
       if (ethers.utils.isAddress(slugOrAddress)) {
-        collectionInfo = await this.getCollectionInfoByAddress(slugOrAddress.toLowerCase());
+        const address = slugOrAddress.trim().toLowerCase();
+        collectionInfo = await this.getCollectionInfoByAddress(address);
+
+        /**
+         * if we do not have collection info, get it from opensea
+         */
+        if (!collectionInfo) {
+          collectionInfo = await this.updateCollectionInfoFromOpensea(address);
+        }
       } else {
         const data = await this.getCollectionInfoByName(slugOrAddress, 1);
         collectionInfo = data?.[0];
+      }
+
+      if (!collectionInfo) {
+        res.sendStatus(StatusCode.NotFound);
+        return;
       }
 
       let collectionData: CollectionData | undefined;
@@ -83,7 +134,7 @@ export default class CollectionsController {
         collectionData = await this.getCollectionDataFromCollectionInfo(collectionInfo);
       }
 
-      const respStr = jsonString(collectionData);
+      const respStr = jsonString(collectionData ?? {});
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
@@ -394,7 +445,7 @@ export default class CollectionsController {
 
         historicalData.sort((itemA, itemB) => itemA.timestamp - itemB.timestamp);
 
-        const respStr = jsonString(historicalData);
+        const respStr = jsonString(historicalData ?? {});
         // to enable cdn cache
         res.set({
           'Cache-Control': 'must-revalidate, max-age=60',
@@ -504,7 +555,7 @@ export default class CollectionsController {
     const shouldUpdate = now - updatedAt > MIN_COLLECTION_STATS_UPDATE_INTERVAL;
 
     try {
-      if (shouldUpdate || force) {
+      if ((shouldUpdate || force) && openseaSlug) {
         const updatedStats = await getCollectionStats(openseaSlug);
 
         if (updatedStats) {
@@ -657,11 +708,12 @@ export default class CollectionsController {
           const topMentions = mentionsSortedByFollowerCount.slice(0, 10);
           const date = new Date(now);
 
+          const account = twitterData.account ? { account: twitterData.account } : {};
           const updatedTwitterSnippet: TwitterSnippet = {
             recentTweets: twitterData.tweets,
             timestamp: now,
             topMentions: topMentions,
-            account: twitterData.account
+            ...account
           };
 
           const batch = firestore.db.batch();
@@ -696,7 +748,7 @@ export default class CollectionsController {
             weekDocRef,
             {
               aggregated: { timestamp: now },
-              [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount, timestamp: now }
+              [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount ?? 0, timestamp: now }
             },
             { merge: true }
           );
