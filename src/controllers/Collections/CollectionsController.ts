@@ -347,9 +347,9 @@ export default class CollectionsController {
       const ONE_WEEK = ONE_DAY * 7;
       const address = req.params.id.toLowerCase();
 
-      let to;
-      let from;
-      let startAt;
+      let to: number;
+      let from: number;
+      let startAt: number;
       const limit = 100;
 
       type Data = DiscordHistoricalData | TwitterHistoricalData;
