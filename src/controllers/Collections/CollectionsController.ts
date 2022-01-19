@@ -121,7 +121,6 @@ export async function getCollectionInfo(req: Request<{ slug: string }>, res: Res
        */
       if (!collectionInfo?.name) {
         collectionInfo = await updateCollectionInfoFromOpensea(address);
-        console.log(collectionInfo);
       }
     } else {
       const data = await getCollectionInfoByName(slugOrAddress, 1);
@@ -410,9 +409,9 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
     const ONE_WEEK = ONE_DAY * 7;
     const address = req.params.id.toLowerCase();
 
-    let to;
-    let from;
-    let startAt;
+    let to: number;
+    let from: number;
+    let startAt: number;
     const limit = 100;
 
     type Data = DiscordHistoricalData | TwitterHistoricalData;
