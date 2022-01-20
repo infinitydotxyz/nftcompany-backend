@@ -1,6 +1,6 @@
 import firebaseAdmin from 'firebase-admin';
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { updateNumOrders } from '../orders/updateNumOrders';
 import { error, log } from '@utils/logger';
 

@@ -23,7 +23,7 @@ export async function covalentAssetDataToListing(chainId: string, data: Covalent
   let image = '';
   let imagePreview = '';
   let numTraits = 0;
-  const traits = [];
+  const traits: any[] = [];
   const nftData = data.nft_data;
   if (nftData && nftData.length > 0) {
     const firstNftData = nftData[0];

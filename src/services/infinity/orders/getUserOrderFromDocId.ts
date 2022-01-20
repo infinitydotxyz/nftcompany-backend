@@ -1,5 +1,5 @@
 import { OrderSide } from '@base/types/NftInterface';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getUserInfoRef } from '../users/getUser';
 
 export function getUserOrderRefFromDocId(userAddress: string, docId: string, orderSide: OrderSide) {

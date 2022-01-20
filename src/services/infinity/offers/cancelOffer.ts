@@ -1,4 +1,4 @@
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { getUserInfoRef } from '../users/getUser';
 import { deleteOffer } from './deleteOffer';

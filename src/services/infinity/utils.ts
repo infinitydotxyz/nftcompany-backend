@@ -1,9 +1,15 @@
 import { ListingMetadata } from '@base/types/ListingMetadata';
 import { RewardTiers } from '@base/types/Rewards';
+import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
+import { getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
+import { Contract, ethers } from 'ethers';
 import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
+import openseaExchangeContract from '../../../abi/openseaExchangeContract.json';
+import { Provider } from '@ethersproject/abstract-provider';
+import { firestore } from '@base/container';
 
 export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');
@@ -39,12 +45,28 @@ export function getOrdersResponse(data: any) {
 }
 
 export function getOrdersResponseFromArray(docs: any) {
-  const listings = [];
+  const listings: any[] = [];
   for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
     try {
-      void checkOwnershipChange(doc);
+      void checkOwnershipChange(doc)
+        .then((ownershipChanged) => {
+          if (ownershipChanged) {
+            void handleStaleListing(doc).catch(() => {});
+          } else {
+            return validateOrder(doc);
+          }
+        })
+        .then((isValid) => {
+          if (!isValid) {
+            void handleStaleListing(doc).catch(() => {});
+          }
+        })
+        .catch((err) => {
+          error('error occurred while checking if order is valid');
+          error(err);
+        });
     } catch (err) {
       error('Error checking ownership change info', err);
     }
@@ -131,5 +153,122 @@ export function getUserRewardTier(userVol: number): Record<string, string | numb
     return rewardTiers.t5;
   } else {
     return null;
+  }
+}
+
+/**
+ *
+ * @param doc
+ * @returns a promise of a boolean indicating whether the order is valid
+ */
+export async function validateOrder(doc: any): Promise<boolean> {
+  try {
+    const order = doc?.data?.();
+    /**
+     * we use order hash to verify that this listing
+     * has an actual order
+     */
+    if (!order.hash) {
+      return true;
+    }
+    let contract;
+    const provider = getProvider(order.metadata.chainId);
+    switch (order.metadata.chainId) {
+      case '1':
+        contract = new Contract(WYVERN_EXCHANGE_ADDRESS, openseaExchangeContract, provider as Provider);
+        break;
+
+      case '137':
+        contract = new Contract(POLYGON_WYVERN_EXCHANGE_ADDRESS, openseaExchangeContract, provider as Provider);
+        break;
+
+      default:
+        return true;
+    }
+
+    const isValid = await contract?.validateOrder_(
+      [
+        order.exchange,
+        order.maker,
+        order.taker,
+        order.feeRecipient,
+        order.target,
+        order.staticTarget,
+        order.paymentToken
+      ],
+      [
+        order.makerRelayerFee,
+        order.takerRelayerFee,
+        order.makerProtocolFee,
+        order.takerProtocolFee,
+        order.basePrice,
+        order.extra,
+        order.listingTime,
+        order.expirationTime,
+        order.salt
+      ],
+      order.feeMethod,
+      order.side,
+      order.saleKind,
+      order.howToCall,
+      order.calldata,
+      order.replacementPattern,
+      order.staticExtradata,
+      order.v || 0,
+      order.r || NULL_HASH,
+      order.s || NULL_HASH
+    );
+
+    return isValid;
+  } catch (err) {
+    error('error while checking if order is valid ');
+    error(err);
+    return true;
+  }
+}
+
+async function handleStaleListing(doc: any): Promise<void> {
+  try {
+    const order = doc.data();
+    const batch = firestore.db.batch();
+
+    batch.delete(doc.ref);
+
+    const user = order.maker?.trim?.()?.toLowerCase?.();
+    if (user && ethers.utils.isAddress(user)) {
+      const userStaleListings = firestore
+        .collection(fstrCnstnts.ROOT_COLL)
+        .doc(fstrCnstnts.INFO_DOC)
+        .collection(fstrCnstnts.USERS_COLL)
+        .doc(user)
+        .collection(fstrCnstnts.STALE_LISTINGS_COLL);
+      const staleListing = {
+        listingTime: parseInt(order.listingTime ?? '', 10),
+        basePrice: order.basePrice ?? '',
+        taker: order.taker,
+        saleKind: order.saleKind,
+        maker: order.maker,
+        side: order.side,
+        metadata: order.metadata,
+        expirationTime: order.expirationTime,
+        createdAt: Date.now()
+      };
+
+      const staleListingId = firestore.getStaleListingDocId({
+        tokenAddress: staleListing.metadata.asset.address,
+        tokenId: staleListing.metadata.asset.id,
+        basePrice: staleListing.basePrice,
+        listingTime: staleListing.listingTime
+      });
+      const staleListingRef = userStaleListings.doc(staleListingId);
+
+      batch.set(staleListingRef, staleListing);
+    }
+
+    await batch.commit();
+    log(`purged stale listing: Maker ${user}`);
+  } catch (err) {
+    error('error occurred while handling stale listing ');
+    error(err);
   }
 }

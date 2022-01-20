@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 
 export async function getOrdersByTokenId(tokenAddress: string, tokenId: string, limit: number) {
   let query = firestore.db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);

@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import './globals';
-import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
 
 /**
  * an entry point for calling scripts
@@ -11,7 +10,7 @@ import { updateSearchCollectionName } from './scripts/updateSearchCollectionName
  *
  */
 async function main() {
-  await updateSearchCollectionName(200);
+  // await updateSearchCollectionName(200);
 }
 
 void main();

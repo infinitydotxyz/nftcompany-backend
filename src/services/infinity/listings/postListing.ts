@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { isTokenVerified } from '../collections/isTokenVerified';
 import { getUserListingRef } from './getUserListing';

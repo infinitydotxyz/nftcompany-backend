@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { log } from '@utils/logger';
 import { deleteOffer } from './deleteOffer';
 

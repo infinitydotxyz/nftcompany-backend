@@ -9,7 +9,7 @@ import { ListingType } from '@base/types/NftInterface';
 import { Order } from '@base/types/Order';
 import { Trait } from '@base/types/Trait';
 import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/wyvern/WyvernOrder';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from '@services/infinity/utils';
 import { getSearchFriendlyString, openseaParamSerializer } from '@utils/formatters';
@@ -314,7 +314,7 @@ export async function openseaAssetDataToListing(chainId: string, data: WyvernAss
   let description = data.description;
   let collectionName = '';
   let numTraits = 0;
-  const traits = [];
+  const traits: any[] = [];
   if (data.traits && data.traits.length > 0) {
     for (const attr of data.traits) {
       numTraits++;

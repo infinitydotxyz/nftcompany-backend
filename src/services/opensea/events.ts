@@ -1,4 +1,4 @@
-import { OPENSEA_API } from '@constants';
+import { OPENSEA_API } from '@base/constants';
 import { openseaClient } from './utils';
 
 export async function getOpenseaEvents(queryString: string) {

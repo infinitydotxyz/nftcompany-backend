@@ -1,5 +1,5 @@
 import { StatusCode } from '@base/types/StatusCode';
-import { getUniqueItemsByProperties } from '@utils/index.js';
+import { getUniqueItemsByProperties } from '@utils/index';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Router } from 'express';

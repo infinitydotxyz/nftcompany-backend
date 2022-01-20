@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { WyvernTraitWithValues } from '@base/types/wyvern/WyvernOrder';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { ethers } from 'ethers';
 
 export async function saveCollectionTraits(contractAddress: string, traits: WyvernTraitWithValues[]) {
