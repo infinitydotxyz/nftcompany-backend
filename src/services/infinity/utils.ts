@@ -1,6 +1,6 @@
 import { ListingMetadata } from '@base/types/ListingMetadata';
 import { RewardTiers } from '@base/types/Rewards';
-import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@constants';
+import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
 import { getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
@@ -45,7 +45,7 @@ export function getOrdersResponse(data: any) {
 }
 
 export function getOrdersResponseFromArray(docs: any) {
-  const listings = [];
+  const listings: any[] = [];
   for (const doc of docs) {
     const listing = doc.data();
     const isExpired = isOrderExpired(doc);
@@ -156,9 +156,18 @@ export function getUserRewardTier(userVol: number): Record<string, string | numb
   }
 }
 
-export async function validateOrder(doc: any) {
+/**
+ *
+ * @param doc
+ * @returns a promise of a boolean indicating whether the order is valid
+ */
+export async function validateOrder(doc: any): Promise<boolean> {
   try {
     const order = doc?.data?.();
+    /**
+     * we use order hash to verify that this listing
+     * has an actual order
+     */
     if (!order.hash) {
       return true;
     }
@@ -218,7 +227,7 @@ export async function validateOrder(doc: any) {
   }
 }
 
-async function handleStaleListing(doc: any) {
+async function handleStaleListing(doc: any): Promise<void> {
   try {
     const order = doc.data();
     const batch = firestore.db.batch();
@@ -241,7 +250,8 @@ async function handleStaleListing(doc: any) {
         maker: order.maker,
         side: order.side,
         metadata: order.metadata,
-        expirationTime: order.expirationTime
+        expirationTime: order.expirationTime,
+        createdAt: Date.now()
       };
 
       const staleListingId = firestore.getStaleListingDocId({

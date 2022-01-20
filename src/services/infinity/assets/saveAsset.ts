@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { CovalentWalletBalanceItem } from '@services/covalent/types/CovalentNFTMetadata';
 import { covalentAssetDataToListing } from '@services/covalent/utils';
 import { error } from '@utils/logger';

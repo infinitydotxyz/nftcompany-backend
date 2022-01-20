@@ -1,4 +1,4 @@
-import { NULL_ADDRESS } from '@constants';
+import { NULL_ADDRESS } from '@base/constants';
 import { getProvider } from '@utils/ethers';
 import { ethers } from 'ethers';
 import ERC721ABI from '@base/abi/ERC721.json';

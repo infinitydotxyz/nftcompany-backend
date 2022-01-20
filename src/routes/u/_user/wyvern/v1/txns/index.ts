@@ -40,7 +40,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
 
     const [snapshot, missedTxnSnapshot] = await Promise.all([getTxnSnapshot(), getMissedTxnSnapshot()]);
 
-    const txns = [];
+    const txns: any[] = [];
     for (const doc of snapshot.docs) {
       const txn = doc.data();
       txn.id = doc.id;

@@ -11,7 +11,7 @@
  */
 
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { sleep } from '@utils/index';
 
 /**

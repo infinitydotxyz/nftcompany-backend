@@ -41,7 +41,7 @@ export function docsToArray(dbDocs: any) {
   if (!dbDocs) {
     return { results: [], count: 0 };
   }
-  const results = [];
+  const results: any[] = [];
   for (const doc of dbDocs) {
     const item = doc.data();
     if (doc.id) {

@@ -1,9 +1,9 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, fstrCnstnts } from '@constants';
-import { error } from '../utils/logger.js';
-import { StatusCode } from '@base/types/StatusCode.js';
-import { firestore } from '@base/container.js';
+import { auth, fstrCnstnts } from '@base/constants';
+import { error } from '../utils/logger';
+import { StatusCode } from '@base/types/StatusCode';
+import { firestore } from '@base/container';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // todo: adi for testing only

@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { ListingType } from '@base/types/NftInterface';
 import { OrderDirection } from '@base/types/Queries';
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@constants';
+import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getOrdersResponse, getOrdersResponseFromArray } from '../utils';
@@ -111,7 +111,7 @@ export async function getListingsByCollectionNameAndPrice(
       }
 
       if (traitType && traitValue) {
-        const traitQueryArr = [];
+        const traitQueryArr: any[] = [];
         if (traitType.indexOf(',') > 0) {
           // multi-trait query
           const typesArr = traitType.split(',');

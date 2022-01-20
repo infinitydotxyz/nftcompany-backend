@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 
 export function getUserListingsRef(userAddress: string) {
   return firestore

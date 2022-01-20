@@ -1,6 +1,6 @@
 import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
 import { OrderDirection } from '@base/types/Queries';
-import { OPENSEA_API } from '@constants';
+import { OPENSEA_API } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from '../utils';

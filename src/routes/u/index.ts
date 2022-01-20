@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser } from '@base/middleware/auth.js';
+import { authenticateUser } from '@base/middleware/auth';
 import { postTxnCheck } from './_user/wyvern/v1/txns/check';
 import { getUserTxns, postUserTxn } from './_user/wyvern/v1/txns';
 import { postUserOrders } from './_user/wyvern/v1/orders';

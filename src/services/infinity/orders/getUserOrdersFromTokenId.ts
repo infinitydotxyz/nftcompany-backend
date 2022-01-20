@@ -1,5 +1,5 @@
 import { OrderSide } from '@base/types/NftInterface';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { log } from '@utils/logger';
 import { getUserInfoRef } from '../users/getUser';
 
@@ -25,7 +25,7 @@ export async function getUserOrdersFromTokenId(
     return [];
   }
 
-  const orders = [];
+  const orders: any[] = [];
   for (const doc of results.docs) {
     const order = doc.data();
     order.id = doc.id;

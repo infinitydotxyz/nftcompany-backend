@@ -1,7 +1,7 @@
 import { firestore } from '@base/container';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getOrdersResponse } from '@services/infinity/utils';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';

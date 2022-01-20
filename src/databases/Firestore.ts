@@ -45,7 +45,7 @@ export default class Firestore {
     basePrice: string;
     listingTime: number;
   }) {
-    const data = `${tokenAddress.trim()}${tokenId.trim()}${basePrice}${listingTime}`;
+    const data = `${tokenAddress.trim().toLowerCase()}${tokenId.trim()}${basePrice}${listingTime}`;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 

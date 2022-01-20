@@ -1,4 +1,4 @@
-import { INFINITY_EMAIL } from '@constants';
+import { INFINITY_EMAIL } from '@base/constants';
 import nodemailer from 'nodemailer';
 import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
 import { error, log } from '@utils/logger';
