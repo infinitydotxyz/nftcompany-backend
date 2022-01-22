@@ -11,15 +11,15 @@ import {
 } from '@base/constants';
 import { ListingType } from '@base/types/NftInterface';
 import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
+import { validateInputs , trimLowerCase } from '@utils/index';
 
 // fetch listings of user
 export const getUserListings = async (req: Request<{ user: string }>, res: Response) => {
-  const { listType, traitType, traitValue, collectionIds } = req.query;
+  const { listType, traitType, traitValue, collectionIds, startAfterBlueCheck } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
     chainId = '1'; // default eth mainnet
   }
-  const startAfterBlueCheck = req.query.startAfterBlueCheck;
 
   let priceMin = +(req.query.priceMin ?? 0);
   let priceMax = +(req.query.priceMax ?? 0);
@@ -39,22 +39,11 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
     return;
   }
 
-  if (
-    listType &&
-    listType !== ListingType.FixedPrice &&
-    listType !== ListingType.DutchAuction &&
-    listType !== ListingType.EnglishAuction
-  ) {
-    error('Input error - invalid list type');
-    res.sendStatus(StatusCode.InternalServerError);
-    return;
-  }
-
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  if (!user) {
-    error('Empty user');
-    res.sendStatus(StatusCode.BadRequest);
-    return;
+  const user = trimLowerCase(req.params.user);
+  const errorCode = validateInputs({ user, listType: `${listType}` });
+  if (!errorCode) {
+    res.sendStatus(errorCode);
+    return
   }
 
   try {

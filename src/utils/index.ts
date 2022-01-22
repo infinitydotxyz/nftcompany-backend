@@ -1,5 +1,8 @@
+import { ListingType } from '@base/types/NftInterface';
+import { StatusCode } from '@base/types/StatusCode';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
+import { error } from './logger';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -49,4 +52,30 @@ export function getWeekNumber(d: Date) {
 export function getNextWeek(weekNumber: number, year: number) {
   const nextWeek = (weekNumber + 1) % 53;
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
+}
+
+export function trimLowerCase(str: string) {
+  return (str || '').trim().toLowerCase();
+}
+
+// validate api inputs; return a StatusCode if error;
+interface validateInputsProps {
+  listType?: string | undefined;
+  user?: string | undefined;
+}
+export function validateInputs({ listType, user }: validateInputsProps): number {
+  if (
+    listType &&
+    listType !== ListingType.FixedPrice &&
+    listType !== ListingType.DutchAuction &&
+    listType !== ListingType.EnglishAuction
+  ) {
+    error('Input error - invalid list type');
+    return StatusCode.InternalServerError;
+  }
+  if (!user) {
+    error('Empty user');
+    return StatusCode.BadRequest;
+  }
+  return 0;
 }
