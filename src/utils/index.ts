@@ -2,6 +2,7 @@ import { ListingType } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
+import { ParsedQs } from 'qs';
 import { error } from './logger';
 
 export async function sleep(ms: number) {
@@ -60,7 +61,7 @@ export function trimLowerCase(str: string) {
 
 // validate api inputs; return a StatusCode if error;
 interface validateInputsProps {
-  listType?: string | undefined;
+  listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
   user?: string | undefined;
 }
 export function validateInputs({ listType, user }: validateInputsProps): number {

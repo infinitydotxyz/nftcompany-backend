@@ -40,7 +40,7 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
   }
 
   const user = trimLowerCase(req.params.user);
-  const errorCode = validateInputs({ user, listType: `${listType}` });
+  const errorCode = validateInputs({ user, listType });
   if (errorCode) {
     res.sendStatus(errorCode);
     return
