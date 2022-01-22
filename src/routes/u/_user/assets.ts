@@ -14,7 +14,7 @@ export const getUserAssets = async (req: Request<{ user: string }>, res: Respons
 
 export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { source } = req.query;
+  const { source, collectionIds } = req.query;
   const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if ('error' in queries) {
@@ -33,7 +33,7 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     return;
   }
   try {
-    const assets = await getAssets(user, queries.limit, queries.offset, sourceName, contract as string);
+    const assets = await getAssets(user, queries.limit, queries.offset, sourceName, contract as string, collectionIds as string);
 
     if (!assets) {
       res.sendStatus(StatusCode.InternalServerError);
@@ -58,7 +58,8 @@ export async function getAssets(
   limit: number,
   offset: number,
   sourceName: NFTDataSource,
-  contract?: string
+  contract?: string,
+  collectionIds? : string
 ) {
   log(`Fetching assets for: ${address} From ${sourceName}`);
   let data;
@@ -73,7 +74,7 @@ export async function getAssets(
       data = await getUserAssetsFromUnmarshall(address, contract);
       break;
     case NFTDataSource.OpenSea:
-      data = await getAssetsFromOpenSeaByUser(address, offset, limit);
+      data = await getAssetsFromOpenSeaByUser(address, offset, limit, collectionIds);
       break;
     case NFTDataSource.Covalent:
       data = await getAssetsFromCovalent(address);
