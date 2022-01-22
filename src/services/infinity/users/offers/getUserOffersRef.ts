@@ -81,7 +81,7 @@ export async function getFilteredUserOffersMade(
 
     return getOrdersResponseFromArray(results);
   } catch (err) {
-    error('Failed to get filtered user listings for', user);
+    error('Failed to get filtered user offers made for', user);
     error(err);
   }
 }
@@ -100,7 +100,7 @@ export async function getFilteredUserOffersReceived(
   collectionIds?: string
 ) {
   try {
-    log('Getting filtered offers made by a user');
+    log('Getting filtered offers received by a user');
 
     // let startAfterBlueCheckBool = true;
     // if (startAfterBlueCheck !== undefined) {
@@ -155,7 +155,7 @@ export async function getFilteredUserOffersReceived(
 
     return getOrdersResponseFromArray(results);
   } catch (err) {
-    error('Failed to get filtered user listings for', user);
+    error('Failed to get filtered user offers received for', user);
     error(err);
   }
 }
