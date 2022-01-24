@@ -1,4 +1,9 @@
-import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, DEFAULT_PRICE_SORT_DIRECTION } from '@base/constants';
+import {
+  DEFAULT_ITEMS_PER_PAGE,
+  DEFAULT_MAX_ETH,
+  DEFAULT_MIN_ETH,
+  DEFAULT_PRICE_SORT_DIRECTION
+} from '@base/constants';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { getFilteredUserOffersMade } from '@services/infinity/users/offers/getUserOffersRef';
@@ -7,7 +12,23 @@ import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
 
 // fetch offer made by user
-export const getUserOffersMade = async (req: Request<{ user: string }>, res: Response) => {
+export const getUserOffersMade = async (
+  req: Request<
+    { user: string },
+    any,
+    any,
+    {
+      chainId: string;
+      traitType: string;
+      traitValue: string;
+      collectionIds: string;
+      startAfterBlueCheck: string;
+      priceMin: string;
+      priceMax: string;
+    }
+  >,
+  res: Response
+) => {
   const { traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
@@ -52,13 +73,13 @@ export const getUserOffersMade = async (req: Request<{ user: string }>, res: Res
       priceMin,
       priceMax,
       sortByPriceDirection,
-      startAfterBlueCheck as string,
+      startAfterBlueCheck,
       queries.startAfterPrice,
       queries.startAfterMillis,
       queries.limit,
-      traitType as string,
-      traitValue as string,
-      collectionIds as string
+      traitType,
+      traitValue,
+      collectionIds
     );
     if (resp) {
       res.set({

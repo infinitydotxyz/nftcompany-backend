@@ -100,8 +100,10 @@ export default class CollectionsController {
   /**
    * getCollectionInfo handles a request for collection info by slug or collection address
    */
-  async getCollectionInfo(req: Request<{ slug: string }>, res: Response) {
+  async getCollectionInfo(req: Request<{ slug: string }, any, any, { chainId: string }>, res: Response) {
+    // const chainId = req.query.chainId?.trim?.() || '1';
     const slugOrAddress = req.params.slug;
+
     try {
       log('Fetching collection info for', slugOrAddress);
 
@@ -153,9 +155,10 @@ export default class CollectionsController {
    * getCollectionInfo handles a request for collection info by slug or collection address
    */
   async getCollectionInformationForEditor(
-    req: Request<{ collection: string; user: string }>,
+    req: Request<{ collection: string; user: string }, any, any, { chainId: string }>,
     res: Response<any, { authType: CollectionAuthType }>
   ) {
+    // const chainId = req.query.chainId || '1';
     const address = req.params.collection.trim().toLowerCase();
 
     const editorType = res.locals.authType;
@@ -207,9 +210,16 @@ export default class CollectionsController {
   }
 
   async postCollectionInformation(
-    req: Request<{ collection: string; user: string }, any, { data: string }>,
+    req: Request<{ collection: string; user: string }, any, { data: string }, { chainId: string }>,
     res: Response<any, { authType: CollectionAuthType }>
   ) {
+    const chainId = req.query.chainId?.trim();
+
+    if (!chainId) {
+      res.sendStatus(StatusCode.BadRequest);
+      return;
+    }
+
     const collectionAddress = req.params.collection.trim().toLowerCase();
     // const editor = req.params.user.trim().toLowerCase();
     // const editorType = res.locals.authType;
@@ -390,10 +400,11 @@ export default class CollectionsController {
         { id: string },
         any,
         any,
-        { from?: number; to?: number; interval?: 'hourly' | 'daily' | 'weekly'; startAt?: number }
+        { from?: number; to?: number; interval?: 'hourly' | 'daily' | 'weekly'; startAt?: number; chainId: string }
       >,
       res: Response
     ) => {
+      // const chainId = req.query.chainId?.trim?.();
       const interval = req.query.interval ?? 'hourly';
       const ONE_WEEK = ONE_DAY * 7;
       const address = req.params.id.toLowerCase();

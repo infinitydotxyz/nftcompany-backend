@@ -27,9 +27,10 @@ import { Request, Response } from 'express';
  * @return 400 - Bad request response (invalid address)
  * @return 500 - Server error response
  */
-const getTraits = async (req: Request<{ id: string }>, res: Response) => {
+const getTraits = async (req: Request<{ id: string }, any, any, { chainId: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
   const contractAddress = req.params.id.trim().toLowerCase();
+  // const chainId = req.query.chainId?.trim?.();
   let resp = {};
 
   if (!ethers.utils.isAddress(contractAddress)) {

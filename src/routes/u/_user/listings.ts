@@ -11,10 +11,30 @@ import {
 } from '@base/constants';
 import { ListingType } from '@base/types/NftInterface';
 import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
-import { validateInputs , trimLowerCase } from '@utils/index';
+import { validateInputs, trimLowerCase } from '@utils/index';
 
 // fetch listings of user
-export const getUserListings = async (req: Request<{ user: string }>, res: Response) => {
+export const getUserListings = async (
+  req: Request<
+    { user: string },
+    any,
+    any,
+    {
+      chainId: string;
+      listType: string;
+      traitType: string;
+      traitValue: string;
+      collectionIds: string;
+      startAfterBlueCheck: string;
+      priceMin: string;
+      priceMax: string;
+      limit: string;
+      startAfterPrice: string;
+      startAfterMillis: string;
+    }
+  >,
+  res: Response
+) => {
   const { listType, traitType, traitValue, collectionIds, startAfterBlueCheck } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
@@ -43,7 +63,7 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
   const errorCode = validateInputs({ user, listType });
   if (errorCode) {
     res.sendStatus(errorCode);
-    return
+    return;
   }
 
   try {
@@ -58,14 +78,14 @@ export const getUserListings = async (req: Request<{ user: string }>, res: Respo
       priceMin,
       priceMax,
       sortByPriceDirection,
-      startAfterBlueCheck as string,
+      startAfterBlueCheck,
       queries.startAfterPrice,
       queries.startAfterMillis,
       queries.limit,
       listType as ListingType,
-      traitType as string,
-      traitValue as string,
-      collectionIds as string
+      traitType,
+      traitValue,
+      collectionIds
     );
     if (resp) {
       res.set({

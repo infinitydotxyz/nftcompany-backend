@@ -1,14 +1,15 @@
-import { OrderSide } from '@base/types/NftInterface';
+import { ListingType, OrderSide } from '@base/types/NftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { jsonString } from '@utils/formatters';
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from '@services/opensea/orders';
 import { error } from '@utils/logger';
+import { getPaymentTokenAddress } from '@utils/index';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request<any>, res: Response<any>) => {
   try {
     const {
       assetContractAddress,
@@ -29,12 +30,18 @@ router.get('/', async (req, res) => {
       limit,
       offset,
       orderBy,
-      orderDirection
+      orderDirection,
+      chainId
     } = req.query;
+
+    let listingType = saleKind === '1' ? ListingType.DutchAuction : ListingType.EnglishAuction;
+    if (isEnglish) {
+      listingType = ListingType.EnglishAuction;
+    }
 
     const data = await getOpenseaOrders({
       assetContractAddress: assetContractAddress as string,
-      paymentTokenAddress: paymentTokenAddress as string,
+      paymentTokenAddress: (paymentTokenAddress as string) || getPaymentTokenAddress(listingType, chainId as string),
       maker: maker as string,
       taker: taker as string,
       owner: owner as string,

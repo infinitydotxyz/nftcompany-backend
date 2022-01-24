@@ -1,3 +1,4 @@
+import { LISTING_TYPE, POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
 import { ListingType } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import BigNumber from 'bignumber.js';
@@ -80,3 +81,11 @@ export function validateInputs({ listType, user }: validateInputsProps): number 
   }
   return 0;
 }
+
+export const getPaymentTokenAddress = (listingType?: string, chainId?: string): string | undefined => {
+  if (chainId === '1') {
+    return listingType === LISTING_TYPE.ENGLISH_AUCTION ? WETH_ADDRESS : undefined;
+  } else if (chainId === '137') {
+    return POLYGON_WETH_ADDRESS;
+  }
+};
