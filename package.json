@@ -7,7 +7,7 @@
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "script": "npm run build && cross-env TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
-    "start": "nest start --exec 'node -r tsconfig-paths/register -r ts-node/register -r dotenv/config ./src/main.ts'",
+    "start": "cross-env TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/index.js",
     "dev": "nest start --watch --exec 'node -r tsconfig-paths/register -r ts-node/register -r dotenv/config ./src/main.ts'",
     "ci-pre-build": "mkdir creds && cp ./tools/creds-blank/* ./creds"
   },
