@@ -16,7 +16,6 @@ export default class Firestore {
 
   constructor() {
     firebaseAdmin.initializeApp({
-      // @ts-expect-error
       credential: firebaseAdmin.credential.cert(serviceAccount),
       storageBucket: FB_STORAGE_BUCKET
     });
