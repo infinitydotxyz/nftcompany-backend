@@ -1,9 +1,9 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
 
 export async function fuzzySearchTitle(startsWithOrig: string, limit: number) {
-  const startsWith = getSearchFriendlyString(startsWithOrig );
+  const startsWith = getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = getEndCode(startsWith);
     const data = await firestore.db

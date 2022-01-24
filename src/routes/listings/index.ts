@@ -1,8 +1,13 @@
 import { ListingType } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
-import { DEFAULT_ITEMS_PER_PAGE, DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, DEFAULT_PRICE_SORT_DIRECTION } from '@constants';
-import { parseQueryFields } from '@utils/parsers.js';
-import { error } from '@utils/logger.js';
+import {
+  DEFAULT_ITEMS_PER_PAGE,
+  DEFAULT_MAX_ETH,
+  DEFAULT_MIN_ETH,
+  DEFAULT_PRICE_SORT_DIRECTION
+} from '@base/constants';
+import { parseQueryFields } from '@utils/parsers';
+import { error } from '@utils/logger';
 import { Router } from 'express';
 import importListings from './import';
 import {

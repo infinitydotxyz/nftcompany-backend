@@ -10,7 +10,7 @@ import { Readable } from 'stream';
 
 import { firestore } from '@base/container';
 import { NftMetadata } from '../types/NftMetadata';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { error } from '@utils/logger';
 const { loadImage } = Canvas;
 const bucket = firestore.bucket;
@@ -659,7 +659,7 @@ const uploadString = async (str: string, path: string): Promise<File> => {
 };
 
 const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
-  const names = [];
+  const names: any[] = [];
 
   const files = filesInDir(dir);
 

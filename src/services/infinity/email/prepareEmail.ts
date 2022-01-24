@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts, SITE_BASE } from '@constants';
+import { fstrCnstnts, SITE_BASE } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { getEmptyUserProfileInfo } from '../utils';
 import { sendEmail } from './sendEmail';

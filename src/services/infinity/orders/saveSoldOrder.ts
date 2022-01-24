@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { bn, toFixed5 } from '@utils/index';
 import { log, trace } from '@utils/logger';
 import firebaseAdmin from 'firebase-admin';

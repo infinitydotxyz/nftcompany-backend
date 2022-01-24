@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts, SALE_FEES_TO_PURCHASE_FEES_RATIO } from '@constants';
+import { fstrCnstnts, SALE_FEES_TO_PURCHASE_FEES_RATIO } from '@base/constants';
 import { bn, toFixed5 } from '@utils/index';
 import { log, trace } from '@utils/logger';
 import firebaseAdmin from 'firebase-admin';

@@ -16,8 +16,7 @@ export default class Firestore {
 
   constructor() {
     firebaseAdmin.initializeApp({
-      // @ts-expect-error
-      credential: firebaseAdmin.credential.cert(serviceAccount),
+      credential: firebaseAdmin.credential.cert(serviceAccount as any),
       storageBucket: FB_STORAGE_BUCKET
     });
     this.db = firebaseAdmin.firestore();
@@ -31,6 +30,21 @@ export default class Firestore {
   // eslint-disable-next-line no-unused-vars
   getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
     const data = tokenAddress.trim() + tokenId.trim() + basePrice;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  }
+
+  getStaleListingDocId({
+    tokenAddress,
+    tokenId,
+    basePrice,
+    listingTime
+  }: {
+    tokenAddress: string;
+    tokenId: string;
+    basePrice: string;
+    listingTime: number;
+  }) {
+    const data = `${tokenAddress.trim().toLowerCase()}${tokenId.trim()}${basePrice}${listingTime}`;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 

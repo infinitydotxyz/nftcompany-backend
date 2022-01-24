@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { fstrCnstnts } from '@constants';
+import { fstrCnstnts } from '@base/constants';
 import { getProvider } from '@utils/ethers';
 import { jsonString } from '@utils/formatters';
 import { error, log, trace } from '@utils/logger';
