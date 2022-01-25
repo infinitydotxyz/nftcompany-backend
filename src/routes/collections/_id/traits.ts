@@ -27,9 +27,10 @@ import { Request, Response } from 'express';
  * @return 400 - Bad request response (invalid address)
  * @return 500 - Server error response
  */
-const getTraits = async (req: Request<{ id: string }>, res: Response) => {
+const getTraits = async (req: Request<{ id: string }, any, any, { chainId: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
   const contractAddress = req.params.id.trim().toLowerCase();
+  // const chainId = req.query.chainId?.trim?.();
   let resp = {};
 
   if (!ethers.utils.isAddress(contractAddress)) {
@@ -51,7 +52,7 @@ const getTraits = async (req: Request<{ id: string }>, res: Response) => {
     const respStr = jsonString(resp);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
     return;

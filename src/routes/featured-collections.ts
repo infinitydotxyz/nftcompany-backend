@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
       const respStr = jsonString({ collections, count });
       res.set({
         'Cache-Control': 'must-revalidate, max-age=300',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
       });
       res.send(respStr);
       return;

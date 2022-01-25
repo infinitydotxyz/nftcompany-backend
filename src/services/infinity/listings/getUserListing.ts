@@ -6,8 +6,7 @@ import { error, log } from '@utils/logger';
 import { getOrdersResponseFromArray } from '../utils';
 
 export function getUserListingsRef(userAddress: string) {
-  return firestore
-    .db
+  return firestore.db
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.USERS_COLL)
@@ -66,9 +65,12 @@ export async function getFilteredUserListings(
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
-        .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
+
+      if (hasBlueCheckValue) {
+        queryRef = queryRef.where('metadata.hasBlueCheck', '==', hasBlueCheckValue);
+      }
 
       if (listingType) {
         queryRef = queryRef.where('metadata.listingType', '==', listingType);

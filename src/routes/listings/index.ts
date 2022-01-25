@@ -116,7 +116,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else if (text) {
@@ -132,7 +132,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else if (collectionName || priceMin || priceMax || listType || collectionIds) {
@@ -159,7 +159,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else {

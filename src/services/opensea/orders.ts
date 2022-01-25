@@ -32,7 +32,13 @@ export async function getRawOpenseaOrdersByTokenAddress(
   };
 
   if (tokenId) {
-    options.params.token_id = tokenId;
+    /**
+     * sometimes token_id fails with a response of
+     * "You need to set asset_contract_address and token_id (or token_ids)"
+     *
+     * using token_ids seems to work all of the time
+     */
+    options.params.token_ids = tokenId;
   }
 
   const { data }: AxiosResponse<OpenseaOrderResponse> = await openseaClient.get(url, options);

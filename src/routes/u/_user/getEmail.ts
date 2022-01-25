@@ -21,7 +21,7 @@ export const getUserEmail = async (req: Request<{ user: string }>, res: Response
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
   } else {

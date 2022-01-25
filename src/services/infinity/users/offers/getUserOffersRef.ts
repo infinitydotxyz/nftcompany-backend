@@ -102,11 +102,6 @@ export async function getFilteredUserOffersReceived(
   try {
     log('Getting filtered offers received by a user');
 
-    // let startAfterBlueCheckBool = true;
-    // if (startAfterBlueCheck !== undefined) {
-    //   startAfterBlueCheckBool = startAfterBlueCheck === 'true';
-    // }
-
     const runQuery = async ({
       startAfterPrice,
       startAfterMillis,

@@ -15,9 +15,10 @@ import { Request, Response } from 'express';
  *      for the specified collection will be returned
  */
 export async function getUserVotes(
-  req: Request<{ user: string }, any, any, { collectionAddress: string }>,
+  req: Request<{ user: string }, any, any, { collectionAddress: string; chainId: string }>,
   res: Response
 ) {
+  // const chainId = req.query.chainId?.trim?.();
   const user = req.params.user.toLowerCase();
   const collectionAddress = (req.query.collectionAddress ?? '').toLowerCase();
 

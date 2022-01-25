@@ -28,7 +28,7 @@ export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=3600',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
   } catch (err) {
