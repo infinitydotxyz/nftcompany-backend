@@ -5,6 +5,7 @@ import { getAssetFromOpensea } from '@services/opensea/assets/getAssetFromOpense
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { getAssetAsListing } from '../utils';
+import { getERC721Owner } from '@services/ethereum/checkOwnershipChange';
 
 export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
   log('Getting asset as listing from db');
@@ -18,6 +19,7 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
       .get();
 
     let listings;
+
     if (!doc.exists) {
       if (chainId === '1') {
         // get from opensea
@@ -27,7 +29,25 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
         listings = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
       }
     } else {
-      listings = getAssetAsListing(docId, doc.data());
+      const order = doc.data();
+
+      try {
+        const schema = order?.metadata?.schema;
+        if (order && schema === 'ERC721') {
+          /**
+           * check ownership change
+           * update if necessary
+           */
+          const savedOwner = order?.metadata?.asset?.owner ?? '';
+          const owner = await getERC721Owner(tokenAddress, tokenId, chainId);
+          if (owner && owner !== savedOwner) {
+            order.metadata.asset.owner = owner;
+            await doc.ref.update({ 'metadata.asset.owner': owner });
+          }
+        }
+      } catch (err) {}
+
+      listings = getAssetAsListing(docId, order);
     }
     return jsonString(listings);
   } catch (err) {
