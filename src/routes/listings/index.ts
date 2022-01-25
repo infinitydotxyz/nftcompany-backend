@@ -7,7 +7,6 @@ import {
   DEFAULT_PRICE_SORT_DIRECTION
 } from '@base/constants';
 import { parseQueryFields } from '@utils/parsers';
-import { error } from '@utils/logger';
 import { Router } from 'express';
 import importListings from './import';
 import {
