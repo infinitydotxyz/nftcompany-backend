@@ -65,7 +65,7 @@ interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
   user?: string | undefined;
 }
-export function validateInputs({ listType, user }: validateInputsProps): number {
+export function validateInputs({ listType, user }: validateInputsProps, userRequired = true): number {
   if (
     listType &&
     listType !== ListingType.FixedPrice &&
@@ -75,7 +75,7 @@ export function validateInputs({ listType, user }: validateInputsProps): number 
     error('Input error - invalid list type');
     return StatusCode.InternalServerError;
   }
-  if (!user) {
+  if (userRequired && !user) {
     error('Empty user');
     return StatusCode.BadRequest;
   }

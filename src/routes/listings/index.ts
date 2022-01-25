@@ -101,13 +101,14 @@ router.get('/', async (req, res) => {
     ]
   );
   if ('error' in queries) {
+    res.sendStatus(StatusCode.BadRequest);
     return;
   }
 
-  const errorCode = validateInputs({ listType });
+  const errorCode = validateInputs({ listType }, false);
   if (errorCode) {
     res.sendStatus(errorCode);
-    return
+    return;
   }
 
   let resp;
