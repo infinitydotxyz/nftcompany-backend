@@ -17,6 +17,7 @@ import {
 import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
 import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
 import { OrderDirection } from '@base/types/Queries';
+import { validateInputs } from '@utils/index';
 
 const router = Router();
 
@@ -104,15 +105,10 @@ router.get('/', async (req, res) => {
     return;
   }
 
-  if (
-    listType &&
-    listType !== ListingType.FixedPrice &&
-    listType !== ListingType.DutchAuction &&
-    listType !== ListingType.EnglishAuction
-  ) {
-    error('Input error - invalid list type');
-    res.sendStatus(StatusCode.InternalServerError);
-    return;
+  const errorCode = validateInputs({ listType });
+  if (errorCode) {
+    res.sendStatus(errorCode);
+    return
   }
 
   let resp;
