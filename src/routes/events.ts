@@ -5,12 +5,11 @@ import { getRawOpenseaOrdersByTokenAddress } from '@services/opensea/orders';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Request, Router } from 'express';
-import qs from 'qs';
+import { stringify } from 'qs';
 
 const router = Router();
 
 // transaction events (for a collection or a token)
-// todo: adi take chainId
 router.get(
   '/',
   async (
@@ -19,10 +18,9 @@ router.get(
       any,
       any,
       {
-        token_id: string;
-        event_type: string;
-        asset_contract_address: string;
-        only_opensea: boolean;
+        tokenId: string;
+        eventType: string;
+        assetContractAddress: string;
         offset: string;
         limit: string;
         chainId: string;
@@ -30,10 +28,27 @@ router.get(
     >,
     res
   ) => {
-    const queryStr = decodeURIComponent(qs.stringify(req.query, { arrayFormat: 'repeat' }));
-    const tokenId = req.query.token_id;
-    const eventType = req.query.event_type;
+    const tokenId = req.query.tokenId;
+    const eventType = req.query.eventType;
     const chainId = req.query.chainId;
+    const assetContractAddress = req.query.assetContractAddress;
+    const onlyOpenSea = false;
+    const offset = req.query.offset;
+    const limit = req.query.limit;
+
+    const queryStr = decodeURIComponent(
+      stringify(
+        {
+          ...(tokenId ? { token_id: req.query.tokenId } : {}),
+          asset_contract_address: assetContractAddress,
+          only_opensea: `${onlyOpenSea}`,
+          event_type: eventType,
+          offset,
+          limit
+        },
+        { arrayFormat: 'repeat' }
+      )
+    );
 
     let respStr = '';
     try {
@@ -51,7 +66,7 @@ router.get(
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
       });
       res.send(respStr);
     } catch (err) {
@@ -69,18 +84,17 @@ export async function fetchOffersFromOSAndInfinity(
     any,
     any,
     {
-      token_id: string;
-      event_type: string;
-      asset_contract_address: string;
-      only_opensea: boolean;
+      tokenId: string;
+      eventType: string;
+      assetContractAddress: string;
       offset: string;
       limit: string;
       chainId: string;
     }
   >
 ) {
-  const tokenAddress = req.query.asset_contract_address ?? '';
-  const tokenId = req.query.token_id ?? '';
+  const tokenAddress = req.query.assetContractAddress ?? '';
+  const tokenId = req.query.tokenId ?? '';
   const limit = +req.query.limit ?? 50;
   const offset = req.query.offset;
   const chainId = req.query.chainId;
@@ -106,10 +120,14 @@ export async function fetchOffersFromOSAndInfinity(
           from_account: {
             address: order.maker.address
           },
+          to_account: {
+            address: order.asset.owner.address
+          },
           chainId: '1', // assuming opensea is only used for eth mainnet
           created_date: order.listing_time * 1000,
           offerSource: 'OpenSea',
-          bid_amount: order.base_price
+          bid_amount: order.base_price,
+          event_type: 'bid_entered'
         };
 
         assetEvents.push(obj);

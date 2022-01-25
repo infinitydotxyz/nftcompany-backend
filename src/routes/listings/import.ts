@@ -11,7 +11,7 @@ const router = Router();
 
 router.get('/', async (req: Request<any>, res: Response<any>) => {
   try {
-    const {
+    let {
       assetContractAddress,
       paymentTokenAddress,
       maker,
@@ -34,14 +34,16 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
       chainId
     } = req.query;
 
-    let listingType = saleKind === '1' ? ListingType.DutchAuction : ListingType.EnglishAuction;
+    let listingType = saleKind === '1' ? ListingType.DutchAuction : ListingType.FixedPrice;
     if (isEnglish) {
       listingType = ListingType.EnglishAuction;
     }
 
+    paymentTokenAddress = (paymentTokenAddress as string) || getPaymentTokenAddress(listingType, chainId as string);
+
     const data = await getOpenseaOrders({
       assetContractAddress: assetContractAddress as string,
-      paymentTokenAddress: (paymentTokenAddress as string) || getPaymentTokenAddress(listingType, chainId as string),
+      paymentTokenAddress,
       maker: maker as string,
       taker: taker as string,
       owner: owner as string,
@@ -65,7 +67,7 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
     if (data && stringifiedResp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+        'Content-Length': Buffer.byteLength(stringifiedResp ?? '', 'utf8')
       });
       res.send(stringifiedResp);
       return;

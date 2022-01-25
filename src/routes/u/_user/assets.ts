@@ -9,16 +9,10 @@ import { getUserAssetsFromUnmarshall } from '@services/unmarshal/getUserAssetsFr
 import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpenseaByUser';
 
 export const getUserAssets = async (
-  req: Request<
-    { user: string },
-    any,
-    any,
-    { chainId: string; source: string; collectionIds?: string; contract: string }
-  >,
+  req: Request<{ user: string }, any, any, { source: string; collectionIds?: string; contract: string }>,
   res: Response
 ) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  // const chainId = req.query.chainId?.trim?.() ?? '1';
   const { source, collectionIds } = req.query;
   const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
@@ -49,7 +43,7 @@ export const getUserAssets = async (
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
   } catch (err) {
