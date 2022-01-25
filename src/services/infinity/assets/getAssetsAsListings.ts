@@ -42,7 +42,7 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
           const owner = await getERC721Owner(tokenAddress, tokenId, chainId);
           if (owner && owner !== savedOwner) {
             order.metadata.asset.owner = owner;
-            await doc.ref.update({ 'metadata.asset.owner': owner });
+            doc.ref.update({ 'metadata.asset.owner': owner }).catch(() => {});
           }
         }
       } catch (err) {}

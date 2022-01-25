@@ -5,7 +5,7 @@ import { jsonString } from '@utils/formatters';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from '@services/opensea/orders';
 import { error } from '@utils/logger';
-import { getPaymentTokenAddress } from '@utils/index';
+import { WETH_ADDRESS } from '@base/constants';
 
 const router = Router();
 
@@ -39,11 +39,16 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
       listingType = ListingType.EnglishAuction;
     }
 
-    paymentTokenAddress = (paymentTokenAddress as string) || getPaymentTokenAddress(listingType, chainId as string);
+    /**
+     * limit to eth and weth
+     */
+    if (!chainId || chainId === '1') {
+      paymentTokenAddress = listingType === ListingType.EnglishAuction ? WETH_ADDRESS : '';
+    }
 
     const data = await getOpenseaOrders({
       assetContractAddress: assetContractAddress as string,
-      paymentTokenAddress,
+      paymentTokenAddress: paymentTokenAddress as string,
       maker: maker as string,
       taker: taker as string,
       owner: owner as string,
