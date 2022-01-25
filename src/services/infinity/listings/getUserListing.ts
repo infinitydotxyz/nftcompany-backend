@@ -124,9 +124,6 @@ export async function getFilteredUserListings(
       return await queryRef.get();
     };
 
-    console.log(
-      `Blue Check: ${startAfterBlueCheck} Price: ${startAfterPrice} Millis: ${startAfterMillis} LImit: ${limit}`
-    );
     let data = await runQuery({ hasBlueCheckValue: startAfterBlueCheckBool, startAfterPrice, startAfterMillis, limit });
     let results = data.docs;
     if (data.size < limit) {
