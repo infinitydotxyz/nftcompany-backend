@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
       // to enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(respStr, 'utf8')
+        'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
       });
       res.send(respStr);
       return;

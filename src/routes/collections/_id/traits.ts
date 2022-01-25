@@ -52,7 +52,7 @@ const getTraits = async (req: Request<{ id: string }, any, any, { chainId: strin
     const respStr = jsonString(resp);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=300',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
     return;

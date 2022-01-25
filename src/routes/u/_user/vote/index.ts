@@ -63,10 +63,9 @@ export async function getUserVotes(
  * postUserVote can be used to set/update a user's vote for a collection
  */
 export async function postUserVote(
-  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean }, { chainId: string }>,
+  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean }>,
   res: Response
 ) {
-  // const chainId = req.query.chainId?.trim?.();
   const user = req.params.user.toLowerCase();
   const collectionAddress = req.body.collectionAddress.toLowerCase();
   const votedFor = req.body.votedFor;

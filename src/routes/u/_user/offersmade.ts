@@ -84,7 +84,7 @@ export const getUserOffersMade = async (
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
     res.send(resp);
