@@ -23,7 +23,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
   } catch (err) {

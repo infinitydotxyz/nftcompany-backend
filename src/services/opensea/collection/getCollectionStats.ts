@@ -51,7 +51,7 @@ export async function getCollectionStats(openseaCollectionSlug: string): Promise
         sales: stats.seven_day_sales,
         averagePrice: stats.seven_day_average_price
       },
-      thrityDay: {
+      thirtyDay: {
         volume: stats.thirty_day_volume,
         change: stats.thirty_day_change,
         sales: stats.thirty_day_sales,

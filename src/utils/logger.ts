@@ -1,6 +1,4 @@
-const TRACE_LOG = process.env.TRACE_LOG === 'true';
-const INFO_LOG = process.env.INFO_LOG === 'true';
-const ERROR_LOG = process.env.ERROR_LOG === 'true';
+import { ERROR_LOG, INFO_LOG, TRACE_LOG } from '@base/constants';
 
 export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]): void {
   if (ERROR_LOG) {

@@ -2,7 +2,7 @@ import { StatusCode } from '@base/types/StatusCode';
 import { getVerifiedCollections } from '@services/infinity/collections/getVerifiedCollections';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
-import { Router } from 'express';
+import { Request, Router, Response } from 'express';
 const router = Router();
 
 /**
@@ -37,12 +37,12 @@ const router = Router();
  * @return {VerifiedCollectionsResponse} 200 - Success response
  * @return 500 - Server error response
  */
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request<any, any, any, { startAfterName?: string; limit?: string }>, res: Response) => {
   const startAfterName = req.query.startAfterName ?? '';
   const limit = +(req.query.limit ?? 50);
 
   try {
-    const collections = await getVerifiedCollections(limit, startAfterName as string);
+    const collections = await getVerifiedCollections(limit, startAfterName);
 
     const dataObj = {
       count: collections.length,
@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=600',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
   } catch (err) {

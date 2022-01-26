@@ -1,5 +1,8 @@
 import 'reflect-metadata';
 import './globals';
+import { OrderDirection } from './types/Queries';
+import { IcyToolsApi } from '@services/icytools';
+import { ContractsOrderBy } from '@services/icytools/types';
 
 /**
  * an entry point for calling scripts
@@ -10,6 +13,8 @@ import './globals';
  *
  */
 async function main() {
+  const icyTools = new IcyToolsApi();
+  await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
   // await updateSearchCollectionName(200);
 }
 

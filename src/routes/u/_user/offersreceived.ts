@@ -14,7 +14,23 @@ import { getFilteredUserOffersReceived } from '@services/infinity/users/offers/g
 const router = Router();
 
 // fetch offer received by user
-export const getUserOffersReceived = async (req: Request<{ user: string }>, res: Response) => {
+export const getUserOffersReceived = async (
+  req: Request<
+    { user: string },
+    any,
+    any,
+    {
+      chainId: string;
+      traitType: string;
+      traitValue: string;
+      collectionIds: string;
+      startAfterBlueCheck: string;
+      priceMin: string;
+      priceMax: string;
+    }
+  >,
+  res: Response
+) => {
   const { traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
@@ -59,18 +75,18 @@ export const getUserOffersReceived = async (req: Request<{ user: string }>, res:
       priceMin,
       priceMax,
       sortByPriceDirection,
-      startAfterBlueCheck as string,
+      startAfterBlueCheck,
       queries.startAfterPrice,
       queries.startAfterMillis,
       queries.limit,
-      traitType as string,
-      traitValue as string,
-      collectionIds as string
+      traitType,
+      traitValue,
+      collectionIds
     );
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
     res.send(resp);

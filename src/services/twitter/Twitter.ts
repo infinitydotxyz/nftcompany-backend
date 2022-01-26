@@ -1,3 +1,4 @@
+import { TWITTER_BEARER_TOKEN } from '@base/constants';
 import { Concrete } from '@base/types/UtilityTypes';
 import { error } from '@utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
@@ -56,12 +57,10 @@ export interface InfinityTweet {
 export class Twitter {
   private readonly client: AxiosInstance;
   constructor() {
-    const bearerToken = process.env.twitterBearerToken;
-
     this.client = axios.create({
       baseURL: 'https://api.twitter.com/2/',
       headers: {
-        Authorization: `Bearer ${bearerToken}`
+        Authorization: `Bearer ${TWITTER_BEARER_TOKEN}`
       }
     });
   }

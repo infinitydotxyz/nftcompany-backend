@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, fstrCnstnts } from '@base/constants';
+import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '@base/constants';
 import { error } from '../utils/logger';
 import { StatusCode } from '@base/types/StatusCode';
 import { firestore } from '@base/container';
@@ -43,13 +43,15 @@ export enum CollectionAuthType {
  * adds the authType property to locals
  */
 export function authorizeCollectionEditor(
-  req: Request<{ user: string; collection: string }>,
+  req: Request<{ user: string; collection: string }, any, any, { chainId: string }>,
   res: Response<any, { authType: CollectionAuthType }>,
   next: NextFunction
 ) {
   const asyncHandler = async () => {
     const userAddress = req.params.user.trim?.()?.toLowerCase?.();
     const contractAddress = req.params.collection?.trim?.()?.toLowerCase?.();
+
+    // const chainId = req.query.chainId?.trim?.();
 
     const creatorDocRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
@@ -60,8 +62,7 @@ export function authorizeCollectionEditor(
     let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any;
 
     if (!creatorObj?.creator) {
-      const etherscanApiKey = process.env.etherscanApiKey;
-      const provider = new ethers.providers.EtherscanProvider(undefined, etherscanApiKey);
+      const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);
 
       const txHistory = await provider.getHistory(contractAddress);
       const creationTx = txHistory.find((tx) => {

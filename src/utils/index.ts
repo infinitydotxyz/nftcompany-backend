@@ -1,3 +1,4 @@
+import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
 import { ListingType } from '@base/types/NftInterface';
 import { StatusCode } from '@base/types/StatusCode';
 import BigNumber from 'bignumber.js';
@@ -64,7 +65,7 @@ interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
   user?: string | undefined;
 }
-export function validateInputs({ listType, user }: validateInputsProps): number {
+export function validateInputs({ listType, user }: validateInputsProps, userRequired = true): number {
   if (
     listType &&
     listType !== ListingType.FixedPrice &&
@@ -74,9 +75,17 @@ export function validateInputs({ listType, user }: validateInputsProps): number 
     error('Input error - invalid list type');
     return StatusCode.InternalServerError;
   }
-  if (!user) {
+  if (userRequired && !user) {
     error('Empty user');
     return StatusCode.BadRequest;
   }
   return 0;
+}
+
+export function getPaymentTokenAddress(listingType?: string, chainId?: string): string | undefined {
+  if (chainId === '1') {
+    return listingType === ListingType.EnglishAuction ? WETH_ADDRESS : undefined;
+  } else if (chainId === '137') {
+    return POLYGON_WETH_ADDRESS;
+  }
 }

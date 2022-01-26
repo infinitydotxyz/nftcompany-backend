@@ -7,7 +7,6 @@ import {
   DEFAULT_PRICE_SORT_DIRECTION
 } from '@base/constants';
 import { parseQueryFields } from '@utils/parsers';
-import { error } from '@utils/logger';
 import { Router } from 'express';
 import importListings from './import';
 import {
@@ -17,6 +16,7 @@ import {
 import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
 import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
 import { OrderDirection } from '@base/types/Queries';
+import { validateInputs } from '@utils/index';
 
 const router = Router();
 
@@ -101,17 +101,13 @@ router.get('/', async (req, res) => {
     ]
   );
   if ('error' in queries) {
+    res.sendStatus(StatusCode.BadRequest);
     return;
   }
 
-  if (
-    listType &&
-    listType !== ListingType.FixedPrice &&
-    listType !== ListingType.DutchAuction &&
-    listType !== ListingType.EnglishAuction
-  ) {
-    error('Input error - invalid list type');
-    res.sendStatus(StatusCode.InternalServerError);
+  const errorCode = validateInputs({ listType }, false);
+  if (errorCode) {
+    res.sendStatus(errorCode);
     return;
   }
 
@@ -121,7 +117,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else if (text) {
@@ -137,7 +133,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else if (collectionName || priceMin || priceMax || listType || collectionIds) {
@@ -164,7 +160,7 @@ router.get('/', async (req, res) => {
     if (resp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(resp, 'utf8')
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
       });
     }
   } else {

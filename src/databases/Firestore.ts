@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from '../constants';
 import { Readable } from 'stream';
+import { error, log } from '@utils/logger';
 
 @singleton()
 export default class Firestore {
@@ -71,13 +72,13 @@ export default class Firestore {
                 contentType
               }
             })
-            .on('error', (error) => {
-              console.log('error', error);
+            .on('error', (err) => {
+              error(err);
 
-              reject(error);
+              reject(err);
             })
             .on('finish', () => {
-              console.log(`uploaded: ${remoteFile.name}`);
+              log(`uploaded: ${remoteFile.name}`);
 
               resolve(remoteFile);
             })

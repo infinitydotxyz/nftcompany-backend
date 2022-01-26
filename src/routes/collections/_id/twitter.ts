@@ -1,4 +1,3 @@
-import CollectionsController from '@base/controllers/Collections/CollectionsController';
+import { getHistoricalData } from '@base/controllers/Collections/CollectionsController';
 
-const collectionsController = new CollectionsController();
-export const getHistoricalTwitterData = collectionsController.getHistoricalData.bind(collectionsController)('twitter');
+export const getHistoricalTwitterData = getHistoricalData('twitter');

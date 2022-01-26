@@ -68,7 +68,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
     const respStr = jsonString(resp);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(respStr, 'utf8')
+      'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
   } catch (err) {
