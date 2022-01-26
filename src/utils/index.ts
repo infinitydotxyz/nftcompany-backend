@@ -50,3 +50,11 @@ export function getNextWeek(weekNumber: number, year: number) {
   const nextWeek = (weekNumber + 1) % 53;
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
+
+export const getEnvironmentVariable = (name: string, required = true) => {
+  const variable = process.env[name];
+  if (required && !variable) {
+    throw new Error(`Missing environment variable ${name}`);
+  }
+  return variable;
+};

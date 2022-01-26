@@ -9,7 +9,7 @@ import { ListingType } from '@base/types/NftInterface';
 import { Order } from '@base/types/Order';
 import { Trait } from '@base/types/Trait';
 import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/wyvern/WyvernOrder';
-import { fstrCnstnts } from '@base/constants';
+import { fstrCnstnts, OPENSEA_API_KEY } from '@base/constants';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from '@services/infinity/utils';
 import { getSearchFriendlyString, openseaParamSerializer } from '@utils/formatters';
@@ -18,12 +18,10 @@ import { getFulfilledPromiseSettledResults } from '@utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
 
-const authKey = process.env.openseaKey;
-
 export const openseaClient = axios.create({
   headers: {
-    'X-AUTH-KEY': authKey ?? '',
-    'X-API-KEY': authKey ?? ''
+    'X-AUTH-KEY': OPENSEA_API_KEY ?? '',
+    'X-API-KEY': OPENSEA_API_KEY ?? ''
   },
   paramsSerializer: openseaParamSerializer
 });

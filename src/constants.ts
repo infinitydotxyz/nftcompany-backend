@@ -1,9 +1,21 @@
 import { OrderDirection } from './types/Queries';
+import { getEnvironmentVariable } from './utils';
 
-export const testRoot = process.env.firestoreTestRoot ?? 'testRoot';
+export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? 'testRoot';
+export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey') as string;
+export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey') as string;
+export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet') as string;
+export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey') as string;
+export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken') as string;
+export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey') as string;
+export const ICY_TOOLS_API_KEY = getEnvironmentVariable('icyToolsApiKey') as string;
+
+export const TRACE_LOG = getEnvironmentVariable('TRACE_LOG', false) === 'true';
+export const INFO_LOG = getEnvironmentVariable('INFO_LOG', false) === 'true';
+export const ERROR_LOG = getEnvironmentVariable('ERROR_LOG', false) === 'true';
 
 export const fstrCnstnts = {
-  ROOT_COLL: testRoot,
+  ROOT_COLL: TEST_ROOT,
   OPENSEA_COLL: 'combinedOpenseaSnapshot',
   INFO_DOC: 'info',
   COLLECTION_LISTINGS_COLL: 'collectionListings',
