@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, fstrCnstnts } from '@base/constants';
+import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '@base/constants';
 import { error } from '../utils/logger';
 import { StatusCode } from '@base/types/StatusCode';
 import { firestore } from '@base/container';
@@ -62,8 +62,7 @@ export function authorizeCollectionEditor(
     let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any;
 
     if (!creatorObj?.creator) {
-      const etherscanApiKey = process.env.etherscanApiKey;
-      const provider = new ethers.providers.EtherscanProvider(undefined, etherscanApiKey);
+      const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);
 
       const txHistory = await provider.getHistory(contractAddress);
       const creationTx = txHistory.find((tx) => {

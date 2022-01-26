@@ -10,14 +10,17 @@ import verified from './verified';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
+import stats from './stats';
+
 const router = Router();
 
 router.get('/:id/traits', getTraits);
 router.get('/:id/discord', getHistoricalDiscordData);
 router.get('/:id/twitter', getHistoricalTwitterData);
-router.get('/:slug', getCollectionInfo);
+router.use('/stats', stats);
 router.use('/featured', featured);
 router.use('/verified', verified);
+router.get('/:slug', getCollectionInfo);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;

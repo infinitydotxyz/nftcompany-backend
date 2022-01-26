@@ -1,7 +1,11 @@
-import { POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
+import {
+  ALCHEMY_JSON_RPC_ETH_MAINNET,
+  POLYGON_WYVERN_EXCHANGE_ADDRESS,
+  WYVERN_EXCHANGE_ADDRESS
+} from '@base/constants';
 import { ethers } from 'ethers';
 
-const ethProvider = new ethers.providers.JsonRpcProvider(process.env.alchemyJsonRpcEthMainnet);
+const ethProvider = new ethers.providers.JsonRpcProvider(ALCHEMY_JSON_RPC_ETH_MAINNET);
 const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.polygonRpc);
 const localHostProvider = new ethers.providers.JsonRpcProvider(process.env.localhostRpc);
 

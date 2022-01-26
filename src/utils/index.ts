@@ -82,10 +82,10 @@ export function validateInputs({ listType, user }: validateInputsProps, userRequ
   return 0;
 }
 
-export const getPaymentTokenAddress = (listingType?: string, chainId?: string): string | undefined => {
+export function getPaymentTokenAddress(listingType?: string, chainId?: string): string | undefined {
   if (chainId === '1') {
     return listingType === ListingType.EnglishAuction ? WETH_ADDRESS : undefined;
   } else if (chainId === '137') {
     return POLYGON_WETH_ADDRESS;
   }
-};
+}
