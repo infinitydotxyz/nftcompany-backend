@@ -32,16 +32,25 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
   return false;
 }
 
-export async function checkERC721Ownership(doc: any, chainId: string, owner: string, address: string, id: string) {
+export async function getERC721Owner(address: string, tokenId: string, chainId: string) {
   try {
     const provider = getProvider(chainId);
     if (provider == null) {
       error('Cannot check ERC721 ownership as provider is null');
-      return false;
+      return '';
     }
     const contract = new ethers.Contract(address, ERC721ABI, provider);
-    let newOwner = await contract.ownerOf(id);
+    let newOwner = await contract.ownerOf(tokenId);
     newOwner = newOwner.trim().toLowerCase();
+    return newOwner;
+  } catch (err) {
+    return '';
+  }
+}
+
+export async function checkERC721Ownership(doc: any, chainId: string, owner: string, address: string, id: string) {
+  try {
+    const newOwner = await getERC721Owner(address, id, chainId);
     if (newOwner !== NULL_ADDRESS && newOwner !== owner) {
       return true;
     }

@@ -1,5 +1,10 @@
+import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
+import { ListingType } from '@base/types/NftInterface';
+import { StatusCode } from '@base/types/StatusCode';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
+import { ParsedQs } from 'qs';
+import { error } from './logger';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -51,10 +56,36 @@ export function getNextWeek(weekNumber: number, year: number) {
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
 
-export const getEnvironmentVariable = (name: string, required = true) => {
-  const variable = process.env[name];
-  if (required && !variable) {
-    throw new Error(`Missing environment variable ${name}`);
+export function trimLowerCase(str: string) {
+  return (str || '').trim().toLowerCase();
+}
+
+// validate api inputs; return a StatusCode if error;
+interface validateInputsProps {
+  listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
+  user?: string | undefined;
+}
+export function validateInputs({ listType, user }: validateInputsProps, userRequired = true): number {
+  if (
+    listType &&
+    listType !== ListingType.FixedPrice &&
+    listType !== ListingType.DutchAuction &&
+    listType !== ListingType.EnglishAuction
+  ) {
+    error('Input error - invalid list type');
+    return StatusCode.InternalServerError;
   }
-  return variable;
-};
+  if (userRequired && !user) {
+    error('Empty user');
+    return StatusCode.BadRequest;
+  }
+  return 0;
+}
+
+export function getPaymentTokenAddress(listingType?: string, chainId?: string): string | undefined {
+  if (chainId === '1') {
+    return listingType === ListingType.EnglishAuction ? WETH_ADDRESS : undefined;
+  } else if (chainId === '137') {
+    return POLYGON_WETH_ADDRESS;
+  }
+}

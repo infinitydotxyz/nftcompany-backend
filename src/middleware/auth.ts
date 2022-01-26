@@ -43,13 +43,15 @@ export enum CollectionAuthType {
  * adds the authType property to locals
  */
 export function authorizeCollectionEditor(
-  req: Request<{ user: string; collection: string }>,
+  req: Request<{ user: string; collection: string }, any, any, { chainId: string }>,
   res: Response<any, { authType: CollectionAuthType }>,
   next: NextFunction
 ) {
   const asyncHandler = async () => {
     const userAddress = req.params.user.trim?.()?.toLowerCase?.();
     const contractAddress = req.params.collection?.trim?.()?.toLowerCase?.();
+
+    // const chainId = req.query.chainId?.trim?.();
 
     const creatorDocRef = firestore
       .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)

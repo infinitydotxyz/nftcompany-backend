@@ -8,13 +8,12 @@ import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent'
 import { getUserAssetsFromUnmarshall } from '@services/unmarshal/getUserAssetsFromUnmarshal';
 import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpenseaByUser';
 
-export const getUserAssets = async (req: Request<{ user: string }>, res: Response) => {
-  await fetchAssetsOfUser(req, res);
-};
-
-export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Response) {
+export const getUserAssets = async (
+  req: Request<{ user: string }, any, any, { source: string; collectionIds?: string; contract: string }>,
+  res: Response
+) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { source } = req.query;
+  const { source, collectionIds } = req.query;
   const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if ('error' in queries) {
@@ -26,14 +25,14 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-  const sourceName = nftDataSources[source as string];
+  const sourceName = nftDataSources[source];
   if (!sourceName) {
     error('Empty sourceName');
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
   try {
-    const assets = await getAssets(user, queries.limit, queries.offset, sourceName, contract as string);
+    const assets = await getAssets(user, queries.limit, queries.offset, sourceName, contract, collectionIds as string);
 
     if (!assets) {
       res.sendStatus(StatusCode.InternalServerError);
@@ -44,21 +43,22 @@ export async function fetchAssetsOfUser(req: Request<{ user: string }>, res: Res
     // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
-      'Content-Length': Buffer.byteLength(resp, 'utf8')
+      'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
   } catch (err) {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
-}
+};
 
 export async function getAssets(
   address: string,
   limit: number,
   offset: number,
   sourceName: NFTDataSource,
-  contract?: string
+  contract?: string,
+  collectionIds?: string
 ) {
   log(`Fetching assets for: ${address} From ${sourceName}`);
   let data;
@@ -73,7 +73,7 @@ export async function getAssets(
       data = await getUserAssetsFromUnmarshall(address, contract);
       break;
     case NFTDataSource.OpenSea:
-      data = await getAssetsFromOpenSeaByUser(address, offset, limit);
+      data = await getAssetsFromOpenSeaByUser(address, offset, limit, collectionIds);
       break;
     case NFTDataSource.Covalent:
       data = await getAssetsFromCovalent(address);

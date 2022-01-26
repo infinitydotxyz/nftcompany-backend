@@ -1,16 +1,17 @@
-import { OrderSide } from '@base/types/NftInterface';
+import { ListingType, OrderSide } from '@base/types/NftInterface';
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
 import { jsonString } from '@utils/formatters';
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from '@services/opensea/orders';
 import { error } from '@utils/logger';
+import { WETH_ADDRESS } from '@base/constants';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+router.get('/', async (req: Request<any>, res: Response<any>) => {
   try {
-    const {
+    let {
       assetContractAddress,
       paymentTokenAddress,
       maker,
@@ -29,8 +30,21 @@ router.get('/', async (req, res) => {
       limit,
       offset,
       orderBy,
-      orderDirection
+      orderDirection,
+      chainId
     } = req.query;
+
+    let listingType = saleKind === '1' ? ListingType.DutchAuction : ListingType.FixedPrice;
+    if (isEnglish) {
+      listingType = ListingType.EnglishAuction;
+    }
+
+    /**
+     * limit to eth and weth
+     */
+    if (!chainId || chainId === '1') {
+      paymentTokenAddress = listingType === ListingType.EnglishAuction ? WETH_ADDRESS : '';
+    }
 
     const data = await getOpenseaOrders({
       assetContractAddress: assetContractAddress as string,
@@ -58,7 +72,7 @@ router.get('/', async (req, res) => {
     if (data && stringifiedResp) {
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
-        'Content-Length': Buffer.byteLength(stringifiedResp, 'utf8')
+        'Content-Length': Buffer.byteLength(stringifiedResp ?? '', 'utf8')
       });
       res.send(stringifiedResp);
       return;

@@ -1,31 +1,98 @@
 import { OrderDirection } from '@base/types/Queries';
 import { StatusCode } from '@base/types/StatusCode';
-import { getUserListingsRef } from '@services/infinity/listings/getUserListing';
-import { getOrdersResponse } from '@services/infinity/utils';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
+import {
+  DEFAULT_ITEMS_PER_PAGE,
+  DEFAULT_MAX_ETH,
+  DEFAULT_MIN_ETH,
+  DEFAULT_PRICE_SORT_DIRECTION
+} from '@base/constants';
+import { ListingType } from '@base/types/NftInterface';
+import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
+import { validateInputs, trimLowerCase } from '@utils/index';
 
 // fetch listings of user
-export const getUserListings = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const queries = parseQueryFields(res, req, ['limit', 'startAfterMillis'], ['50', `${Date.now()}`]);
+export const getUserListings = async (
+  req: Request<
+    { user: string },
+    any,
+    any,
+    {
+      chainId: string;
+      listType: string;
+      traitType: string;
+      traitValue: string;
+      collectionIds: string;
+      startAfterBlueCheck: string;
+      priceMin: string;
+      priceMax: string;
+      limit: string;
+      startAfterPrice: string;
+      startAfterMillis: string;
+    }
+  >,
+  res: Response
+) => {
+  const { listType, traitType, traitValue, collectionIds, startAfterBlueCheck } = req.query;
+  let { chainId } = req.query;
+  if (!chainId) {
+    chainId = '1'; // default eth mainnet
+  }
+
+  let priceMin = +(req.query.priceMin ?? 0);
+  let priceMax = +(req.query.priceMax ?? 0);
+  // @ts-expect-error
+  const sortByPriceDirection = (req.query.sortByPrice ?? '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
+  const queries = parseQueryFields(
+    res,
+    req,
+    ['limit', 'startAfterPrice', 'startAfterMillis'],
+    [
+      `${DEFAULT_ITEMS_PER_PAGE}`,
+      sortByPriceDirection === OrderDirection.Ascending ? '0' : `${DEFAULT_MAX_ETH}`,
+      `${Date.now()}`
+    ]
+  );
   if ('error' in queries) {
     return;
   }
-  if (!user) {
-    error('Empty user');
-    res.sendStatus(StatusCode.BadRequest);
+
+  const user = trimLowerCase(req.params.user);
+  const errorCode = validateInputs({ user, listType });
+  if (errorCode) {
+    res.sendStatus(errorCode);
     return;
   }
 
   try {
-    const data = await getUserListingsRef(user)
-      .orderBy('metadata.createdAt', OrderDirection.Descending)
-      .startAfter(queries.startAfterMillis)
-      .limit(queries.limit)
-      .get();
-    const resp = getOrdersResponse(data);
+    if (!priceMin) {
+      priceMin = DEFAULT_MIN_ETH;
+    }
+    if (!priceMax) {
+      priceMax = DEFAULT_MAX_ETH;
+    }
+    const resp = await getFilteredUserListings(
+      user,
+      priceMin,
+      priceMax,
+      sortByPriceDirection,
+      startAfterBlueCheck,
+      queries.startAfterPrice,
+      queries.startAfterMillis,
+      queries.limit,
+      listType as ListingType,
+      traitType,
+      traitValue,
+      collectionIds
+    );
+    if (resp) {
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=60',
+        'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
+      });
+    }
     res.send(resp);
   } catch (err) {
     error('Failed to get user listings for user ' + user);

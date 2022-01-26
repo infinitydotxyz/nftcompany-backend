@@ -1,5 +1,12 @@
 import { OrderDirection } from './types/Queries';
-import { getEnvironmentVariable } from './utils';
+
+const getEnvironmentVariable = (name: string, required = true) => {
+  const variable = process.env[name];
+  if (required && !variable) {
+    throw new Error(`Missing environment variable ${name}`);
+  }
+  return variable;
+};
 
 export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? 'testRoot';
 export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey') as string;
@@ -87,3 +94,6 @@ export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // in ms
 export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min
+
+export const WETH_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+export const POLYGON_WETH_ADDRESS = '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619';
