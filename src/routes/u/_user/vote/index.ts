@@ -38,7 +38,7 @@ export async function getUserVotes(
         res.send({});
         return;
       }
-      const collectionVotes = getCollectionVotes(collectionAddress);
+      const collectionVotes = await getCollectionVotes(collectionAddress);
       res.send({ votes: collectionVotes, userVote: userVoteInCollection });
       return;
     } else {
