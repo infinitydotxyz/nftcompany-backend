@@ -61,23 +61,28 @@ export function trimLowerCase(str: string) {
 }
 
 // validate api inputs; return a StatusCode if error;
+// example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
   user?: string | undefined;
 }
-export function validateInputs({ listType, user }: validateInputsProps, userRequired = true): number {
-  if (
-    listType &&
+export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
+  const { listType } = props;
+
+  for (const requiredProp of requiredProps) {
+    if (!props[requiredProp]) {
+      error(`Required input: ${requiredProp}`);
+      return StatusCode.BadRequest;
+    }
+  }
+
+  if (listType &&
     listType !== ListingType.FixedPrice &&
     listType !== ListingType.DutchAuction &&
     listType !== ListingType.EnglishAuction
   ) {
-    error('Input error - invalid list type');
+    error(`Input error - invalid list type: ${listType as string}`);
     return StatusCode.InternalServerError;
-  }
-  if (userRequired && !user) {
-    error('Empty user');
-    return StatusCode.BadRequest;
   }
   return 0;
 }
