@@ -21,6 +21,7 @@ export default class Firestore {
       storageBucket: FB_STORAGE_BUCKET
     });
     this.db = firebaseAdmin.firestore();
+    this.db.settings({ ignoreUndefinedProperties: true });
     this.bucket = firebaseAdmin.storage().bucket();
   }
 
