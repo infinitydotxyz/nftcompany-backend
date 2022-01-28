@@ -1,22 +1,23 @@
 import { TWITTER_BEARER_TOKEN } from '@base/constants';
 import { Concrete } from '@base/types/UtilityTypes';
-import { error } from '@utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { SearchResponse } from './types/SearchResponse';
 import { Tweet } from './types/Tweet';
 import { User } from './types/User';
+import { TwitterUserResponse } from './types/UserResponse';
 
 /**
  * access level is Elevated
  * provides queries up to 512 chars
  */
 
-enum Enpoint {
+enum Endpoint {
   /**
    * docs
    * https://developer.twitter.com/en/docs/twitter-api/tweets/search/introduction
    */
-  SearchTweets = 'tweets/search/recent'
+  SearchTweets = 'tweets/search/recent',
+  Users = 'users/by'
 }
 
 type CollectionTweets = Concrete<
@@ -42,8 +43,8 @@ export interface InfinityTwitterAccount {
   username: string;
   followersCount: number;
   followingCount: number;
-  tweetCount: number;
-  listedCount: number;
+  tweetCount?: number;
+  listedCount?: number;
 }
 
 export interface InfinityTweet {
@@ -66,88 +67,115 @@ export class Twitter {
   }
 
   /**
-   *
-   * @param username
+   * getVerifiedAccountMentions first attempts to get mentions of the specified username
+   * by verified users along with an account object for the passed user. If this fails (no recent verified mentions)
+   * we attempt to get the account object and return an empty array for the tweets
    */
   async getVerifiedAccountMentions(username: string): Promise<{
     account?: InfinityTwitterAccount;
     tweets: InfinityTweet[];
   }> {
-    try {
-      /**
-       * match any tweet that mentions the given username
-       * and where the tweeter is verified
-       */
-      const query = `@${username} is:verified`;
-      const response: AxiosResponse<SearchResponse<CollectionTweets, CollectionTweetsIncludes>> = await this.client.get(
-        Enpoint.SearchTweets,
-        {
-          params: {
-            query,
-            expansions: 'author_id,entities.mentions.username',
-            'tweet.fields': 'public_metrics,created_at',
-            'user.fields': 'public_metrics'
-          }
+    /**
+     * match any tweet that mentions the given username
+     * and where the tweeter is verified
+     */
+    const query = `@${username} is:verified`;
+    const response: AxiosResponse<SearchResponse<CollectionTweets, CollectionTweetsIncludes>> = await this.client.get(
+      Endpoint.SearchTweets,
+      {
+        params: {
+          query,
+          expansions: 'author_id,entities.mentions.username',
+          'tweet.fields': 'public_metrics,created_at',
+          'user.fields': 'public_metrics'
         }
-      );
-      const jsonBody = response.data;
-      if ('data' in jsonBody && jsonBody.data.length > 0) {
-        const tweets = jsonBody.data ?? []; // ordered in reverse chronological order
-        const users = jsonBody.includes?.users ?? [];
+      }
+    );
+    const jsonBody = response.data;
+    if ('data' in jsonBody && jsonBody.data.length > 0) {
+      const tweets = jsonBody.data ?? []; // ordered in reverse chronological order
+      const users = jsonBody.includes?.users ?? [];
 
-        const formattedTweets = tweets
-          .map((tweet) => {
-            const user = users.find((u) => u.id === tweet.author_id);
-            const tweetUrl = user?.username ? this.getTweetLink(user?.username ?? '', tweet.id) : '';
-            const author: InfinityTwitterAccount = {
-              id: tweet.author_id,
-              name: user?.name ?? '',
-              username: user?.username ?? '',
-              followersCount: user?.public_metrics?.followers_count ?? 0,
-              followingCount: user?.public_metrics?.following_count ?? 0,
-              tweetCount: user?.public_metrics.tweet_count ?? 0,
-              listedCount: user?.public_metrics.listed_count ?? 0
-            };
-            const createdAt = new Date(tweet.created_at).getTime();
-            return {
-              author,
-              createdAt: createdAt,
-              tweetId: tweet.id,
-              text: tweet.text,
-              url: tweetUrl
-            };
-          })
-          .filter((tweet) => {
-            return !!tweet.url;
-          });
+      const formattedTweets = tweets
+        .map((tweet) => {
+          const user = users.find((u) => u.id === tweet.author_id);
+          const tweetUrl = user?.username ? this.getTweetLink(user?.username ?? '', tweet.id) : '';
+          const author: InfinityTwitterAccount = {
+            id: tweet.author_id,
+            name: user?.name ?? '',
+            username: user?.username ?? '',
+            followersCount: user?.public_metrics?.followers_count ?? 0,
+            followingCount: user?.public_metrics?.following_count ?? 0,
+            tweetCount: user?.public_metrics.tweet_count ?? 0,
+            listedCount: user?.public_metrics.listed_count ?? 0
+          };
+          const createdAt = new Date(tweet.created_at).getTime();
+          return {
+            author,
+            createdAt: createdAt,
+            tweetId: tweet.id,
+            text: tweet.text,
+            url: tweetUrl
+          };
+        })
+        .filter((tweet) => {
+          return !!tweet.url;
+        });
 
-        const accountUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
-        const accountInfo: InfinityTwitterAccount = {
-          id: accountUser?.id ?? '',
-          name: accountUser?.name ?? '',
-          username,
-          followersCount: accountUser?.public_metrics.followers_count ?? 0,
-          followingCount: accountUser?.public_metrics.following_count ?? 0,
-          tweetCount: accountUser?.public_metrics.tweet_count ?? 0,
-          listedCount: accountUser?.public_metrics.listed_count ?? 0
-        };
+      const accountUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
+      const accountInfo: InfinityTwitterAccount = {
+        id: accountUser?.id ?? '',
+        name: accountUser?.name ?? '',
+        username,
+        followersCount: accountUser?.public_metrics.followers_count ?? 0,
+        followingCount: accountUser?.public_metrics.following_count ?? 0,
+        tweetCount: accountUser?.public_metrics.tweet_count ?? 0,
+        listedCount: accountUser?.public_metrics.listed_count ?? 0
+      };
 
+      return {
+        account: accountInfo,
+        tweets: formattedTweets
+      };
+    } else if (jsonBody.meta.result_count === 0) {
+      // no recent tweets,
+      const response: AxiosResponse<
+        TwitterUserResponse<Concrete<Pick<User, 'id' | 'public_metrics' | 'name' | 'username'>>>
+      > = await this.client.get(Endpoint.Users, {
+        params: {
+          usernames: username,
+          'user.fields': 'public_metrics'
+        }
+      });
+
+      const body = response.data;
+
+      if ('errors' in body) {
+        throw new Error(body.errors?.[0].detail);
+      }
+
+      const account = body.data?.[0];
+      if (
+        account.id &&
+        account.name &&
+        account.username &&
+        account.public_metrics.followers_count &&
+        account.public_metrics.following_count
+      ) {
         return {
-          account: accountInfo,
-          tweets: formattedTweets
+          account: {
+            id: account.id,
+            name: account.name,
+            username: account.username,
+            followersCount: account.public_metrics.followers_count,
+            followingCount: account.public_metrics.following_count
+          },
+          tweets: []
         };
       }
-      return {
-        account: undefined,
-        tweets: []
-      };
-    } catch (err) {
-      error(err);
-      return {
-        account: undefined,
-        tweets: []
-      };
     }
+
+    throw new Error(`Failed to get twitter account for ${username}`);
   }
 
   private getTweetLink(username: string, tweetId: string) {

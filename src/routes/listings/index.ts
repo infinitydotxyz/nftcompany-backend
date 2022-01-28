@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
     return;
   }
 
-  const errorCode = validateInputs({ listType }, false);
+  const errorCode = validateInputs({ listType });
   if (errorCode) {
     res.sendStatus(errorCode);
     return;
