@@ -159,8 +159,8 @@ export class Twitter {
         account.id &&
         account.name &&
         account.username &&
-        account.public_metrics.followers_count &&
-        account.public_metrics.following_count
+        typeof account.public_metrics.followers_count === 'number' &&
+        typeof account.public_metrics.following_count === 'number'
       ) {
         return {
           account: {
