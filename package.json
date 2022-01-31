@@ -45,7 +45,9 @@
     "qs": "^6.10.2",
     "reflect-metadata": "^0.1.13",
     "stream-buffers": "^3.0.2",
-    "tsyringe": "^4.6.0"
+    "tsyringe": "^4.6.0",
+    "ts-node": "^10.4.0",
+    "tsconfig-paths": "^3.12.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",
@@ -71,8 +73,6 @@
     "eslint-plugin-promise": "^5.2.0",
     "nodemon": "2.0.15",
     "rimraf": "^3.0.2",
-    "ts-node": "^10.4.0",
-    "tsconfig-paths": "^3.12.0",
     "typescript": "^4.5.4"
   },
   "prettier": {
