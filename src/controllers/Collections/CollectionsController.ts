@@ -285,6 +285,32 @@ export async function postCollectionInformation(
     await batch.commit();
 
     res.sendStatus(StatusCode.Created);
+
+    const forceUpdate = true;
+    /**
+     * handles updating twitter data
+     */
+    getTwitterSnippet(collectionAddress, data.twitter, forceUpdate)
+      .then(() => {
+        log(`Updated twitter stats for new twitter link`);
+      })
+      .catch((err) => {
+        error('Error occurred while updating twitter snippet');
+        error(err);
+      });
+
+    /**
+     * handles updating discord data
+     */
+    getDiscordSnippet(collectionAddress, data.discord, forceUpdate)
+      .then(() => {
+        log(`Updated discord stats for new discord link`);
+      })
+      .catch((err) => {
+        error('Error occurred while updating discord snippet');
+        error(err);
+      });
+
     return;
   } catch (err) {
     error(`error occurred while updating collection info`);
@@ -716,7 +742,7 @@ async function getCollectionInfoByName(searchCollectionName: string, limit: numb
   return data;
 }
 
-async function getTwitterSnippet(collectionAddress: string, twitterLink: string) {
+async function getTwitterSnippet(collectionAddress: string, twitterLink: string, forceUpdate = false) {
   if (!collectionAddress || !twitterLink) {
     return;
   }
@@ -728,7 +754,7 @@ async function getTwitterSnippet(collectionAddress: string, twitterLink: string)
     .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
   const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
-  const updatedTwitterSnippet = await updateTwitterData(twitterSnippet, collectionAddress, twitterLink, false);
+  const updatedTwitterSnippet = await updateTwitterData(twitterSnippet, collectionAddress, twitterLink, forceUpdate);
 
   return updatedTwitterSnippet;
 }
@@ -747,11 +773,8 @@ async function updateTwitterData(
     const now = new Date().getTime();
     const updatedAt: number = typeof twitterSnippet?.timestamp === 'number' ? twitterSnippet?.timestamp : 0;
     if (force || (twitterLink && now - updatedAt > MIN_TWITTER_UPDATE_INTERVAL)) {
-      let username = twitterSnippet?.account?.username;
-      if (!username) {
-        const twitterUsernameRegex = /twitter.com\/([a-zA-Z0-9_]*)/;
-        username = twitterLink.match(twitterUsernameRegex)?.[1];
-      }
+      const twitterUsernameRegex = /twitter.com\/([a-zA-Z0-9_]*)/;
+      const username = twitterLink.match(twitterUsernameRegex)?.[1];
 
       if (username) {
         // get twitter data
@@ -894,7 +917,7 @@ async function updateTwitterData(
   return twitterSnippet;
 }
 
-async function getDiscordSnippet(collectionAddress: string, inviteLink: string) {
+async function getDiscordSnippet(collectionAddress: string, inviteLink: string, forceUpdate = false) {
   if (!collectionAddress) {
     return;
   }
@@ -906,7 +929,7 @@ async function getDiscordSnippet(collectionAddress: string, inviteLink: string) 
       .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
     let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
-    discordSnippet = await updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, false);
+    discordSnippet = await updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, forceUpdate);
 
     return discordSnippet;
   } catch (err) {
