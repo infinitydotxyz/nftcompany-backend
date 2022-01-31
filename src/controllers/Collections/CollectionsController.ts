@@ -687,7 +687,11 @@ async function updateLinks(links: Links, collectionAddress: string, force = fals
     if (shouldUpdate || force) {
       const updatedLinks = await getCollectionLinks(collectionAddress);
       if (updatedLinks) {
-        if (collectionAddress?.toLowerCase() === '0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270') {
+        const artBlocksContracts = [
+          '0x059edd72cd353df5106d2b9cc5ab83a52287ac3a',
+          '0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270'
+        ];
+        if (artBlocksContracts.includes(collectionAddress?.toLowerCase())) {
           updatedLinks.slug = 'art-blocks';
         }
         const linkRef = firestore
