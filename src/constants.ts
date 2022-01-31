@@ -84,9 +84,8 @@ export const DEFAULT_MAX_ETH = 1000000; // for listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
-export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
-export const ORIGIN = /http:\/\/localhost:\d+/; // todo: adi change this for dev/prod
-// export const ORIGIN = 'https://infinity.xyz'
+export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
+export const ORIGIN = /http:\/\/localhost:\d+/;
 
 export const ONE_HOUR = 3_600_000; // in ms
 export const ONE_DAY = ONE_HOUR * 24;
