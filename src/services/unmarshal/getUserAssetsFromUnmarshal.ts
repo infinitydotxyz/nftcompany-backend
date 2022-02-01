@@ -1,24 +1,41 @@
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
-import { UnmarshallUserAsset } from './types/UnmarshallUserAsset';
+import { UnmarshalUserAssetResponse } from './types/UnmarshalUserAsset';
 import { unmarshalClient } from './utils';
 
 /**
  * Docs: https://docs.unmarshal.io/nft-apis/nft-assets-by-address
  */
-export async function getUserAssetsFromUnmarshall(userAddress: string, contract?: string) {
-  log('Fetching assets from unmarshal');
-  const chain = 'matic';
-  const path = `${chain}/address/${userAddress}/nft-assets/`;
+export async function getUserAssetsFromUnmarshal(
+  userAddress: string,
+  chainId: string,
+  contract?: string,
+  page?: number,
+  pageSize?: number
+) {
+  log('Fetching assets from unmarshal for user', userAddress, 'chainId', chainId, 'page', page, 'pageSize', pageSize, 'contract', contract);
   try {
-    const { data }: AxiosResponse<UnmarshallUserAsset[]> = await unmarshalClient.get(path, {
+    const chain = getUnmarshalChainName(chainId);
+    const path = `${chain}/address/${userAddress}/nft-assets/`;
+    const { data }: AxiosResponse<UnmarshalUserAssetResponse> = await unmarshalClient.get(path, {
       params: {
-        contract
+        contract,
+        page,
+        pageSize
       }
     });
-    return data;
+    return data.nft_assets;
   } catch (err) {
     error('Error occured while fetching assets from unmarshal');
     error(err);
   }
+}
+
+export function getUnmarshalChainName(chainId: string): string {
+  if (chainId === '1') {
+    return 'ethereum';
+  } else if (chainId === '137') {
+    return 'matic';
+  }
+  throw Error('Unknown chainId. Unmarshal does not recognize chainId: ' + chainId);
 }
