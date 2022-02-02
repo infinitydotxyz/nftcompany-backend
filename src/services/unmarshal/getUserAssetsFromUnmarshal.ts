@@ -9,11 +9,22 @@ import { unmarshalClient } from './utils';
 export async function getUserAssetsFromUnmarshal(
   userAddress: string,
   chainId: string,
-  contract?: string,
   page?: number,
-  pageSize?: number
+  pageSize?: number,
+  contract?: string
 ) {
-  log('Fetching assets from unmarshal for user', userAddress, 'chainId', chainId, 'page', page, 'pageSize', pageSize, 'contract', contract);
+  log(
+    'Fetching assets from unmarshal for user',
+    userAddress,
+    'chainId',
+    chainId,
+    'page',
+    page,
+    'pageSize',
+    pageSize,
+    'contract',
+    contract
+  );
   try {
     const chain = getUnmarshalChainName(chainId);
     const path = `${chain}/address/${userAddress}/nft-assets/`;

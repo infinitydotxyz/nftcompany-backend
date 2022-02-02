@@ -4,21 +4,23 @@ import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
 import { StatusCode } from '@base/types/StatusCode';
 import { NFTDataSource, nftDataSources } from '@base/types/Queries';
-import { getAssetsFromCovalent } from '@services/covalent/getAssetsFromCovalent';
+import { getUserAssetsFromCovalent } from '@services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from '@services/unmarshal/getUserAssetsFromUnmarshal';
-import { getAssetsFromOpenSeaByUser } from '@services/opensea/assets/getAssetsFromOpenseaByUser';
+import { getUserAssetsFromOpenSea } from '@services/opensea/assets/getUserAssetsFromOpensea';
+import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlchemy';
+import { AlchemyUserAssetResponse } from '@services/alchemy/types/AlchemyUserAsset';
 
 export const getUserAssets = async (
   req: Request<
     { user: string },
     any,
     any,
-    { source: string; collectionIds?: string; contract: string; chainId: string }
+    { source: string; collectionIds?: string; contract: string; chainId: string; pageKey: string }
   >,
   res: Response
 ) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const { source, collectionIds, chainId } = req.query;
+  const { source, collectionIds, chainId, pageKey } = req.query;
   const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if ('error' in queries) {
@@ -48,6 +50,7 @@ export const getUserAssets = async (
       queries.limit,
       queries.offset,
       sourceName,
+      pageKey,
       contract,
       collectionIds as string
     );
@@ -76,6 +79,7 @@ export async function getAssets(
   limit: number,
   offset: number,
   sourceName: NFTDataSource,
+  pageKey?: string,
   contract?: string,
   collectionIds?: string
 ) {
@@ -83,32 +87,39 @@ export async function getAssets(
   let data;
   switch (sourceName) {
     case NFTDataSource.Infinity:
-      data = await getAssetsFromInfinity(address, limit, offset);
+      data = await getUserAssetsFromInfinity(address, offset, limit);
       break;
     case NFTDataSource.Alchemy:
-      data = await getAssetsFromAlchemy(address, limit, offset);
+      data = await getUserAssetsFromAlchemy(address, chainId, pageKey, collectionIds);
       break;
     case NFTDataSource.Unmarshal:
-      data = await getUserAssetsFromUnmarshal(address, chainId, contract, offset + 1, limit);
+      data = await getUserAssetsFromUnmarshal(address, chainId, offset + 1, limit, contract); // offset + 1 because Unmarshal starts index from 1
       break;
     case NFTDataSource.OpenSea:
-      data = await getAssetsFromOpenSeaByUser(address, offset, limit, collectionIds);
+      data = await getUserAssetsFromOpenSea(address, offset, limit, collectionIds);
       break;
     case NFTDataSource.Covalent:
-      data = await getAssetsFromCovalent(address);
+      data = await getUserAssetsFromCovalent(address);
       break;
     default:
       log('Invalid data source for fetching nft data of wallet');
       throw new Error(`invalid data source ${sourceName}`);
   }
-  data = data || [];
-  return { count: data.length, assets: data };
+  // prepare response
+  const resp = {} as any;
+  if (sourceName === NFTDataSource.Alchemy) {
+    const result = data as AlchemyUserAssetResponse;
+    resp.count = result?.ownedNfts?.length || 0;
+    resp.assets = result?.ownedNfts || [];
+    resp.pageKey = result?.pageKey;
+  } else {
+    data = data || [];
+    resp.count = data.length;
+    resp.assets = data;
+  }
+  return resp;
 }
 
-async function getAssetsFromInfinity(address: string, limit: number, offset: number) {
-  log('Fetching assets from infinity');
-}
-
-async function getAssetsFromAlchemy(address: string, limit: number, offset: number) {
-  log('Fetching assets from alchemy');
+async function getUserAssetsFromInfinity(address: string, offset: number, limit: number) {
+  log('Fetching user assets from infinity');
 }

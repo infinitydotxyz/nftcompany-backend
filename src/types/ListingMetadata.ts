@@ -10,4 +10,5 @@ export interface ListingMetadata {
   hasBlueCheck: boolean;
   basePriceInEth?: number;
   listingType?: string;
+  isListing: boolean;
 }

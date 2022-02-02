@@ -37,6 +37,10 @@ export function openseaParamSerializer(params: string[]) {
   return qs.stringify(params, { arrayFormat: 'repeat' });
 }
 
+export function alchemyParamSerializer(params: string[]) {
+  return qs.stringify(params, { arrayFormat: 'repeat' });
+}
+
 export function docsToArray(dbDocs: any) {
   if (!dbDocs) {
     return { results: [], count: 0 };

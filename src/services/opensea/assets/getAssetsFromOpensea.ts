@@ -78,7 +78,7 @@ export async function getAssetsFromOpensea(
         ...collectionQuery
       }
     });
-    const listings = await convertOpenseaListingsToInfinityListings(data.assets);
+    const listings = await convertOpenseaListingsToInfinityListings(data.assets, false);
 
     return listings;
   } catch (error) {
