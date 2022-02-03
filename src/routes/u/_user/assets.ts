@@ -9,6 +9,7 @@ import { getUserAssetsFromUnmarshal } from '@services/unmarshal/getUserAssetsFro
 import { getUserAssetsFromOpenSea } from '@services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@services/alchemy/types/AlchemyUserAsset';
+import { validateInputs } from '@utils/index';
 
 export const getUserAssets = async (
   req: Request<
@@ -21,26 +22,16 @@ export const getUserAssets = async (
 ) => {
   const user = (`${req.params.user}` || '').trim().toLowerCase();
   const { source, collectionIds, chainId, pageKey } = req.query;
+  const sourceName = nftDataSources[source];
   const contract = req.query.contract ?? '';
   const queries = parseQueryFields(res, req, ['limit', 'offset'], ['50', `0`]);
   if ('error' in queries) {
     res.sendStatus(StatusCode.InternalServerError);
     return;
   }
-  if (!user) {
-    error('Empty user');
-    res.sendStatus(StatusCode.BadRequest);
-    return;
-  }
-  const sourceName = nftDataSources[source];
-  if (!sourceName) {
-    error('Empty sourceName');
-    res.sendStatus(StatusCode.BadRequest);
-    return;
-  }
-  if (!chainId) {
-    error('Empty chainId');
-    res.sendStatus(StatusCode.BadRequest);
+  const errorCode = validateInputs({ user, sourceName, chainId }, ['user', 'sourceName', 'chainId']);
+  if (errorCode) {
+    res.sendStatus(errorCode);
     return;
   }
   try {
