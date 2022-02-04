@@ -75,6 +75,7 @@ export const getUserListings = async (
     }
     const resp = await getFilteredUserListings(
       user,
+      chainId,
       priceMin,
       priceMax,
       sortByPriceDirection,

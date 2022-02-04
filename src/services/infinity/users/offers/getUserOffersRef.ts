@@ -11,6 +11,7 @@ export function getUserOffersRef(userAddress: string) {
 
 export async function getFilteredUserOffersMade(
   user: string,
+  chainId: string,
   priceMin: number,
   priceMax: number,
   sortByPriceDirection: OrderDirection,
@@ -45,6 +46,7 @@ export async function getFilteredUserOffersMade(
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.OFFERS_COLL)
+        .where('metadata.chainId', '==', chainId)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
 
@@ -88,6 +90,7 @@ export async function getFilteredUserOffersMade(
 
 export async function getFilteredUserOffersReceived(
   user: string,
+  chainId: string,
   priceMin: number,
   priceMax: number,
   sortByPriceDirection: OrderDirection,
@@ -114,6 +117,7 @@ export async function getFilteredUserOffersReceived(
       let queryRef = firestore.db
         .collectionGroup(fstrCnstnts.OFFERS_COLL)
         .where('metadata.asset.owner', '==', user)
+        .where('metadata.chainId', '==', chainId)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
 

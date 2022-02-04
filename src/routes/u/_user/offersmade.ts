@@ -70,6 +70,7 @@ export const getUserOffersMade = async (
     }
     const resp = await getFilteredUserOffersMade(
       user,
+      chainId,
       priceMin,
       priceMax,
       sortByPriceDirection,
