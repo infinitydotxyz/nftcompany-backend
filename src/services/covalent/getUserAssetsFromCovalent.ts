@@ -2,7 +2,7 @@ import { error, log } from '@utils/logger';
 import { CovalentWalletBalanceItem } from './types/CovalentNFTMetadata';
 import { covalentClient } from './utils';
 
-export async function getAssetsFromCovalent(address: string) {
+export async function getUserAssetsFromCovalent(address: string) {
   log('Fetching assets from covalent');
   const chainId = '137';
   const path = `${chainId}/address/${address}/balances_v2/`;

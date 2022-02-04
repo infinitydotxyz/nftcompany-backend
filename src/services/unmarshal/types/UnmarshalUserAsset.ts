@@ -1,6 +1,14 @@
 import { WyvernTrait } from '@base/types/wyvern/WyvernOrder';
 
-export interface UnmarshallUserAsset {
+export interface UnmarshalUserAssetResponse {
+  items_on_page: number;
+  page: number;
+  total_pages: number;
+  total_assets: number;
+  nft_assets: UnmarshalUserAsset[];
+}
+
+export interface UnmarshalUserAsset {
   asset_contract: string;
   token_id: string;
   owner: string;

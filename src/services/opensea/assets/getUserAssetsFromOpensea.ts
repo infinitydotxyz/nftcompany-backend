@@ -4,7 +4,7 @@ import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 
-export async function getAssetsFromOpenSeaByUser(userAddress: string, offset: number, limit: number, collectionIds?: string) {
+export async function getUserAssetsFromOpenSea(userAddress: string, offset: number, limit: number, collectionIds?: string) {
   log('Fetching assets from opensea');
   const url = OPENSEA_API + 'assets/';
 

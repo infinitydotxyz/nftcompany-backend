@@ -65,7 +65,10 @@ export function trimLowerCase(str: string) {
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
   user?: string | undefined;
+  sourceName?: string | undefined;
+  chainId?: string | undefined;
 }
+
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
   const { listType } = props;
 
@@ -76,7 +79,8 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
     }
   }
 
-  if (listType &&
+  if (
+    listType &&
     listType !== ListingType.FixedPrice &&
     listType !== ListingType.DutchAuction &&
     listType !== ListingType.EnglishAuction
