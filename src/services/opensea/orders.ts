@@ -163,7 +163,7 @@ export async function getOpenseaOrders({
 
     const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
 
-    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings);
+    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings, true);
 
     const aggregateListingAsOrders = (listings: Listing[]) => {
       return listings?.reduce?.(

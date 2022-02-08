@@ -1,5 +1,5 @@
 service: sv-dev
-runtime: nodejs14
+runtime: nodejs16
 env: standard
 instance_class: F4_1G
 handlers:

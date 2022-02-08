@@ -28,6 +28,7 @@ export function getUserListingRef(
 
 export async function getFilteredUserListings(
   user: string,
+  chainId: string,
   priceMin: number,
   priceMax: number,
   sortByPriceDirection: OrderDirection,
@@ -65,6 +66,7 @@ export async function getFilteredUserListings(
         .collection(fstrCnstnts.USERS_COLL)
         .doc(user)
         .collection(fstrCnstnts.LISTINGS_COLL)
+        .where('metadata.chainId', '==', chainId)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
 

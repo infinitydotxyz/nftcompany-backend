@@ -46,7 +46,7 @@ export function getOrderTypeFromRawSellOrder(order: WyvernSellOrder) {
  * @returns an array of listings following the infinity schema
  */
 export async function convertOpenseaListingsToInfinityListings(
-  rawAssetDataArray: WyvernAssetData[]
+  rawAssetDataArray: WyvernAssetData[], areListings: boolean
 ): Promise<ListingResponse> {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
     return {
@@ -56,7 +56,7 @@ export async function convertOpenseaListingsToInfinityListings(
   }
   const listingMetadataPromises: Array<Promise<ListingMetadata>> = rawAssetDataArray.map(
     async (rawAssetData: WyvernAssetData) => {
-      const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData);
+      const listingMetadata = await rawAssetDataToListingMetadata(rawAssetData, areListings);
       return listingMetadata;
     }
   );
@@ -220,7 +220,7 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   }
 }
 
-export async function rawAssetDataToListingMetadata(data: WyvernAssetData): Promise<ListingMetadata> {
+export async function rawAssetDataToListingMetadata(data: WyvernAssetData, isListing: boolean): Promise<ListingMetadata> {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
@@ -245,6 +245,7 @@ export async function rawAssetDataToListingMetadata(data: WyvernAssetData): Prom
 
   const listing: ListingMetadata = {
     hasBonusReward: false,
+    isListing,
     createdAt: new Date(assetContract.created_date).getTime(),
     ...basePriceInEthObj,
     ...listingTypeObj,
@@ -297,7 +298,10 @@ export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetDat
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
       .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
-    await newDoc.set(assetData);
+    newDoc.set(assetData).catch((err) => {
+      error('Error saving asset in firestore');
+      error(err);
+    });
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {
     error('Error occured while saving asset data in database');

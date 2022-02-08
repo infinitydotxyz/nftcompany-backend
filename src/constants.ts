@@ -12,6 +12,8 @@ export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? '
 export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey') as string;
 export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey') as string;
 export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet') as string;
+export const ALCHEMY_NFT_BASE_URL_ETH_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlEth') as string;
+export const ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlPolygon') as string;
 export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey') as string;
 export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken') as string;
 export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey') as string;
@@ -84,7 +86,7 @@ export const DEFAULT_MAX_ETH = 1000000; // for listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
-export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com'; // todo: adi rel
+export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
 export const ORIGIN = 'https://dev.nftcompany.com';
 
 export const ONE_HOUR = 3_600_000; // in ms

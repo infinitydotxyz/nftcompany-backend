@@ -72,6 +72,7 @@ export const getUserOffersReceived = async (
     }
     const resp = await getFilteredUserOffersReceived(
       user,
+      chainId,
       priceMin,
       priceMax,
       sortByPriceDirection,
