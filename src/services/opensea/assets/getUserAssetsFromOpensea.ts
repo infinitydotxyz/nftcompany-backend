@@ -31,11 +31,11 @@ export async function getUserAssetsFromOpenSea(userAddress: string, offset: numb
   try {
     const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, options);
 
-    // get verifiedCollectionIds to backfill "hasBlueCheck" to "asset.more" data:
+    // get verifiedCollectionIds to backfill "hasBlueCheck" to "asset.customData":
     const verifiedCollectionIds = await getVerifiedCollectionIds();
     const assets = (data?.assets || []).map((asset) => {
-      asset.more = asset.more ?? {}; // init
-      asset.more.hasBlueCheck = (verifiedCollectionIds.includes(asset.asset_contract.address));
+      asset.customData = asset.customData ?? {}; // init
+      asset.customData.hasBlueCheck = (verifiedCollectionIds.includes(asset.asset_contract.address));
       return asset;
     })
 
