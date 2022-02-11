@@ -1,13 +1,15 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@base/constants';
 import { log } from '@utils/logger';
+import { cacheGet, cacheSet } from '@utils/cache'
 
-let idsArray: string[] = []; // cached collection id array.
+const COLLECTION_IDS_KEY = 'COLLECTION_IDS_KEY';
 
 // Get verified collection IDs. Return an array of ids. 
 export async function getVerifiedCollectionIds() {
-  if (idsArray.length > 0) {
-    return idsArray; // return cached data.
+  let idsArray = cacheGet(COLLECTION_IDS_KEY) as string[];
+  if (idsArray && idsArray.length > 0) {
+    return idsArray; // return cached data if any.
   } 
   log('Fetching verified collection ids');
   
@@ -21,5 +23,6 @@ export async function getVerifiedCollectionIds() {
   idsArray = (data?.docs || []).map((doc) => {
     return doc.id;
   });
+  cacheSet(COLLECTION_IDS_KEY, idsArray);
   return idsArray;
 }
