@@ -8,12 +8,12 @@ export function setupDbListeners() {
 
   // listening to collection changes (fstrCnstnts.ALL_COLLECTIONS_COLL)
   coll.onSnapshot(
-    () => {
-      getVerifiedCollectionIds({ skipCache: true }); // re-fetch verified collection Ids
-      log(`Collection changed: ${fstrCnstnts.ALL_COLLECTIONS_COLL}`);
+    async () => {
+      log(`Collection change listener: ${fstrCnstnts.ALL_COLLECTIONS_COLL}`);
+      await getVerifiedCollectionIds({ skipCache: true }); // re-fetch verified collection Ids
     },
     (err) => {
-      console.log(`Encountered error: ${err}`);
+      console.log(`Encountered error: `, err);
     }
   );
 }

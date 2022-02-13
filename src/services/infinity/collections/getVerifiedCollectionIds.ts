@@ -5,9 +5,9 @@ import { cacheGet, cacheSet } from '@utils/cache';
 
 const COLLECTION_IDS_KEY = 'COLLECTION_IDS_KEY';
 
-type Args = {
+interface Args {
   skipCache?: boolean;
-};
+}
 
 // Get verified collection IDs. Return an array of ids.
 export async function getVerifiedCollectionIds(args: Args = {}) {
