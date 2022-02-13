@@ -67,7 +67,7 @@ interface TwitterHistoricalData {
   followers: number;
 }
 
-async function updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
+export async function updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
   let collectionInfo = await getCollectionInfoFromOpensea(address);
   if (!collectionInfo) {
     return;
@@ -75,6 +75,7 @@ async function updateCollectionInfoFromOpensea(address: string): Promise<Collect
 
   try {
     if (collectionInfo.slug) {
+      log(`updateCollectionInfoFromOpensea: ${collectionInfo.slug}`);
       const collection = await getCollectionFromOpensea(collectionInfo.slug);
       const chain =
         (collection?.payment_tokens ?? []).findIndex((item) => item.symbol === 'ETH') >= 0 ? 'Ethereum' : 'Polygon';

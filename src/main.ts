@@ -10,6 +10,7 @@ import { requestErrorHandler } from '@base/middleware/errorHandler';
 import { requestLogger } from '@base/middleware/logger';
 import { registerDocs } from './docs';
 import { ORIGIN } from '@base/constants';
+import { setupDbListeners } from '@utils/dblisteners';
 
 const app = express();
 
@@ -37,6 +38,8 @@ registerMiddleware();
 registerRoutes();
 // error handler should be the last middleware registered
 registerErrorHandler();
+
+setupDbListeners();
 
 const PORT = process.env.PORT ?? 9090;
 app.listen(PORT, () => {
