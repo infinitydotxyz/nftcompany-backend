@@ -7,6 +7,7 @@ const COLLECTION_IDS_KEY = 'COLLECTION_IDS_KEY';
 
 interface Args {
   skipCache?: boolean;
+  forIds?: string[];
 }
 
 // Get verified collection IDs. Return an array of ids.
@@ -29,9 +30,13 @@ export async function getVerifiedCollectionIds(args: Args = {}) {
 
   const data = await query.get();
 
-  idsArray = (data?.docs || []).map((doc) => {
-    return doc.id;
-  });
+  idsArray = (data?.docs || [])
+    .filter((doc) => {
+      return (args.forIds || []).indexOf(doc.id) >= 0;
+    })
+    .map((doc) => {
+      return doc.id; // (args.forIds || []).indexOf(doc.id) >= 0;
+    });
   cacheSet(COLLECTION_IDS_KEY, idsArray);
   return idsArray;
 }
