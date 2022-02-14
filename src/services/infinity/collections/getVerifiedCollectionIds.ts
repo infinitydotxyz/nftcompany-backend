@@ -30,13 +30,9 @@ export async function getVerifiedCollectionIds(args: Args = {}) {
 
   const data = await query.get();
 
-  idsArray = (data?.docs || [])
-    .filter((doc) => {
-      return (args.forIds || []).indexOf(doc.id) >= 0;
-    })
-    .map((doc) => {
-      return doc.id; // (args.forIds || []).indexOf(doc.id) >= 0;
-    });
+  idsArray = (data?.docs || []).map((doc) => {
+    return doc.id; // (args.forIds || []).indexOf(doc.id) >= 0;
+  });
   cacheSet(COLLECTION_IDS_KEY, idsArray);
   return idsArray;
 }

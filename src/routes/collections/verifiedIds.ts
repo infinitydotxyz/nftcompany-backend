@@ -28,13 +28,17 @@ router.get('/', async (req: Request<any, any, any, { ids?: string }>, res: Respo
     res.sendStatus(errorCode);
     return;
   }
-  const forIds = (ids ?? '').split(',');
+  const forIds = (ids ?? '').split(',') || [];
 
   try {
-    const collectionIds: string = await getVerifiedCollectionIds({ forIds });
+    const collectionIds = await getVerifiedCollectionIds({ forIds });
+
+    const idsArray = collectionIds.filter((id: string) => {
+      return forIds.includes(id);
+    });
 
     const dataObj = {
-      collectionIds
+      collectionIds: idsArray
     };
 
     const resp = jsonString(dataObj);
