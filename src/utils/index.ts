@@ -71,7 +71,7 @@ interface validateInputsProps {
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType, ids } = props;
+  const { listType } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
