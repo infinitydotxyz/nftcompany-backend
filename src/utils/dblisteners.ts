@@ -30,6 +30,8 @@ export function setupAllCollectionsListener() {
           if (change.type === 'added' || change.type === 'modified') {
             if (data.hasBlueCheck) {
               addVerifiedCollectionId(data?.address);
+            } else {
+              removeVerifiedCollectionId(data?.address);
             }
           }
           if (change.type === 'removed') {
