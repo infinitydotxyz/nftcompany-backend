@@ -3,9 +3,13 @@ import { OPENSEA_API } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
-import { getVerifiedCollectionIds } from '@services/infinity/collections/getVerifiedCollectionIds';
 
-export async function getUserAssetsFromOpenSea(userAddress: string, offset: number, limit: number, collectionIds?: string) {
+export async function getUserAssetsFromOpenSea(
+  userAddress: string,
+  offset: number,
+  limit: number,
+  collectionIds?: string
+) {
   log('Fetching assets from opensea');
   const url = OPENSEA_API + 'assets/';
 
@@ -30,16 +34,7 @@ export async function getUserAssetsFromOpenSea(userAddress: string, offset: numb
 
   try {
     const { data }: AxiosResponse<{ assets: WyvernAssetData[] }> = await openseaClient.get(url, options);
-
-    // get verifiedCollectionIds to backfill "hasBlueCheck" to "asset.customData":
-    const verifiedCollectionIds = await getVerifiedCollectionIds();
-    const assets = (data?.assets || []).map((asset) => {
-      asset.customData = asset.customData ?? {}; // init
-      asset.customData.hasBlueCheck = (verifiedCollectionIds.includes(asset.asset_contract.address));
-      return asset;
-    })
-
-    return assets;
+    return data?.assets;
   } catch (err) {
     error('Error occured while fetching assets from opensea');
     error(err);

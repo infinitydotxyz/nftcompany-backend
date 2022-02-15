@@ -1,11 +1,4 @@
-
-export interface CustomData {
-  /* Infinity's custom data (e.g. to add joined fields, transformed fields,... to response) */
-  hasBlueCheck?: boolean;
-}
-
 export interface WyvernAssetData {
-  customData?: CustomData;
   asset_contract: AssetContract;
   token_id: string;
   creator: WyvernUser;

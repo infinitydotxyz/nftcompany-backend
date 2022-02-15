@@ -37,11 +37,10 @@ router.get('/', async (req: Request<any, any, any, { ids?: string }>, res: Respo
       return forIds.includes(id);
     });
 
-    const dataObj = {
+    const respObj = {
       collectionIds: idsArray
     };
-
-    const resp = jsonString(dataObj);
+    const resp = jsonString(respObj);
     res.set({
       'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
