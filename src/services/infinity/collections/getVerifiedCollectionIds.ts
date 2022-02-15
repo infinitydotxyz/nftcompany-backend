@@ -32,7 +32,7 @@ export async function getVerifiedCollectionIds() {
 
     setupAllCollectionsListener(); // listen to db changes to update cache.
   } catch (err) {
-    throw 'error in getVerifiedCollectionIds';
+    throw new Error('error in getVerifiedCollectionIds');
   }
   isFetching = false;
   return verifiedCollectionIds;
