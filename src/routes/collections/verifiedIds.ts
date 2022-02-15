@@ -31,7 +31,7 @@ router.get('/', async (req: Request<any, any, any, { ids?: string }>, res: Respo
   const forIds = (ids ?? '').split(',') || [];
 
   try {
-    const collectionIds = await getVerifiedCollectionIds({ forIds });
+    const collectionIds = await getVerifiedCollectionIds();
 
     const idsArray = collectionIds.filter((id: string) => {
       return forIds.includes(id);
@@ -42,13 +42,13 @@ router.get('/', async (req: Request<any, any, any, { ids?: string }>, res: Respo
     };
 
     const resp = jsonString(dataObj);
-    // to enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
   } catch (err) {
+    error(`error in /collections/verifiedIds`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
