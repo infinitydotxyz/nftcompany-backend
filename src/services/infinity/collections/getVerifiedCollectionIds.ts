@@ -14,7 +14,6 @@ export async function getVerifiedCollectionIds() {
 
   try {
     if (verifiedCollectionIds && verifiedCollectionIds.length > 0) {
-      log('getVerifiedCollectionIds: returning from cache');
       return verifiedCollectionIds; // return cached data if any.
     }
     isFetching = true;
@@ -32,7 +31,7 @@ export async function getVerifiedCollectionIds() {
 
     setupAllCollectionsListener(); // listen to db changes to update cache.
   } catch (err) {
-    throw new Error('error in getVerifiedCollectionIds');
+    throw new Error(`error in getVerifiedCollectionIds ${err}`);
   }
   isFetching = false;
   return verifiedCollectionIds;

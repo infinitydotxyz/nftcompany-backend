@@ -75,7 +75,6 @@ export async function updateCollectionInfoFromOpensea(address: string): Promise<
 
   try {
     if (collectionInfo.slug) {
-      log(`updateCollectionInfoFromOpensea: ${collectionInfo.slug}`);
       const collection = await getCollectionFromOpensea(collectionInfo.slug);
       const chain =
         (collection?.payment_tokens ?? []).findIndex((item) => item.symbol === 'ETH') >= 0 ? 'Ethereum' : 'Polygon';
