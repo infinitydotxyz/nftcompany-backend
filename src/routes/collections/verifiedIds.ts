@@ -1,7 +1,6 @@
 import { StatusCode } from '@base/types/StatusCode';
 import { getVerifiedCollectionIds } from '@services/infinity/collections/getVerifiedCollectionIds';
 import { validateInputs } from '@utils/index';
-import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { Request, Router, Response } from 'express';
 
