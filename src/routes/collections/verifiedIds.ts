@@ -40,12 +40,7 @@ router.get('/', async (req: Request<any, any, any, { ids?: string }>, res: Respo
     const respObj = {
       collectionIds: idsArray
     };
-    const resp = jsonString(respObj);
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=600',
-      'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
-    });
-    res.send(resp);
+    res.send(respObj);
   } catch (err) {
     error(`error in /collections/verifiedIds`);
     error(err);
