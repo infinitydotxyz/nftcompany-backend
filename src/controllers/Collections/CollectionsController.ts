@@ -67,7 +67,7 @@ interface TwitterHistoricalData {
   followers: number;
 }
 
-async function updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
+export async function updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
   let collectionInfo = await getCollectionInfoFromOpensea(address);
   if (!collectionInfo) {
     return;
