@@ -11,6 +11,8 @@ $ npm install
 $ cp .env.example .env
 ```
 
+Finaly create a `creds` directory at the project root and add the required authentication files (ask a team member).
+
 ## Development
 
 Run `npm run dev` to start the development server.
