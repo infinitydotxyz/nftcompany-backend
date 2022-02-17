@@ -7,7 +7,7 @@ import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { Contract, ethers } from 'ethers';
 import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
-import openseaExchangeContract from '../../../abi/openseaExchangeContract.json';
+import openseaExchangeContract from '@base/abi/openseaExchangeContract.json';
 import { Provider } from '@ethersproject/abstract-provider';
 import { firestore } from '@base/container';
 
