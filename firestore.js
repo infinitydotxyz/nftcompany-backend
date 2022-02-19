@@ -43,8 +43,8 @@ const fstrCnstnts = {
   COLLECTIONS_COLL: 'collections'
 };
 
-const erc721Abi = require('./abi/erc721.json');
-const erc1155Abi = require('./abi/erc1155.json');
+const erc721Abi = require('./src/abi/erc721.json');
+const erc1155Abi = require('./src/abi/erc1155.json');
 
 // eslint-disable-next-line no-unused-vars
 async function importCsv(csvFileName) {
