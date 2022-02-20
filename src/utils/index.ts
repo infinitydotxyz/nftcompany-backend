@@ -64,6 +64,7 @@ export function trimLowerCase(str: string) {
 // example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
+  ids?: string; // comma separated string of ids.
   user?: string | undefined;
   sourceName?: string | undefined;
   chainId?: string | undefined;

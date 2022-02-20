@@ -7,6 +7,7 @@ import { getTraits } from './_id/traits';
 import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
+import verifiedIds from './verifiedIds';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
@@ -20,6 +21,7 @@ router.get('/:id/twitter', getHistoricalTwitterData);
 router.use('/stats', stats);
 router.use('/featured', featured);
 router.use('/verified', verified);
+router.use('/verifiedIds', verifiedIds);
 router.get('/:slug', getCollectionInfo);
 
 router.get('/', async (req, res) => {

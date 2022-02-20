@@ -2,9 +2,9 @@ name: Backend
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -12,34 +12,34 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x]
-    
+        node-version: [16.x]
+
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Cache
-      uses: actions/cache@v2.1.6
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}-
+      - name: Cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.cache-name }}-
 
-    - run: npm install
+      - run: npm install
 
-    # - run: npm run format
-    # - name: Commit changes
-    #   uses: stefanzweifel/git-auto-commit-action@v4
-    #   with:
-    #     commit_message: auto format
-    #     branch: ${{ github.head_ref }}
+      # - run: npm run format
+      # - name: Commit changes
+      #   uses: stefanzweifel/git-auto-commit-action@v4
+      #   with:
+      #     commit_message: auto format
+      #     branch: ${{ github.head_ref }}
 
-    - name: Lint
-      run: npm run lint
-    - name: Compile
-      run: npm run ci-pre-build && npx tsc
+      - name: Lint
+        run: npm run lint
+      - name: Compile
+        run: npm run ci-pre-build && npx tsc

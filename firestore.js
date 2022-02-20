@@ -39,11 +39,12 @@ const fstrCnstnts = {
   SALES_COLL: 'sales',
   TXNS_COLL: 'txns',
   MISSED_TXNS_COLL: 'missedTxns',
-  FEATURED_COLL: 'featuredCollections'
+  FEATURED_COLL: 'featuredCollections',
+  COLLECTIONS_COLL: 'collections'
 };
 
-const erc721Abi = require('./abi/erc721.json');
-const erc1155Abi = require('./abi/erc1155.json');
+const erc721Abi = require('./src/abi/erc721.json');
+const erc1155Abi = require('./src/abi/erc1155.json');
 
 // eslint-disable-next-line no-unused-vars
 async function importCsv(csvFileName) {
@@ -229,6 +230,18 @@ async function updateBlueCheck(records) {
         }
       }
     });
+  });
+}
+
+async function updateBlueCheckForCollections() {
+  const snapshot = await db.collection(fstrCnstnts.COLLECTIONS_COLL).get();
+  snapshot.forEach((doc) => {
+    db.collection(fstrCnstnts.COLLECTIONS_COLL)
+      .doc(doc.id)
+      .set({ hasBlueCheck: true }, { merge: true })
+      .catch((err) => {
+        console.log(err);
+      });
   });
 }
 
@@ -1248,6 +1261,8 @@ async function getTxnStatsHelper(limit) {
 // calcTxns(process.argv[2]).catch((e) => console.error(e));
 
 // calcListings(process.argv[2]).catch((e) => console.error(e));
+
+updateBlueCheckForCollections();
 
 // =================================================== HELPERS ===========================================================
 
