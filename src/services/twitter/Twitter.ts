@@ -178,6 +178,28 @@ export class Twitter {
     throw new Error(`Failed to get twitter account for ${username}`);
   }
 
+  async getUserTweets(username: string) {
+    const response: AxiosResponse<any> = await this.client.get(Endpoint.SearchTweets, {
+      params: {
+        query: '-is:reply from:0N1Force OR from:artblocks_io',
+        expansions: 'author_id,entities.mentions.username',
+        'tweet.fields': 'public_metrics,created_at',
+        'user.fields': 'public_metrics'
+      }
+    });
+    const jsonBody = response.data;
+    if ('data' in jsonBody && jsonBody.data.length > 0) {
+      const tweets = jsonBody.data ?? [];
+
+      if (tweets && tweets.length > 0) {
+        // insert to: /feed/data/events
+      }
+      console.log('tweets', tweets);
+      return tweets;
+    }
+    return [];
+  }
+
   private getTweetLink(username: string, tweetId: string) {
     return `https://twitter.com/${username}/status/${tweetId}`;
   }

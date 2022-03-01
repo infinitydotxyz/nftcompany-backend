@@ -54,6 +54,7 @@ export const fstrCnstnts = {
   AUTH_COLL: 'auth',
   EDITORS_DOC: 'editors',
   CREATOR_DOC: 'creator',
+  FEED_COLL: 'feed',
   ADMINS_DOC: 'admins'
 };
 

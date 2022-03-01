@@ -10,6 +10,7 @@ import { requestErrorHandler } from '@base/middleware/errorHandler';
 import { requestLogger } from '@base/middleware/logger';
 import { registerDocs } from './docs';
 import { ORIGIN } from '@base/constants';
+import { getFeedTweets } from '@services/infinity/feed/feed';
 
 const app = express();
 
@@ -41,4 +42,6 @@ registerErrorHandler();
 const PORT = process.env.PORT ?? 9090;
 app.listen(PORT, () => {
   log(`Server listening on port ${PORT}...`);
+
+  getFeedTweets();
 });
