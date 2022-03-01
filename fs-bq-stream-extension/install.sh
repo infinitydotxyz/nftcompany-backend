@@ -30,15 +30,3 @@ do
         --project=$PROJECT_ID \
         --force
 done
-
-# echo "collection_nfts" | \
-#   firebase ext:install firebase/firestore-bigquery-export \
-#   --params=$DIR/users.params.env \
-#   --project=$PROJECT_ID \
-#   --force
-
-# echo "feed" | \
-#   firebase ext:install firebase/firestore-bigquery-export \
-#   --params=$DIR/events.params.env \
-#   --project=$PROJECT_ID \
-#   --force

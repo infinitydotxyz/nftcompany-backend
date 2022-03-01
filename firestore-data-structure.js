@@ -17,10 +17,10 @@
 3. users
     |__1:0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <chainId:userAddress in lowercase>
        |__{data}
-       |__collection-follows
+       |__collectionFollows
           |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
              |__{data}
-       |__user-follows
+       |__userFollows
           |__1:0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <chainId:userAddress in lowercase>
              |__{data}
 
@@ -31,10 +31,10 @@
 5. listings
     |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
        |__{data}
-       |__valid-active
+       |__validActive
           |__AAbghuuiIU <firestore uuid>
              |__{data}
-       |__valid-inactive
+       |__validInactive
           |__AAbghuuiIU <firestore uuid>
              |__{data}
        |__invalid
@@ -44,10 +44,10 @@
 6. offers
     |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
        |__{data}
-       |__valid-active
+       |__validActive
           |__AAbghuuiIU <firestore uuid>
              |__{data}
-       |__valid-inactive
+       |__validInactive
           |__AAbghuuiIU <firestore uuid>
              |__{data}
        |__invalid
