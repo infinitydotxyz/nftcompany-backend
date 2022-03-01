@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-unused-vars */
 // this doc outlines the high level data structure of firestore
 /*
 

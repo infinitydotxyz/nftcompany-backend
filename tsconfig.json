@@ -23,6 +23,5 @@
       "@base/*": ["./*"]
     }
   },
-  "include": ["src/", "src/**/*.json", "./**.js"],
-  "exclude": ["firestore-data-structure.js"]
+  "include": ["src/", "src/**/*.json", "./**.js"]
 }
