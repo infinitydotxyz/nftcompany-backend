@@ -28,7 +28,6 @@
     |__1:AAbghuuiIU <chainId:firestore uuid>
        |__{data}
 
-
 5. listings
     |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
        |__{data}
