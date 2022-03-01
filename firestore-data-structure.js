@@ -74,6 +74,10 @@
 8. nft-stats
     |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
        |__{data}
+
+9. assets
+    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+       |__{data}
     
 
 */
