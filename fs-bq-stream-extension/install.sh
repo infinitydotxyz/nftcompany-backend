@@ -19,14 +19,11 @@ fi
 
 PROJECT_ID=$1
 DIR="$(cd "$(dirname "$0")" && pwd)"
-echo $PROJECT_ID
 
 for file in $DIR/*.params.env
 do
     [ -f "$file" ] || break # exit if there are no files
-    echo $file
     extensionId=$(basename ${file} .params.env )
-    echo $extensionId
     echo $extensionId | \
         firebase ext:install firebase/firestore-bigquery-export \
         --params=$file \
