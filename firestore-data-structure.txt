@@ -56,13 +56,13 @@
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress>
        |__{data}
        |__hourly
-          |__hh-dd-mm-yyyy
+          |__yyyy-mm-dd-hh
              |__{data}
        |__daily
-          |__dd-mm-yyyy
+          |__yyyy-mm-dd
              |__{data}
        |__monthly
-          |__mm-yyyy
+          |__yyyy-mm
              |__{data}
        |__yearly
           |__yyyy
