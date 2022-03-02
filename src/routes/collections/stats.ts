@@ -75,7 +75,7 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery;
+      let statsQuery: FirebaseFirestore.DocumentData;
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
@@ -130,13 +130,19 @@ router.get(
       }
 
       if (startAfter) {
-        statsQuery = statsQuery.startAfter(startAfter);
+        const doc = await firestore.db.doc(startAfter).get();
+
+        statsQuery = statsQuery.startAfter(doc);
       }
 
       const results = await statsQuery.limit(limit).get();
 
       const data = (results.docs ?? []).map((item) => {
-        return item.data();
+        // add startAfter which is the path
+        const result = item.data();
+        result.startAfter = item.ref.path;
+
+        return result;
       });
 
       // const collectionsToUpdate = data.filter((collection) => Date.now() > collection.timestamp + ONE_HOUR);
