@@ -27,7 +27,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
     });
     res.send(respStr);
   } catch (err) {
-    error('Erorr fetching user rewards for', user, err);
+    error('Error fetching user rewards for', user, err);
     res.sendStatus(StatusCode.InternalServerError);
   }
 };
