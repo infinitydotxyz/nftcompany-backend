@@ -54,7 +54,10 @@ export const fstrCnstnts = {
   AUTH_COLL: 'auth',
   EDITORS_DOC: 'editors',
   CREATOR_DOC: 'creator',
-  ADMINS_DOC: 'admins'
+  ADMINS_DOC: 'admins',
+
+  COLLECTION_FOLLOWS_COLL: 'collectionFollows',
+  USER_FOLLOWS_COLL: 'userFollows'
 };
 
 export const auth = {
