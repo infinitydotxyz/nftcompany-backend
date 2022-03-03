@@ -29,9 +29,23 @@ export default class Firestore {
     return this.db.collection(collectionPath);
   }
 
+  // NOTE: don't use this for new code; use getAssetDocIdNew instead
   // eslint-disable-next-line no-unused-vars
   getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
     const data = tokenAddress.trim() + tokenId.trim() + basePrice;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  }
+
+  getDocIdNew({
+    collectionAddress,
+    tokenId,
+    chainId
+  }: {
+    collectionAddress: string;
+    tokenId: string;
+    chainId: string;
+  }) {
+    const data = chainId.trim() + collectionAddress.trim().toLowerCase() + tokenId.trim();
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
@@ -50,8 +64,22 @@ export default class Firestore {
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
+  // NOTE: don't use this for new code; use getAssetDocIdNew instead
   getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
     const data = tokenAddress.trim() + tokenId.trim() + chainId;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  }
+
+  getAssetDocIdNew({
+    chainId,
+    tokenId,
+    collectionAddress
+  }: {
+    chainId: string;
+    tokenId: string;
+    collectionAddress: string;
+  }) {
+    const data = chainId.trim() + collectionAddress.trim().toLowerCase() + tokenId.trim();
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 

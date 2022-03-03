@@ -1,19 +1,19 @@
-import { WyvernAssetData } from './wyvern/WyvernOrder';
 import { Trait } from './Trait';
 
 export interface Asset {
-  title: string;
-  traits: Trait[];
-  searchTitle: string;
-  traitValues: string[];
-  numTraits: number;
-  rawData: WyvernAssetData;
-  collectionName: string;
-  id: string;
-  description: string;
-  image: string;
-  searchCollectionName: string;
-  address: string;
-  imagePreview: string;
-  traitTypes: string[];
+  owner: string;
+  collectionAddress: string;
+  tokenId: string;
+  chainId: string;
+  collectionName?: string;
+  collectionNameSlug?: string;
+  title?: string;
+  traits?: Trait[];
+  titleSlug?: string;
+  traitValues?: string[];
+  numTraits?: number;
+  description?: string;
+  image?: string;
+  imagePreview?: string;
+  traitTypes?: string[];
 }

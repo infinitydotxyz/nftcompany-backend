@@ -1,6 +1,8 @@
 // this doc outlines the high level data structure of firestore
 /*
 
+// NOTE: All {data} items must have chainId:string except collection-stats and nft-stats subcollections
+
 1. collections
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
        |__{data}
