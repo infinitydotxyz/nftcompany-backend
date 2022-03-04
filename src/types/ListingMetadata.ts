@@ -1,4 +1,4 @@
-import { Asset } from './Asset';
+import { OpenSeaAsset } from './OpenSeaAsset';
 
 export interface ListingMetadata {
   hasBonusReward: boolean;
@@ -6,7 +6,7 @@ export interface ListingMetadata {
   createdAt: number;
   chainId: string;
   chain: string;
-  asset: Asset;
+  asset: OpenSeaAsset;
   hasBlueCheck: boolean;
   basePriceInEth?: number;
   listingType?: string;

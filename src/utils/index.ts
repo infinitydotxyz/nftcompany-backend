@@ -99,3 +99,10 @@ export function getPaymentTokenAddress(listingType?: string, chainId?: string): 
     return POLYGON_WETH_ADDRESS;
   }
 }
+
+export function hexToDecimalTokenId(tokenId: string): string {
+  if (tokenId?.startsWith('0x')) {
+    tokenId = String(parseInt(tokenId, 16));
+  }
+  return tokenId;
+}

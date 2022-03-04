@@ -1,6 +1,8 @@
 // this doc outlines the high level data structure of firestore
 /*
 
+// NOTE: All {data} items must have chainId:string except collection-stats and nft-stats subcollections
+
 1. collections
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
        |__{data}
@@ -27,7 +29,7 @@
        |__{data}
 
 5. listings
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -40,7 +42,7 @@
              |__{data}
 
 6. offers
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -72,11 +74,11 @@
              |__{data}
 
 8. nft-stats
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
 
 9. assets
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
     
 */

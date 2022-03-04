@@ -9,10 +9,9 @@ export async function getUserAssetsFromOpenSea(
   offset: number,
   limit: number,
   collectionIds?: string
-) {
+): Promise<WyvernAssetData[]> {
   log('Fetching assets from opensea');
   const url = OPENSEA_API + 'assets/';
-
   const options = {
     params: {
       limit,
@@ -39,4 +38,5 @@ export async function getUserAssetsFromOpenSea(
     error('Error occured while fetching assets from opensea');
     error(err);
   }
+  return [];
 }

@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { Asset } from '@base/types/Asset';
+import { OpenSeaAsset } from '@base/types/OpenSeaAsset';
 import { InfinityOrderData } from '@base/types/InfinityOrderData';
 import { Listing, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
 import { ListingMetadata } from '@base/types/ListingMetadata';
@@ -170,7 +170,7 @@ export function rawSellOrderToBaseOrder(order: WyvernSellOrder): Order | undefin
   } catch {}
 }
 
-export function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
+export function getInfinityOrderData(asset: OpenSeaAsset, hasBlueCheck: boolean) {
   const chainId = '1';
   const infinityOrder: InfinityOrderData = {
     source: 1, // opensea

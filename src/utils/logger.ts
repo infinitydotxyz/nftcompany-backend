@@ -1,4 +1,4 @@
-import { ERROR_LOG, INFO_LOG, TRACE_LOG } from '@base/constants';
+import { ERROR_LOG, INFO_LOG, TRACE_LOG, WARN_LOG } from '@base/constants';
 
 export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]): void {
   if (ERROR_LOG) {
@@ -35,5 +35,12 @@ export function log(obj: any, ...objs: any[]) {
   if (INFO_LOG) {
     const msg = objs.join(' ');
     console.log(`[INFO]: ${obj} ${msg}`);
+  }
+}
+
+export function warn(obj: any, ...objs: any[]) {
+  if (WARN_LOG) {
+    const msg = objs.join(' ');
+    console.log(`[WARN]: ${obj} ${msg}`);
   }
 }

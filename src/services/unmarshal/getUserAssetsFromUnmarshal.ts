@@ -12,7 +12,7 @@ export async function getUserAssetsFromUnmarshal(
   page?: number,
   pageSize?: number,
   contract?: string
-) {
+): Promise<Partial<UnmarshalUserAssetResponse>> {
   log(
     'Fetching assets from unmarshal for user',
     userAddress,
@@ -35,11 +35,12 @@ export async function getUserAssetsFromUnmarshal(
         pageSize
       }
     });
-    return data.nft_assets;
+    return data;
   } catch (err) {
     error('Error occured while fetching assets from unmarshal');
     error(err);
   }
+  return {};
 }
 
 export function getUnmarshalChainName(chainId: string): string {

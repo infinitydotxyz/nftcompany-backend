@@ -22,6 +22,7 @@ export const ICY_TOOLS_API_KEY = getEnvironmentVariable('icyToolsApiKey') as str
 export const TRACE_LOG = getEnvironmentVariable('TRACE_LOG', false) === 'true';
 export const INFO_LOG = getEnvironmentVariable('INFO_LOG', false) === 'true';
 export const ERROR_LOG = getEnvironmentVariable('ERROR_LOG', false) === 'true';
+export const WARN_LOG = getEnvironmentVariable('WARN_LOG', false) === 'true';
 
 export const fstrCnstnts = {
   ROOT_COLL: TEST_ROOT,
