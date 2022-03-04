@@ -14,6 +14,8 @@ import { postSubscribeUserEmail } from './_user/subscribeEmail';
 import { postUsPerson } from './_user/usperson';
 import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
+import { getCollectionFollows, setCollectionFollows } from './_user/collectionFollows';
+import { getUserFollows, setUserFollows } from './_user/userFollows';
 
 const router = Router();
 
@@ -27,14 +29,17 @@ router.get('/:user/offersmade', getUserOffersMade);
 router.get('/:user/offersreceived', getUserOffersReceived);
 router.get('/:user/reward', getUserReward);
 router.get('/:user/vote', getUserVotes);
+router.get('/:user/collectionFollows', getCollectionFollows);
+router.get('/:user/userFollows', getUserFollows);
 
 router.post('/:user/setEmail', lowRateLimit, postSetUserEmail);
 router.post('/:user/subscribeEmail', lowRateLimit, postSubscribeUserEmail);
 router.post('/:user/usperson', lowRateLimit, postUsPerson);
 router.post('/:user/vote', lowRateLimit, postUserVote);
-
 router.post('/:user/wyvern/v1/txns/check', postUserRateLimit, postTxnCheck);
 router.post('/:user/wyvern/v1/txns', postUserRateLimit, postUserTxn);
 router.post('/:user/wyvern/v1/orders', postUserRateLimit, postUserOrders);
+router.post('/:user/collectionFollows', postUserRateLimit, setCollectionFollows);
+router.post('/:user/userFollows', postUserRateLimit, setUserFollows);
 
 export default router;
