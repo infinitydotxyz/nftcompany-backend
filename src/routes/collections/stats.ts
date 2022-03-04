@@ -79,7 +79,6 @@ router.get(
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
-          // eslint-disable-next-line no-case-declarations
           if (interval === Interval.Total) {
             statsQuery = firestore.db
               .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
@@ -90,14 +89,12 @@ router.get(
               .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
-
         case OrderBy.Volume:
           statsQuery = firestore.db
             .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
             .orderBy(`${interval}.volume`, orderDirection);
 
           break;
-
         case OrderBy.Discord:
           if (interval === Interval.Total) {
             statsQuery = firestore.db
@@ -108,9 +105,7 @@ router.get(
               .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
               .orderBy(`${interval}.discordMembers`, orderDirection);
           }
-
           break;
-
         case OrderBy.Twitter:
           if (interval === Interval.Total) {
             statsQuery = firestore.db
@@ -121,9 +116,7 @@ router.get(
               .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
               .orderBy(`${interval}.twitterFollowers`, orderDirection);
           }
-
           break;
-
         default:
           res.sendStatus(StatusCode.BadRequest);
           return;
