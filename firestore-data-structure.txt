@@ -29,7 +29,7 @@
        |__{data}
 
 5. listings
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -42,7 +42,7 @@
              |__{data}
 
 6. offers
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -74,11 +74,11 @@
              |__{data}
 
 8. nft-stats
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
 
 9. assets
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
     
 */

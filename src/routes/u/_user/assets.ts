@@ -9,7 +9,7 @@ import { getUserAssetsFromUnmarshal } from '@services/unmarshal/getUserAssetsFro
 import { getUserAssetsFromOpenSea } from '@services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@services/alchemy/types/AlchemyUserAsset';
-import { validateInputs } from '@utils/index';
+import { validateInputs, hexToDecimalTokenId } from '@utils/index';
 import { AssetResponse } from '@base/types/AssetResponse';
 import { Asset } from '@base/types/Asset';
 import { UnmarshalUserAssetResponse } from '@services/unmarshal/types/UnmarshalUserAsset';
@@ -126,10 +126,7 @@ export async function getAssets(
 function storeAlchemyAssetsInFirestore(user: string, chainId: string, data: AlchemyUserAssetResponse) {
   const assets: Asset[] = [];
   for (const datum of data?.ownedNfts) {
-    let tokenId = datum.id.tokenId;
-    if (tokenId?.startsWith('0x')) {
-      tokenId = String(parseInt(tokenId, 16));
-    }
+    const tokenId = hexToDecimalTokenId(datum.id.tokenId);
     const asset: Asset = {
       owner: user,
       collectionAddress: datum.contract.address,
@@ -144,10 +141,7 @@ function storeAlchemyAssetsInFirestore(user: string, chainId: string, data: Alch
 function storeUnmarshalAssetsInFirestore(user: string, chainId: string, data: UnmarshalUserAssetResponse) {
   const assets: Asset[] = [];
   for (const datum of data?.nft_assets) {
-    let tokenId = datum.token_id;
-    if (tokenId?.startsWith('0x')) {
-      tokenId = String(parseInt(tokenId, 16));
-    }
+    const tokenId = hexToDecimalTokenId(datum.token_id);
     const asset: Asset = {
       owner: user,
       collectionAddress: datum.asset_contract,
@@ -162,10 +156,7 @@ function storeUnmarshalAssetsInFirestore(user: string, chainId: string, data: Un
 function storeOpenSeaAssetsInFirestore(user: string, chainId: string, data: WyvernAssetData[]) {
   const assets: Asset[] = [];
   for (const datum of data) {
-    let tokenId = datum.token_id;
-    if (tokenId?.startsWith('0x')) {
-      tokenId = String(parseInt(tokenId, 16));
-    }
+    const tokenId = hexToDecimalTokenId(datum.token_id);
     const asset: Asset = {
       owner: user,
       collectionAddress: datum.asset_contract.address,
@@ -180,10 +171,7 @@ function storeOpenSeaAssetsInFirestore(user: string, chainId: string, data: Wyve
 function storeCovalentAssetsInFirestore(user: string, chainId: string, data: CovalentWalletBalanceItem[]) {
   const assets: Asset[] = [];
   for (const datum of data) {
-    let tokenId = datum.nft_data[0].token_id;
-    if (tokenId?.startsWith('0x')) {
-      tokenId = String(parseInt(tokenId, 16));
-    }
+    const tokenId = hexToDecimalTokenId(datum.nft_data[0].token_id);
     const asset: Asset = {
       owner: user,
       collectionAddress: datum.contract_address,

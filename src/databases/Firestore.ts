@@ -5,7 +5,8 @@ import crypto from 'crypto';
 import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from '../constants';
 import { Readable } from 'stream';
-import { error, log } from '@utils/logger';
+import { error, log, warn } from '@utils/logger';
+import { trimLowerCase } from '@utils/index';
 
 @singleton()
 export default class Firestore {
@@ -29,9 +30,10 @@ export default class Firestore {
     return this.db.collection(collectionPath);
   }
 
-  // NOTE: don't use this for new code; use getAssetDocIdNew instead
+  // NOTE: don't use this for new code; use getDocIdNew instead
   // eslint-disable-next-line no-unused-vars
   getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
+    warn('Do not use this docId');
     const data = tokenAddress.trim() + tokenId.trim() + basePrice;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
@@ -45,7 +47,7 @@ export default class Firestore {
     tokenId: string;
     chainId: string;
   }) {
-    const data = chainId.trim() + collectionAddress.trim().toLowerCase() + tokenId.trim();
+    const data = chainId.trim() + '::' + trimLowerCase(collectionAddress) + '::' + tokenId.trim();
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
@@ -66,6 +68,7 @@ export default class Firestore {
 
   // NOTE: don't use this for new code; use getAssetDocIdNew instead
   getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
+    warn('Do not use this assetDocId');
     const data = tokenAddress.trim() + tokenId.trim() + chainId;
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
@@ -79,7 +82,7 @@ export default class Firestore {
     tokenId: string;
     collectionAddress: string;
   }) {
-    const data = chainId.trim() + collectionAddress.trim().toLowerCase() + tokenId.trim();
+    const data = chainId.trim() + '::' + trimLowerCase(collectionAddress) + '::' + tokenId.trim();
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
