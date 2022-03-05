@@ -11,7 +11,7 @@ import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlc
 import { AlchemyUserAssetResponse } from '@services/alchemy/types/AlchemyUserAsset';
 import { validateInputs, hexToDecimalTokenId } from '@utils/index';
 import { AssetResponse } from '@base/types/AssetResponse';
-import { Asset } from '@base/types/Asset';
+import { Asset } from 'infinity-types/types/Asset';
 import { UnmarshalUserAssetResponse } from '@services/unmarshal/types/UnmarshalUserAsset';
 import { CovalentWalletBalanceItem } from '@services/covalent/types/CovalentNFTMetadata';
 import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
