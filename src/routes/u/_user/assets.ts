@@ -12,7 +12,7 @@ import { AlchemyUserAssetResponse } from 'infinity-types/types/services/alchemy/
 import { validateInputs, hexToDecimalTokenId } from '@utils/index';
 import { AssetResponse } from 'infinity-types/types/AssetResponse';
 import { Asset } from 'infinity-types/types/Asset';
-import { UnmarshalUserAssetResponse } from 'infinity-types/types/services/unmarshal/UnmarshalUserAsset';
+import { UnmarshalUserAssetResponse } from 'infinity-types/types/services/unmarshal/Unmarshal';
 import { CovalentWalletBalanceItem } from 'infinity-types/types/services/covalent/CovalentNFTMetadata';
 import { WyvernAssetData } from 'infinity-types/types/wyvern/WyvernOrder';
 import FirestoreBatchHandler from '@base/databases/FirestoreBatchHandler';
@@ -114,7 +114,7 @@ export async function getAssets(
       resp.assets = await getUserAssetsFromCovalent(address);
       resp.count = resp.assets?.length;
       // store in firestore
-      storeCovalentAssetsInFirestore(address, chainId, resp.assets);
+      storeCovalentAssetsInFirestore(address, chainId, resp.assets as CovalentWalletBalanceItem[]);
       break;
     default:
       log('Invalid data source for fetching nft data of wallet');
