@@ -71,6 +71,7 @@
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.2.0",
+    "infinity-types": "git@github.com:infinity-xyz/typescript-types.git",
     "nodemon": "2.0.15",
     "rimraf": "^3.0.2",
     "typescript": "^4.5.4"
