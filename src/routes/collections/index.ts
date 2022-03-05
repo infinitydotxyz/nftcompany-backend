@@ -1,4 +1,4 @@
-import { StatusCode } from '@base/types/StatusCode';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { getUniqueItemsByProperties } from '@utils/index';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';

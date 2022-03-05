@@ -1,5 +1,5 @@
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
+import { OrderDirection } from 'infinity-types/types/Queries';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
@@ -9,7 +9,7 @@ import {
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
 } from '@base/constants';
-import { ListingType } from '@base/types/NftInterface';
+import { ListingType } from 'infinity-types/types/NftInterface';
 import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
 import { validateInputs, trimLowerCase } from '@utils/index';
 

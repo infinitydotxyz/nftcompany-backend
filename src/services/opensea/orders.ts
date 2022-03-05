@@ -1,8 +1,8 @@
-import { Listing } from '@base/types/Listing';
-import { ListingResponse } from '@base/types/ListingResponse';
-import { OrderSide } from '@base/types/NftInterface';
-import { OrderDirection } from '@base/types/Queries';
-import { WyvernAssetData, WyvernSellOrder } from '@base/types/wyvern/WyvernOrder';
+import { Listing } from 'infinity-types/types/Listing';
+import { ListingResponse } from 'infinity-types/types/ListingResponse';
+import { OrderSide } from 'infinity-types/types/NftInterface';
+import { OrderDirection } from 'infinity-types/types/Queries';
+import { WyvernAssetData, WyvernSellOrder } from 'infinity-types/types/wyvern/WyvernOrder';
 import { deepCopy } from '@utils/index';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
@@ -163,7 +163,10 @@ export async function getOpenseaOrders({
 
     const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
 
-    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings, true);
+    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(
+      openseaListings.listings,
+      true
+    );
 
     const aggregateListingAsOrders = (listings: Listing[]) => {
       return listings?.reduce?.(
