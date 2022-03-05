@@ -1,14 +1,14 @@
 import { firestore } from '@base/container';
-import { OpenSeaAsset } from '@base/types/OpenSeaAsset';
-import { InfinityOrderData } from '@base/types/InfinityOrderData';
-import { Listing, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
-import { ListingMetadata } from '@base/types/ListingMetadata';
-import { ListingResponse } from '@base/types/ListingResponse';
+import { OpenSeaAsset } from 'infinity-types/types/OpenSeaAsset';
+import { InfinityOrderData } from 'infinity-types/types/InfinityOrderData';
+import { Listing, ListingWithOrder, ListingWithoutOrder } from 'infinity-types/types/Listing';
+import { ListingMetadata } from 'infinity-types/types/ListingMetadata';
+import { ListingResponse } from 'infinity-types/types/ListingResponse';
 
-import { ListingType } from '@base/types/NftInterface';
-import { Order } from '@base/types/Order';
-import { Trait } from '@base/types/Trait';
-import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/wyvern/WyvernOrder';
+import { ListingType } from 'infinity-types/types/NftInterface';
+import { Order } from 'infinity-types/types/Order';
+import { Trait } from 'infinity-types/types/Trait';
+import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from 'infinity-types/types/wyvern/WyvernOrder';
 import { fstrCnstnts, OPENSEA_API_KEY } from '@base/constants';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from '@services/infinity/utils';

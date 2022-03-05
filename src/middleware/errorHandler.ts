@@ -1,4 +1,4 @@
-import { StatusCode } from '@base/types/StatusCode';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { NextFunction, Request, Response } from 'express';
 import { error, log } from '../utils/logger';
 import { getRequestLogPrefix } from './logger';

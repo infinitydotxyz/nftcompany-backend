@@ -1,4 +1,4 @@
-import { CollectionInfo, Links } from '@base/types/NftInterface';
+import { CollectionInfo, Links } from 'infinity-types/types/NftInterface';
 import { getSearchFriendlyString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';

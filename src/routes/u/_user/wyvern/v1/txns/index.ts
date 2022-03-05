@@ -1,6 +1,6 @@
-import { OrderSide } from '@base/types/NftInterface';
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
+import { OrderSide } from 'infinity-types/types/NftInterface';
+import { OrderDirection } from 'infinity-types/types/Queries';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from '@services/infinity/orders/getUserTxn';
 import { waitForMissedTxn } from '@services/infinity/orders/waitForMissedTxn';
 import { waitForTxn } from '@services/infinity/orders/waitForTxn';

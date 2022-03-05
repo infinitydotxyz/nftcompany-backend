@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import 'reflect-metadata';
 import './globals';
-import { OrderDirection } from './types/Queries';
+import { OrderDirection } from 'infinity-types/types/Queries';
 import { IcyToolsApi } from '@services/icytools';
-import { ContractsOrderBy } from '@services/icytools/types';
+import { ContractsOrderBy } from 'infinity-types/types/services/icytools/types';
 import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
 
 /**

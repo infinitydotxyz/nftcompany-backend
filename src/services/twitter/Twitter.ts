@@ -1,10 +1,10 @@
 import { TWITTER_BEARER_TOKEN } from '@base/constants';
-import { Concrete } from '@base/types/UtilityTypes';
+import { Concrete } from 'infinity-types/types/UtilityTypes';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { SearchResponse } from './types/SearchResponse';
-import { Tweet } from './types/Tweet';
-import { User } from './types/User';
-import { TwitterUserResponse } from './types/UserResponse';
+import { SearchResponse } from 'infinity-types/types/services/twitter/SearchResponse';
+import { InfinityTweet, InfinityTwitterAccount, Tweet } from 'infinity-types/types/services/twitter/Tweet';
+import { User } from 'infinity-types/types/services/twitter/User';
+import { TwitterUserResponse } from 'infinity-types/types/services/twitter/UserResponse';
 
 /**
  * access level is Elevated
@@ -36,24 +36,6 @@ type CollectionTweets = Concrete<
 type CollectionTweetsUser = Concrete<Pick<User, 'id' | 'name' | 'username' | 'public_metrics'>>;
 
 type CollectionTweetsIncludes = Record<'users', CollectionTweetsUser[]>;
-
-export interface InfinityTwitterAccount {
-  id: string;
-  name: string;
-  username: string;
-  followersCount: number;
-  followingCount: number;
-  tweetCount?: number;
-  listedCount?: number;
-}
-
-export interface InfinityTweet {
-  author: InfinityTwitterAccount;
-  createdAt: number;
-  tweetId: string;
-  text: string;
-  url: string;
-}
 
 export class Twitter {
   private readonly client: AxiosInstance;

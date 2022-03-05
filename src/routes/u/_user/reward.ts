@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { StatusCode } from '@base/types/StatusCode';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { jsonString } from '@utils/formatters';
 import { error, log } from '@utils/logger';
 import { Request, Response } from 'express';

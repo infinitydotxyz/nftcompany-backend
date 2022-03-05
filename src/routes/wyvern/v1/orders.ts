@@ -1,5 +1,5 @@
-import { OrderSide } from '@base/types/NftInterface';
-import { StatusCode } from '@base/types/StatusCode';
+import { OrderSide } from 'infinity-types/types/NftInterface';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { getUserOrdersFromDocId } from '@services/infinity/orders/getUserOrderFromDocId';
 import { error, log } from '@utils/logger';
 import { Router } from 'express';
@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 const router = Router();
 
 /**
- * @typedef { import("../../../types/Order").Order } Order
+ * @typedef { import("infinity-types/types/Order").Order } Order
  */
 
 /**

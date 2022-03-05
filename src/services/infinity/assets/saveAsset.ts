@@ -1,6 +1,6 @@
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@base/constants';
-import { CovalentWalletBalanceItem } from '@services/covalent/types/CovalentNFTMetadata';
+import { CovalentWalletBalanceItem } from 'infinity-types/types/services/covalent/CovalentNFTMetadata';
 import { covalentAssetDataToListing } from '@services/covalent/utils';
 import { error } from '@utils/logger';
 import { getAssetAsListing } from '../utils';
