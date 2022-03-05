@@ -1,9 +1,10 @@
-import { InfinityTwitterAccount, Twitter } from '@services/twitter/Twitter';
+import { Twitter } from '@services/twitter/Twitter';
+import { InfinityTwitterAccount } from 'infinity-types/types/services/twitter/Tweet';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
 import { jsonString } from '@utils/formatters';
-import { StatusCode } from '@base/types/StatusCode';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { firestore } from '@base/container';
 import {
   fstrCnstnts,
@@ -22,14 +23,14 @@ import {
   CollectionData,
   EditableCollectionData,
   UpdateCollectionDataRequest
-} from '@base/types/NftInterface';
+} from 'infinity-types/types/NftInterface';
 import { getWeekNumber } from '@utils/index';
-import { Keys, Optional } from '@base/types/UtilityTypes';
+import { Keys, Optional } from 'infinity-types/types/UtilityTypes';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
 import { getCollectionInfoFromOpensea, getCollectionLinks } from '@services/opensea/collection/getContract';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
-import { WithTimestamp } from '@base/types/Historical';
+import { WithTimestamp } from 'infinity-types/types/Historical';
 import { CollectionAuthType } from '@base/middleware/auth';
 import { UploadedFile } from 'express-fileupload';
 import { getCollectionFromOpensea } from '@services/opensea/collection/getCollection';

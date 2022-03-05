@@ -1,5 +1,5 @@
-import { UsPersonAnswer } from '@base/types/Rewards';
-import { StatusCode } from '@base/types/StatusCode';
+import { UsPersonAnswer } from 'infinity-types/types/Rewards';
+import { StatusCode } from 'infinity-types/types/StatusCode';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';

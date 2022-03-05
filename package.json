@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "npm install && rimraf dist && tsc",
+    "build": "npm run update-types && npm install && rimraf dist && tsc",
     "lint": "eslint .",
     "lintfix": "eslint --fix .",
     "script": "npm run build && cross-env TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
     "start": "cross-env TS_NODE_BASEURL=./dist/src node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/main.js",
-    "dev": "nest start --watch --exec 'node -r tsconfig-paths/register -r ts-node/register -r dotenv/config ./src/main.ts'",
-    "ci-pre-build": "mkdir creds && cp ./ci/creds-blank/* ./creds"
+    "dev": "npm run update-types && nest start --watch --exec 'node -r tsconfig-paths/register -r ts-node/register -r dotenv/config ./src/main.ts'",
+    "ci-pre-build": "mkdir creds && cp ./ci/creds-blank/* ./creds",
+    "update-types": "npm update infinity-types"
   },
   "repository": {
     "type": "git",
