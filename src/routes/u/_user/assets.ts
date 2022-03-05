@@ -114,7 +114,7 @@ export async function getAssets(
       resp.assets = await getUserAssetsFromCovalent(address);
       resp.count = resp.assets?.length;
       // store in firestore
-      storeCovalentAssetsInFirestore(address, chainId, resp.assets as CovalentWalletBalanceItem[]);
+      storeCovalentAssetsInFirestore(address, chainId, resp.assets );
       break;
     default:
       log('Invalid data source for fetching nft data of wallet');
