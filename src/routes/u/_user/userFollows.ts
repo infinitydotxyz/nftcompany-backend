@@ -5,9 +5,21 @@ import { Request, Response } from 'express';
 import { StatusCode } from '@base/types/StatusCode';
 import { jsonString } from '@utils/formatters';
 import { fstrCnstnts } from '@base/constants';
+import { trimLowerCase } from '@utils/index';
 
-export const getUserFollows = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+export const getUserFollows = async (
+  req: Request<
+    { user: string },
+    any,
+    any,
+    {
+      limit: string;
+    }
+  >,
+  res: Response
+) => {
+  const user = trimLowerCase(req.params.user);
+  const limit = +req.query.limit ?? 50;
 
   if (!user) {
     error('Invalid input');
@@ -17,7 +29,7 @@ export const getUserFollows = async (req: Request<{ user: string }>, res: Respon
 
   const follows = getUserInfoRef(user).collection(fstrCnstnts.USER_FOLLOWS_COLL);
 
-  const followDocs = await follows.limit(50).get();
+  const followDocs = await follows.limit(limit).get();
 
   const result: FirebaseFirestore.DocumentData[] = [];
   for (const doc of followDocs.docs) {
