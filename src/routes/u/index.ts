@@ -14,8 +14,8 @@ import { postSubscribeUserEmail } from './_user/subscribeEmail';
 import { postUsPerson } from './_user/usperson';
 import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
-import { getCollectionFollows, setCollectionFollows } from './_user/collectionFollows';
-import { getUserFollows, setUserFollows } from './_user/userFollows';
+import { getCollectionFollows, setCollectionFollow } from './_user/collectionFollows';
+import { getUserFollows, setUserFollow } from './_user/userFollows';
 
 const router = Router();
 
@@ -39,7 +39,7 @@ router.post('/:user/vote', lowRateLimit, postUserVote);
 router.post('/:user/wyvern/v1/txns/check', postUserRateLimit, postTxnCheck);
 router.post('/:user/wyvern/v1/txns', postUserRateLimit, postUserTxn);
 router.post('/:user/wyvern/v1/orders', postUserRateLimit, postUserOrders);
-router.post('/:user/collectionFollows', postUserRateLimit, setCollectionFollows);
-router.post('/:user/userFollows', postUserRateLimit, setUserFollows);
+router.post('/:user/collectionFollows', postUserRateLimit, setCollectionFollow);
+router.post('/:user/userFollows', postUserRateLimit, setUserFollow);
 
 export default router;

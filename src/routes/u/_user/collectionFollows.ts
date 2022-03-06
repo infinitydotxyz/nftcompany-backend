@@ -6,6 +6,7 @@ import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { jsonString } from '@utils/formatters';
 import { fstrCnstnts } from '@base/constants';
 import { trimLowerCase } from '@utils/index';
+import { CollectionFollow } from '@infinityxyz/types/core/Follows';
 
 export const getCollectionFollows = async (
   req: Request<
@@ -33,7 +34,7 @@ export const getCollectionFollows = async (
 
   const result: FirebaseFirestore.DocumentData[] = [];
   for (const doc of followDocs.docs) {
-    result.push(doc.data());
+    result.push(doc.data() as CollectionFollow);
   }
 
   const resp = jsonString(result);
@@ -45,9 +46,9 @@ export const getCollectionFollows = async (
   res.send(resp);
 };
 
-export const setCollectionFollows = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const collectionFollow = req.body.collectionFollow || [];
+export const setCollectionFollow = async (req: Request<{ user: string }>, res: Response) => {
+  const user = trimLowerCase(req.params.user);
+  const collectionFollow = req.body.collectionFollow as CollectionFollow;
   const chainId = req.body.chainId;
   const deleteFollow = req.body.deleteFollow;
 

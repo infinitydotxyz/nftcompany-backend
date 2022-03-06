@@ -6,6 +6,7 @@ import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { jsonString } from '@utils/formatters';
 import { fstrCnstnts } from '@base/constants';
 import { trimLowerCase } from '@utils/index';
+import { UserFollow } from '@infinityxyz/types/core/Follows';
 
 export const getUserFollows = async (
   req: Request<
@@ -33,7 +34,7 @@ export const getUserFollows = async (
 
   const result: FirebaseFirestore.DocumentData[] = [];
   for (const doc of followDocs.docs) {
-    result.push(doc.data());
+    result.push(doc.data() as UserFollow);
   }
 
   const resp = jsonString(result);
@@ -45,9 +46,9 @@ export const getUserFollows = async (
   res.send(resp);
 };
 
-export const setUserFollows = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
-  const userFollow = req.body.userFollow || [];
+export const setUserFollow = async (req: Request<{ user: string }>, res: Response) => {
+  const user = trimLowerCase(req.params.user);
+  const userFollow = req.body.userFollow as UserFollow;
   const chainId = req.body.chainId;
   const deleteFollow = req.body.deleteFollow;
 
