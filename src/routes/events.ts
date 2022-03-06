@@ -1,4 +1,4 @@
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { getOrdersByTokenId } from '@services/infinity/orders/getOrdersByTokenId';
 import { getOpenseaEvents } from '@services/opensea/events';
 import { getRawOpenseaOrdersByTokenAddress } from '@services/opensea/orders';

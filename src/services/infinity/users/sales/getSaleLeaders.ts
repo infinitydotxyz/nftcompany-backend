@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { OrderDirection } from 'infinity-types/types/Queries';
+import { OrderDirection } from '@infinityxyz/types/core/Queries';
 import { fstrCnstnts } from '@base/constants';
 
 export async function getSaleLeaders(limit: number) {

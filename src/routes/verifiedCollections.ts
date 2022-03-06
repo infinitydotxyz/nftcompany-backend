@@ -1,4 +1,4 @@
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { getVerifiedCollections } from '@services/infinity/collections/getVerifiedCollections';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';

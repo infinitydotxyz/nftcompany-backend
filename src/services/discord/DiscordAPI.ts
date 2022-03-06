@@ -1,6 +1,6 @@
 import { error } from '@utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { InviteResponse } from 'infinity-types/types/services/discord/InviteResponse';
+import { InviteResponse } from '@infinityxyz/types/services/discord/InviteResponse';
 
 export class DiscordAPI {
   private readonly client: AxiosInstance;

@@ -1,10 +1,10 @@
 import { Twitter } from '@services/twitter/Twitter';
-import { InfinityTwitterAccount } from 'infinity-types/types/services/twitter/Tweet';
+import { InfinityTwitterAccount } from '@infinityxyz/types/services/twitter/Tweet';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
 import { jsonString } from '@utils/formatters';
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { firestore } from '@base/container';
 import {
   fstrCnstnts,
@@ -17,20 +17,20 @@ import {
 import {
   CollectionInfo,
   DiscordSnippet,
-  Links,
   CollectionStats,
   TwitterSnippet,
   CollectionData,
   EditableCollectionData,
   UpdateCollectionDataRequest
-} from 'infinity-types/types/NftInterface';
+} from '@infinityxyz/types/core/NftInterface';
+import { Links } from '@infinityxyz/types/core/Collection';
 import { getWeekNumber } from '@utils/index';
-import { Keys, Optional } from 'infinity-types/types/UtilityTypes';
+import { Keys, Optional } from '@infinityxyz/types/core/UtilityTypes';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
 import { getCollectionInfoFromOpensea, getCollectionLinks } from '@services/opensea/collection/getContract';
 import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
 import { DiscordAPI } from '@services/discord/DiscordAPI';
-import { WithTimestamp } from 'infinity-types/types/Historical';
+import { WithTimestamp } from '@infinityxyz/types/core/Historical';
 import { CollectionAuthType } from '@base/middleware/auth';
 import { UploadedFile } from 'express-fileupload';
 import { getCollectionFromOpensea } from '@services/opensea/collection/getCollection';

@@ -1,4 +1,4 @@
-import { OrderDirection } from 'infinity-types/types/Queries';
+import { OrderDirection } from '@infinityxyz/types/core/Queries';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];

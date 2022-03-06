@@ -1,5 +1,5 @@
-import { ListingMetadata } from 'infinity-types/types/ListingMetadata';
-import { RewardTiers } from 'infinity-types/types/Rewards';
+import { ListingMetadata } from '@infinityxyz/types/core/ListingMetadata';
+import { RewardTiers } from '@infinityxyz/types/core/Rewards';
 import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
 import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
 import { getProvider } from '@utils/ethers';

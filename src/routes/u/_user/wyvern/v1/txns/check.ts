@@ -1,6 +1,6 @@
 import { error, log } from '@utils/logger';
 import { Request, Response } from 'express';
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { getTxnData } from '@services/infinity/orders/getTxnData';
 import { getUserTxnRef } from '@services/infinity/orders/getUserTxn';
 import { writeTxn } from '@services/infinity/orders/writeTxn';

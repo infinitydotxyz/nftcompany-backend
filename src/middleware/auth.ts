@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
 import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '@base/constants';
 import { error } from '../utils/logger';
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { firestore } from '@base/container';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {

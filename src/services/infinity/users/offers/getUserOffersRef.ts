@@ -1,5 +1,5 @@
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
-import { OrderDirection } from 'infinity-types/types/Queries';
+import { OrderDirection } from '@infinityxyz/types/core/Queries';
 import { error, log } from '@utils/logger';
 import { getUserInfoRef } from '../getUser';
 import { firestore } from '@base/container';

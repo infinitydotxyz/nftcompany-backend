@@ -1,10 +1,10 @@
 import { TWITTER_BEARER_TOKEN } from '@base/constants';
-import { Concrete } from 'infinity-types/types/UtilityTypes';
+import { Concrete } from '@infinityxyz/types/core/UtilityTypes';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { SearchResponse } from 'infinity-types/types/services/twitter/SearchResponse';
-import { InfinityTweet, InfinityTwitterAccount, Tweet } from 'infinity-types/types/services/twitter/Tweet';
-import { User } from 'infinity-types/types/services/twitter/User';
-import { TwitterUserResponse } from 'infinity-types/types/services/twitter/UserResponse';
+import { SearchResponse } from '@infinityxyz/types/services/twitter/SearchResponse';
+import { InfinityTweet, InfinityTwitterAccount, Tweet } from '@infinityxyz/types/services/twitter/Tweet';
+import { User } from '@infinityxyz/types/services/twitter/User';
+import { TwitterUserResponse } from '@infinityxyz/types/services/twitter/UserResponse';
 
 /**
  * access level is Elevated

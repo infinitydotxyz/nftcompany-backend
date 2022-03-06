@@ -1,4 +1,4 @@
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { getPurchaseLeaders } from '@services/infinity/users/purchases/getPurchaseLeaders';
 import { getSaleLeaders } from '@services/infinity/users/sales/getSaleLeaders';
 import { jsonString } from '@utils/formatters';

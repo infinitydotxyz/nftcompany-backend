@@ -1,8 +1,8 @@
-import { Listing } from 'infinity-types/types/Listing';
-import { ListingResponse } from 'infinity-types/types/ListingResponse';
-import { OrderSide } from 'infinity-types/types/NftInterface';
-import { OrderDirection } from 'infinity-types/types/Queries';
-import { WyvernAssetData, WyvernSellOrder } from 'infinity-types/types/wyvern/WyvernOrder';
+import { Listing } from '@infinityxyz/types/core/Listing';
+import { ListingResponse } from '@infinityxyz/types/core/ListingResponse';
+import { OrderSide } from '@infinityxyz/types/core/NftInterface';
+import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { WyvernAssetData, WyvernSellOrder } from '@infinityxyz/types/protocols/wyvern/WyvernOrder';
 import { deepCopy } from '@utils/index';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';

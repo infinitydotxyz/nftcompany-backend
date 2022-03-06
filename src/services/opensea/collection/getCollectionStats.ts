@@ -1,4 +1,4 @@
-import { CollectionStats } from 'infinity-types/types/NftInterface';
+import { CollectionStats } from '@infinityxyz/types/core/NftInterface';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';

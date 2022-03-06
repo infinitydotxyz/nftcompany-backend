@@ -1,4 +1,4 @@
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { FEATURED_LIMIT } from '@base/constants';
 import { getFeaturedCollectionsRef } from '@services/infinity/collections/getFeaturedCollections';
 import { docsToArray, jsonString } from '@utils/formatters';

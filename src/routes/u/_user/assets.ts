@@ -2,19 +2,19 @@ import { jsonString } from '@utils/formatters';
 import { parseQueryFields } from '@utils/parsers';
 import { Request, Response } from 'express';
 import { error, log } from '@utils/logger';
-import { StatusCode } from 'infinity-types/types/StatusCode';
-import { NFTDataSource, nftDataSources } from 'infinity-types/types/Queries';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { NFTDataSource, nftDataSources } from '@infinityxyz/types/core/Queries';
 import { getUserAssetsFromCovalent } from '@services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from '@services/unmarshal/getUserAssetsFromUnmarshal';
 import { getUserAssetsFromOpenSea } from '@services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlchemy';
-import { AlchemyUserAssetResponse } from 'infinity-types/types/services/alchemy/AlchemyUserAsset';
+import { AlchemyUserAssetResponse } from '@infinityxyz/types/services/alchemy/AlchemyUserAsset';
 import { validateInputs, hexToDecimalTokenId } from '@utils/index';
-import { AssetResponse } from 'infinity-types/types/AssetResponse';
-import { Asset } from 'infinity-types/types/Asset';
-import { UnmarshalUserAssetResponse } from 'infinity-types/types/services/unmarshal/Unmarshal';
-import { CovalentWalletBalanceItem } from 'infinity-types/types/services/covalent/CovalentNFTMetadata';
-import { WyvernAssetData } from 'infinity-types/types/wyvern/WyvernOrder';
+import { AssetResponse } from '@infinityxyz/types/core/AssetResponse';
+import { Asset } from '@infinityxyz/types/core/Asset';
+import { UnmarshalUserAssetResponse } from '@infinityxyz/types/services/unmarshal/Unmarshal';
+import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent/CovalentNFTMetadata';
+import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern/WyvernOrder';
 import FirestoreBatchHandler from '@base/databases/FirestoreBatchHandler';
 import { firestore } from '@base/container';
 import { fstrCnstnts } from '@base/constants';
@@ -114,7 +114,7 @@ export async function getAssets(
       resp.assets = await getUserAssetsFromCovalent(address);
       resp.count = resp.assets?.length;
       // store in firestore
-      storeCovalentAssetsInFirestore(address, chainId, resp.assets );
+      storeCovalentAssetsInFirestore(address, chainId, resp.assets);
       break;
     default:
       log('Invalid data source for fetching nft data of wallet');

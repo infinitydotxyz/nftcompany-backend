@@ -1,4 +1,4 @@
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { fuzzySearchTitle } from '@services/infinity/collections/fuzzySearchTitle';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';

@@ -1,6 +1,6 @@
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';
-import { UnmarshalUserAssetResponse } from 'infinity-types/types/services/unmarshal/Unmarshal';
+import { UnmarshalUserAssetResponse } from '@infinityxyz/types/services/unmarshal/Unmarshal';
 import { unmarshalClient } from './utils';
 
 /**

@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { UsPersonAnswer } from 'infinity-types/types/Rewards';
+import { UsPersonAnswer } from '@infinityxyz/types/core/Rewards';
 import { fstrCnstnts } from '@base/constants';
 import { bn } from '@utils/index';
 import { error, log } from '@utils/logger';

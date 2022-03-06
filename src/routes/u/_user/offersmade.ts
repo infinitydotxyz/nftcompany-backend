@@ -4,8 +4,8 @@ import {
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
 } from '@base/constants';
-import { OrderDirection } from 'infinity-types/types/Queries';
-import { StatusCode } from 'infinity-types/types/StatusCode';
+import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { StatusCode } from '@infinityxyz/types/core/StatusCode';
 import { getFilteredUserOffersMade } from '@services/infinity/users/offers/getUserOffersRef';
 import { error } from '@utils/logger';
 import { parseQueryFields } from '@utils/parsers';

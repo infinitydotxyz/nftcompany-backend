@@ -1,4 +1,5 @@
-import { WyvernAssetData, WyvernTrait, WyvernTraitWithValues } from 'infinity-types/types/wyvern/WyvernOrder';
+import { WyvernAssetData, WyvernTrait } from '@infinityxyz/types/protocols/wyvern/WyvernOrder';
+import { WyvernTraitWithValues } from '@infinityxyz/types/protocols/wyvern/TraitWithValues';
 import { OPENSEA_API } from '@base/constants';
 import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
