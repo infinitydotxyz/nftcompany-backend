@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { jsonString } from '@utils/formatters';
 import { error } from '@utils/logger';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
 import { hasBonusReward } from '@services/infinity/collections/hasBonusReward';
 

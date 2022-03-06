@@ -1,4 +1,4 @@
-import { OrderSide } from '@infinityxyz/types/core/NftInterface';
+import { OrderSide } from '@infinityxyz/types/core';
 import { fstrCnstnts } from '@base/constants';
 import { getUserInfoRef } from '../users/getUser';
 

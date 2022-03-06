@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { API_BASE } from '@base/constants';
 import { sendEmail } from '@services/infinity/email/sendEmail';
 import { getUserInfoRef } from '@services/infinity/users/getUser';

@@ -1,6 +1,4 @@
-import { HistoricalWeek, Hourly, WithTimestamp } from '@infinityxyz/types/core/Historical';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
-import { Keys } from '@infinityxyz/types/core/UtilityTypes';
+import { HistoricalWeek, Hourly, WithTimestamp , OrderDirection , Keys } from '@infinityxyz/types/core';
 import { ONE_DAY } from '@base/constants';
 
 /**

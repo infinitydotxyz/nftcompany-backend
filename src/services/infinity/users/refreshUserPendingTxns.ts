@@ -1,4 +1,4 @@
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { OrderDirection } from '@infinityxyz/types/core';
 import { error } from '@utils/logger';
 import { getUserMissedTxnsRef, getUserTxnsRef } from '../orders/getUserTxn';
 import { waitForMissedTxn } from '../orders/waitForMissedTxn';

@@ -1,5 +1,5 @@
-import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern/WyvernOrder';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern';
+import { OrderDirection } from '@infinityxyz/types/core';
 import { OPENSEA_API } from '@base/constants';
 import { error, log } from '@utils/logger';
 import { AxiosResponse } from 'axios';

@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { saveCollectionTraits } from '@services/infinity/collections/saveCollectionTraits';
 import { getCollectionTraitsFromOpensea } from '@services/opensea/collection/getCollectionTraitsFromOpensea';
 

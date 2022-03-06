@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { OrderSide } from '@infinityxyz/types/core/NftInterface';
+import { OrderSide } from '@infinityxyz/types/core';
 import { fstrCnstnts } from '@base/constants';
 import { log } from '@utils/logger';
 import firebaseAdmin from 'firebase-admin';

@@ -1,6 +1,5 @@
 import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
-import { ListingType } from '@infinityxyz/types/core/NftInterface';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { ListingType , StatusCode } from '@infinityxyz/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';

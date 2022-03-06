@@ -1,8 +1,7 @@
 import { ICY_TOOLS_API_KEY } from '@base/constants';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { OrderDirection , TokenStandard } from '@infinityxyz/types/core';
 import { AxiosInstance, AxiosResponse } from 'axios';
-import { ContractConnection, ContractsOrderBy } from '@infinityxyz/types/services/icytools/types';
-import { TokenStandard } from '@infinityxyz/types/core/Token';
+import { ContractConnection, ContractsOrderBy } from '@infinityxyz/types/services/icytools';
 import { icyToolsClient } from './utils';
 
 /**

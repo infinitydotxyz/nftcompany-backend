@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { WyvernTraitWithValues } from '@infinityxyz/types/protocols/wyvern/TraitWithValues';
+import { WyvernTraitWithValues } from '@infinityxyz/types/protocols/wyvern';
 import { fstrCnstnts } from '@base/constants';
 import { ethers } from 'ethers';
 

@@ -1,5 +1,4 @@
-import { ListingType } from '@infinityxyz/types/core/NftInterface';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { ListingType , StatusCode , OrderDirection } from '@infinityxyz/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
@@ -15,7 +14,6 @@ import {
 } from '@services/infinity/listings/getListings';
 import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
 import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
 import { validateInputs } from '@utils/index';
 
 const router = Router();

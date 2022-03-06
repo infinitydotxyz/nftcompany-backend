@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { OrderDirection } from '@infinityxyz/types/core';
 import { fstrCnstnts } from '@base/constants';
 import { error } from '@utils/logger';
 import { getOrdersResponse } from '../utils';

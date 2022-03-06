@@ -1,5 +1,4 @@
-import { UsPersonAnswer } from '@infinityxyz/types/core/Rewards';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { UsPersonAnswer , StatusCode } from '@infinityxyz/types/core';
 import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';

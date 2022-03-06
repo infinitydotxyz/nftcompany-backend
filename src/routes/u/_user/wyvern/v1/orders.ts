@@ -1,6 +1,5 @@
 import { firestore } from '@base/container';
-import { OrderSide } from '@infinityxyz/types/core/NftInterface';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { OrderSide , StatusCode } from '@infinityxyz/types/core';
 import { NFTC_FEE_ADDRESS } from '@base/constants';
 import { hasBonusReward } from '@services/infinity/collections/hasBonusReward';
 import { postListing } from '@services/infinity/listings/postListing';

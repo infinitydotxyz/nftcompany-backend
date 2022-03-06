@@ -1,5 +1,4 @@
-import { CollectionInfo } from '@infinityxyz/types/core/NftInterface';
-import { Links } from '@infinityxyz/types/core/Collection';
+import { CollectionInfo , Links } from '@infinityxyz/types/core';
 import { getSearchFriendlyString } from '@utils/formatters';
 import { error } from '@utils/logger';
 import { AxiosResponse } from 'axios';

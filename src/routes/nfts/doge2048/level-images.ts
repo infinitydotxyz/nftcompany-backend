@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { error } from '@utils/logger';
 import { Router } from 'express';
 import { metadataForDoge2048Nft } from '../doge_builder/images';

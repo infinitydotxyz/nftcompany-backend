@@ -1,6 +1,4 @@
-import { ListingType, OrderSide } from '@infinityxyz/types/core/NftInterface';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { ListingType, OrderSide , OrderDirection , StatusCode } from '@infinityxyz/types/core';
 import { jsonString } from '@utils/formatters';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from '@services/opensea/orders';

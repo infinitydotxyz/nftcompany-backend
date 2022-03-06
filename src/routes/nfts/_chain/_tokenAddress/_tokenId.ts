@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { getChainId, getProvider } from '@utils/ethers';
 import { error } from '@utils/logger';
 import { ethers } from 'ethers';

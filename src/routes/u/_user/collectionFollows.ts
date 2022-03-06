@@ -2,7 +2,7 @@
 import { getUserInfoRef } from '@services/infinity/users/getUser';
 import { error } from '@utils/logger';
 import { Request, Response } from 'express';
-import { StatusCode } from '@infinityxyz/types/core/StatusCode';
+import { StatusCode } from '@infinityxyz/types/core';
 import { jsonString } from '@utils/formatters';
 import { fstrCnstnts } from '@base/constants';
 import { trimLowerCase } from '@utils/index';

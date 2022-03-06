@@ -1,6 +1,5 @@
 import { firestore } from '@base/container';
-import { ListingType } from '@infinityxyz/types/core/NftInterface';
-import { OrderDirection } from '@infinityxyz/types/core/Queries';
+import { ListingType , OrderDirection } from '@infinityxyz/types/core';
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
 import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
 import { error, log } from '@utils/logger';

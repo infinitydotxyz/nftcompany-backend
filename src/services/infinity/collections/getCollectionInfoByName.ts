@@ -1,5 +1,5 @@
 import { firestore } from '@base/container';
-import { CollectionInfo } from '@infinityxyz/types/core/NftInterface';
+import { CollectionInfo } from '@infinityxyz/types/core';
 import { fstrCnstnts } from '@base/constants';
 
 export async function getCollectionInfoByName(searchCollectionName: string, limit: number) {
