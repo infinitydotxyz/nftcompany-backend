@@ -1,10 +1,10 @@
-import { Twitter } from '@services/twitter/Twitter';
+import { Twitter } from 'services/twitter/Twitter';
 import { InfinityTwitterAccount } from '@infinityxyz/types/services/twitter';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
-import { error, log } from '@utils/logger';
-import { jsonString } from '@utils/formatters';
-import { firestore } from '@base/container';
+import { error, log } from 'utils/logger';
+import { jsonString } from 'utils/formatters';
+import { firestore } from 'container';
 import {
   fstrCnstnts,
   MIN_COLLECTION_STATS_UPDATE_INTERVAL,
@@ -12,7 +12,7 @@ import {
   MIN_LINK_UPDATE_INTERVAL,
   MIN_TWITTER_UPDATE_INTERVAL,
   ONE_DAY
-} from '@base/constants';
+} from '../../constants';
 import {
   CollectionInfo,
   DiscordSnippet,
@@ -27,15 +27,15 @@ import {
   WithTimestamp,
   StatusCode
 } from '@infinityxyz/types/core';
-import { getWeekNumber } from '@utils/index';
+import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
-import { getCollectionInfoFromOpensea, getCollectionLinks } from '@services/opensea/collection/getContract';
-import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
-import { DiscordAPI } from '@services/discord/DiscordAPI';
-import { CollectionAuthType } from '@base/middleware/auth';
+import { getCollectionInfoFromOpensea, getCollectionLinks } from 'services/opensea/collection/getContract';
+import { getCollectionStats } from 'services/opensea/collection/getCollectionStats';
+import { DiscordAPI } from 'services/discord/DiscordAPI';
+import { CollectionAuthType } from 'middleware/auth';
 import { UploadedFile } from 'express-fileupload';
-import { getCollectionFromOpensea } from '@services/opensea/collection/getCollection';
-import { getChainId } from '@utils/ethers';
+import { getCollectionFromOpensea } from 'services/opensea/collection/getCollection';
+import { getChainId } from 'utils/ethers';
 
 interface FollowerData {
   followersCount: number;

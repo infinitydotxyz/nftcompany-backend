@@ -3,15 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "npm run update-types && npm install && rimraf dist && tsc",
     "lint": "eslint .",
-    "lintfix": "eslint --fix .",
-    "fmt:check": "prettier -c ./src",
-    "fmt:write": "prettier -w ./src",
-    "script": "npm run build && cross-env TS_NODE_BASEURL=./dist node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/script.js",
-    "start": "cross-env TS_NODE_BASEURL=./dist node -r dotenv/config -r ts-node/register/transpile-only -r tsconfig-paths/register dist/src/main.js",
-    "start:test": "cross-env ts-node -r dotenv/config ./src/index.ts",
-    "dev": "npm run update-types && nest start --watch --exec 'node -r tsconfig-paths/register -r ts-node/register -r dotenv/config ./src/main.ts'",
+    "lint:fix": "eslint --fix .",
+    "fmt": "prettier -c ./src",
+    "fmt:fix": "prettier -w ./src",
+    "script": "cross-env NODE_PATH=./src ts-node -r dotenv/config ./src/script.ts",
+    "start": "cross-env NODE_PATH=./src ts-node -r dotenv/config ./src/main.ts",
+    "dev": "npm run update-types && cross-env NODE_PATH=./src ts-node-dev -r dotenv/config ./src/main.ts",
     "ci-pre-build": "mkdir creds && cp ./ci/creds-blank/* ./creds",
     "update-types": "npm update @infinityxyz/types"
   },
@@ -26,7 +24,6 @@
   },
   "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
   "dependencies": {
-    "@nestjs/cli": "^8.2.0",
     "axios": "0.24.0",
     "bignumber.js": "9.0.2",
     "canvas": "^2.8.0",
@@ -50,7 +47,6 @@
     "reflect-metadata": "^0.1.13",
     "stream-buffers": "^3.0.2",
     "ts-node": "^10.4.0",
-    "tsconfig-paths": "^3.12.0",
     "tsyringe": "^4.6.0"
   },
   "devDependencies": {
@@ -67,7 +63,6 @@
     "@types/swagger-ui-express": "^4.1.3",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
-    "concurrently": "^6.5.1",
     "copyfiles": "^2.4.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.5.0",
@@ -75,9 +70,9 @@
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.2.0",
-    "nodemon": "2.0.15",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2",
+    "ts-node-dev": "^1.1.8",
     "typescript": "^4.4.4"
   },
   "prettier": {

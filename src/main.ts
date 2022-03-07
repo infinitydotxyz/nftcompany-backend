@@ -4,7 +4,7 @@ import express from 'express';
 
 import helmet from 'helmet';
 import cors from 'cors';
-import router from 'routes/index';
+import router from 'routes';
 import { log } from 'utils/logger';
 import { requestErrorHandler } from 'middleware/errorHandler';
 import { requestLogger } from 'middleware/logger';

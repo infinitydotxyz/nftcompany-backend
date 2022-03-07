@@ -18,9 +18,10 @@ export default class Firestore {
   bucket: Bucket;
 
   constructor() {
-    const serviceAccount = readFileSync(resolve(__dirname, '../../creds/nftc-dev-firebase-creds.json'));
+    const serviceAccountPath = resolve(__dirname, '../../creds/nftc-dev-firebase-creds.json');
+    const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
     firebaseAdmin.initializeApp({
-      credential: firebaseAdmin.credential.cert(serviceAccount as any),
+      credential: firebaseAdmin.credential.cert(serviceAccount),
       storageBucket: FB_STORAGE_BUCKET
     });
     this.db = firebaseAdmin.firestore();

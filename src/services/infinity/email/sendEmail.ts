@@ -7,7 +7,6 @@ import { resolve } from 'path';
 const mailCreds = JSON.parse(
   readFileSync(resolve(__dirname, '../../../../creds/nftc-dev-firebase-creds.json'), 'utf-8')
 );
-console.log(mailCreds); // TODO
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
