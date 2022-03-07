@@ -11,6 +11,7 @@
     "start": "cross-env NODE_PATH=./src ts-node -r dotenv/config ./src/main.ts",
     "dev": "npm run update-types && cross-env NODE_PATH=./src ts-node-dev -r dotenv/config ./src/main.ts",
     "ci-pre-build": "mkdir creds && cp ./ci/creds-blank/* ./creds",
+    "compile": "npx tsc --project ./tsconfig.json",
     "update-types": "npm update @infinityxyz/types"
   },
   "repository": {
