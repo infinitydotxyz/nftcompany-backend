@@ -1,5 +1,5 @@
-import { saveRawCovalentAssetInDatabase } from '@services/infinity/assets/saveAsset';
-import { error, log } from '@utils/logger';
+import { saveRawCovalentAssetInDatabase } from 'services/infinity/assets/saveAsset';
+import { error, log } from 'utils/logger';
 import { covalentClient } from './utils';
 
 /**

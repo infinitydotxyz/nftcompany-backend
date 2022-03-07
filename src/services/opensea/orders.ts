@@ -1,7 +1,7 @@
-import { Listing , ListingResponse , OrderSide , OrderDirection } from '@infinityxyz/types/core';
+import { Listing, ListingResponse, OrderSide, OrderDirection } from '@infinityxyz/types/core';
 import { WyvernAssetData, WyvernSellOrder } from '@infinityxyz/types/protocols/wyvern';
-import { deepCopy } from '@utils/index';
-import { error, log } from '@utils/logger';
+import { deepCopy } from 'utils';
+import { error, log } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from './utils';
 

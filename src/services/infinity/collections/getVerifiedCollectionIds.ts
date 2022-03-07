@@ -1,7 +1,7 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { log } from '@utils/logger';
-import { setupAllCollectionsListener } from '@utils/dblisteners';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { log } from 'utils/logger';
+import { setupAllCollectionsListener } from 'utils/dblisteners';
 
 export let verifiedCollectionIds;
 let isFetching = false;

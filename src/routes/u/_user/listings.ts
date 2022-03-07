@@ -1,15 +1,15 @@
-import { OrderDirection , StatusCode , ListingType } from '@infinityxyz/types/core';
-import { error } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/types/core';
+import { error } from 'utils/logger';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
-import { validateInputs, trimLowerCase } from '@utils/index';
+} from '../../../constants';
+import { getFilteredUserListings } from 'services/infinity/listings/getUserListing';
+import { validateInputs, trimLowerCase } from 'utils';
 
 // fetch listings of user
 export const getUserListings = async (

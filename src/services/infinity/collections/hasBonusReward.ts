@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { normalizeAddress } from '@utils/formatters';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { normalizeAddress } from 'utils/formatters';
 
 /**
  *

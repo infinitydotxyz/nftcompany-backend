@@ -1,7 +1,7 @@
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { OrderDirection } from '@infinityxyz/types/core';
-import { fstrCnstnts } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { fstrCnstnts } from '../../../constants';
+import { error, log } from 'utils/logger';
 import { getOrdersResponse } from '../utils';
 
 export async function getAllListings(

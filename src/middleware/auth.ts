@@ -1,9 +1,9 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '@base/constants';
+import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '../constants';
 import { error } from '../utils/logger';
 import { StatusCode } from '@infinityxyz/types/core';
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // todo: adi for testing only

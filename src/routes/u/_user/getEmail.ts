@@ -1,7 +1,7 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { jsonString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 
 export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {

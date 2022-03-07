@@ -1,5 +1,5 @@
-import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
-import { ListingType , StatusCode } from '@infinityxyz/types/core';
+import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
+import { ListingType, StatusCode } from '@infinityxyz/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';

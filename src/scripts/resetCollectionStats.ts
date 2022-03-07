@@ -1,6 +1,6 @@
-import { fstrCnstnts } from '@base/constants';
-import { firestore } from '@base/container';
-import { error } from '@utils/logger';
+import { fstrCnstnts } from '../constants';
+import { firestore } from 'container';
+import { error } from 'utils/logger';
 
 export async function resetCollectionStats() {
   try {

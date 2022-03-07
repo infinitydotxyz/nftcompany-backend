@@ -1,8 +1,8 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getPurchaseLeaders } from '@services/infinity/users/purchases/getPurchaseLeaders';
-import { getSaleLeaders } from '@services/infinity/users/sales/getSaleLeaders';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { getPurchaseLeaders } from 'services/infinity/users/purchases/getPurchaseLeaders';
+import { getSaleLeaders } from 'services/infinity/users/sales/getSaleLeaders';
+import { jsonString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { Router } from 'express';
 const router = Router();
 

@@ -1,8 +1,8 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
 import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent';
-import { covalentAssetDataToListing } from '@services/covalent/utils';
-import { error } from '@utils/logger';
+import { covalentAssetDataToListing } from 'services/covalent/utils';
+import { error } from 'utils/logger';
 import { getAssetAsListing } from '../utils';
 
 export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadata: CovalentWalletBalanceItem) {

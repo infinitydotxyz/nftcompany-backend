@@ -1,9 +1,9 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { saveCollectionTraits } from '@services/infinity/collections/saveCollectionTraits';
-import { getCollectionTraitsFromOpensea } from '@services/opensea/collection/getCollectionTraitsFromOpensea';
+import { saveCollectionTraits } from 'services/infinity/collections/saveCollectionTraits';
+import { getCollectionTraitsFromOpensea } from 'services/opensea/collection/getCollectionTraitsFromOpensea';
 
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { jsonString } from 'utils/formatters';
+import { error, log } from 'utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 

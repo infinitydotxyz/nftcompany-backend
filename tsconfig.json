@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": ".",
+    "rootDir": "./src",
     "module": "commonjs",
     "esModuleInterop": true,
     "target": "es6",
@@ -14,14 +14,7 @@
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "strictNullChecks": true,
-    "paths": {
-      "*": ["../node_modules/*"],
-      "@utils/*": ["./utils/*"],
-      "@routes/*": ["./routes/*"],
-      "@services/*": ["./services/*"],
-      "@base/*": ["./*"]
-    }
+    "strictNullChecks": true
   },
   "include": ["src/", "src/**/*.json", "./**.js"]
 }

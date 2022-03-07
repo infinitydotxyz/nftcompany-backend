@@ -1,6 +1,6 @@
-import { UsPersonAnswer , StatusCode } from '@infinityxyz/types/core';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { UsPersonAnswer, StatusCode } from '@infinityxyz/types/core';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 
 export const postUsPerson = async (req: Request<{ user: string }>, res: Response) => {

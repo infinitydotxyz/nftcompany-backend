@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { error, log } from 'utils/logger';
 import { prepareEmail } from '../email/prepareEmail';
 import { deleteListingWithId } from '../listings/deleteListingWithId';
 import { deleteOfferMadeWithId } from '../offers/deleteOfferMadeWithId';

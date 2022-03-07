@@ -1,5 +1,5 @@
 import { OrderSide } from '@infinityxyz/types/core';
-import { fstrCnstnts } from '@base/constants';
+import { fstrCnstnts } from '../../../constants';
 import { getUserInfoRef } from '../users/getUser';
 
 export function getUserOrderRefFromDocId(userAddress: string, docId: string, orderSide: OrderSide) {

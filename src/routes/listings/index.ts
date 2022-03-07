@@ -1,20 +1,20 @@
-import { ListingType , StatusCode , OrderDirection } from '@infinityxyz/types/core';
+import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { parseQueryFields } from '@utils/parsers';
+} from '../../constants';
+import { parseQueryFields } from 'utils/parsers';
 import { Router } from 'express';
 import importListings from './import';
 import {
   getListingsByCollectionNameAndPrice,
   getListingsStartingWithText
-} from '@services/infinity/listings/getListings';
-import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
-import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
-import { validateInputs } from '@utils/index';
+} from 'services/infinity/listings/getListings';
+import { getListingsByCollection } from 'services/infinity/listings/getListingsByCollection';
+import { getListingByTokenAddressAndId } from 'services/infinity/listings/getListingsByTokenAddressAndId';
+import { validateInputs } from 'utils/index';
 
 const router = Router();
 

@@ -1,10 +1,10 @@
 // import { firestore } from '@base/container';
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { StatusCode } from '@infinityxyz/types/core';
-import { fstrCnstnts } from '@base/constants';
-import { getCollectionVotes } from '@base/controllers/Collections/CollectionsController';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { fstrCnstnts } from '../../../../constants';
+import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 

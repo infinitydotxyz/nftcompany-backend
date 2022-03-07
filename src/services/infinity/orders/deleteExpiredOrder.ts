@@ -1,5 +1,5 @@
-import { firestore } from '@base/container';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { error, log } from 'utils/logger';
 import { deleteListing } from '../listings/deleteListing';
 import { deleteOffer } from '../offers/deleteOffer';
 

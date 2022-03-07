@@ -1,6 +1,6 @@
-import { COVALENT_API_KEY } from '@base/constants';
-import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
-import { getSearchFriendlyString } from '@utils/formatters';
+import { COVALENT_API_KEY } from '../../constants';
+import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
+import { getSearchFriendlyString } from 'utils/formatters';
 import axios from 'axios';
 import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent';
 

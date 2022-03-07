@@ -1,8 +1,8 @@
-import { OrderSide , StatusCode } from '@infinityxyz/types/core';
-import { getUserOrdersFromDocId } from '@services/infinity/orders/getUserOrderFromDocId';
-import { error, log } from '@utils/logger';
+import { OrderSide, StatusCode } from '@infinityxyz/types/core';
+import { getUserOrdersFromDocId } from 'services/infinity/orders/getUserOrderFromDocId';
+import { error, log } from 'utils/logger';
 import { Router } from 'express';
-import { getUserOrdersFromTokenId } from '@services/infinity/orders/getUserOrdersFromTokenId';
+import { getUserOrdersFromTokenId } from 'services/infinity/orders/getUserOrdersFromTokenId';
 import { ethers } from 'ethers';
 
 const router = Router();

@@ -1,3 +1,3 @@
-import { getCollectionInfo } from '@base/controllers/Collections/CollectionsController';
+import { getCollectionInfo } from 'controllers/Collections/CollectionsController';
 
 export { getCollectionInfo };

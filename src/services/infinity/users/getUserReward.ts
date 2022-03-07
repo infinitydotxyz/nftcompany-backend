@@ -1,8 +1,8 @@
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { UsPersonAnswer } from '@infinityxyz/types/core';
-import { fstrCnstnts } from '@base/constants';
-import { bn } from '@utils/index';
-import { error, log } from '@utils/logger';
+import { fstrCnstnts } from '../../../constants';
+import { bn } from 'utils';
+import { error, log } from 'utils/logger';
 import { getEmptyUserInfo, getUserRewardTier } from '../utils';
 import { getUserInfoRef } from './getUser';
 import { refreshUserPendingTxns } from './refreshUserPendingTxns';

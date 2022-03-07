@@ -1,10 +1,10 @@
-import { log } from '@utils/logger';
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
+import { log } from 'utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../constants';
 import {
   addVerifiedCollectionId,
   removeVerifiedCollectionId
-} from '@services/infinity/collections/getVerifiedCollectionIds';
+} from 'services/infinity/collections/getVerifiedCollectionIds';
 
 let setupAllCollectionsListenerDone = false;
 

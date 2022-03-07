@@ -2,7 +2,7 @@
 import 'reflect-metadata';
 import './globals';
 import { OrderDirection } from '@infinityxyz/types/core';
-import { IcyToolsApi } from '@services/icytools';
+import { IcyToolsApi } from 'services/icytools';
 import { ContractsOrderBy } from '@infinityxyz/types/services/icytools';
 import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
 

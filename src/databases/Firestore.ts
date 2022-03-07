@@ -2,11 +2,12 @@ import { singleton } from 'tsyringe';
 import firebaseAdmin from 'firebase-admin';
 import { Bucket, File } from '@google-cloud/storage';
 import crypto from 'crypto';
-import serviceAccount from '../../creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from '../constants';
 import { Readable } from 'stream';
-import { error, log, warn } from '@utils/logger';
-import { trimLowerCase } from '@utils/index';
+import { error, log, warn } from 'utils/logger';
+import { trimLowerCase } from 'utils';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 @singleton()
 export default class Firestore {
@@ -17,6 +18,7 @@ export default class Firestore {
   bucket: Bucket;
 
   constructor() {
+    const serviceAccount = readFileSync(resolve(__dirname, '../../creds/nftc-dev-firebase-creds.json'));
     firebaseAdmin.initializeApp({
       credential: firebaseAdmin.credential.cert(serviceAccount as any),
       storageBucket: FB_STORAGE_BUCKET
@@ -26,7 +28,7 @@ export default class Firestore {
     this.bucket = firebaseAdmin.storage().bucket();
   }
 
-  collection(collectionPath: string) {
+  collection(collectionPath: string): FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData> {
     return this.db.collection(collectionPath);
   }
 

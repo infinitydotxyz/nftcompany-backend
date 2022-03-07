@@ -4,14 +4,14 @@ import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars, Diamonds, Lasers
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
-import { DogeMetadata, generateDoge2048NftMetadata, getDoge2048NftLevelId } from '@routes/nfts/metadataUtils';
+import { DogeMetadata, generateDoge2048NftMetadata, getDoge2048NftLevelId } from 'routes/nfts/metadataUtils';
 
 import { Readable } from 'stream';
 
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { NftMetadata } from '../types/NftMetadata';
-import { fstrCnstnts } from '@base/constants';
-import { error } from '@utils/logger';
+import { fstrCnstnts } from '../../../constants';
+import { error } from 'utils/logger';
 const { loadImage } = Canvas;
 const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';

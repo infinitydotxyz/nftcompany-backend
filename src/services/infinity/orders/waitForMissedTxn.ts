@@ -1,8 +1,8 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { getProvider } from '@utils/ethers';
-import { jsonString } from '@utils/formatters';
-import { error, log, trace } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { getProvider } from 'utils/ethers';
+import { jsonString } from 'utils/formatters';
+import { error, log, trace } from 'utils/logger';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 import { isValidNftcTxn } from './isValidNftcTxn';

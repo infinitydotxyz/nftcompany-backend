@@ -1,8 +1,8 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { API_BASE } from '@base/constants';
-import { sendEmail } from '@services/infinity/email/sendEmail';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { API_BASE } from '../../..//constants';
+import { sendEmail } from 'services/infinity/email/sendEmail';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
 

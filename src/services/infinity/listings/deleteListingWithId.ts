@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { log } from 'utils/logger';
 import { deleteListing } from './deleteListing';
 
 export async function deleteListingWithId(id: string, user: any, batch: any) {

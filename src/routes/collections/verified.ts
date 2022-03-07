@@ -1,7 +1,7 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getVerifiedCollections } from '@services/infinity/collections/getVerifiedCollections';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { getVerifiedCollections } from 'services/infinity/collections/getVerifiedCollections';
+import { jsonString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { Request, Router, Response } from 'express';
 const router = Router();
 

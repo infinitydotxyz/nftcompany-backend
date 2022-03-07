@@ -1,10 +1,10 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getUniqueItemsByProperties } from '@utils/index';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { getUniqueItemsByProperties } from 'utils/index';
+import { jsonString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { Router } from 'express';
 import { getTraits } from './_id/traits';
-import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
+import { fuzzySearchCollection } from 'services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
 import verifiedIds from './verifiedIds';

@@ -1,5 +1,5 @@
-import { fstrCnstnts } from '@base/constants';
-import { firestore } from '@base/container';
+import { fstrCnstnts } from '../../../constants';
+import { firestore } from 'container';
 
 export async function getCollectionByAddress(address: string) {
   const doc = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address).get();

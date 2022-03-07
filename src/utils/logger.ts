@@ -1,4 +1,4 @@
-import { ERROR_LOG, INFO_LOG, TRACE_LOG, WARN_LOG } from '@base/constants';
+import { ERROR_LOG, INFO_LOG, TRACE_LOG, WARN_LOG } from '../constants';
 
 export function error(obj: string | (Error & { lineNumber?: number | string }), ...objs: any[]): void {
   if (ERROR_LOG) {
