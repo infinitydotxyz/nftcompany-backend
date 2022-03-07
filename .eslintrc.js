@@ -32,5 +32,5 @@ module.exports = {
     '@typescript-eslint/no-misused-promises': 0,
     '@typescript-eslint/restrict-template-expressions': 0
   },
-  ignorePatterns: ['/dist/**', '**/node_modules/**']
+  ignorePatterns: ['/dist/**', '**/node_modules/**', '.firebaserc', '.firestore.js', '.eslintrc.js']
 };
