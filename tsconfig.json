@@ -16,5 +16,5 @@
     "emitDecoratorMetadata": true,
     "strictNullChecks": true
   },
-  "include": ["src/", "src/**/*.json", "./**.js"]
+  "include": ["src/", "src/**/*.json"]
 }
