@@ -1,8 +1,4 @@
-import {
-  ALCHEMY_JSON_RPC_ETH_MAINNET,
-  POLYGON_WYVERN_EXCHANGE_ADDRESS,
-  WYVERN_EXCHANGE_ADDRESS
-} from '@base/constants';
+import { ALCHEMY_JSON_RPC_ETH_MAINNET, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '../constants';
 import { ethers } from 'ethers';
 
 const ethProvider = new ethers.providers.JsonRpcProvider(ALCHEMY_JSON_RPC_ETH_MAINNET);

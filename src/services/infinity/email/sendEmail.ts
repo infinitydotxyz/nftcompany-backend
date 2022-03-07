@@ -1,7 +1,12 @@
-import { INFINITY_EMAIL } from '@base/constants';
+import { INFINITY_EMAIL } from '../../../constants';
 import nodemailer from 'nodemailer';
-import mailCreds from '@base/../creds/nftc-dev-nodemailer-creds.json';
-import { error, log } from '@utils/logger';
+import { error, log } from 'utils/logger';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+const mailCreds = JSON.parse(
+  readFileSync(resolve(__dirname, '../../../../creds/nftc-dev-firebase-creds.json'), 'utf-8')
+);
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',

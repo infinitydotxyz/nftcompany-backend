@@ -1,20 +1,20 @@
-import { jsonString } from '@utils/formatters';
-import { parseQueryFields } from '@utils/parsers';
+import { jsonString } from 'utils/formatters';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { error, log } from '@utils/logger';
-import { StatusCode , NFTDataSource, nftDataSources , AssetResponse , Asset } from '@infinityxyz/types/core';
-import { getUserAssetsFromCovalent } from '@services/covalent/getUserAssetsFromCovalent';
-import { getUserAssetsFromUnmarshal } from '@services/unmarshal/getUserAssetsFromUnmarshal';
-import { getUserAssetsFromOpenSea } from '@services/opensea/assets/getUserAssetsFromOpensea';
-import { getUserAssetsFromAlchemy } from '@services/alchemy/getUserAssetsFromAlchemy';
+import { error, log } from 'utils/logger';
+import { StatusCode, NFTDataSource, nftDataSources, AssetResponse, Asset } from '@infinityxyz/types/core';
+import { getUserAssetsFromCovalent } from 'services/covalent/getUserAssetsFromCovalent';
+import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFromUnmarshal';
+import { getUserAssetsFromOpenSea } from 'services/opensea/assets/getUserAssetsFromOpensea';
+import { getUserAssetsFromAlchemy } from 'services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@infinityxyz/types/services/alchemy';
-import { validateInputs, hexToDecimalTokenId } from '@utils/index';
+import { validateInputs, hexToDecimalTokenId } from 'utils/index';
 import { UnmarshalUserAssetResponse } from '@infinityxyz/types/services/unmarshal';
 import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent';
 import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern';
-import FirestoreBatchHandler from '@base/databases/FirestoreBatchHandler';
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
+import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
 
 export const getUserAssets = async (
   req: Request<

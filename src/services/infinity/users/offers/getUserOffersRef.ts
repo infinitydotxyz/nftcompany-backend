@@ -1,9 +1,9 @@
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
+import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../../constants';
 import { OrderDirection } from '@infinityxyz/types/core';
-import { error, log } from '@utils/logger';
+import { error, log } from 'utils/logger';
 import { getUserInfoRef } from '../getUser';
-import { firestore } from '@base/container';
-import { getOrdersResponseFromArray } from '@services/infinity/utils';
+import { firestore } from 'container';
+import { getOrdersResponseFromArray } from 'services/infinity/utils';
 
 export function getUserOffersRef(userAddress: string) {
   return getUserInfoRef(userAddress).collection(fstrCnstnts.OFFERS_COLL);

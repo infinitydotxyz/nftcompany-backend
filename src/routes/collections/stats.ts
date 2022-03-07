@@ -1,9 +1,9 @@
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '@base/constants';
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '../../constants';
+import { jsonString } from 'utils/formatters';
+import { error, log } from 'utils/logger';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
 
 const router = Router();

@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/types/core';
 import { NextFunction, Request, Response } from 'express';
-import { error, log } from '../utils/logger';
+import { error, log } from 'utils/logger';
 import { getRequestLogPrefix } from './logger';
 
 /**

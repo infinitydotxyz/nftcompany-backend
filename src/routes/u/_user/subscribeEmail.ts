@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 
 export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res: Response) => {

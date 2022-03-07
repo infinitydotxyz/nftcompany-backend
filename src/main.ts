@@ -4,12 +4,12 @@ import express from 'express';
 
 import helmet from 'helmet';
 import cors from 'cors';
-import router from '@routes/index';
-import { log } from '@utils/logger';
-import { requestErrorHandler } from '@base/middleware/errorHandler';
-import { requestLogger } from '@base/middleware/logger';
+import router from 'routes';
+import { log } from 'utils/logger';
+import { requestErrorHandler } from 'middleware/errorHandler';
+import { requestLogger } from 'middleware/logger';
 import { registerDocs } from './docs';
-import { ORIGIN } from '@base/constants';
+import { ORIGIN } from './constants';
 
 const app = express();
 

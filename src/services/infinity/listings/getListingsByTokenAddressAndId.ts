@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { error, log } from 'utils/logger';
 import { fetchAssetAsListingFromDb } from '../assets/getAssetsAsListings';
 import { getOrdersResponse } from '../utils';
 

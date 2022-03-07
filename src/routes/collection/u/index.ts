@@ -1,4 +1,4 @@
-import { authenticateUser, authorizeCollectionEditor } from '@base/middleware/auth';
+import { authenticateUser, authorizeCollectionEditor } from 'middleware/auth';
 import { Router } from 'express';
 import { getCollectionInfo, postCollectionInfo } from './_user/_collection';
 import fileUpload from 'express-fileupload';

@@ -1,6 +1,6 @@
-import { sleep } from '../utils';
-import { error } from '../utils/logger';
-import { firestore } from '../container';
+import { sleep } from 'utils';
+import { error } from 'utils/logger';
+import { firestore } from 'container';
 
 const MAX_SIZE = 500;
 

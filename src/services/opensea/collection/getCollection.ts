@@ -1,4 +1,4 @@
-import { error } from '@utils/logger';
+import { error } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 import { Collection } from './getContract';

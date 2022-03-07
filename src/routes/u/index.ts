@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateUser } from '@base/middleware/auth';
+import { authenticateUser } from 'middleware/auth';
 import { postTxnCheck } from './_user/wyvern/v1/txns/check';
 import { getUserTxns, postUserTxn } from './_user/wyvern/v1/txns';
 import { postUserOrders } from './_user/wyvern/v1/orders';
@@ -12,7 +12,7 @@ import { getUserReward } from './_user/reward';
 import { postSetUserEmail } from './_user/setEmail';
 import { postSubscribeUserEmail } from './_user/subscribeEmail';
 import { postUsPerson } from './_user/usperson';
-import { lowRateLimit, postUserRateLimit } from '@base/middleware/rateLimit';
+import { lowRateLimit, postUserRateLimit } from 'middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
 import { getCollectionFollows, setCollectionFollow } from './_user/collectionFollows';
 import { getUserFollows, setUserFollow } from './_user/userFollows';

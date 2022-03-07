@@ -1,8 +1,8 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { FEATURED_LIMIT } from '@base/constants';
-import { getFeaturedCollectionsRef } from '@services/infinity/collections/getFeaturedCollections';
-import { docsToArray, jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { FEATURED_LIMIT } from '../constants';
+import { getFeaturedCollectionsRef } from 'services/infinity/collections/getFeaturedCollections';
+import { docsToArray, jsonString } from 'utils/formatters';
+import { error, log } from 'utils/logger';
 import { Router } from 'express';
 const router = Router();
 

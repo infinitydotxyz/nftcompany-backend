@@ -1,8 +1,8 @@
-import { getExchangeAddress, getProvider } from '@utils/ethers';
+import { getExchangeAddress, getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
 import { JsonFragment } from '@ethersproject/abi';
-import openseaAbi from '@base/abi/openseaExchangeContract.json';
-import { NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '@base/constants';
+import openseaAbi from 'abi/openseaExchangeContract.json';
+import { NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '../../../constants';
 
 export async function isValidNftcTxn(txnHash: string, chainId: string, actionType: 'fulfill' | 'cancel') {
   let isValid = true;

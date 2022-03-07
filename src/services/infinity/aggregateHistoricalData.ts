@@ -1,5 +1,5 @@
-import { HistoricalWeek, Hourly, WithTimestamp , OrderDirection , Keys } from '@infinityxyz/types/core';
-import { ONE_DAY } from '@base/constants';
+import { HistoricalWeek, Hourly, WithTimestamp, OrderDirection, Keys } from '@infinityxyz/types/core';
+import { ONE_DAY } from '../../constants';
 
 /**
  *  expects the database to be formatted as below

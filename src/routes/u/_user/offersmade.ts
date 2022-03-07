@@ -3,11 +3,11 @@ import {
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { OrderDirection , StatusCode } from '@infinityxyz/types/core';
-import { getFilteredUserOffersMade } from '@services/infinity/users/offers/getUserOffersRef';
-import { error } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+} from '../../../constants';
+import { OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUserOffersRef';
+import { error } from 'utils/logger';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 
 // fetch offer made by user

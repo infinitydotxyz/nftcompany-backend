@@ -1,4 +1,4 @@
-import { error } from '@utils/logger';
+import { error } from 'utils/logger';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { InviteResponse } from '@infinityxyz/types/services/discord';
 

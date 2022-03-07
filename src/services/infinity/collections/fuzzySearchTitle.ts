@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { getEndCode, getSearchFriendlyString } from 'utils/formatters';
 
 export async function fuzzySearchTitle(startsWithOrig: string, limit: number) {
   const startsWith = getSearchFriendlyString(startsWithOrig);

@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import { Router } from 'express';
 const router = Router();
 

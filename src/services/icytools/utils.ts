@@ -1,4 +1,4 @@
-import { ICY_TOOLS_API_KEY } from '@base/constants';
+import { ICY_TOOLS_API_KEY } from '../../constants';
 import axios from 'axios';
 
 export const icyToolsClient = axios.create({

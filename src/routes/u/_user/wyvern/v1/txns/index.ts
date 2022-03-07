@@ -1,10 +1,10 @@
-import { OrderSide , OrderDirection , StatusCode } from '@infinityxyz/types/core';
-import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from '@services/infinity/orders/getUserTxn';
-import { waitForMissedTxn } from '@services/infinity/orders/waitForMissedTxn';
-import { waitForTxn } from '@services/infinity/orders/waitForTxn';
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+import { OrderSide, OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from 'services/infinity/orders/getUserTxn';
+import { waitForMissedTxn } from 'services/infinity/orders/waitForMissedTxn';
+import { waitForTxn } from 'services/infinity/orders/waitForTxn';
+import { jsonString } from 'utils/formatters';
+import { error, log } from 'utils/logger';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 
 export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {

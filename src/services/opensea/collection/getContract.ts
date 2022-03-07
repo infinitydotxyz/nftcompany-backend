@@ -1,6 +1,6 @@
-import { CollectionInfo , Links } from '@infinityxyz/types/core';
-import { getSearchFriendlyString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { CollectionInfo, Links } from '@infinityxyz/types/core';
+import { getSearchFriendlyString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 

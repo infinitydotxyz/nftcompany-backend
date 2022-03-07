@@ -1,7 +1,7 @@
 import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern';
 import { OrderDirection } from '@infinityxyz/types/core';
-import { OPENSEA_API } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { OPENSEA_API } from '../../../constants';
+import { error, log } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from '../utils';
 

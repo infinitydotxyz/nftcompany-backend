@@ -1,11 +1,10 @@
-// import { firestore } from '@base/container';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/types/core';
-import { jsonString } from '@utils/formatters';
-import { fstrCnstnts } from '@base/constants';
-import { trimLowerCase } from '@utils/index';
+import { jsonString } from 'utils/formatters';
+import { fstrCnstnts } from '../../../constants';
+import { trimLowerCase } from 'utils/index';
 import { CollectionFollow } from '@infinityxyz/types/core/Follows';
 
 export const getCollectionFollows = async (

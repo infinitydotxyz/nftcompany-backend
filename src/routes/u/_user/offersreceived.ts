@@ -1,14 +1,14 @@
-import { OrderDirection , StatusCode } from '@infinityxyz/types/core';
+import { OrderDirection, StatusCode } from '@infinityxyz/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { error } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+} from '../../../constants';
+import { error } from 'utils/logger';
+import { parseQueryFields } from 'utils/parsers';
 import { Router, Request, Response } from 'express';
-import { getFilteredUserOffersReceived } from '@services/infinity/users/offers/getUserOffersRef';
+import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/getUserOffersRef';
 
 const router = Router();
 

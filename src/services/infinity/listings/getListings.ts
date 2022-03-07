@@ -1,8 +1,8 @@
-import { firestore } from '@base/container';
-import { ListingType , OrderDirection } from '@infinityxyz/types/core';
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
-import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { ListingType, OrderDirection } from '@infinityxyz/types/core';
+import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../constants';
+import { getEndCode, getSearchFriendlyString } from 'utils/formatters';
+import { error, log } from 'utils/logger';
 import { getOrdersResponse, getOrdersResponseFromArray } from '../utils';
 
 export async function getListingsStartingWithText(

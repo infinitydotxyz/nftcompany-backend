@@ -1,9 +1,9 @@
-import { ListingType, OrderSide , OrderDirection , StatusCode } from '@infinityxyz/types/core';
-import { jsonString } from '@utils/formatters';
+import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { jsonString } from 'utils/formatters';
 import { Request, Response, Router } from 'express';
-import { getOpenseaOrders } from '@services/opensea/orders';
-import { error } from '@utils/logger';
-import { WETH_ADDRESS } from '@base/constants';
+import { getOpenseaOrders } from 'services/opensea/orders';
+import { error } from 'utils/logger';
+import { WETH_ADDRESS } from '../../constants';
 
 const router = Router();
 

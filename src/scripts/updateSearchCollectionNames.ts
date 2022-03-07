@@ -10,9 +10,9 @@
  *
  */
 
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { sleep } from '@utils/index';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../constants';
+import { sleep } from 'utils';
 
 /**
  *

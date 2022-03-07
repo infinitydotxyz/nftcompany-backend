@@ -1,5 +1,5 @@
-import { firestore } from '@base/container';
-import { log } from '@utils/logger';
+import { firestore } from 'container';
+import { log } from 'utils/logger';
 import { ethers } from 'ethers';
 import { getUserMissedTxnRef } from './getUserTxn';
 

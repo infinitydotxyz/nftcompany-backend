@@ -1,9 +1,9 @@
 import { StatusCode } from '@infinityxyz/types/core';
-import { getOrdersByTokenId } from '@services/infinity/orders/getOrdersByTokenId';
-import { getOpenseaEvents } from '@services/opensea/events';
-import { getRawOpenseaOrdersByTokenAddress } from '@services/opensea/orders';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { getOrdersByTokenId } from 'services/infinity/orders/getOrdersByTokenId';
+import { getOpenseaEvents } from 'services/opensea/events';
+import { getRawOpenseaOrdersByTokenAddress } from 'services/opensea/orders';
+import { jsonString } from 'utils/formatters';
+import { error } from 'utils/logger';
 import { Request, Router } from 'express';
 import { stringify } from 'qs';
 

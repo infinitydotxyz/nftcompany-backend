@@ -1,7 +1,14 @@
-import { TWITTER_BEARER_TOKEN } from '@base/constants';
+import { TWITTER_BEARER_TOKEN } from '../../constants';
 import { Concrete } from '@infinityxyz/types/core';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { SearchResponse , InfinityTweet, InfinityTwitterAccount, Tweet , User , TwitterUserResponse } from '@infinityxyz/types/services/twitter';
+import {
+  SearchResponse,
+  InfinityTweet,
+  InfinityTwitterAccount,
+  Tweet,
+  User,
+  TwitterUserResponse
+} from '@infinityxyz/types/services/twitter';
 
 /**
  * access level is Elevated
