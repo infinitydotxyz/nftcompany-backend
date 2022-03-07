@@ -9,6 +9,7 @@ import { error } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Router, Request, Response } from 'express';
 import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/getUserOffersRef';
+import { trimLowerCase } from 'utils';
 
 const router = Router();
 
@@ -55,7 +56,7 @@ export const getUserOffersReceived = async (
     return;
   }
 
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Empty user');
     res.sendStatus(StatusCode.BadRequest);
@@ -91,7 +92,7 @@ export const getUserOffersReceived = async (
     }
     res.send(resp);
   } catch (err) {
-    error('Failed to get offers received by user ' + user);
+    error(`Failed to get offers received by user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }

@@ -3,9 +3,10 @@ import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
 
   if (!user) {
     error('Invalid input');

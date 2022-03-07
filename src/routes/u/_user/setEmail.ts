@@ -5,9 +5,10 @@ import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const email = (req.body.email || '').trim().toLowerCase();
   if (!user || !email) {
     error('Invalid input');

@@ -5,6 +5,7 @@ import { getTxnData } from 'services/infinity/orders/getTxnData';
 import { getUserTxnRef } from 'services/infinity/orders/getUserTxn';
 import { writeTxn } from 'services/infinity/orders/writeTxn';
 import { waitForTxn } from 'services/infinity/orders/waitForTxn';
+import { trimLowerCase } from 'utils';
 
 // check txn
 export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {
@@ -17,7 +18,7 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
       return;
     }
 
-    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    const user = trimLowerCase(req.params.user);
     if (!user) {
       error('Invalid input - no user');
       res.sendStatus(StatusCode.BadRequest);

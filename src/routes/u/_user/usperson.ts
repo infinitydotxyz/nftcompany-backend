@@ -2,9 +2,10 @@ import { UsPersonAnswer, StatusCode } from '@infinityxyz/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 export const postUsPerson = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const { usPerson }: { usPerson?: string } = req.body;
 
   let usPersonValue: string | number = '';

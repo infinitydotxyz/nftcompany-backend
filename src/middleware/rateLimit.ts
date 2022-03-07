@@ -1,11 +1,12 @@
 import rateLimit from 'express-rate-limit';
+import { trimLowerCase } from 'utils';
 
 export const postUserRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 200, // limit each user's address to 200 requests per windowMs
   keyGenerator: function (req, res) {
     // uses user's address as key for rate limiting
-    return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    return trimLowerCase(req.params.user);
   }
 });
 
@@ -14,7 +15,7 @@ export const getUserRateLimit = rateLimit({
   max: 200, // limit each user's address to 200 requests per windowMs
   keyGenerator: function (req, res) {
     // uses user's address as key for rate limiting
-    return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    return trimLowerCase(req.params.user);
   }
 });
 
@@ -24,6 +25,6 @@ export const lowRateLimit = rateLimit({
   max: 5, // limit each user's address to 5 requests per windowMs
   keyGenerator: function (req, res) {
     // uses user's address as key for rate limiting
-    return req.params.user ? req.params.user.trim().toLowerCase() : '';
+    return trimLowerCase(req.params.user);
   }
 });

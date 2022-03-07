@@ -216,7 +216,7 @@ export async function postCollectionInformation(
   res: Response<any, { authType: CollectionAuthType }>
 ) {
   const collectionAddress = req.params.collection.trim().toLowerCase();
-  // const editor = req.params.user.trim().toLowerCase();
+  // const editor = trimLowerCase(req.params.user);
   // const editorType = res.locals.authType;
 
   try {

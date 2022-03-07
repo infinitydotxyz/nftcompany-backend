@@ -4,12 +4,13 @@ import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '../constants';
 import { error } from '../utils/logger';
 import { StatusCode } from '@infinityxyz/types/core';
 import { firestore } from 'container';
+import { trimLowerCase } from 'utils';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // todo: adi for testing only
   // return true;
 
-  const userId = req.params.user.trim().toLowerCase();
+  const userId = trimLowerCase(req.params.user);
   const signature = req.header(auth.signature);
   const message = req.header(auth.message);
   if (!signature || !message) {
@@ -25,7 +26,7 @@ export async function authenticateUser(req: Request<{ user: string }>, res: Resp
       return;
     }
   } catch (err) {
-    error('Cannot authenticate user ' + userId);
+    error(`Cannot authenticate user ${userId}`);
     error(err);
   }
   res.sendStatus(StatusCode.Unauthorized);
@@ -48,7 +49,7 @@ export function authorizeCollectionEditor(
   next: NextFunction
 ) {
   const asyncHandler = async () => {
-    const userAddress = req.params.user.trim?.()?.toLowerCase?.();
+    const userAddress = trimLowerCase(req.params.user);
     const contractAddress = req.params.collection?.trim?.()?.toLowerCase?.();
 
     // const chainId = req.query.chainId?.trim?.();

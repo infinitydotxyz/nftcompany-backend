@@ -6,6 +6,7 @@ import { postListing } from 'services/infinity/listings/postListing';
 import { postOffer } from 'services/infinity/offers/postOffer';
 import { error, log } from 'utils/logger';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 // post a listing or make offer
 export const postUserOrders = async (req: Request<{ user: string }>, res: Response) => {
@@ -49,7 +50,7 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
 
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
 
-  const maker = (`${req.params.user}` || '').trim().toLowerCase();
+  const maker = trimLowerCase(req.params.user);
   if (!maker) {
     error('Invalid input');
     res.sendStatus(StatusCode.BadRequest);
@@ -58,7 +59,7 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
   // default one order per post call
   const numOrders = 1;
   const batch = firestore.db.batch();
-  log('Making an order for user: ' + maker);
+  log(`Making an order for user: ${maker}`);
   try {
     // check if token has bonus if payload instructs so
     let hasBonus = payload.metadata.hasBonusReward;

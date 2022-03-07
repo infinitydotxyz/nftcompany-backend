@@ -9,6 +9,7 @@ import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUse
 import { error } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 // fetch offer made by user
 export const getUserOffersMade = async (
@@ -53,7 +54,7 @@ export const getUserOffersMade = async (
     return;
   }
 
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Empty user');
     res.sendStatus(StatusCode.BadRequest);
@@ -89,7 +90,7 @@ export const getUserOffersMade = async (
     }
     res.send(resp);
   } catch (err) {
-    error('Failed to get offers made by user ' + user);
+    error(`Failed to get offers made by user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
