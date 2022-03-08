@@ -25,7 +25,7 @@
              |__{data}
 
 4. sales
-    |__1:AAbghuuiIU <chainId:firestore uuid>
+    |__AAbghuuiIU <firestore uuid>
        |__{data}
 
 5. listings
