@@ -184,7 +184,7 @@ function saveAssetsToFirestore(assets: Asset[]) {
   try {
     const fsBatchHandler = new FirestoreBatchHandler();
     for (const asset of assets) {
-      const docId = firestore.getAssetDocIdNew({
+      const docId = firestore.getDocIdHash({
         chainId: asset.chainId,
         tokenId: asset.tokenId,
         collectionAddress: asset.collectionAddress

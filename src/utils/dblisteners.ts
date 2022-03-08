@@ -10,6 +10,7 @@ let setupAllCollectionsListenerDone = false;
 
 /*
  * set up DB Listener on 'ALL_COLLECTIONS_COLL' to update the cache.
+ * todo: this needs to change to a listener on the `collections` collection.
  */
 export function setupAllCollectionsListener() {
   if (setupAllCollectionsListenerDone) {
