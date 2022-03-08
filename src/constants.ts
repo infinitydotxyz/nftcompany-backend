@@ -91,6 +91,7 @@ export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
 export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
+export const FIREBASE_SERVICE_ACCOUNT = 'firebase-dev.json';
 export const ORIGIN = /http:\/\/localhost:\d+/;
 
 export const ONE_HOUR = 3_600_000; // in ms

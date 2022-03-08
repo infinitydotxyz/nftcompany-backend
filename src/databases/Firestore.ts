@@ -2,7 +2,7 @@ import { singleton } from 'tsyringe';
 import firebaseAdmin from 'firebase-admin';
 import { Bucket, File } from '@google-cloud/storage';
 import crypto from 'crypto';
-import { FB_STORAGE_BUCKET } from '../constants';
+import { FB_STORAGE_BUCKET, FIREBASE_SERVICE_ACCOUNT } from '../constants';
 import { Readable } from 'stream';
 import { error, log, warn } from 'utils/logger';
 import { trimLowerCase } from 'utils';
@@ -18,7 +18,7 @@ export default class Firestore {
   bucket: Bucket;
 
   constructor() {
-    const serviceAccountPath = resolve(__dirname, '../../creds/nftc-dev-firebase-creds.json');
+    const serviceAccountPath = resolve(__dirname, `../../creds/${FIREBASE_SERVICE_ACCOUNT}`);
     const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
     firebaseAdmin.initializeApp({
       credential: firebaseAdmin.credential.cert(serviceAccount),
