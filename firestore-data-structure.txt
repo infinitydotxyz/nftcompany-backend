@@ -54,7 +54,7 @@
           |__AAbghuuiIU <firestore uuid>
              |__{data}
 
-7. collection-stats
+7. collectionStats
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress>
        |__{data}
        |__hourly
@@ -73,7 +73,7 @@
           |__yyyy
              |__{data}
 
-8. nft-stats
+8. nftStats
     |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
 
