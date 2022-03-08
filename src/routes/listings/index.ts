@@ -1,4 +1,4 @@
-import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/types/core';
+import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/lib/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,

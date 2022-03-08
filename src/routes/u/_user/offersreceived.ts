@@ -1,4 +1,4 @@
-import { OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,

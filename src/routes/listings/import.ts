@@ -1,4 +1,4 @@
-import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { jsonString } from 'utils/formatters';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from 'services/opensea/orders';

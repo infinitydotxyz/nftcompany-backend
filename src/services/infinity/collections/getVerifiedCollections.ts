@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { OrderDirection } from '@infinityxyz/types/core';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 
 export async function getVerifiedCollections(limit: number, startAfterName?: string) {

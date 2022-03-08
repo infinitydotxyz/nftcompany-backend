@@ -1,4 +1,4 @@
-import { OrderSide, StatusCode } from '@infinityxyz/types/core';
+import { OrderSide, StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserOrdersFromDocId } from 'services/infinity/orders/getUserOrderFromDocId';
 import { error, log } from 'utils/logger';
 import { Router } from 'express';
@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 const router = Router();
 
 /**
- * @typedef { import("@infinityxyz/types/core';
+ * @typedef { import("@infinityxyz/lib/types/core';
  */
 
 /**

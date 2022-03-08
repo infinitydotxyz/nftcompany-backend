@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { saveCollectionTraits } from 'services/infinity/collections/saveCollectionTraits';
 import { getCollectionTraitsFromOpensea } from 'services/opensea/collection/getCollectionTraitsFromOpensea';
 
@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 /**
- * @typedef { import("@infinityxyz/types/wyvern/TraitWithValues").WyvernTraitWithValues } WyvernTraitWithValues
+ * @typedef { import("@infinityxyz/lib/types/wyvern/TraitWithValues").WyvernTraitWithValues } WyvernTraitWithValues
  */
 
 /**

@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../constants';
-import { OrderDirection, ListingType } from '@infinityxyz/types/core';
+import { OrderDirection, ListingType } from '@infinityxyz/lib/types/core';
 import { error, log } from 'utils/logger';
 import { getOrdersResponseFromArray } from '../utils';
 

@@ -1,5 +1,5 @@
 import { error, log } from 'utils/logger';
-import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent';
+import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { covalentClient } from './utils';
 
 export async function getUserAssetsFromCovalent(address: string): Promise<CovalentWalletBalanceItem[]> {

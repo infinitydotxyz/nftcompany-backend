@@ -1,5 +1,5 @@
 import { TWITTER_BEARER_TOKEN } from '../../constants';
-import { Concrete } from '@infinityxyz/types/core';
+import { Concrete } from '@infinityxyz/lib/types/core';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import {
   SearchResponse,
@@ -8,7 +8,7 @@ import {
   Tweet,
   User,
   TwitterUserResponse
-} from '@infinityxyz/types/services/twitter';
+} from '@infinityxyz/lib/types/services/twitter';
 
 /**
  * access level is Elevated

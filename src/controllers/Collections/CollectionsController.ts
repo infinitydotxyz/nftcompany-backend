@@ -1,5 +1,5 @@
 import { Twitter } from 'services/twitter/Twitter';
-import { InfinityTwitterAccount } from '@infinityxyz/types/services/twitter';
+import { InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { error, log } from 'utils/logger';
@@ -26,7 +26,7 @@ import {
   Links,
   WithTimestamp,
   StatusCode
-} from '@infinityxyz/types/core';
+} from '@infinityxyz/lib/types/core';
 import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
 import { getCollectionInfoFromOpensea, getCollectionLinks } from 'services/opensea/collection/getContract';

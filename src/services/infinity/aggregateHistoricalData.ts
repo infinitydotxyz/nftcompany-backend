@@ -1,4 +1,4 @@
-import { HistoricalWeek, Hourly, WithTimestamp, OrderDirection, Keys } from '@infinityxyz/types/core';
+import { HistoricalWeek, Hourly, WithTimestamp, OrderDirection, Keys } from '@infinityxyz/lib/types/core';
 import { ONE_DAY } from '../../constants';
 
 /**

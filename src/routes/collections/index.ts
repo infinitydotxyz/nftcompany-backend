@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUniqueItemsByProperties } from 'utils/index';
 import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';

@@ -1,4 +1,4 @@
-import { UsPersonAnswer, StatusCode } from '@infinityxyz/types/core';
+import { UsPersonAnswer, StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';

@@ -1,4 +1,4 @@
-import { CollectionStats } from '@infinityxyz/types/core';
+import { CollectionStats } from '@infinityxyz/lib/types/core';
 import { error } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';

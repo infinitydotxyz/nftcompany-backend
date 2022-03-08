@@ -1,4 +1,4 @@
-import { OrderSide } from '@infinityxyz/types/core';
+import { OrderSide } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 import { log } from 'utils/logger';
 import { getUserInfoRef } from '../users/getUser';

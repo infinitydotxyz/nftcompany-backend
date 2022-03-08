@@ -1,4 +1,4 @@
-import { OrderSide, OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from 'services/infinity/orders/getUserTxn';
 import { waitForMissedTxn } from 'services/infinity/orders/waitForMissedTxn';
 import { waitForTxn } from 'services/infinity/orders/waitForTxn';

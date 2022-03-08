@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';

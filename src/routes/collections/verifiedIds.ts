@@ -1,4 +1,4 @@
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getVerifiedCollectionIds } from 'services/infinity/collections/getVerifiedCollectionIds';
 import { validateInputs } from 'utils/index';
 import { error } from 'utils/logger';

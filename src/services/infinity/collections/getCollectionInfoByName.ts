@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { CollectionInfo } from '@infinityxyz/types/core';
+import { CollectionInfo } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 
 export async function getCollectionInfoByName(searchCollectionName: string, limit: number) {

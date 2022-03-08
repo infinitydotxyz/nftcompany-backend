@@ -1,4 +1,4 @@
-import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/types/core';
+import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/lib/types/core';
 import { error } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';

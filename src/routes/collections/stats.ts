@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { OrderDirection, StatusCode } from '@infinityxyz/types/core';
+import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '../../constants';
 import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';

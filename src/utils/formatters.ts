@@ -22,8 +22,8 @@ export function getEndCode(searchTerm: string) {
   return endCode;
 }
 
-export function normalizeAddress(address: string) {
-  return address.trim().toLowerCase();
+export function trimLowerCase(str: string) {
+  return (str || '').trim().toLowerCase();
 }
 
 /**

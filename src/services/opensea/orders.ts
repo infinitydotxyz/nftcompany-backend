@@ -1,5 +1,5 @@
-import { Listing, ListingResponse, OrderSide, OrderDirection } from '@infinityxyz/types/core';
-import { WyvernAssetData, WyvernSellOrder } from '@infinityxyz/types/protocols/wyvern';
+import { Listing, ListingResponse, OrderSide, OrderDirection } from '@infinityxyz/lib/types/core';
+import { WyvernAssetData, WyvernSellOrder } from '@infinityxyz/lib/types/protocols/wyvern';
 import { deepCopy } from 'utils';
 import { error, log } from 'utils/logger';
 import { AxiosResponse } from 'axios';

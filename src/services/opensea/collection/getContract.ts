@@ -1,4 +1,4 @@
-import { CollectionInfo, Links } from '@infinityxyz/types/core';
+import { CollectionInfo, Links } from '@infinityxyz/lib/types/core';
 import { getSearchFriendlyString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { AxiosResponse } from 'axios';

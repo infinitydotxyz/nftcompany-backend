@@ -1,6 +1,6 @@
 // import { firestore } from '@base/container';
 import { firestore } from 'container';
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../../constants';
 import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
 import { getUserInfoRef } from 'services/infinity/users/getUser';

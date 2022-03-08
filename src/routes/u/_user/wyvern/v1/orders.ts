@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { OrderSide, StatusCode } from '@infinityxyz/types/core';
+import { OrderSide, StatusCode } from '@infinityxyz/lib/types/core';
 import { NFTC_FEE_ADDRESS } from '../../../../../constants';
 import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
 import { postListing } from 'services/infinity/listings/postListing';

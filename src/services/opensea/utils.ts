@@ -10,9 +10,9 @@ import {
   ListingType,
   Order,
   Trait
-} from '@infinityxyz/types/core';
+} from '@infinityxyz/lib/types/core';
 
-import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@infinityxyz/types/protocols/wyvern';
+import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@infinityxyz/lib/types/protocols/wyvern';
 import { fstrCnstnts, OPENSEA_API_KEY } from '../../constants';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from 'services/infinity/utils';

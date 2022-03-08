@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
 import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '../constants';
 import { error } from '../utils/logger';
-import { StatusCode } from '@infinityxyz/types/core';
+import { StatusCode } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { trimLowerCase } from 'utils';
 
