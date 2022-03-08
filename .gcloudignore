@@ -13,5 +13,22 @@
 .git
 .gitignore
 
+ci
+src
+fs-bq-extensions
+
+.github
+.idea
+.vscode
+.editorconfig
+.env.example
+firestore-data-structure.txt
+firestore.js
+firestore.indexes.json
+.eslintrc.js
+.firebaserc
+tsconfig.json
+tsconfig.tsbuildinfo
+
 # Node.js dependencies:
 node_modules/
