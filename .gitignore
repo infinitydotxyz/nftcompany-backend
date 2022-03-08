@@ -110,7 +110,6 @@ dist
 
 # cred files
 creds/
-.npmrc
 
 # TernJS port file
 .tern-port
