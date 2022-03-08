@@ -192,6 +192,9 @@ function saveAssetsToFirestore(assets: Asset[]) {
       const docRef = firestore.db.collection(fstrCnstnts.ASSETS_COLL).doc(docId);
       fsBatchHandler.add(docRef, asset, { merge: true });
     }
+    fsBatchHandler.flush().catch((err) => {
+      error(err);
+    });
   } catch (err: any) {
     error('Failed saving user assets to firestore');
   }

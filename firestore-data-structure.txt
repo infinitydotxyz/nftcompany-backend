@@ -76,6 +76,21 @@
 8. nftStats
     |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
+       |__hourly
+          |__yyyy-mm-dd-hh
+             |__{data}
+       |__daily
+          |__yyyy-mm-dd
+             |__{data}
+       |__weekly
+          |__yyyy-mm-ww
+             |__{data}
+       |__monthly
+          |__yyyy-mm
+             |__{data}
+       |__yearly
+          |__yyyy
+             |__{data}
 
 9. assets
     |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
