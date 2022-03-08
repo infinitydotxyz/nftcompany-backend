@@ -6,9 +6,10 @@ import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const queries = parseQueryFields(res, req, ['limit', 'startAfterMillis'], ['50', `${Date.now()}`]);
 
   if ('error' in queries) {
@@ -70,7 +71,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
     });
     res.send(respStr);
   } catch (err) {
-    error('Failed to get pending txns of user ' + user);
+    error(`Failed to get pending txns of user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
@@ -88,7 +89,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
       return;
     }
 
-    const user = (`${req.params.user}` || '').trim().toLowerCase();
+    const user = trimLowerCase(req.params.user);
     if (!user) {
       error('Invalid input');
       res.sendStatus(StatusCode.BadRequest);

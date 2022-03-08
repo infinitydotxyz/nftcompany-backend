@@ -3,10 +3,11 @@ import { StatusCode } from '@infinityxyz/types/core';
 import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { Request, Response } from 'express';
+import { trimLowerCase } from 'utils';
 
 // fetch user reward
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Invalid input');
     res.sendStatus(StatusCode.InternalServerError);

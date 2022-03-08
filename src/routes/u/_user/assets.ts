@@ -8,7 +8,7 @@ import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFrom
 import { getUserAssetsFromOpenSea } from 'services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from 'services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@infinityxyz/types/services/alchemy';
-import { validateInputs, hexToDecimalTokenId } from 'utils/index';
+import { validateInputs, hexToDecimalTokenId, trimLowerCase } from 'utils/index';
 import { UnmarshalUserAssetResponse } from '@infinityxyz/types/services/unmarshal';
 import { CovalentWalletBalanceItem } from '@infinityxyz/types/services/covalent';
 import { WyvernAssetData } from '@infinityxyz/types/protocols/wyvern';
@@ -25,7 +25,7 @@ export const getUserAssets = async (
   >,
   res: Response
 ) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const { source, collectionIds, chainId, pageKey } = req.query;
   const sourceName = nftDataSources[source];
   const contract = req.query.contract ?? '';
