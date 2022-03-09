@@ -1,5 +1,5 @@
 import { BuyOrder, MarketOrder, SellOrder, StatusCode } from '@infinityxyz/lib/types/core';
-import { error } from 'utils/logger';
+import { error } from '../../../../utils/logger';
 import { Request, Response } from 'express';
 import { marketOrders } from './marketOrders';
 import { trimLowerCase } from '@infinityxyz/lib/utils';
@@ -39,11 +39,6 @@ export const market = async (req: Request<Req, any, Body>, res: Response<ResBody
 
     // set result
     const resp = { result: result, error: '' };
-    res.set({
-      'Cache-Control': 'must-revalidate, max-age=60'
-      // 'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
-    });
-
     res.send(resp);
     return;
   } catch (err) {
