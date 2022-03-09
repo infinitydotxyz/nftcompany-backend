@@ -10,6 +10,7 @@ import verifiedIds from './verifiedIds';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
+import { getNftDetails } from './_id/_tokenId/details';
 import stats from './stats';
 
 const router = Router();
@@ -22,6 +23,7 @@ router.use('/featured', featured);
 router.use('/verified', verified);
 router.use('/verifiedIds', verifiedIds);
 router.get('/:slug', getCollectionInfo);
+router.get('/:tokenAddress/:tokenId/:chain/image', getNftDetails);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
