@@ -70,7 +70,7 @@ interface validateInputsProps {
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType, chain, tokenAddress, tokenId } = props;
+  const { listType, chain, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
