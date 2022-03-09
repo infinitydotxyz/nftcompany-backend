@@ -16,6 +16,7 @@ import { lowRateLimit, postUserRateLimit } from 'middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
 import { getCollectionFollows, setCollectionFollow } from './_user/collectionFollows';
 import { getUserFollows, setUserFollow } from './_user/userFollows';
+import { market } from './_user/market/market';
 
 const router = Router();
 
@@ -41,5 +42,6 @@ router.post('/:user/wyvern/v1/txns', postUserRateLimit, postUserTxn);
 router.post('/:user/wyvern/v1/orders', postUserRateLimit, postUserOrders);
 router.post('/:user/collectionFollows', postUserRateLimit, setCollectionFollow);
 router.post('/:user/userFollows', postUserRateLimit, setUserFollow);
+router.post('/:user/market', postUserRateLimit, market);
 
 export default router;
