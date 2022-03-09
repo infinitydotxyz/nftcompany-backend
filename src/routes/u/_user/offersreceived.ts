@@ -9,7 +9,7 @@ import { error } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Router, Request, Response } from 'express';
 import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/getUserOffersRef';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

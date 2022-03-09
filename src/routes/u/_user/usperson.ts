@@ -2,7 +2,7 @@ import { UsPersonAnswer, StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const postUsPerson = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);

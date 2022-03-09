@@ -5,7 +5,7 @@ import { getTxnData } from 'services/infinity/orders/getTxnData';
 import { getUserTxnRef } from 'services/infinity/orders/getUserTxn';
 import { writeTxn } from 'services/infinity/orders/writeTxn';
 import { waitForTxn } from 'services/infinity/orders/waitForTxn';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // check txn
 export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {

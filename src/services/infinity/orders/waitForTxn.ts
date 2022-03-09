@@ -1,12 +1,12 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { getProvider } from 'utils/ethers';
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { cancelListing } from '../listings/cancelListing';
 import { cancelOffer } from '../offers/cancelOffer';
 import { fulfillOrder } from './fulfillOrder';
 import { isValidNftcTxn } from './isValidNftcTxn';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 export async function waitForTxn(user: any, payload: any) {
   user = user.trim().toLowerCase();

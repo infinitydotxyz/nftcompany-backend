@@ -9,7 +9,8 @@ import {
   DEFAULT_PRICE_SORT_DIRECTION
 } from '../../../constants';
 import { getFilteredUserListings } from 'services/infinity/listings/getUserListing';
-import { validateInputs, trimLowerCase } from 'utils';
+import { validateInputs } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // fetch listings of user
 export const getUserListings = async (

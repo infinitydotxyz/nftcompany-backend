@@ -1,5 +1,5 @@
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 import rateLimit from 'express-rate-limit';
-import { trimLowerCase } from 'utils';
 
 export const postUserRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes

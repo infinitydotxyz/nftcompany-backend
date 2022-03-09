@@ -1,6 +1,5 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUniqueItemsByProperties } from 'utils/index';
-import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { Router } from 'express';
 import { getTraits } from './_id/traits';
@@ -12,6 +11,7 @@ import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
 import stats from './stats';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

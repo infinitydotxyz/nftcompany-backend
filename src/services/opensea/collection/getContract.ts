@@ -1,8 +1,8 @@
 import { CollectionInfo, Links } from '@infinityxyz/lib/types/core';
-import { getSearchFriendlyString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
+import { getSearchFriendlyString } from '@infinityxyz/lib/utils';
 
 interface ContractResponse {
   collection: Collection;

@@ -1,9 +1,8 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);

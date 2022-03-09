@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 // check if token is verified or has bonus reward
 export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string }>, res: Response) => {

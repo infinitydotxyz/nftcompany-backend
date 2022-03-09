@@ -1,4 +1,3 @@
-import { jsonString } from 'utils/formatters';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 import { error, log } from 'utils/logger';
@@ -8,13 +7,14 @@ import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFrom
 import { getUserAssetsFromOpenSea } from 'services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from 'services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@infinityxyz/lib/types/services/alchemy';
-import { validateInputs, hexToDecimalTokenId, trimLowerCase } from 'utils/index';
+import { validateInputs, hexToDecimalTokenId } from 'utils/index';
 import { UnmarshalUserAssetResponse } from '@infinityxyz/lib/types/services/unmarshal';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
+import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getUserAssets = async (
   req: Request<

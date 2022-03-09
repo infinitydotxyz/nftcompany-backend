@@ -1,11 +1,11 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { getProvider } from 'utils/ethers';
-import { jsonString } from 'utils/formatters';
 import { error, log, trace } from 'utils/logger';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 import { isValidNftcTxn } from './isValidNftcTxn';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 export async function waitForMissedTxn(user: any, payload: any) {
   user = user.trim().toLowerCase();

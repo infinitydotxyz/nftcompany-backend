@@ -55,10 +55,6 @@ export function getNextWeek(weekNumber: number, year: number) {
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
 
-export function trimLowerCase(str: string) {
-  return (str || '').trim().toLowerCase();
-}
-
 // validate api inputs; return a StatusCode if error;
 // example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {

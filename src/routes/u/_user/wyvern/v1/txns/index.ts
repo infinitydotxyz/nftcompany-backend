@@ -2,11 +2,10 @@ import { OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/co
 import { getUserMissedTxnsRef, getUserTxnRef, getUserTxnsRef } from 'services/infinity/orders/getUserTxn';
 import { waitForMissedTxn } from 'services/infinity/orders/waitForMissedTxn';
 import { waitForTxn } from 'services/infinity/orders/waitForTxn';
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getUserTxns = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);

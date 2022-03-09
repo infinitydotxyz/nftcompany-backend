@@ -3,7 +3,6 @@ import { InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter'
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { error, log } from 'utils/logger';
-import { jsonString } from 'utils/formatters';
 import { firestore } from 'container';
 import {
   fstrCnstnts,
@@ -36,6 +35,7 @@ import { CollectionAuthType } from 'middleware/auth';
 import { UploadedFile } from 'express-fileupload';
 import { getCollectionFromOpensea } from 'services/opensea/collection/getCollection';
 import { getChainId } from 'utils/ethers';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 interface FollowerData {
   followersCount: number;

@@ -1,9 +1,9 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getPurchaseLeaders } from 'services/infinity/users/purchases/getPurchaseLeaders';
 import { getSaleLeaders } from 'services/infinity/users/sales/getSaleLeaders';
-import { jsonString } from 'utils/formatters';
 import { error } from 'utils/logger';
 import { Router } from 'express';
+import { jsonString } from '@infinityxyz/lib/utils';
 const router = Router();
 
 // fetch rewards leaderboard

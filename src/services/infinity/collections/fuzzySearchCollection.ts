@@ -1,6 +1,6 @@
+import { getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { getEndCode, getSearchFriendlyString } from 'utils/formatters';
 
 export async function fuzzySearchCollection(startsWithQuery: string, limit: number) {
   const startsWith = getSearchFriendlyString(startsWithQuery);

@@ -2,13 +2,13 @@ import { ListingMetadata, RewardTiers } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '../../constants';
 import { checkOwnershipChange } from 'services/ethereum/checkOwnershipChange';
 import { getProvider } from 'utils/ethers';
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { Contract, ethers } from 'ethers';
 import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
 import openseaExchangeContract from 'abi/openseaExchangeContract.json';
 import { Provider } from '@ethersproject/abstract-provider';
 import { firestore } from 'container';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');

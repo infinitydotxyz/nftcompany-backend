@@ -2,10 +2,10 @@ import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { getAssetFromCovalent } from 'services/covalent/getAssetFromCovalent';
 import { getAssetFromOpensea } from 'services/opensea/assets/getAssetFromOpensea';
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { getAssetAsListing } from '../utils';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
   log('Getting asset as listing from db');

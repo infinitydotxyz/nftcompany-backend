@@ -1,8 +1,8 @@
 import { COVALENT_API_KEY } from '../../constants';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
-import { getSearchFriendlyString } from 'utils/formatters';
 import axios from 'axios';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
+import { getSearchFriendlyString } from '@infinityxyz/lib/utils';
 
 export const covalentClient = axios.create({
   baseURL: 'https://api.covalenthq.com/v1/',

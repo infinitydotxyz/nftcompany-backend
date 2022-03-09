@@ -4,7 +4,7 @@ import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '../constants';
 import { error } from '../utils/logger';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // todo: adi for testing only

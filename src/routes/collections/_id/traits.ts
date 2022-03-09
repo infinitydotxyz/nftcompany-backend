@@ -1,11 +1,10 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { saveCollectionTraits } from 'services/infinity/collections/saveCollectionTraits';
 import { getCollectionTraitsFromOpensea } from 'services/opensea/collection/getCollectionTraitsFromOpensea';
-
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
+import { jsonString } from '@infinityxyz/lib/utils';
 
 /**
  * @typedef { import("@infinityxyz/lib/types/wyvern/TraitWithValues").WyvernTraitWithValues } WyvernTraitWithValues

@@ -9,7 +9,7 @@ import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUse
 import { error } from 'utils/logger';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // fetch offer made by user
 export const getUserOffersMade = async (

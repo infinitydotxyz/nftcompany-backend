@@ -1,9 +1,8 @@
 import { firestore } from 'container';
 import { StatusCode } from '@infinityxyz/lib/types/core';
-import { jsonString } from 'utils/formatters';
 import { error, log } from 'utils/logger';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 // fetch user reward
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {

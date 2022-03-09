@@ -5,7 +5,7 @@ import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from 'utils/logger';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);

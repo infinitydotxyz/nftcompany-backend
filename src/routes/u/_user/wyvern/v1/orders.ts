@@ -6,7 +6,7 @@ import { postListing } from 'services/infinity/listings/postListing';
 import { postOffer } from 'services/infinity/offers/postOffer';
 import { error, log } from 'utils/logger';
 import { Request, Response } from 'express';
-import { trimLowerCase } from 'utils';
+import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // post a listing or make offer
 export const postUserOrders = async (req: Request<{ user: string }>, res: Response) => {
