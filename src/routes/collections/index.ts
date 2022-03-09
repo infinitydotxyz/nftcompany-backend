@@ -10,7 +10,7 @@ import verifiedIds from './verifiedIds';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
-import { getNftDetails } from './_id/_tokenId/details';
+import { getNftDetails } from './_id/_tokenId/_chain/details';
 import stats from './stats';
 
 const router = Router();
