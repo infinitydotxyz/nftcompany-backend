@@ -1,4 +1,4 @@
-import { BuyOrder, SellOrder, StatusCode } from '@infinityxyz/lib/types/core';
+import { BuyOrder, MarketOrder, SellOrder, StatusCode } from '@infinityxyz/lib/types/core';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 import { marketOrders } from './marketOrders';
@@ -15,7 +15,7 @@ interface Req {
 
 interface ResBody {
   error: string;
-  result: any;
+  result: MarketOrder[];
 }
 
 export const market = async (req: Request<Req, any, Body>, res: Response<ResBody>) => {
@@ -47,7 +47,7 @@ export const market = async (req: Request<Req, any, Body>, res: Response<ResBody
     res.send(resp);
     return;
   } catch (err) {
-    error('Failed to get titles', err);
+    error('Failed', err);
     res.sendStatus(StatusCode.InternalServerError);
   }
 };
@@ -61,9 +61,6 @@ const badRequest = (req: Request<Req, any, Body>, res: Response): boolean => {
   const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Invalid input - no user');
-    console.log(req.params);
-    console.log(req.url);
-    console.log(req.baseUrl);
     return true;
   }
 
