@@ -4,6 +4,7 @@ import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
 import { validateInputs } from 'utils';
+import { fstrCnstnts } from '../../../../../constants';
 import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getNftDetails = async (
@@ -22,7 +23,7 @@ export const getNftDetails = async (
     const chainId = getChainId(chain);
 
     const doc = await firestore
-      .collection('collections')
+      .collection(fstrCnstnts.COLLECTIONS_COLL)
       .doc(`${chainId}:${tokenAddress}`)
       .collection('nfts')
       .doc(tokenId)
