@@ -81,7 +81,12 @@ export const getNftImage = async (
     if (doc.exists) {
       const docData = doc.data();
       if (!docData) return;
-      res.send(docData.image.url);
+      const respStr = docData?.image?.url;
+      res.set({
+        'Cache-Control': 'must-revalidate, max-age=300',
+        'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
+      });
+      res.send(respStr);
     } else {
       res.send('');
     }
