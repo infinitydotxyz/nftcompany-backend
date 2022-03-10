@@ -30,7 +30,8 @@ export const getNftDetails = async (
     if (doc.exists) {
       const docData = doc.data();
       if (!docData) return;
-      const respStr = JSON.stringify({ imageUrl: docData?.image?.url });
+      const imageUrl = docData?.image?.url || docData?.image?.originalUrl;
+      const respStr = JSON.stringify({ imageUrl });
       res.set({
         'Cache-Control': 'must-revalidate, max-age=300',
         'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
