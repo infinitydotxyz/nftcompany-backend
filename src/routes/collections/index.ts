@@ -23,7 +23,7 @@ router.use('/featured', featured);
 router.use('/verified', verified);
 router.use('/verifiedIds', verifiedIds);
 router.get('/:slug', getCollectionInfo);
-router.get('/:tokenAddress/:tokenId/:chain/image', getNftDetails);
+router.get('/:chain/:tokenAddress/:tokenId/image', getNftDetails);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
