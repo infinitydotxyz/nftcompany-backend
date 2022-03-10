@@ -29,6 +29,7 @@ export const fstrCnstnts = {
   OPENSEA_COLL: 'combinedOpenseaSnapshot',
   INFO_DOC: 'info',
   COLLECTION_LISTINGS_COLL: 'collectionListings',
+  COLLECTIONS_COLL: 'collections',
   ALL_COLLECTIONS_COLL: 'allCollections',
   BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
   USERS_COLL: 'users',
