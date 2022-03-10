@@ -1,13 +1,10 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
-import { getChainId, getProvider } from 'utils/ethers';
+import { getChainId } from 'utils/ethers';
 import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
 import { validateInputs } from 'utils';
 import { trimLowerCase } from '@infinityxyz/lib/utils';
-
-// todo: adi constants
-const dogTokenAddress = '0x3604035F54e5fe0875652842024b49D1Fea11C7C';
 
 export const getNftDetails = async (
   req: Request<{ tokenAddress: string; tokenId: string; chain: string }>,
