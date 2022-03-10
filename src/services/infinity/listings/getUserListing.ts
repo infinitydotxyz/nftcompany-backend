@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../constants';
 import { OrderDirection, ListingType } from '@infinityxyz/lib/types/core';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getOrdersResponseFromArray } from '../utils';
 
 export function getUserListingsRef(userAddress: string) {

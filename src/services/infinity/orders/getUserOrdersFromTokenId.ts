@@ -1,6 +1,6 @@
 import { OrderSide } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { getUserInfoRef } from '../users/getUser';
 
 export async function getUserOrdersFromTokenId(

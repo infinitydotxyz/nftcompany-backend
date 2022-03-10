@@ -1,8 +1,7 @@
 import { BuyOrder, MarketOrder, SellOrder, StatusCode } from '@infinityxyz/lib/types/core';
-import { error } from '../../../../utils/logger';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { marketOrders } from './marketOrders';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 interface Body {
   buyOrder?: BuyOrder;

@@ -1,6 +1,6 @@
 import { sleep } from 'utils';
-import { error } from 'utils/logger';
 import { firestore } from 'container';
+import { error } from '@infinityxyz/lib/utils';
 
 const MAX_SIZE = 500;
 

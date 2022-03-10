@@ -1,4 +1,4 @@
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { covalentClient } from './utils';
 

@@ -3,7 +3,7 @@ import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error } from './logger';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {

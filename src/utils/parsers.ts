@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response } from 'express';
-import { error } from './logger';
+import { error } from '@infinityxyz/lib/utils';
 
 // get and parseFloat (also validate float) req.query fields, return a map of { fieldName: numberValue,... }
 export function parseQueryFields<K extends string>(

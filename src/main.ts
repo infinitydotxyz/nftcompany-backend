@@ -5,11 +5,11 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import router from 'routes';
-import { log } from 'utils/logger';
 import { requestErrorHandler } from 'middleware/errorHandler';
 import { requestLogger } from 'middleware/logger';
 import { registerDocs } from './docs';
 import { ORIGIN } from './constants';
+import { log } from '@infinityxyz/lib/utils';
 
 const app = express();
 

@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { bn, toFixed5 } from 'utils';
-import { log, trace } from 'utils/logger';
+import { trace, log } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 

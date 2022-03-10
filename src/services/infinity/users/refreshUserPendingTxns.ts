@@ -1,5 +1,5 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { error } from 'utils/logger';
+import { error } from '@infinityxyz/lib/utils';
 import { getUserMissedTxnsRef, getUserTxnsRef } from '../orders/getUserTxn';
 import { waitForMissedTxn } from '../orders/waitForMissedTxn';
 import { waitForTxn } from '../orders/waitForTxn';

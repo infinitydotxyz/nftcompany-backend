@@ -1,6 +1,6 @@
 import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
 import { OPENSEA_API } from '../../../constants';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 

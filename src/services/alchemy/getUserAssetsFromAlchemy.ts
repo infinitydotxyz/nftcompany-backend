@@ -1,4 +1,4 @@
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { AlchemyUserAssetResponse } from '@infinityxyz/lib/types/services/alchemy';
 import { getAlchemyClient } from './utils';

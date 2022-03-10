@@ -6,10 +6,9 @@ import {
 } from '../../../constants';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUserOffersRef';
-import { error } from 'utils/logger';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // fetch offer made by user
 export const getUserOffersMade = async (

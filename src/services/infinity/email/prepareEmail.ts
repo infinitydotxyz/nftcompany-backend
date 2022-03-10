@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { fstrCnstnts, SITE_BASE } from '../../../constants';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getEmptyUserProfileInfo } from '../utils';
 import { sendEmail } from './sendEmail';
 

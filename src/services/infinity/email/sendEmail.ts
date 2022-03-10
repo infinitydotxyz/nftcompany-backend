@@ -1,6 +1,6 @@
 import { INFINITY_EMAIL } from '../../../constants';
 import nodemailer from 'nodemailer';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 

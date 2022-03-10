@@ -2,9 +2,8 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { FEATURED_LIMIT } from '../constants';
 import { getFeaturedCollectionsRef } from 'services/infinity/collections/getFeaturedCollections';
 import { docsToArray } from 'utils/formatters';
-import { error, log } from 'utils/logger';
 import { Router } from 'express';
-import { jsonString } from '@infinityxyz/lib/utils';
+import { error, jsonString, log } from '@infinityxyz/lib/utils';
 const router = Router();
 
 // get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.

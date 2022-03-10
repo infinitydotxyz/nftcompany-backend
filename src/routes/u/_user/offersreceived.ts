@@ -5,11 +5,10 @@ import {
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
 } from '../../../constants';
-import { error } from 'utils/logger';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Router, Request, Response } from 'express';
 import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/getUserOffersRef';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

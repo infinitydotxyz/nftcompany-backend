@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { OrderSide } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 
 export function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: boolean, side: OrderSide) {

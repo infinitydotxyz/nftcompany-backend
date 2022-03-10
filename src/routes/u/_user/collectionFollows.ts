@@ -1,10 +1,9 @@
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error } from 'utils/logger';
+import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 import { CollectionFollow } from '@infinityxyz/lib/types/core/Follows';
-import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getCollectionFollows = async (
   req: Request<

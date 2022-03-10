@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getChainId, getProvider } from 'utils/ethers';
-import { error } from 'utils/logger';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
@@ -9,7 +9,6 @@ import dogeAbi from 'abi/doge2048nft.json';
 // todo: adi change this
 import factoryAbi from 'abi/infinityFactory.json';
 import { metadataForDoge2048Nft } from 'routes/nfts/doge_builder/images';
-import { jsonString } from '@infinityxyz/lib/utils';
 
 // todo: adi constants
 const dogTokenAddress = '0x3604035F54e5fe0875652842024b49D1Fea11C7C';
