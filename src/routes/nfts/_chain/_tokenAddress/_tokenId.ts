@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getChainId, getProvider } from 'utils/ethers';
-import { error, jsonString } from '@infinityxyz/lib/utils';
+import { error, jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
@@ -18,9 +18,9 @@ export const getAssetMetadata = async (
   req: Request<{ tokenAddress: string; tokenId: string; chain: string }>,
   res: Response
 ) => {
-  const tokenAddress = req.params.tokenAddress.trim().toLowerCase();
+  const tokenAddress = trimLowerCase(req.params.tokenAddress);
   const tokenId = req.params.tokenId;
-  const chain = req.params.chain.trim().toLowerCase();
+  const chain = trimLowerCase(req.params.chain);
   try {
     // read data from chain
     const chainId = getChainId(chain);
