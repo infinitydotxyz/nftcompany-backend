@@ -4,10 +4,9 @@ import { Bucket, File } from '@google-cloud/storage';
 import crypto from 'crypto';
 import { FB_STORAGE_BUCKET, FIREBASE_SERVICE_ACCOUNT } from '../constants';
 import { Readable } from 'stream';
-import { error, log, warn } from 'utils/logger';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
+import { error, log, trimLowerCase, warn } from '@infinityxyz/lib/utils';
 
 @singleton()
 export default class Firestore {

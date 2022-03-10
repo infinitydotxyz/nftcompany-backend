@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { prepareEmail } from '../email/prepareEmail';
 import { updateNumOrders } from '../orders/updateNumOrders';
 import { getProvider } from 'utils/ethers';

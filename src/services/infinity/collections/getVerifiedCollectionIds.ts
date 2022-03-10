@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { setupAllCollectionsListener } from 'utils/dblisteners';
 
 export let verifiedCollectionIds;

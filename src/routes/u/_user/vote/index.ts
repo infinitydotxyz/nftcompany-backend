@@ -4,7 +4,7 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../../constants';
 import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error } from 'utils/logger';
+import { error } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 

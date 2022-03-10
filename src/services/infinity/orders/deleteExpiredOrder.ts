@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { deleteListing } from '../listings/deleteListing';
 import { deleteOffer } from '../offers/deleteOffer';
 

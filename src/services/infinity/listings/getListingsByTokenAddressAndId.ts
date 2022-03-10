@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { fetchAssetAsListingFromDb } from '../assets/getAssetsAsListings';
 import { getOrdersResponse } from '../utils';
 

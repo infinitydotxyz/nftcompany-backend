@@ -1,5 +1,5 @@
 import { fstrCnstnts } from '../../../constants';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getUserInfoRef } from '../users/getUser';
 import { deleteListing } from './deleteListing';
 

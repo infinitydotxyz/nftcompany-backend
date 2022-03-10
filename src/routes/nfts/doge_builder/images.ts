@@ -11,7 +11,7 @@ import { Readable } from 'stream';
 import { firestore } from 'container';
 import { NftMetadata } from '../types/NftMetadata';
 import { fstrCnstnts } from '../../../constants';
-import { error } from 'utils/logger';
+import { error } from '@infinityxyz/lib/utils';
 const { loadImage } = Canvas;
 const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';

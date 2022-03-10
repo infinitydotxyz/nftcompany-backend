@@ -1,11 +1,10 @@
 // import { firestore } from '@base/container';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error } from 'utils/logger';
+import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 import { UserFollow } from '@infinityxyz/lib/types/core/Follows';
-import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getUserFollows = async (
   req: Request<

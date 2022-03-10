@@ -58,7 +58,7 @@ export class MarketOrders {
 
     for (const sellOrder of this.sellOrders) {
       if (!this.isOrderExpired(sellOrder)) {
-        if (buyOrder.collections.includes(sellOrder.collection)) {
+        if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
           if (sellOrder.price <= buyOrder.budget) {
             candiates.push(sellOrder);
           }

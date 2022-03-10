@@ -1,6 +1,6 @@
 import { fstrCnstnts } from '../constants';
 import { firestore } from 'container';
-import { error } from 'utils/logger';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function resetCollectionStats() {
   try {

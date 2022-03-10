@@ -1,6 +1,6 @@
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { error, log } from 'utils/logger';
+import { error, log, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { StatusCode, NFTDataSource, nftDataSources, AssetResponse, Asset } from '@infinityxyz/lib/types/core';
 import { getUserAssetsFromCovalent } from 'services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFromUnmarshal';
@@ -14,7 +14,6 @@ import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { jsonString, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getUserAssets = async (
   req: Request<
