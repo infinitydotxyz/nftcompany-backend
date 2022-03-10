@@ -1,11 +1,10 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getChainId } from 'utils/ethers';
-import { error } from 'utils/logger';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
 import { validateInputs } from 'utils';
 import { fstrCnstnts } from '../../../../../constants';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getNftDetails = async (
   req: Request<{ tokenAddress: string; tokenId: string; chain: string }>,
