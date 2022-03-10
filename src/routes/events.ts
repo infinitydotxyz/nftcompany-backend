@@ -2,10 +2,9 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getOrdersByTokenId } from 'services/infinity/orders/getOrdersByTokenId';
 import { getOpenseaEvents } from 'services/opensea/events';
 import { getRawOpenseaOrdersByTokenAddress } from 'services/opensea/orders';
-import { error } from 'utils/logger';
 import { Request, Router } from 'express';
 import { stringify } from 'qs';
-import { jsonString } from '@infinityxyz/lib/utils';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { updateNumOrders } from '../orders/updateNumOrders';
 
 export async function deleteOffer(batch: any, docRef: any) {

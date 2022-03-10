@@ -1,6 +1,6 @@
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUniqueItemsByProperties } from 'utils/index';
-import { error } from 'utils/logger';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 import { getTraits } from './_id/traits';
 import { fuzzySearchCollection } from 'services/infinity/collections/fuzzySearchCollection';
@@ -10,8 +10,8 @@ import verifiedIds from './verifiedIds';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
+import { getNftDetails } from './_id/_tokenId/_chain/details';
 import stats from './stats';
-import { jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 
@@ -23,6 +23,7 @@ router.use('/featured', featured);
 router.use('/verified', verified);
 router.use('/verifiedIds', verifiedIds);
 router.get('/:slug', getCollectionInfo);
+router.get('/:chain/:tokenAddress/:tokenId/image', getNftDetails);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;

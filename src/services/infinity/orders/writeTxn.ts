@@ -1,5 +1,5 @@
 import { firestore } from 'container';
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { getUserMissedTxnRef } from './getUserTxn';
 

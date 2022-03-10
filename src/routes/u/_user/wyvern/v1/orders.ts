@@ -4,9 +4,8 @@ import { NFTC_FEE_ADDRESS } from '../../../../../constants';
 import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
 import { postListing } from 'services/infinity/listings/postListing';
 import { postOffer } from 'services/infinity/offers/postOffer';
-import { error, log } from 'utils/logger';
+import { error, log, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // post a listing or make offer
 export const postUserOrders = async (req: Request<{ user: string }>, res: Response) => {

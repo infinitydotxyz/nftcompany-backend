@@ -1,4 +1,4 @@
-import { log } from 'utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { firestore } from 'container';
 import { fstrCnstnts } from '../constants';
 import {

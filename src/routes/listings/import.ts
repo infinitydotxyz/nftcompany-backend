@@ -1,8 +1,7 @@
 import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
-import { jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from 'services/opensea/orders';
-import { error } from 'utils/logger';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { WETH_ADDRESS } from '../../constants';
 
 const router = Router();

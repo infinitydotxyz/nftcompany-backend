@@ -1,10 +1,9 @@
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '../../constants';
-import { error, log } from 'utils/logger';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
-import { jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

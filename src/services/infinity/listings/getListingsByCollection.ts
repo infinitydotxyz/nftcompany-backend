@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
-import { error } from 'utils/logger';
+import { error } from '@infinityxyz/lib/utils';
 import { getOrdersResponse } from '../utils';
 
 export async function getListingsByCollection(

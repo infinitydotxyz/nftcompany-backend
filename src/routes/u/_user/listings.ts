@@ -1,5 +1,5 @@
 import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/lib/types/core';
-import { error } from 'utils/logger';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 import {
@@ -10,7 +10,6 @@ import {
 } from '../../../constants';
 import { getFilteredUserListings } from 'services/infinity/listings/getUserListing';
 import { validateInputs } from 'utils';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 // fetch listings of user
 export const getUserListings = async (

@@ -1,9 +1,10 @@
+import { getChainId, getProvider } from 'utils/ethers';
 import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
 import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error } from './logger';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -62,11 +63,14 @@ interface validateInputsProps {
   ids?: string; // comma separated string of ids.
   user?: string | undefined;
   sourceName?: string | undefined;
+  chain?: string | undefined;
   chainId?: string | undefined;
+  tokenAddress?: string | undefined;
+  tokenId?: string | undefined;
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType } = props;
+  const { listType, chain, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
@@ -82,8 +86,23 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
     listType !== ListingType.EnglishAuction
   ) {
     error(`Input error - invalid list type: ${listType as string}`);
-    return StatusCode.InternalServerError;
+    return StatusCode.BadRequest;
   }
+
+  if (chain) {
+    const chainId = getChainId(chain);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      error('Invalid chainId ', chain);
+      return StatusCode.BadRequest;
+    }
+  }
+
+  if (tokenAddress && !tokenAddress.startsWith('0x')) {
+    error(`Invalid tokenAddress`, tokenAddress);
+    return StatusCode.BadRequest;
+  }
+
   return 0;
 }
 

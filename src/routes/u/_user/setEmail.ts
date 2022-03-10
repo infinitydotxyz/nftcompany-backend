@@ -2,10 +2,9 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { API_BASE } from '../../..//constants';
 import { sendEmail } from 'services/infinity/email/sendEmail';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error } from 'utils/logger';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);

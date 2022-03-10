@@ -17,11 +17,10 @@ import { fstrCnstnts, OPENSEA_API_KEY } from '../../constants';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from 'services/infinity/utils';
 import { openseaParamSerializer } from 'utils/formatters';
-import { error } from 'utils/logger';
+import { error, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { getFulfilledPromiseSettledResults } from 'utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { getSearchFriendlyString } from '@infinityxyz/lib/utils';
 
 export const openseaClient = axios.create({
   headers: {

@@ -2,7 +2,7 @@ import firebaseAdmin from 'firebase-admin';
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { updateNumOrders } from '../orders/updateNumOrders';
-import { error, log } from 'utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 
 export async function deleteListing(batch: any, docRef: any) {
   const doc = await docRef.get();
