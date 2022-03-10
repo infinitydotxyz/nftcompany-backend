@@ -1,23 +1,21 @@
 import { singleton, container } from 'tsyringe';
 import { BuyOrder, BuyOrderMatch, MarketOrder, SellOrder } from '@infinityxyz/lib/types/core';
+import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 @singleton()
 export class MarketOrders {
-  buyOrders: BuyOrder[] = [];
-  sellOrders: SellOrder[] = [];
-
   async buy(user: string, order: BuyOrder): Promise<BuyOrderMatch | null> {
-    this.buyOrders.push(order);
+    await marketListingsCache.addBuyOrder('validActive', order);
 
-    const result = this.findMatchForBuy(order);
+    const result = await this.findMatchForBuy(order);
 
     return result;
   }
 
   async sell(user: string, order: SellOrder): Promise<BuyOrderMatch[]> {
-    this.sellOrders.push(order);
+    await marketListingsCache.addSellOrder('validActive', order);
 
-    const result = this.findMatchForSell(order);
+    const result = await this.findMatchForSell(order);
 
     return result;
   }
@@ -37,12 +35,12 @@ export class MarketOrders {
     return expiration <= utcSecondsSinceEpoch;
   }
 
-  findMatchForSell(sellOrder: SellOrder): BuyOrderMatch[] {
+  async findMatchForSell(sellOrder: SellOrder): Promise<BuyOrderMatch[]> {
     const result: BuyOrderMatch[] = [];
 
-    for (const buyOrder of this.buyOrders) {
+    for (const buyOrder of await marketListingsCache.buyOrders('validActive')) {
       if (!this.isOrderExpired(buyOrder)) {
-        const order = this.findMatchForBuy(buyOrder);
+        const order = await this.findMatchForBuy(buyOrder);
 
         if (order) {
           result.push(order);
@@ -53,10 +51,10 @@ export class MarketOrders {
     return result;
   }
 
-  findMatchForBuy(buyOrder: BuyOrder): BuyOrderMatch | null {
+  async findMatchForBuy(buyOrder: BuyOrder): Promise<BuyOrderMatch | null> {
     let candiates: SellOrder[] = [];
 
-    for (const sellOrder of this.sellOrders) {
+    for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
       if (!this.isOrderExpired(sellOrder)) {
         if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
           if (sellOrder.price <= buyOrder.budget) {

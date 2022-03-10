@@ -1,16 +1,21 @@
-import { StatusCode } from '@infinityxyz/lib/types/core';
+import { MarketOrder, StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { error } from '@infinityxyz/lib/utils';
+import { marketListingsCache } from './marketListingsCache';
+
+export type OrderType = 'sellOrders' | 'buyOrders';
+export type ActionType = 'list' | 'add' | 'delete' | 'move';
+export type ListIdType = 'validActive' | 'validInactive' | 'invalid';
 
 interface Body {
-  listId: 'listings' | 'orders';
-  action: 'add' | 'delete' | 'move';
-  subListId?: 'validActive' | 'validInactive' | 'invalid';
-  moveListId?: 'validActive' | 'validInactive' | 'invalid';
+  orderType: OrderType;
+  action: ActionType;
+  listId?: ListIdType;
+  moveListId?: ListIdType;
 }
 
 interface ResBody {
-  result: string[];
+  result: MarketOrder[];
   error: string;
 }
 
@@ -21,26 +26,30 @@ const post = async (req: Request<any, any, Body>, res: Response<ResBody>) => {
       return;
     }
 
-    const result: string[] = [];
+    let result;
 
-    switch (req.body.subListId) {
-      case 'validActive':
-        result.push(req.body.subListId);
-        break;
-      case 'validInactive':
-        result.push(req.body.subListId);
-        break;
-      case 'invalid':
-        result.push(req.body.subListId);
-        break;
-    }
+    switch (req.body.orderType) {
+      case 'sellOrders':
+        switch (req.body.listId) {
+          case 'validActive':
+          case 'validInactive':
+          case 'invalid':
+            result = await marketListingsCache.sellOrders(req.body.listId);
 
-    switch (req.body.listId) {
-      case 'listings':
-        result.push(req.body.listId);
+            break;
+        }
+
         break;
-      case 'orders':
-        result.push(req.body.listId);
+      case 'buyOrders':
+        switch (req.body.listId) {
+          case 'validActive':
+          case 'validInactive':
+          case 'invalid':
+            result = await marketListingsCache.buyOrders(req.body.listId);
+
+            break;
+        }
+
         break;
     }
 
@@ -71,6 +80,3 @@ const router = Router();
 router.post('/', post);
 
 export default router;
-
-// buyOrders: BuyOrder[] = [];
-// sellOrders: SellOrder[] = [];

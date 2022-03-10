@@ -13,7 +13,7 @@ import titles from './titles';
 import verifiedCollections from './verifiedCollections';
 import verifyEmail from './verifyEmail';
 import collection from './collection';
-import marketOrders from './marketListings';
+import marketListings from './marketListings';
 
 const router = Router();
 
@@ -30,7 +30,7 @@ router.use('/titles', titles);
 router.use('/verifiedCollections', verifiedCollections);
 router.use('/verifyEmail', verifyEmail);
 router.use('/collection', collection);
-router.use('/marketOrders', marketOrders);
+router.use('/marketListings', marketListings);
 
 /**
  * require auth
