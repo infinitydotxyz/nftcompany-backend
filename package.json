@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
   "dependencies": {
+    "@google-cloud/bigquery": "^5.11.0",
     "@infinityxyz/lib": "^1.1.2",
     "axios": "0.24.0",
     "bignumber.js": "9.0.2",
