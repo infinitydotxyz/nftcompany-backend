@@ -1,63 +1,50 @@
-import { MarketOrder, StatusCode } from '@infinityxyz/lib/types/core';
+import { MarketListingsBody, MarketListingsResponse, MarketOrder, StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { error } from '@infinityxyz/lib/utils';
 import { marketListingsCache } from './marketListingsCache';
 
-export type OrderType = 'sellOrders' | 'buyOrders';
-export type ActionType = 'list' | 'add' | 'delete' | 'move';
-export type ListIdType = 'validActive' | 'validInactive' | 'invalid';
-
-interface Body {
-  orderType: OrderType;
-  action: ActionType;
-  listId?: ListIdType;
-  moveListId?: ListIdType;
-}
-
-interface ResBody {
-  result: MarketOrder[];
-  error: string;
-}
-
-const post = async (req: Request<any, any, Body>, res: Response<ResBody>) => {
+const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
   try {
     if (badRequest(req, res)) {
       res.sendStatus(StatusCode.BadRequest);
       return;
     }
 
-    let result;
+    let result: MarketOrder[] = [];
+    let success: string = '';
 
-    switch (req.body.orderType) {
-      case 'sellOrders':
-        switch (req.body.listId) {
-          case 'validActive':
-          case 'validInactive':
-          case 'invalid':
-            result = await marketListingsCache.sellOrders(req.body.listId);
-
+    switch (req.body.action) {
+      case 'list':
+        switch (req.body.orderType) {
+          case 'sellOrders':
+            result = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
+            break;
+          case 'buyOrders':
+            result = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
             break;
         }
 
         break;
-      case 'buyOrders':
-        switch (req.body.listId) {
-          case 'validActive':
-          case 'validInactive':
-          case 'invalid':
-            result = await marketListingsCache.buyOrders(req.body.listId);
+      case 'delete':
+        switch (req.body.orderType) {
+          case 'sellOrders':
+            await marketListingsCache.deleteSellOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
 
+            success = `deleted sell: ${req.body.orderId}`;
+            break;
+          case 'buyOrders':
+            await marketListingsCache.deleteBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+            success = `deleted buy: ${req.body.orderId}`;
             break;
         }
 
+        break;
+      case 'move':
         break;
     }
 
-    // chainId::collectionAddress::tokenId
-    // getDocIdHash
-
     // set result
-    const resp = { result: result, error: '' };
+    const resp = { result: result, error: '', success: success };
     res.send(resp);
     return;
   } catch (err) {
@@ -66,7 +53,7 @@ const post = async (req: Request<any, any, Body>, res: Response<ResBody>) => {
   }
 };
 
-const badRequest = (req: Request<any, any, Body>, res: Response): boolean => {
+const badRequest = (req: Request<any, any, MarketListingsBody>, res: Response): boolean => {
   if (Object.keys(req.body).length === 0) {
     error('Invalid input - body empty');
     return true;
