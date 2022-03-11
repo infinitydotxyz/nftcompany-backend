@@ -16,6 +16,7 @@ import { lowRateLimit, postUserRateLimit } from 'middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
 import { getCollectionFollows, setCollectionFollow } from './_user/collectionFollows';
 import { getUserFollows, setUserFollow } from './_user/userFollows';
+import { getUserFeed } from './_user/userFeed';
 import { market } from './_user/market/market';
 
 const router = Router();
@@ -32,6 +33,7 @@ router.get('/:user/reward', getUserReward);
 router.get('/:user/vote', getUserVotes);
 router.get('/:user/collectionFollows', getCollectionFollows);
 router.get('/:user/userFollows', getUserFollows);
+router.get('/:user/feed', getUserFeed);
 
 router.post('/:user/setEmail', lowRateLimit, postSetUserEmail);
 router.post('/:user/subscribeEmail', lowRateLimit, postSubscribeUserEmail);
