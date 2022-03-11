@@ -1,9 +1,8 @@
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
-import { StatusCode } from '@infinityxyz/lib/types/core';
+import { StatusCode, CollectionFollow } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
-import { CollectionFollow } from '@infinityxyz/lib/types/core';
 
 export const fetchUserFollows = async (userAddress: string, limit: number) => {
   // const docRef = getUserInfoRef(userAddress);

@@ -9,8 +9,8 @@ const QUERY_BY_COLLECTIONS_LIMIT = 999;
 export const getUserFeed = async (
   req: Request<
     { user: string },
-    any,
-    any,
+    unknown,
+    unknown,
     {
       limit: string;
     }
