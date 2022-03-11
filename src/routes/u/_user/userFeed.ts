@@ -4,6 +4,8 @@ import { queryBigData } from 'services/bigquery/BigQueryUtils';
 import { fetchUserFollows } from './collectionFollows';
 import { validateInputs } from 'utils';
 
+const QUERY_BY_COLLECTIONS_LIMIT = 999;
+
 export const getUserFeed = async (
   req: Request<
     { user: string },
@@ -22,7 +24,7 @@ export const getUserFeed = async (
     res.sendStatus(errorCode);
     return;
   }
-  const follows = await fetchUserFollows(user, 9999);
+  const follows = await fetchUserFollows(user, QUERY_BY_COLLECTIONS_LIMIT);
   const followAddresses = follows.map((item) => `'${item.address}'`).join(','); // 'addr1', 'addr2'
 
   const query = `SELECT

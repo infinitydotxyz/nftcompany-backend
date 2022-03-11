@@ -3,7 +3,7 @@ import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
-import { CollectionFollow } from '@infinityxyz/lib/types/core/Follows';
+import { CollectionFollow } from '@infinityxyz/lib/types/core';
 
 export const fetchUserFollows = async (userAddress: string, limit: number) => {
   // const docRef = getUserInfoRef(userAddress);
@@ -19,20 +19,19 @@ export const fetchUserFollows = async (userAddress: string, limit: number) => {
   }
   // console.log('result', result)
   return result;
-}
+};
 
 export const getCollectionFollows = async (
   req: Request<
     { user: string },
-    any,
-    any,
+    unknown,
+    unknown,
     {
       limit: string;
     }
   >,
   res: Response
-) => {
-  const user = trimLowerCase(req.params.user);
+) => {  const user = trimLowerCase(req.params.user);
   const limit = +req.query.limit ?? 50;
 
   if (!user) {
@@ -40,7 +39,7 @@ export const getCollectionFollows = async (
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-  const result = await fetchUserFollows(user, limit);  
+  const result = await fetchUserFollows(user, limit);
 
   const resp = jsonString(result);
   // to enable cdn cache

@@ -1,9 +1,9 @@
-import path from 'path'
+import path from 'path';
 import { BigQuery } from '@google-cloud/bigquery';
+import { BIGQUERY_SERVICE_ACCOUNT } from '../../constants';
 
 const options = {
-  keyFilename: path.join(__dirname, '../../../creds/nftc-dev-bigquery-creds.json'),
-  projectId: 'nftc-dev'
+  keyFilename: path.join(__dirname, `../../../creds/${BIGQUERY_SERVICE_ACCOUNT}`)
 };
 const bigquery = new BigQuery(options);
 
