@@ -5,6 +5,22 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { fstrCnstnts } from '../../../constants';
 import { CollectionFollow } from '@infinityxyz/lib/types/core/Follows';
 
+export const fetchUserFollows = async (userAddress: string, limit: number) => {
+  // const docRef = getUserInfoRef(userAddress);
+  // console.log('--- docRef.get', (await docRef.get()).data());
+
+  const follows = getUserInfoRef(userAddress).collection(fstrCnstnts.COLLECTION_FOLLOWS_COLL);
+
+  const followDocs = await follows.limit(limit).get();
+
+  const result: FirebaseFirestore.DocumentData[] = [];
+  for (const doc of followDocs.docs) {
+    result.push(doc.data() as CollectionFollow);
+  }
+  // console.log('result', result)
+  return result;
+}
+
 export const getCollectionFollows = async (
   req: Request<
     { user: string },
@@ -24,15 +40,7 @@ export const getCollectionFollows = async (
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-
-  const follows = getUserInfoRef(user).collection(fstrCnstnts.COLLECTION_FOLLOWS_COLL);
-
-  const followDocs = await follows.limit(limit).get();
-
-  const result: FirebaseFirestore.DocumentData[] = [];
-  for (const doc of followDocs.docs) {
-    result.push(doc.data() as CollectionFollow);
-  }
+  const result = await fetchUserFollows(user, limit);  
 
   const resp = jsonString(result);
   // to enable cdn cache
