@@ -1,5 +1,6 @@
 import {
   BuyOrder,
+  BuyOrderMatch,
   MarketListingsBody,
   MarketListingsResponse,
   SellOrder,
@@ -8,6 +9,7 @@ import {
 import { Request, Response, Router } from 'express';
 import { error } from '@infinityxyz/lib/utils';
 import { marketListingsCache } from './marketListingsCache';
+import { marketOrders } from './marketOrders';
 
 const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
   try {
@@ -18,6 +20,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
 
     let sellOrders: SellOrder[] = [];
     let buyOrders: BuyOrder[] = [];
+    let matches: BuyOrderMatch[] = [];
     let success: string = '';
 
     switch (req.body.action) {
@@ -49,11 +52,12 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'move':
         break;
       case 'match':
+        matches = await marketOrders.marketMatches();
         break;
     }
 
     // set result
-    const resp = { buyOrders: buyOrders, sellOrders: sellOrders, error: '', success: success, matches: [] };
+    const resp = { buyOrders: buyOrders, sellOrders: sellOrders, error: '', success: success, matches: matches };
     res.send(resp);
     return;
   } catch (err) {

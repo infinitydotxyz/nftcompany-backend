@@ -19,12 +19,12 @@ export class MarketOrders {
   async sell(order: SellOrder): Promise<BuyOrderMatch[]> {
     await marketListingsCache.addSellOrder('validActive', order);
 
-    const result = await this.findMatchForSell(order);
+    const result = await this.marketMatches();
 
     return result;
   }
 
-  async findMatchForSell(sellOrder: SellOrder): Promise<BuyOrderMatch[]> {
+  async marketMatches(): Promise<BuyOrderMatch[]> {
     const result: BuyOrderMatch[] = [];
 
     for (const buyOrder of await marketListingsCache.buyOrders('validActive')) {
@@ -59,26 +59,22 @@ export class MarketOrders {
         return a.price - b.price;
       });
 
-      if (buyOrder.minNFTs === 1) {
-        return { buyOrder: buyOrder, sellOrders: [candiates[0]] };
-      } else {
-        let cash = buyOrder.budget;
-        let numNFTs = buyOrder.minNFTs;
-        const result: SellOrder[] = [];
+      let cash = buyOrder.budget;
+      let numNFTs = buyOrder.minNFTs;
+      const result: SellOrder[] = [];
 
-        for (const c of candiates) {
-          if (numNFTs > 0 && cash >= c.price) {
-            result.push(c);
-            cash -= c.price;
-            numNFTs -= 1;
-          } else {
-            break;
-          }
+      for (const c of candiates) {
+        if (numNFTs > 0 && cash >= c.price) {
+          result.push(c);
+          cash -= c.price;
+          numNFTs -= 1;
+        } else {
+          break;
         }
+      }
 
-        if (result.length === buyOrder.minNFTs) {
-          return { buyOrder: buyOrder, sellOrders: result };
-        }
+      if (result.length === buyOrder.minNFTs) {
+        return { buyOrder: buyOrder, sellOrders: result };
       }
     }
 

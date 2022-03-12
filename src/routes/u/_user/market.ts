@@ -1,7 +1,7 @@
 import { BuyOrderMatch, StatusCode, TradeBody, TradeReq, TradeResponse } from '@infinityxyz/lib/types/core';
 import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
-import { marketOrders } from './marketOrders';
+import { marketOrders } from '../../marketListings/marketOrders';
 
 export const market = async (req: Request<TradeReq, any, TradeBody>, res: Response<TradeResponse>) => {
   try {
