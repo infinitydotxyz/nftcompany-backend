@@ -1,4 +1,10 @@
-import { MarketListingsBody, MarketListingsResponse, MarketOrder, StatusCode } from '@infinityxyz/lib/types/core';
+import {
+  BuyOrder,
+  MarketListingsBody,
+  MarketListingsResponse,
+  SellOrder,
+  StatusCode
+} from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { error } from '@infinityxyz/lib/utils';
 import { marketListingsCache } from './marketListingsCache';
@@ -10,17 +16,18 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       return;
     }
 
-    let result: MarketOrder[] = [];
+    let sellOrders: SellOrder[] = [];
+    let buyOrders: BuyOrder[] = [];
     let success: string = '';
 
     switch (req.body.action) {
       case 'list':
         switch (req.body.orderType) {
           case 'sellOrders':
-            result = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
+            sellOrders = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
             break;
           case 'buyOrders':
-            result = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
+            buyOrders = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
             break;
         }
 
@@ -41,10 +48,12 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
         break;
       case 'move':
         break;
+      case 'match':
+        break;
     }
 
     // set result
-    const resp = { result: result, error: '', success: success };
+    const resp = { buyOrders: buyOrders, sellOrders: sellOrders, error: '', success: success, matches: [] };
     res.send(resp);
     return;
   } catch (err) {
