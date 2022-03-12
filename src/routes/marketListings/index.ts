@@ -51,6 +51,10 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
         break;
       case 'move':
         break;
+      case 'buy':
+        await marketListingsCache.executeBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+        success = `buy: ${req.body.orderId}`;
+        break;
       case 'match':
         matches = await marketOrders.marketMatches();
         break;

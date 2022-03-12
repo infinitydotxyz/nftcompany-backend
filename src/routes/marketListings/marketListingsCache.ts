@@ -3,6 +3,7 @@ import { BuyOrder, orderHash, MarketListIdType, SellOrder } from '@infinityxyz/l
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
+import { marketOrders } from './marketOrders';
 
 @singleton()
 export class MarketListingsCache {
@@ -47,6 +48,26 @@ export class MarketListingsCache {
       this._sellOrders.delete(orderId);
 
       await this._deleteSellOrder(listId, orderId);
+    }
+  }
+
+  async executeBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
+    if (this._buyOrders.has(orderId)) {
+      const buyOrder = this._buyOrders.get(orderId);
+
+      if (buyOrder) {
+        const result = await marketOrders.findMatchForBuy(buyOrder);
+
+        // do the block chain stuff here.  If success delete the orders
+
+        if (result) {
+          await this.deleteBuyOrder(listId, result.buyOrder.id ?? '');
+
+          for (const sellOrder of result.sellOrders) {
+            await this.deleteSellOrder(listId, sellOrder.id ?? '');
+          }
+        }
+      }
     }
   }
 
@@ -110,9 +131,6 @@ export class MarketListingsCache {
     // set id to hash
     sellOrder.id = orderHash(sellOrder);
 
-    console.log(JSON.stringify(sellOrder));
-    console.log(orderHash(sellOrder));
-
     const doc = collection.doc(sellOrder.id);
     await doc.set(sellOrder);
 
@@ -124,9 +142,6 @@ export class MarketListingsCache {
 
     // set id to hash
     buyOrder.id = orderHash(buyOrder);
-
-    console.log(JSON.stringify(buyOrder));
-    console.log(orderHash(buyOrder));
 
     const doc = collection.doc(buyOrder.id);
     await doc.set(buyOrder);
