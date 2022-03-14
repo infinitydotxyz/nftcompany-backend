@@ -3,8 +3,7 @@ import { getChainId } from 'utils/ethers';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
 import { validateInputs } from 'utils';
-import { fstrCnstnts } from '../../../../../constants';
-import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export const getNftDetails = async (
   req: Request<{ tokenAddress: string; tokenId: string; chain: string }>,
@@ -20,13 +19,15 @@ export const getNftDetails = async (
       return;
     }
     const chainId = getChainId(chain);
+    const collectionAddress = tokenAddress;
 
     const doc = await firestore
-      .collection(fstrCnstnts.COLLECTIONS_COLL)
-      .doc(`${chainId}:${tokenAddress}`)
-      .collection('nfts')
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId({ collectionAddress, chainId }))
+      .collection(firestoreConstants.COLLECTION_NFTS_COLL)
       .doc(tokenId)
       .get();
+
     if (doc.exists) {
       const docData = doc.data();
       if (!docData) return;
