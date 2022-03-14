@@ -17,7 +17,6 @@ import {
   CollectionStats,
   TwitterSnippet,
   CollectionData,
-  EditableCollectionData,
   UpdateCollectionDataRequest,
   Keys,
   Optional,
@@ -251,7 +250,7 @@ export async function postCollectionInformation(
     }
 
     const collectionInfoUpdate: Optional<
-      Pick<EditableCollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
+      Pick<CollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
       'profileImage'
     > = {
       name: data.name ?? '',
