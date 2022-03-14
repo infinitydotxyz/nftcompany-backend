@@ -6,7 +6,7 @@ import { FB_STORAGE_BUCKET, FIREBASE_SERVICE_ACCOUNT } from '../constants';
 import { Readable } from 'stream';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { error, log } from '@infinityxyz/lib/utils';
+import { error, log, warn } from '@infinityxyz/lib/utils';
 
 @singleton()
 export default class Firestore {
@@ -32,13 +32,13 @@ export default class Firestore {
     return this.db.collection(collectionPath);
   }
 
-  // // NOTE: don't use this for new code; use getDocIdHash instead
-  // // eslint-disable-next-line no-unused-vars
-  // getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
-  //   warn('Do not use this docId');
-  //   const data = tokenAddress.trim() + tokenId.trim() + basePrice;
-  //   return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  // }
+  // NOTE: don't use this for new code; use getDocIdHash instead
+  // eslint-disable-next-line no-unused-vars
+  getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
+    warn('Do not use this docId');
+    const data = tokenAddress.trim() + tokenId.trim() + basePrice;
+    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  }
 
   getStaleListingDocId({
     tokenAddress,

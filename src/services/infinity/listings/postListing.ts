@@ -1,6 +1,6 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { error, log } from '@infinityxyz/lib/utils';
+import { error, getDocIdHash, log } from '@infinityxyz/lib/utils';
 import { isTokenVerified } from '../collections/isTokenVerified';
 import { getUserListingRef } from './getUserListing';
 import firebaseAdmin from 'firebase-admin';
@@ -30,7 +30,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
     .collection(fstrCnstnts.ASSETS_COLL)
-    .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+    .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
 
   batch.set(listingAsAssetRef, payload, { merge: true });
 

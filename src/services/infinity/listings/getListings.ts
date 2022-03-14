@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { ListingType, OrderDirection } from '@infinityxyz/lib/types/core';
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../constants';
-import { error, log, getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
+import { DEFAULT_MAX_ETH } from '../../../constants';
+import { error, log, getEndCode, getSearchFriendlyString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { getOrdersResponse, getOrdersResponseFromArray } from '../utils';
 
 export async function getListingsStartingWithText(
@@ -22,7 +22,7 @@ export async function getListingsStartingWithText(
     const limit2 = limit - limit1;
 
     const queryRef1 = firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', getEndCode(startsWith))
       .orderBy('metadata.asset.searchTitle', OrderDirection.Ascending)
@@ -34,7 +34,7 @@ export async function getListingsStartingWithText(
 
     // search for listings which collectionName startsWith text
     const queryRef2 = firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', getEndCode(startsWith))
       .orderBy('metadata.asset.searchCollectionName', OrderDirection.Ascending)
@@ -86,7 +86,7 @@ export async function getListingsByCollectionNameAndPrice(
       limit: number;
     }) => {
       let queryRef = firestore.db
-        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .collectionGroup(firestoreConstants.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);

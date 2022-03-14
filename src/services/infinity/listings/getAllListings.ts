@@ -1,7 +1,6 @@
 import { firestore } from 'container';
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { fstrCnstnts } from '../../../constants';
-import { error, log } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { getOrdersResponse } from '../utils';
 
 export async function getAllListings(
@@ -15,7 +14,7 @@ export async function getAllListings(
 
   try {
     let query = firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .orderBy('metadata.hasBlueCheck', OrderDirection.Descending)
       .orderBy('metadata.basePriceInEth', sortByPriceDirection)
       .orderBy('metadata.createdAt', OrderDirection.Descending);

@@ -10,8 +10,8 @@
  *
  */
 
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { firestore } from 'container';
-import { fstrCnstnts } from '../constants';
 import { sleep } from 'utils';
 
 /**
@@ -20,7 +20,7 @@ import { sleep } from 'utils';
  * changes as the script updates
  */
 export async function updateSearchCollectionName(delay: number) {
-  const collectionsQuery = await firestore.collection(fstrCnstnts.COLLECTIONS_COLL).get();
+  const collectionsQuery = await firestore.collection(firestoreConstants.COLLECTIONS_COLL).get();
   let collectionsUpdated = 0;
 
   for (const collectionDoc of collectionsQuery.docs) {
@@ -76,7 +76,7 @@ export async function updateSearchCollectionName(delay: number) {
 
 async function getCollectionNamesFromListings(collectionAddress: string, collectionInfoSearchCollectionName: string) {
   const collectionListingsQuery = await firestore.db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .collectionGroup(firestoreConstants.LISTINGS_COLL)
     .where('metadata.asset.address', '==', collectionAddress)
     .limit(20)
     .get();

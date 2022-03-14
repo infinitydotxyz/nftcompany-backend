@@ -1,8 +1,7 @@
 import firebaseAdmin from 'firebase-admin';
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
 import { updateNumOrders } from '../orders/updateNumOrders';
-import { error, log } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, log } from '@infinityxyz/lib/utils';
 
 export async function deleteListing(batch: any, docRef: any) {
   const doc = await docRef.get();
@@ -23,7 +22,7 @@ export async function deleteListing(batch: any, docRef: any) {
   try {
     const tokenAddress = doc.data().metadata.asset.address;
     await firestore
-      .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
+      .collection(firestoreConstants.LISTINGS_COLL)
       .doc(tokenAddress)
       .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
   } catch (err) {

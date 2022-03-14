@@ -1,18 +1,18 @@
 import { firestore } from 'container';
 import { WyvernTraitWithValues } from '@infinityxyz/lib/types/protocols/wyvern';
-import { fstrCnstnts } from '../../../constants';
-import { ethers } from 'ethers';
+import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 
-export async function saveCollectionTraits(contractAddress: string, traits: WyvernTraitWithValues[]) {
-  if (!ethers.utils.isAddress(contractAddress)) {
-    return { success: false, error: new Error('invalid address') };
-  }
+export async function saveCollectionTraits(
+  collection: { collectionAddress: string; chainId: string },
+  traits: WyvernTraitWithValues[]
+) {
   try {
-    await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(contractAddress).set({ traits }, { merge: true });
+    const docId = getCollectionDocId(collection);
+    await firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId).set({ traits }, { merge: true });
     return { success: true };
   } catch (err) {
     return {
-      successs: false,
+      success: false,
       error: err
     };
   }
