@@ -52,32 +52,32 @@ export class MarketOrders {
   }
 
   async findMatchForBuy(buyOrder: BuyOrder): Promise<BuyOrderMatch | null> {
-    let candiates: SellOrder[] = [];
+    let candidates: SellOrder[] = [];
 
     for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
       if (!this.isOrderExpired(sellOrder)) {
         if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
           if (sellOrder.price <= buyOrder.budget) {
-            candiates.push(sellOrder);
+            candidates.push(sellOrder);
           }
         }
       }
     }
 
-    if (candiates.length > 0) {
+    if (candidates.length > 0) {
       // sort list
-      candiates = candiates.sort((a, b) => {
+      candidates = candidates.sort((a, b) => {
         return a.price - b.price;
       });
 
       if (buyOrder.minNFTs === 1) {
-        return { buyOrder: buyOrder, sellOrders: [candiates[0]] };
+        return { buyOrder: buyOrder, sellOrders: [candidates[0]] };
       } else {
         let cash = buyOrder.budget;
         let numNFTs = buyOrder.minNFTs;
         const result: SellOrder[] = [];
 
-        for (const c of candiates) {
+        for (const c of candidates) {
           if (numNFTs > 0 && cash >= c.price) {
             result.push(c);
             cash -= c.price;
