@@ -17,7 +17,7 @@ import { fstrCnstnts, OPENSEA_API_KEY } from '../../constants';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { getAssetAsListing } from 'services/infinity/utils';
 import { openseaParamSerializer } from 'utils/formatters';
-import { error, getSearchFriendlyString } from '@infinityxyz/lib/utils';
+import { error, getDocIdHash, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { getFulfilledPromiseSettledResults } from 'utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
@@ -215,7 +215,7 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.ASSETS_COLL)
-        .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+        .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
 
       batch.set(newDoc, listing, { merge: true });
     }
@@ -248,7 +248,7 @@ export async function rawAssetDataToListingMetadata(
       description = assetContract.description;
     }
   }
-  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const hasBlueCheck = await isTokenVerified({ collectionAddress: tokenAddress, chainId: '1' });
   const traits = convertRawTraitsToInfinityTraits(data.traits);
   const rawSellOrder = data.sell_orders?.[0];
   const basePriceInWei = rawSellOrder?.base_price;
@@ -316,7 +316,7 @@ export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetDat
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+      .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
     newDoc.set(assetData).catch((err) => {
       error('Error saving asset in firestore');
       error(err);
@@ -350,7 +350,7 @@ export async function openseaAssetDataToListing(chainId: string, data: WyvernAss
       description = assetContract.description;
     }
   }
-  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const hasBlueCheck = await isTokenVerified({ collectionAddress: tokenAddress, chainId });
   const listing = {
     isListing: false,
     hasBlueCheck,

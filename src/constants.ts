@@ -1,5 +1,5 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { warn } from '@infinityxyz/lib/utils/logger';
+import { deprecate } from './utils';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
@@ -61,17 +61,6 @@ const fstr = {
   EDITORS_DOC: 'editors',
   CREATOR_DOC: 'creator',
   ADMINS_DOC: 'admins'
-};
-
-const deprecate = <T extends object>(obj: T, message: string): T => {
-  const handler = {
-    get(target, prop, receiver) {
-      warn(message);
-      return Reflect.get(target, prop);
-    }
-  };
-
-  return new Proxy(obj, handler);
 };
 
 export const fstrCnstnts = deprecate(
