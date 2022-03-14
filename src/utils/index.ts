@@ -4,7 +4,7 @@ import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error, warn } from '@infinityxyz/lib/utils';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -120,18 +120,3 @@ export function hexToDecimalTokenId(tokenId: string): string {
   }
   return tokenId;
 }
-
-/**
- * deprecate access to an object (i.e. logs the warning message anytime the object is accessed)
- *
- */
-export const deprecate = <T extends object>(obj: T, message: string): T => {
-  const handler = {
-    get(target, prop, receiver) {
-      warn(message);
-      return Reflect.get(target, prop);
-    }
-  };
-
-  return new Proxy(obj, handler);
-};

@@ -28,7 +28,7 @@ import { Request, Response } from 'express';
 const getTraits = async (req: Request<{ id: string }, any, any, { chainId: string }>, res: Response) => {
   log('Fetching traits from NFT contract address.');
   const contractAddress = req.params.id.trim().toLowerCase();
-  // const chainId = req.query.chainId?.trim?.();
+  const chainId = req.query.chainId?.trim?.();
   let resp = {};
 
   if (!ethers.utils.isAddress(contractAddress)) {
@@ -44,7 +44,7 @@ const getTraits = async (req: Request<{ id: string }, any, any, { chainId: strin
     };
     // store in firestore for future use
     if (traits) {
-      void saveCollectionTraits(contractAddress, traits);
+      void saveCollectionTraits({ collectionAddress: contractAddress, chainId }, traits);
     }
 
     const respStr = jsonString(resp);

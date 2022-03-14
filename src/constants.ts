@@ -1,5 +1,5 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { deprecate } from './utils';
+import { warn } from '@infinityxyz/lib/utils/logger';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
@@ -63,9 +63,24 @@ const fstr = {
   ADMINS_DOC: 'admins'
 };
 
-export const fstrCnstnts = deprecate(
+/**
+ * deprecate access to an object (i.e. logs the warning message anytime the object is accessed)
+ *
+ */
+export function deprecateObject<T extends object>(obj: T, message: string): T {
+  const handler = {
+    get(target, prop) {
+      warn(message);
+      return Reflect.get(target, prop);
+    }
+  };
+
+  return new Proxy(obj, handler);
+}
+
+export const fstrCnstnts = deprecateObject(
   fstr,
-  'fstrCnstnts is deprecated, prefer to use firestoreConstants from @infinity/lib'
+  'fstrCnstnts is deprecated, prefer to use firestoreConstants from @infinityxyz/lib'
 );
 
 export const auth = {

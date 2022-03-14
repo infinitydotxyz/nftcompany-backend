@@ -57,7 +57,6 @@ export const setUserFollow = async (req: Request<{ user: string }>, res: Respons
 
   try {
     const follows = getUserInfoRef(user).collection(firestoreConstants.USER_FOLLOWS_COLL);
-
     const key = `${chainId}:${userFollow.address}`;
     if (deleteFollow) {
       await follows.doc(key).delete();
