@@ -10,8 +10,7 @@ import { Readable } from 'stream';
 
 import { firestore } from 'container';
 import { NftMetadata } from '../types/NftMetadata';
-import { fstrCnstnts } from '../../../constants';
-import { error } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, getDocIdHash } from '@infinityxyz/lib/utils';
 const { loadImage } = Canvas;
 const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';
@@ -44,12 +43,8 @@ export const metadataForDoge2048Nft = async (
   let levelIdExists = false;
   const levelValues = new DogeMetadata();
 
-  const docId = firestore.getAssetDocId({ chainId, tokenId: String(tokenId), tokenAddress });
-  const assetDocRef = firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.ASSETS_COLL)
-    .doc(docId);
+  const docId = getDocIdHash({ chainId, tokenId: String(tokenId), collectionAddress: tokenAddress });
+  const assetDocRef = firestore.collection(firestoreConstants.ASSETS_COLL).doc(docId);
 
   const assetDoc = await assetDocRef.get();
 
