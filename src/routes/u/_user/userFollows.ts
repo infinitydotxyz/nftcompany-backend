@@ -1,9 +1,8 @@
 // import { firestore } from '@base/container';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
+import { error, trimLowerCase, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/lib/types/core';
-import { fstrCnstnts } from '../../../constants';
 import { UserFollow } from '@infinityxyz/lib/types/core/Follows';
 
 export const getUserFollows = async (
@@ -26,7 +25,7 @@ export const getUserFollows = async (
     return;
   }
 
-  const follows = getUserInfoRef(user).collection(fstrCnstnts.USER_FOLLOWS_COLL);
+  const follows = getUserInfoRef(user).collection(firestoreConstants.USER_FOLLOWS_COLL);
 
   const followDocs = await follows.limit(limit).get();
 
@@ -57,7 +56,7 @@ export const setUserFollow = async (req: Request<{ user: string }>, res: Respons
   }
 
   try {
-    const follows = getUserInfoRef(user).collection(fstrCnstnts.USER_FOLLOWS_COLL);
+    const follows = getUserInfoRef(user).collection(firestoreConstants.USER_FOLLOWS_COLL);
 
     const key = `${chainId}:${userFollow.address}`;
     if (deleteFollow) {
