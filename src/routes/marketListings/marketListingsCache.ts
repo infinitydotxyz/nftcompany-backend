@@ -2,8 +2,8 @@ import { singleton, container } from 'tsyringe';
 import { BuyOrder, SellOrder } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
-import { fstrCnstnts } from '../../constants';
 import { ListIdType } from './index';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 @singleton()
 export class MarketListingsCache {
@@ -40,7 +40,11 @@ export class MarketListingsCache {
   }
 
   async loadBuyOrders(listId: ListIdType): Promise<BuyOrder[]> {
-    const result = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders').get();
+    const result = await firestore.db
+      .collection(firestoreConstants.BUY_ORDERS_COLL)
+      .doc(listId)
+      .collection('orders')
+      .get();
     if (result.docs) {
       const { results } = docsToArray(result.docs);
 
@@ -51,7 +55,11 @@ export class MarketListingsCache {
   }
 
   async loadSellOrders(listId: ListIdType): Promise<SellOrder[]> {
-    const result = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders').get();
+    const result = await firestore.db
+      .collection(firestoreConstants.SELL_ORDERS_COLL)
+      .doc(listId)
+      .collection('orders')
+      .get();
     if (result.docs) {
       const { results } = docsToArray(result.docs);
 
@@ -62,13 +70,19 @@ export class MarketListingsCache {
   }
 
   async saveSellOrder(listId: ListIdType, sellOrder: SellOrder): Promise<void> {
-    const collection = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders');
+    const collection = await firestore.db
+      .collection(firestoreConstants.SELL_ORDERS_COLL)
+      .doc(listId)
+      .collection('orders');
 
     await collection.add(sellOrder);
   }
 
   async saveBuyOrder(listId: ListIdType, buyOrder: BuyOrder): Promise<void> {
-    const collection = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders');
+    const collection = await firestore.db
+      .collection(firestoreConstants.BUY_ORDERS_COLL)
+      .doc(listId)
+      .collection('orders');
 
     await collection.add(buyOrder);
   }

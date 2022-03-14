@@ -56,7 +56,7 @@ router.use('/import', importListings);
  * @param {string} startAfterSearchTitle.query
  * @param {boolean} startAfterBlueCheck.query
  * @param {string} startAfterSearchCollectionName.query
- * @param {number} startAterPrice.query
+ * @param {number} startAfterPrice.query
  * @param {number} startAfterMillis.query
  * @param {number} priceMin.query
  * @param {number} priceMax.query
