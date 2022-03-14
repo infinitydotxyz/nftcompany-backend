@@ -20,10 +20,10 @@ import { sleep } from 'utils';
  * changes as the script updates
  */
 export async function updateSearchCollectionName(delay: number) {
-  const allCollectionsQuery = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).get();
+  const collectionsQuery = await firestore.collection(fstrCnstnts.COLLECTIONS_COLL).get();
   let collectionsUpdated = 0;
 
-  for (const collectionDoc of allCollectionsQuery.docs) {
+  for (const collectionDoc of collectionsQuery.docs) {
     const collection = collectionDoc.data();
     const collectionAddress = collection?.address?.trim()?.toLowerCase();
     const searchCollectionName = collection?.searchCollectionName;

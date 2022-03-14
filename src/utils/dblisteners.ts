@@ -16,12 +16,12 @@ export function setupAllCollectionsListener() {
   if (setupAllCollectionsListenerDone) {
     return;
   }
-  const coll = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL);
+  const coll = firestore.collection(fstrCnstnts.COLLECTIONS_COLL);
 
   // listening to collection changes
   coll.onSnapshot(
     async (snapshot) => {
-      log(`Collection changed: ${fstrCnstnts.ALL_COLLECTIONS_COLL}`);
+      log(`Collection changed: ${fstrCnstnts.COLLECTIONS_COLL}`);
 
       // from the 2nd+ callback run: (skip the 1st one, which is for full changes)
       if (setupAllCollectionsListenerDone) {

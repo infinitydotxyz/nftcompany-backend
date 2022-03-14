@@ -54,7 +54,7 @@ export function authorizeCollectionEditor(
     // const chainId = req.query.chainId?.trim?.();
 
     const creatorDocRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .collection(fstrCnstnts.COLLECTIONS_COLL)
       .doc(contractAddress)
       .collection(fstrCnstnts.AUTH_COLL)
       .doc(fstrCnstnts.CREATOR_DOC);
@@ -87,7 +87,7 @@ export function authorizeCollectionEditor(
     }
 
     const editorsDocRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .collection(fstrCnstnts.COLLECTIONS_COLL)
       .doc(contractAddress)
       .collection(fstrCnstnts.AUTH_COLL)
       .doc(fstrCnstnts.EDITORS_DOC);

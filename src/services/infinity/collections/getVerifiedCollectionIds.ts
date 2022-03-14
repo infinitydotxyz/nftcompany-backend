@@ -19,7 +19,7 @@ export async function getVerifiedCollectionIds() {
     isFetching = true;
     log('getVerifiedCollectionIds: fetching verified collection ids');
     const query = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .collection(fstrCnstnts.COLLECTIONS_COLL)
       .select('hasBlueCheck')
       .where('hasBlueCheck', '==', true);
 
