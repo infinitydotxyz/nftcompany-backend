@@ -1,9 +1,9 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '../constants';
+import { auth, ETHERSCAN_API_KEY } from '../constants';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
-import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // todo: adi for testing only
@@ -49,24 +49,26 @@ export function authorizeCollectionEditor(
 ) {
   const asyncHandler = async () => {
     const userAddress = trimLowerCase(req.params.user);
-    const contractAddress = req.params.collection?.trim?.()?.toLowerCase?.();
+    const collectionAddress = trimLowerCase(req.params.collection);
 
-    // const chainId = req.query.chainId?.trim?.();
+    const chainId = req.query.chainId?.trim?.();
+
+    const collection = { collectionAddress, chainId };
 
     const creatorDocRef = firestore
-      .collection(fstrCnstnts.COLLECTIONS_COLL)
-      .doc(contractAddress)
-      .collection(fstrCnstnts.AUTH_COLL)
-      .doc(fstrCnstnts.CREATOR_DOC);
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.AUTH_COLL)
+      .doc(firestoreConstants.CREATOR_DOC);
 
     let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any;
 
     if (!creatorObj?.creator) {
       const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);
 
-      const txHistory = await provider.getHistory(contractAddress);
+      const txHistory = await provider.getHistory(collectionAddress);
       const creationTx = txHistory.find((tx) => {
-        return (tx as any)?.creates?.toLowerCase?.() === contractAddress;
+        return (tx as any)?.creates?.toLowerCase?.() === collectionAddress;
       });
 
       const creator = creationTx?.from?.toLowerCase?.() ?? '';
@@ -76,7 +78,12 @@ export function authorizeCollectionEditor(
         hash
       };
       // save creator
-      await creatorDocRef.set(creatorObj);
+      if (creatorObj.creator && creatorObj.hash) {
+        await creatorDocRef.set(creatorObj);
+      } else {
+        res.sendStatus(StatusCode.InternalServerError);
+        return;
+      }
     }
 
     if (userAddress === creatorObj.creator) {
@@ -87,10 +94,10 @@ export function authorizeCollectionEditor(
     }
 
     const editorsDocRef = firestore
-      .collection(fstrCnstnts.COLLECTIONS_COLL)
-      .doc(contractAddress)
-      .collection(fstrCnstnts.AUTH_COLL)
-      .doc(fstrCnstnts.EDITORS_DOC);
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.AUTH_COLL)
+      .doc(firestoreConstants.EDITORS_DOC);
 
     const editors = (await editorsDocRef.get()).data();
     if (editors?.[userAddress]?.authorized) {
@@ -100,7 +107,7 @@ export function authorizeCollectionEditor(
       return;
     }
 
-    const adminDocRef = firestore.collection(fstrCnstnts.AUTH_COLL).doc(fstrCnstnts.ADMINS_DOC);
+    const adminDocRef = firestore.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.ADMINS_DOC);
 
     const admins = (await adminDocRef.get()).data();
 
