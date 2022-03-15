@@ -16,6 +16,7 @@ import {
   DiscordSnippet,
   CollectionStats,
   TwitterSnippet,
+  EditableCollectionData,
   CollectionData,
   UpdateCollectionDataRequest,
   Keys,
@@ -250,7 +251,7 @@ export async function postCollectionInformation(
     }
 
     const collectionInfoUpdate: Optional<
-      Pick<CollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
+      Pick<EditableCollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
       'profileImage'
     > = {
       name: data.name ?? '',
