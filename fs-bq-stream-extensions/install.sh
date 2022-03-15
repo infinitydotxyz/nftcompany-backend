@@ -30,3 +30,18 @@ do
         --project=$PROJECT_ID \
         --force
 done
+
+# generate View Schemas from Table Schemas:
+# npx @firebaseextensions/fs-bq-schema-views \
+#   --non-interactive \
+#   --project=$PROJECT_ID \
+#   --dataset=$DATASET_ID \
+#   --table-name-prefix=$TABLE_PREFIX \
+#   --schema-files=./$SCHEMA_JSON_FILE
+# example:
+# npx @firebaseextensions/fs-bq-schema-views \
+#   --non-interactive \
+#   --project=nftc-dev \
+#   --dataset=fs_mirror_feed \
+#   --table-name-prefix=feed \
+#   --schema-files=./fs-bq-ext-feed.json
