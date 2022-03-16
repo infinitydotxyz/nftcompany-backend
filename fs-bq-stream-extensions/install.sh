@@ -37,7 +37,7 @@ done
 #   --project=$PROJECT_ID \
 #   --dataset=$DATASET_ID \
 #   --table-name-prefix=$TABLE_PREFIX \
-#   --schema-files=./$SCHEMA_JSON_FILE
+#   --schema-files=./$SCHEMA_JSON_FILE.json
 # example:
 # npx @firebaseextensions/fs-bq-schema-views \
 #   --non-interactive \
