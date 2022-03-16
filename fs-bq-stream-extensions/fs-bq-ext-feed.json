@@ -70,6 +70,18 @@
       "type": "number"
     },
     {
+      "name": "quantity",
+      "type": "number"
+    },
+    {
+      "name": "paymentToken",
+      "type": "string"
+    },
+    {
+      "name": "source",
+      "type": "string"
+    },
+    {
       "name": "buyer",
       "type": "string"
     },
@@ -83,6 +95,10 @@
     },
     {
       "name": "sellerDisplayName",
+      "type": "string"
+    },
+    {
+      "name": "txHash",
       "type": "string"
     }
   ]
