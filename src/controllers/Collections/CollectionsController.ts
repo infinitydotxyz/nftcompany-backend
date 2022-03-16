@@ -16,14 +16,14 @@ import {
   DiscordSnippet,
   CollectionStats,
   TwitterSnippet,
-  EditableCollectionData,
   CollectionData,
   UpdateCollectionDataRequest,
   Keys,
   Optional,
   Links,
   WithTimestamp,
-  StatusCode
+  StatusCode,
+  CollectionIntegrations
 } from '@infinityxyz/lib/types/core';
 import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
@@ -205,6 +205,29 @@ export async function getCollectionInformationForEditor(
     return;
   } catch (err) {
     error('Failed to get collection info for', address);
+    error(err);
+    res.sendStatus(StatusCode.InternalServerError);
+  }
+}
+
+export async function updateCollectionIntegrations(
+  req: Request<{ collection: string; user: string }, any, { data: string }>,
+  res: Response<any, { authType: CollectionAuthType }>
+) {
+  const collectionAddress = req.params.collection.trim().toLowerCase();
+
+  try {
+    const data: CollectionIntegrations = JSON.parse(req.body.data);
+
+    const ref = firestore.collection(fstrCnstnts.COLLECTIONS_COLL).doc(collectionAddress);
+
+    await ref.update(data);
+
+    res.sendStatus(StatusCode.Created);
+
+    return;
+  } catch (err) {
+    error(`error occurred while updating collection integrations`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
