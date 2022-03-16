@@ -16,6 +16,7 @@ import {
   DiscordSnippet,
   CollectionStats,
   TwitterSnippet,
+  EditableCollectionData,
   CollectionData,
   UpdateCollectionDataRequest,
   Keys,

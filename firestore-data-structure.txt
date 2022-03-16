@@ -11,7 +11,7 @@
              |__{data}
 
 2. feed
-    |__1:AAbghuuiIU <chainId:firestore uuid>
+    |__AAbghuuiIU <firestore uuid>
        |__{data}
 
 3. users
