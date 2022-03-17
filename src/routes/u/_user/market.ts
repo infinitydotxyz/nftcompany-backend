@@ -31,7 +31,8 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
   }
 };
 
-const badRequest = (req: Request<TradeReq, any, TradeBody>, res: Response<TradeResponse>): boolean => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const badRequest = (req: Request<TradeReq, any, TradeBody>, _res: Response<TradeResponse>): boolean => {
   if (Object.keys(req.body).length === 0) {
     error('Invalid input - body empty');
     return true;

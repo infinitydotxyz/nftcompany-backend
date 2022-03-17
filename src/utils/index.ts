@@ -19,7 +19,7 @@ export function deepCopy(object: any) {
 }
 
 export function bn(num: BigNumber.Value) {
-  // @ts-expect-error
+  // @ts-expect-error not sure
   const bigNum = BigNumber(num);
   // console.log(num + '   ====== bigNUm ' + bigNum);
   // console.log(__line);

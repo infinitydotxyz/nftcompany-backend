@@ -5,7 +5,13 @@ import { error, log, jsonString, getDocIdHash, firestoreConstants } from '@infin
 import { getAssetAsListing } from '../utils';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 
-export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
+export async function fetchAssetAsListingFromDb(
+  chainId: string,
+  tokenId: string,
+  tokenAddress: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _limit: number
+) {
   log('Getting asset as listing from db');
   try {
     const docId = getDocIdHash({ chainId, tokenId, collectionAddress: tokenAddress });
@@ -36,7 +42,9 @@ export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string
           const owner = await getERC721Owner(tokenAddress, tokenId, chainId);
           if (owner && owner !== savedOwner) {
             order.metadata.asset.owner = owner;
-            doc.ref.update({ 'metadata.asset.owner': owner }).catch(() => {});
+            doc.ref.update({ 'metadata.asset.owner': owner }).catch(() => {
+              return;
+            });
           }
         }
       } catch (err) {}

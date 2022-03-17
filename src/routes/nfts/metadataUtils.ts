@@ -74,9 +74,9 @@ export const generateDoge2048NftMetadata = (
 };
 
 export const getDoge2048NftLevelId = (score: number, numPlays: number, dogBalance: number): string => {
-  let scoreLevel: string = '';
-  let playsLevel: string = '';
-  let dogBalanceLevel: string = '';
+  let scoreLevel = '';
+  let playsLevel = '';
+  let dogBalanceLevel = '';
   // get eye level
   for (const [key, val] of Object.entries(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {

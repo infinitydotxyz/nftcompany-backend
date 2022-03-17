@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { error, log } from '@infinityxyz/lib/utils';
 import { NextFunction, Request, Response } from 'express';

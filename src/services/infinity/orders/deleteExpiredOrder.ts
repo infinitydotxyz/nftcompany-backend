@@ -21,7 +21,7 @@ export async function deleteExpiredOrder(doc: any) {
   log('Committing delete expired order batch');
   batch
     .commit()
-    .then((resp) => {
+    .then(() => {
       // no op
     })
     .catch((err) => {

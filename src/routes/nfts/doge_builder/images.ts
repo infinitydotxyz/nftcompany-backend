@@ -151,7 +151,7 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
     incrementAmount: 10 * 1024 // grow by 10 kilobytes each time buffer overflows.
   });
 
-  return await new Promise((resolve, reject) => {
+  return await new Promise((resolve) => {
     file
       .createReadStream()
       .pipe(memStream)
@@ -174,7 +174,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
   const images: Canvas.Image[] = [];
   let file: File;
   let image: Canvas.Image;
-  let imagePath: string = '';
+  let imagePath = '';
 
   // ---------------
   // Background

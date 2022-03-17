@@ -114,7 +114,7 @@ export async function waitForTxn(user: any, payload: any) {
   log('Committing the big `wait for txn`', origTxnHash, 'batch to firestore');
   batch
     .commit()
-    .then((resp) => {
+    .then(() => {
       // no op
     })
     .catch((err) => {

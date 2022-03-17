@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
 import { getProvider } from 'utils/ethers';
@@ -188,7 +189,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
           log('Updating purchase and sale data for missed txn', txnHash, 'in firestore');
           batch
             .commit()
-            .then((resp) => {
+            .then(() => {
               // no op
             })
             .catch((err) => {

@@ -51,14 +51,22 @@ export function getOrdersResponseFromArray(docs: any) {
       void checkOwnershipChange(doc)
         .then((ownershipChanged) => {
           if (ownershipChanged) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           } else {
             return validateOrder(doc);
           }
         })
         .then((isValid) => {
           if (!isValid) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           }
         })
         .catch((err) => {

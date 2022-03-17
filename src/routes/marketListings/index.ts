@@ -21,7 +21,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
     let sellOrders: SellOrder[] = [];
     let buyOrders: BuyOrder[] = [];
     let matches: BuyOrderMatch[] = [];
-    let success: string = '';
+    let success = '';
 
     switch (req.body.action) {
       case 'list':
@@ -70,7 +70,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
   }
 };
 
-const badRequest = (req: Request<any, any, MarketListingsBody>, res: Response): boolean => {
+const badRequest = (req: Request<any, any, MarketListingsBody>): boolean => {
   if (Object.keys(req.body).length === 0) {
     error('Invalid input - body empty');
     return true;

@@ -41,6 +41,7 @@ export const getUserListings = async (
 
   let priceMin = +(req.query.priceMin ?? 0);
   let priceMax = +(req.query.priceMax ?? 0);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
   const sortByPriceDirection = (req.query.sortByPrice ?? '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const queries = parseQueryFields(

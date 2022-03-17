@@ -122,7 +122,7 @@ export function authorizeCollectionEditor(
   };
 
   asyncHandler()
-    .then(() => {})
+    .then()
     .catch((err) => {
       error(`error occurred while authorizing user`);
       error(err);
