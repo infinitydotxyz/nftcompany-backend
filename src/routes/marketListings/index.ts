@@ -13,7 +13,7 @@ import { marketOrders } from './marketOrders';
 
 const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
   try {
-    if (badRequest(req, res)) {
+    if (badRequest(req)) {
       res.sendStatus(StatusCode.BadRequest);
       return;
     }

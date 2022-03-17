@@ -38,6 +38,8 @@
     "axios": "0.24.0",
     "bignumber.js": "9.0.2",
     "canvas": "^2.8.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.13.2",
     "cors": "2.8.5",
     "cross-env": "^7.0.3",
     "csv-parse": "^5.0.3",
