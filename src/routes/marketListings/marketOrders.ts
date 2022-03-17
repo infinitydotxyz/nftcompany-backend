@@ -1,11 +1,11 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, isOrderExpired, SellOrder } from '@infinityxyz/lib/types/core';
+import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType, SellOrder } from '@infinityxyz/lib/types/core';
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 @singleton()
 export class MarketOrders {
-  async buy(order: BuyOrder): Promise<BuyOrderMatch[]> {
-    await marketListingsCache.addBuyOrder('validActive', order);
+  async buy(order: BuyOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+    await marketListingsCache.addBuyOrder(listId, order);
 
     const result = await this.findMatchForBuy(order);
 
@@ -16,8 +16,8 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: SellOrder): Promise<BuyOrderMatch[]> {
-    await marketListingsCache.addSellOrder('validActive', order);
+  async sell(order: SellOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+    await marketListingsCache.addSellOrder(listId, order);
 
     const result = await this.marketMatches();
 
@@ -43,9 +43,11 @@ export class MarketOrders {
   async findMatchForBuy(buyOrder: BuyOrder): Promise<BuyOrderMatch | null> {
     let candidates: SellOrder[] = [];
 
+    const buyAddresses = buyOrder.collectionAddresses.map((e) => e.address);
+
     for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
-        if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
+        if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
           if (sellOrder.price <= buyOrder.budget) {
             candidates.push(sellOrder);
           }
