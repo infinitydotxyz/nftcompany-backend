@@ -2,7 +2,7 @@ import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/co
 import { Request, Response } from 'express';
 
 /**
- * Logs all HTTP exceptions and returns a proper error response.
+ * Custom exception filter to return a more detailed error response.
  */
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
