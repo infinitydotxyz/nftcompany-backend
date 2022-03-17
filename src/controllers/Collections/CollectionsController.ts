@@ -453,7 +453,7 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
     .collection(firestoreConstants.DATA_SUB_COLL)
     .doc(historicalDocId)
     .collection(firestoreConstants.HISTORICAL_COLL);
-  let timestamp: number = Number(startAt);
+  let timestamp = Number(startAt);
 
   let dataPoints: Array<Record<keyof Data, number>> = [];
   let dataPointLimit = limit;

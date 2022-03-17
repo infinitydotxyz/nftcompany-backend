@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from 'services/opensea/orders';

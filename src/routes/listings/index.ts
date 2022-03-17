@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/lib/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,

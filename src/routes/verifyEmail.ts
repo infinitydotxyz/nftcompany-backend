@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error } from '@infinityxyz/lib/utils';
@@ -45,7 +46,7 @@ router.get('/', async (req, res) => {
       },
       { merge: true }
     )
-    .then((data) => {
+    .then(() => {
       res.sendStatus(StatusCode.Ok);
     })
     .catch((err) => {

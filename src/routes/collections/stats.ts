@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';

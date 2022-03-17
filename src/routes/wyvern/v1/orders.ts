@@ -38,8 +38,8 @@ router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
-  if (id) {
-    // @ts-expect-error
+  if (id && typeof id === 'string') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     docId = id.trim(); // preserve case
   }
 
