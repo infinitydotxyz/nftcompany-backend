@@ -24,6 +24,7 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (data?.assets) {
     data.assets.forEach((item: any) => {
       item.traits.forEach((trait: WyvernTrait) => {
+        // @ts-ignore
         traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
         traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
         if (!traitMap[trait.trait_type].values.includes(trait.value)) {

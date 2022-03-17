@@ -1,44 +1,43 @@
-import 'reflect-metadata';
-import './globals';
-import express from 'express';
+import { config as loadEnv } from 'dotenv';
+loadEnv();
+import { INestApplication } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as helmet from 'helmet';
+import { AppModule } from './app.module';
+import { INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
+import { HttpExceptionFilter } from './http-exception.filter';
+import { logger } from './logger.middleware';
 
-import helmet from 'helmet';
-import cors from 'cors';
-import router from 'routes';
-import { requestErrorHandler } from 'middleware/errorHandler';
-import { requestLogger } from 'middleware/logger';
-import { registerDocs } from './docs';
-import { ORIGIN } from './constants';
-import { log } from '@infinityxyz/lib/utils';
-
-const app = express();
-
-const registerMiddleware = () => {
-  app.use(express.json());
-  const corsOptions: cors.CorsOptions = {
+function setup(app: INestApplication) {
+  app.enableCors({
     origin: ORIGIN,
     optionsSuccessStatus: 200
-  };
-  app.use(cors(corsOptions));
+  });
   app.use(helmet());
-  app.use(requestLogger);
-};
+  app.use(logger);
+  app.useGlobalFilters(new HttpExceptionFilter());
 
-const registerRoutes = () => {
-  app.use('/', router);
-};
+  setupSwagger(app, 'docs');
+}
 
-const registerErrorHandler = () => {
-  app.use(requestErrorHandler);
-};
+function setupSwagger(app: INestApplication, path: string) {
+  const config = new DocumentBuilder()
+    .setTitle('Infinity API')
+    .setDescription('Developer API')
+    .setContact('infinity', INFINITY_URL, INFINITY_EMAIL)
+    .setVersion('1.0.0')
+    .build();
 
-registerDocs(app);
-registerMiddleware();
-registerRoutes();
-// error handler should be the last middleware registered
-registerErrorHandler();
+  const document = SwaggerModule.createDocument(app, config);
 
-const PORT = process.env.PORT ?? 9090;
-app.listen(PORT, () => {
-  log(`Server listening on port ${PORT}...`);
-});
+  SwaggerModule.setup(path, app, document);
+}
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  setup(app);
+  await app.listen(process.env.PORT || 9090);
+}
+
+bootstrap();

@@ -119,6 +119,7 @@ export const INFINITY_EMAIL = 'hi@infinity.xyz';
 export const FB_STORAGE_BUCKET = 'nftc-dev.appspot.com';
 export const FIREBASE_SERVICE_ACCOUNT = 'nftc-dev-firebase-creds.json';
 export const ORIGIN = /http:\/\/localhost:\d+/;
+export const INFINITY_URL = 'https://infinity.xyz/';
 
 export const ONE_HOUR = 3_600_000; // in ms
 export const ONE_DAY = ONE_HOUR * 24;

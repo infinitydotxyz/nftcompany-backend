@@ -2,17 +2,36 @@
 
 ## Installation
 
-Execute the following commands:
-
 ```bash
-# install dependencies
 $ npm install
-# copy environment variables (and edit these afterwards!)
-$ cp .env.example .env
 ```
 
-Finaly create a `creds` directory at the project root and add the required authentication files (ask a team member).
+## Running the app
 
-## Development
+```bash
+# development
+$ npm run start
 
-Run `npm run dev` to start the development server.
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Test
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## References
+
+- [NestJS docs](https://docs.nestjs.com/).
