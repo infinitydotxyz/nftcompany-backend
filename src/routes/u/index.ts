@@ -16,7 +16,7 @@ import { lowRateLimit, postUserRateLimit } from 'middleware/rateLimit';
 import { getUserVotes, postUserVote } from './_user/vote';
 import { getCollectionFollows, setCollectionFollow } from './_user/collectionFollows';
 import { getUserFollows, setUserFollow } from './_user/userFollows';
-import { market } from './_user/market/market';
+import { market } from './_user/market';
 
 const router = Router();
 

@@ -1,45 +1,34 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, MarketOrder, SellOrder } from '@infinityxyz/lib/types/core';
+import { BuyOrder, BuyOrderMatch, isOrderExpired, SellOrder } from '@infinityxyz/lib/types/core';
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 @singleton()
 export class MarketOrders {
-  async buy(user: string, order: BuyOrder): Promise<BuyOrderMatch | null> {
+  async buy(order: BuyOrder): Promise<BuyOrderMatch[]> {
     await marketListingsCache.addBuyOrder('validActive', order);
 
     const result = await this.findMatchForBuy(order);
 
-    return result;
-  }
-
-  async sell(user: string, order: SellOrder): Promise<BuyOrderMatch[]> {
-    await marketListingsCache.addSellOrder('validActive', order);
-
-    const result = await this.findMatchForSell(order);
-
-    return result;
-  }
-
-  isOrderExpired(order: MarketOrder) {
-    return this.isExpired(order.expiration);
-  }
-
-  isExpired(expiration: number): boolean {
-    const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
-
-    // special case of never expire
-    if (expiration === 0) {
-      return false;
+    if (result) {
+      return [result];
     }
 
-    return expiration <= utcSecondsSinceEpoch;
+    return [];
   }
 
-  async findMatchForSell(sellOrder: SellOrder): Promise<BuyOrderMatch[]> {
+  async sell(order: SellOrder): Promise<BuyOrderMatch[]> {
+    await marketListingsCache.addSellOrder('validActive', order);
+
+    const result = await this.marketMatches();
+
+    return result;
+  }
+
+  async marketMatches(): Promise<BuyOrderMatch[]> {
     const result: BuyOrderMatch[] = [];
 
     for (const buyOrder of await marketListingsCache.buyOrders('validActive')) {
-      if (!this.isOrderExpired(buyOrder)) {
+      if (!isOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder);
 
         if (order) {
@@ -55,7 +44,7 @@ export class MarketOrders {
     let candidates: SellOrder[] = [];
 
     for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
-      if (!this.isOrderExpired(sellOrder)) {
+      if (!isOrderExpired(sellOrder)) {
         if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
           if (sellOrder.price <= buyOrder.budget) {
             candidates.push(sellOrder);
@@ -70,26 +59,22 @@ export class MarketOrders {
         return a.price - b.price;
       });
 
-      if (buyOrder.minNFTs === 1) {
-        return { buyOrder: buyOrder, sellOrders: [candidates[0]] };
-      } else {
-        let cash = buyOrder.budget;
-        let numNFTs = buyOrder.minNFTs;
-        const result: SellOrder[] = [];
+      let cash = buyOrder.budget;
+      let numNFTs = buyOrder.minNFTs;
+      const result: SellOrder[] = [];
 
-        for (const c of candidates) {
-          if (numNFTs > 0 && cash >= c.price) {
-            result.push(c);
-            cash -= c.price;
-            numNFTs -= 1;
-          } else {
-            break;
-          }
+      for (const c of candidates) {
+        if (numNFTs > 0 && cash >= c.price) {
+          result.push(c);
+          cash -= c.price;
+          numNFTs -= 1;
+        } else {
+          break;
         }
+      }
 
-        if (result.length === buyOrder.minNFTs) {
-          return { buyOrder: buyOrder, sellOrders: result };
-        }
+      if (result.length === buyOrder.minNFTs) {
+        return { buyOrder: buyOrder, sellOrders: result };
       }
     }
 

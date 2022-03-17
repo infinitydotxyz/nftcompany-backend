@@ -450,7 +450,7 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
   const historicalCollectionRef = firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
     .doc(getCollectionDocId(collection))
-    .collection(firestoreConstants.COLLECTION_DATA_COLL)
+    .collection(firestoreConstants.DATA_SUB_COLL)
     .doc(historicalDocId)
     .collection(firestoreConstants.HISTORICAL_COLL);
   let timestamp: number = Number(startAt);
@@ -533,7 +533,7 @@ async function getTwitterSnippet(
   const twitterRef = firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
     .doc(docId)
-    .collection(firestoreConstants.COLLECTION_DATA_COLL)
+    .collection(firestoreConstants.DATA_SUB_COLL)
     .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
   const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
@@ -596,7 +596,7 @@ async function updateTwitterData(
           .collection(firestoreConstants.COLLECTIONS_COLL)
           .doc(getCollectionDocId(collection));
         const twitterRef = collectionInfoRef
-          .collection(firestoreConstants.COLLECTION_DATA_COLL)
+          .collection(firestoreConstants.DATA_SUB_COLL)
           .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
 
         /**
@@ -677,7 +677,7 @@ async function getDiscordSnippet(
     const discordRef = firestore
       .collection(firestoreConstants.COLLECTIONS_COLL)
       .doc(getCollectionDocId(collection))
-      .collection(firestoreConstants.COLLECTION_DATA_COLL)
+      .collection(firestoreConstants.DATA_SUB_COLL)
       .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
     let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
@@ -718,7 +718,7 @@ export async function updateDiscordSnippet(
           .collection(firestoreConstants.COLLECTIONS_COLL)
           .doc(getCollectionDocId(collection));
         const discordRef = collectionInfoRef
-          .collection(firestoreConstants.COLLECTION_DATA_COLL)
+          .collection(firestoreConstants.DATA_SUB_COLL)
           .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
 
         /**
