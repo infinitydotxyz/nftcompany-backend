@@ -6,5 +6,6 @@ import BaseFirebase from './firebase.base';
 export default class DefaultFirebaseProvider extends BaseFirebase {
   constructor(protected configService: ConfigService) {
     super(configService, 'firebase');
+    console.log(this);
   }
 }
