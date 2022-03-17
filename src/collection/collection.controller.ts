@@ -1,7 +1,5 @@
 import { Collection } from '@infinityxyz/lib/types/core';
-import { Body, Controller, Get, NotFoundException } from '@nestjs/common';
-import { ParseAddressPipe } from 'common/pipes/parse-address.pipe';
-import { ParseChainIdPipe } from 'common/pipes/parse-chain-id.pipe';
+import { Controller, Get, NotFoundException, Query } from '@nestjs/common';
 import CollectionService from './collection.service';
 import { RequestCollectionDto } from './dto/request-collection.dto';
 
@@ -10,12 +8,11 @@ export class CollectionController {
   constructor(private collectionService: CollectionService) {}
 
   @Get()
-  async findOne(
-    @Body(new ParseAddressPipe(), new ParseChainIdPipe()) requestCollectionDto: RequestCollectionDto
-  ): Promise<Collection> {
-    console.log(requestCollectionDto);
-
-    const collection = this.collectionService.getCollection(requestCollectionDto);
+  async getOne(@Query() { address, chainId }: RequestCollectionDto): Promise<Collection> {
+    const collection = await this.collectionService.getCollection({
+      address,
+      chainId
+    });
 
     if (!collection) {
       throw new NotFoundException();
