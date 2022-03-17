@@ -7,7 +7,6 @@ import * as helmet from 'helmet';
 import { AppModule } from './app.module';
 import { INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
 import { HttpExceptionFilter } from './http-exception.filter';
-import { logger } from './logger.middleware';
 
 function setup(app: INestApplication) {
   app.enableCors({
@@ -15,7 +14,6 @@ function setup(app: INestApplication) {
     optionsSuccessStatus: 200
   });
   app.use(helmet());
-  app.use(logger);
   app.useGlobalFilters(new HttpExceptionFilter());
 
   setupSwagger(app, 'docs');

@@ -1,7 +1,5 @@
-import { error, log } from '@infinityxyz/lib/utils';
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { toLog } from './logger.middleware';
 
 /**
  * Logs all HTTP exceptions and returns a proper error response.
@@ -14,12 +12,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const req = ctx.getRequest<Request>();
     const status = exception.getStatus();
 
-    // log error
-    const line = toLog(req);
-    log(line);
-    error(exception);
-
-    // return error response
+    // return detailed error response
     res.status(status).json({
       statusCode: status,
       message: exception.message,
