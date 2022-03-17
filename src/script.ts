@@ -5,6 +5,7 @@ import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { IcyToolsApi } from 'services/icytools';
 import { ContractsOrderBy } from '@infinityxyz/lib/types/services/icytools';
 import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
+import { fstrCnstnts } from './constants';
 
 /**
  * an entry point for calling scripts
@@ -17,7 +18,9 @@ import { updateSearchCollectionName } from './scripts/updateSearchCollectionName
 async function main() {
   // const icyTools = new IcyToolsApi();
   // await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
-  await updateSearchCollectionName(200);
+  // await updateSearchCollectionName(200);
+
+  console.log(fstrCnstnts.ASSETS_COLL);
 }
 
 void main();

@@ -1,10 +1,10 @@
 import { firestore } from 'container';
 import { CollectionInfo } from '@infinityxyz/lib/types/core';
-import { fstrCnstnts } from '../../../constants';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 export async function getCollectionInfoByName(searchCollectionName: string, limit: number) {
   const res = await firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    .collection(firestoreConstants.COLLECTIONS_COLL)
     .where('searchCollectionName', '==', searchCollectionName)
     .limit(limit)
     .get();

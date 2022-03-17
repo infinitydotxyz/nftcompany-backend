@@ -1,6 +1,5 @@
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
-import { log } from '@infinityxyz/lib/utils';
+import { firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { setupAllCollectionsListener } from 'utils/dblisteners';
 
 export let verifiedCollectionIds;
@@ -19,7 +18,7 @@ export async function getVerifiedCollectionIds() {
     isFetching = true;
     log('getVerifiedCollectionIds: fetching verified collection ids');
     const query = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .collection(firestoreConstants.COLLECTIONS_COLL)
       .select('hasBlueCheck')
       .where('hasBlueCheck', '==', true);
 

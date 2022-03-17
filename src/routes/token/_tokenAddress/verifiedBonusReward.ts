@@ -5,8 +5,12 @@ import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
 
 // check if token is verified or has bonus reward
-export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string }>, res: Response) => {
+export const getVerifiedBonusReward = async (
+  req: Request<{ tokenAddress: string; chainId: string }>,
+  res: Response
+) => {
   const tokenAddress = (`${req.params.tokenAddress}` || '').trim().toLowerCase();
+  const chainId = req.params.chainId.trim();
 
   if (!tokenAddress) {
     error('Empty token address');
@@ -15,7 +19,10 @@ export const getVerifiedBonusReward = async (req: Request<{ tokenAddress: string
   }
 
   try {
-    const [verified, bonusReward] = await Promise.all([isTokenVerified(tokenAddress), hasBonusReward(tokenAddress)]);
+    const [verified, bonusReward] = await Promise.all([
+      isTokenVerified({ collectionAddress: tokenAddress, chainId }),
+      hasBonusReward(tokenAddress)
+    ]);
 
     const resp = {
       verified,

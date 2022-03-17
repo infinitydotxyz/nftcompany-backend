@@ -6,7 +6,7 @@ import { FB_STORAGE_BUCKET, FIREBASE_SERVICE_ACCOUNT } from '../constants';
 import { Readable } from 'stream';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { error, log, trimLowerCase, warn } from '@infinityxyz/lib/utils';
+import { error, log, warn } from '@infinityxyz/lib/utils';
 
 @singleton()
 export default class Firestore {
@@ -40,19 +40,6 @@ export default class Firestore {
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
-  getDocIdHash({
-    collectionAddress,
-    tokenId,
-    chainId
-  }: {
-    collectionAddress: string;
-    tokenId: string;
-    chainId: string;
-  }) {
-    const data = chainId.trim() + '::' + trimLowerCase(collectionAddress) + '::' + tokenId.trim();
-    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  }
-
   getStaleListingDocId({
     tokenAddress,
     tokenId,
@@ -68,12 +55,12 @@ export default class Firestore {
     return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
-  // NOTE: don't use this for new code; use getDocIdHash instead
-  getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
-    warn('Do not use this assetDocId');
-    const data = tokenAddress.trim() + tokenId.trim() + chainId;
-    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  }
+  // // NOTE: don't use this for new code; use getDocIdHash instead
+  // getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
+  //   warn('Do not use this assetDocId');
+  //   const data = tokenAddress.trim() + tokenId.trim() + chainId;
+  //   return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  // }
 
   getHistoricalDocId(year: number, week: number) {
     return `${year}-${week}`;

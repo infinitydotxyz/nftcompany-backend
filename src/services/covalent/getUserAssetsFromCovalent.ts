@@ -16,7 +16,7 @@ export async function getUserAssetsFromCovalent(address: string): Promise<Covale
     const items: CovalentWalletBalanceItem[] = data.data.items;
     return items;
   } catch (err) {
-    error('Error occured while fetching assets from covalent');
+    error('Error occurred while fetching assets from covalent');
     error(err);
   }
   return [];

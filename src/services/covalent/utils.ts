@@ -51,7 +51,7 @@ export async function covalentAssetDataToListing(chainId: string, data: Covalent
   }
   const listing = {
     isListing: false,
-    hasBlueCheck: await isTokenVerified(address),
+    hasBlueCheck: await isTokenVerified({ collectionAddress: address, chainId }),
     schema,
     chainId,
     asset: {

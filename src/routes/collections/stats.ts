@@ -1,15 +1,13 @@
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '../../constants';
-import { error, log, jsonString } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';
+import { error, log, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
 
 const router = Router();
 
 enum OrderBy {
-  Twitter = 'twitter',
-  Discord = 'discord',
   //   Floor = 'floor', // TODO add floor
   Volume = 'volume',
   AveragePrice = 'averagePrice'
@@ -79,41 +77,19 @@ router.get(
         case OrderBy.AveragePrice:
           if (interval === Interval.Total) {
             statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
               .orderBy(`averagePrice`, orderDirection);
           } else {
             statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
               .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
         case OrderBy.Volume:
           statsQuery = firestore.db
-            .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
+            .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
             .orderBy(`${interval}.volume`, orderDirection);
 
-          break;
-        case OrderBy.Discord:
-          if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`discordMembers`, orderDirection);
-          } else {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.discordMembers`, orderDirection);
-          }
-          break;
-        case OrderBy.Twitter:
-          if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`twitterFollowers`, orderDirection);
-          } else {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.twitterFollowers`, orderDirection);
-          }
           break;
         default:
           res.sendStatus(StatusCode.BadRequest);
@@ -135,11 +111,6 @@ router.get(
 
         return result;
       });
-
-      // const collectionsToUpdate = data.filter((collection) => Date.now() > collection.timestamp + ONE_HOUR);
-      // for (const collection of data) {
-      //   // update collection
-      // }
 
       const respStr = jsonString(data);
 

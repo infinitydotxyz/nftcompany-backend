@@ -1,12 +1,12 @@
 import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../../constants';
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { error, log } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { getUserInfoRef } from '../getUser';
 import { firestore } from 'container';
 import { getOrdersResponseFromArray } from 'services/infinity/utils';
 
 export function getUserOffersRef(userAddress: string) {
-  return getUserInfoRef(userAddress).collection(fstrCnstnts.OFFERS_COLL);
+  return getUserInfoRef(userAddress).collection(firestoreConstants.OFFERS_COLL);
 }
 
 export async function getFilteredUserOffersMade(
@@ -115,7 +115,7 @@ export async function getFilteredUserOffersReceived(
       limit: number;
     }) => {
       let queryRef = firestore.db
-        .collectionGroup(fstrCnstnts.OFFERS_COLL)
+        .collectionGroup(firestoreConstants.OFFERS_COLL)
         .where('metadata.asset.owner', '==', user)
         .where('metadata.chainId', '==', chainId)
         .where('metadata.basePriceInEth', '>=', +priceMin)

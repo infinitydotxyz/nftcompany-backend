@@ -1,13 +1,12 @@
-import { getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
+import { firestoreConstants, getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
 
 export async function fuzzySearchTitle(startsWithOrig: string, limit: number) {
   const startsWith = getSearchFriendlyString(startsWithOrig);
   if (startsWith && typeof startsWith === 'string') {
     const endCode = getEndCode(startsWith);
     const data = await firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', endCode)
       .orderBy('metadata.asset.searchTitle')

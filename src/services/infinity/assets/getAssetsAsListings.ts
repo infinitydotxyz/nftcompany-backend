@@ -1,21 +1,15 @@
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
 import { getAssetFromCovalent } from 'services/covalent/getAssetFromCovalent';
 import { getAssetFromOpensea } from 'services/opensea/assets/getAssetFromOpensea';
-import { error, log, jsonString } from '@infinityxyz/lib/utils';
+import { error, log, jsonString, getDocIdHash, firestoreConstants } from '@infinityxyz/lib/utils';
 import { getAssetAsListing } from '../utils';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 
 export async function fetchAssetAsListingFromDb(chainId: string, tokenId: string, tokenAddress: string, limit: number) {
   log('Getting asset as listing from db');
   try {
-    const docId = firestore.getAssetDocId({ chainId, tokenId, tokenAddress });
-    const doc = await firestore.db
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(docId)
-      .get();
+    const docId = getDocIdHash({ chainId, tokenId, collectionAddress: tokenAddress });
+    const doc = await firestore.collection(firestoreConstants.ASSETS_COLL).doc(docId).get();
 
     let listings;
 
