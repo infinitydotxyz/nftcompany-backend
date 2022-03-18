@@ -5,7 +5,8 @@ import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
 
 export class RequestCollectionByAddressDto {
   @ApiProperty({
-    description: 'Collection Slug'
+    description: 'Collection Slug',
+    required: false
   })
   @IsString({
     message: 'Invalid slug'
@@ -14,13 +15,14 @@ export class RequestCollectionByAddressDto {
   readonly slug?: string;
 
   @ApiProperty({
-    description: 'Collection Address'
+    description: 'Collection Address',
+    required: false
   })
   @IsEthereumAddress({
     message: 'Invalid address'
   })
   @IsOptional()
-  readonly address: string;
+  readonly address?: string;
 
   @ApiProperty({
     description: 'Collection chain id',

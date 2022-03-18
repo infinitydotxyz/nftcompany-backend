@@ -3,11 +3,13 @@ import {
   BadRequestException,
   Controller,
   Get,
-  InternalServerErrorException,
+  Header,
   NotFoundException,
-  Query
+  Query,
+  UseInterceptors
 } from '@nestjs/common';
-import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiResponse, getSchemaPath } from '@nestjs/swagger';
+import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
+import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
 import CollectionService from './collection.service';
 import { CollectionResponseDto } from './dto/collection-response.dto';
@@ -18,9 +20,10 @@ export class CollectionController {
   constructor(private collectionService: CollectionService) {}
 
   @Get()
-  @ApiResponse({ status: 200, description: 'success', type: CollectionResponseDto })
-  @ApiNotFoundResponse({ description: 'collection not found' })
-  @ApiInternalServerErrorResponse({ status: 500, description: 'internal server error' })
+  @ApiOkResponse({ description: 'Success', type: CollectionResponseDto })
+  @ApiNotFoundResponse({ description: 'Collection not found' })
+  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
+  @UseInterceptors(new CacheControlInterceptor())
   async getOne(@Query(new NormalizeAddressPipe()) query: RequestCollectionByAddressDto): Promise<Collection> {
     let collection: Collection | undefined;
     if ('slug' in query && query.slug) {
@@ -38,6 +41,9 @@ export class CollectionController {
     return collection;
   }
 
+  /**
+   * get a single collection by address
+   */
   private async getOneByAddress({ address, chainId }: { address: string; chainId: ChainId }): Promise<Collection> {
     const collection = await this.collectionService.getCollectionByAddress({
       address,
@@ -51,6 +57,9 @@ export class CollectionController {
     return collection;
   }
 
+  /**
+   * get a single collection by slug
+   */
   private async getOneBySlug({ slug, chainId }: { slug: string; chainId: ChainId }): Promise<Collection> {
     const collection = await this.collectionService.getCollectionBySlug({
       slug,
