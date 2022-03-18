@@ -48,7 +48,7 @@ export class MarketOrders {
     for (const sellOrder of marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
         if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
-          if (sellOrder.price <= buyOrder.budget) {
+          if (sellOrder.startPrice <= buyOrder.budget) {
             candidates.push(sellOrder);
           }
         }
@@ -58,7 +58,7 @@ export class MarketOrders {
     if (candidates.length > 0) {
       // sort list
       candidates = candidates.sort((a, b) => {
-        return a.price - b.price;
+        return a.startPrice - b.startPrice;
       });
 
       let cash = buyOrder.budget;
@@ -66,9 +66,9 @@ export class MarketOrders {
       const result: SellOrder[] = [];
 
       for (const c of candidates) {
-        if (numNFTs > 0 && cash >= c.price) {
+        if (numNFTs > 0 && cash >= c.startPrice) {
           result.push(c);
-          cash -= c.price;
+          cash -= c.startPrice;
           numNFTs -= 1;
         } else {
           break;
