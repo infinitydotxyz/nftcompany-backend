@@ -27,7 +27,7 @@ export class MarketOrders {
   async marketMatches(): Promise<BuyOrderMatch[]> {
     const result: BuyOrderMatch[] = [];
 
-    for (const buyOrder of await marketListingsCache.buyOrders('validActive')) {
+    for (const buyOrder of marketListingsCache.buyOrders('validActive')) {
       if (!isOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder);
 
@@ -45,7 +45,7 @@ export class MarketOrders {
 
     const buyAddresses = buyOrder.collectionAddresses.map((e) => e.address);
 
-    for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
+    for (const sellOrder of marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
         if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
           if (sellOrder.price <= buyOrder.budget) {

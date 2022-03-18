@@ -1,5 +1,13 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, orderHash, MarketListIdType, SellOrder, MarketOrder, isBuyOrder } from '@infinityxyz/lib/types/core';
+import {
+  BuyOrder,
+  orderHash,
+  MarketListIdType,
+  SellOrder,
+  MarketOrder,
+  isBuyOrder,
+  isOrderExpired
+} from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
@@ -7,6 +15,11 @@ import { marketOrders } from './marketOrders';
 
 // ---------------------------------------------------------------
 // listCache
+
+interface ExpiredCacheItem {
+  listId: MarketListIdType;
+  order: MarketOrder;
+}
 
 class ListCache {
   validActiveBuys: Map<string, BuyOrder> = new Map();
@@ -20,6 +33,74 @@ class ListCache {
 
   constructor() {
     void this._load();
+  }
+
+  buyOrderCache(listId: MarketListIdType): Map<string, BuyOrder> {
+    switch (listId) {
+      case 'validActive':
+        return this.validActiveBuys;
+      case 'validInactive':
+        return this.validInactiveBuys;
+      case 'invalid':
+        return this.invalidBuys;
+    }
+  }
+
+  buyOrders(listId: MarketListIdType): BuyOrder[] {
+    return Array.from(this.buyOrderCache(listId).values());
+  }
+
+  sellOrderCache(listId: MarketListIdType): Map<string, SellOrder> {
+    switch (listId) {
+      case 'validActive':
+        return this.validActiveSells;
+      case 'validInactive':
+        return this.validInactiveSells;
+      case 'invalid':
+        return this.invalidSells;
+    }
+  }
+
+  sellOrders(listId: MarketListIdType): SellOrder[] {
+    return Array.from(this.sellOrderCache(listId).values());
+  }
+
+  expiredOrders(): ExpiredCacheItem[] {
+    const result: ExpiredCacheItem[] = [];
+
+    result.push(...this._expiredBuyOrders('validActive'));
+    result.push(...this._expiredBuyOrders('validInactive'));
+    // result.push(...this._expiredBuyOrders('invalid'));
+
+    result.push(...this._expiredSellOrders('validActive'));
+    result.push(...this._expiredSellOrders('validInactive'));
+    // result.push(...this._expiredSellOrders('invalid'));
+
+    return result;
+  }
+
+  _expiredBuyOrders(listId: MarketListIdType): ExpiredCacheItem[] {
+    const result: ExpiredCacheItem[] = [];
+
+    for (const order of this.buyOrders(listId)) {
+      if (isOrderExpired(order)) {
+        result.push({ listId: listId, order: order });
+      }
+    }
+
+    return result;
+  }
+
+  _expiredSellOrders(listId: MarketListIdType): ExpiredCacheItem[] {
+    const result: ExpiredCacheItem[] = [];
+
+    for (const order of this.sellOrders(listId)) {
+      if (isOrderExpired(order)) {
+        result.push({ listId: listId, order: order });
+      }
+    }
+
+    return result;
   }
 
   async _load() {
@@ -73,22 +154,38 @@ class ListCache {
 // ---------------------------------------------------------------
 // MarketListingsCache
 
+const orderTimerDelay: number = 5 * 1000;
+const periodicIntervalDelay: number = 15 * (60 * 1000);
+
 @singleton()
 export class MarketListingsCache {
   cache: ListCache = new ListCache();
+  orderScanTimer: NodeJS.Timeout | undefined;
+
+  constructor() {
+    // schedule a scan
+    this._scanOrders();
+
+    setInterval(() => {
+      this._scanOrders();
+    }, periodicIntervalDelay);
+  }
 
   async addBuyOrder(listId: MarketListIdType, buyOrder: BuyOrder): Promise<void> {
-    const c = this._buyOrderCache(listId);
+    const c = this.cache.buyOrderCache(listId);
 
     if (!c.has(orderHash(buyOrder))) {
       const order = await this._saveBuyOrder(listId, buyOrder);
 
       c.set(order.id ?? '', order);
     }
+
+    // schedule a scan
+    this._scanOrders();
   }
 
   async addSellOrder(listId: MarketListIdType, sellOrder: SellOrder): Promise<void> {
-    const c = this._sellOrderCache(listId);
+    const c = this.cache.sellOrderCache(listId);
 
     if (!c.has(orderHash(sellOrder))) {
       const order = await this._saveSellOrder(listId, sellOrder);
@@ -98,7 +195,7 @@ export class MarketListingsCache {
   }
 
   async deleteBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    const c = this._buyOrderCache(listId);
+    const c = this.cache.buyOrderCache(listId);
 
     if (c.has(orderId)) {
       c.delete(orderId);
@@ -108,7 +205,7 @@ export class MarketListingsCache {
   }
 
   async deleteSellOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    const c = this._sellOrderCache(listId);
+    const c = this.cache.sellOrderCache(listId);
 
     if (c.has(orderId)) {
       c.delete(orderId);
@@ -118,7 +215,7 @@ export class MarketListingsCache {
   }
 
   async executeBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    const c = this._buyOrderCache(listId);
+    const c = this.cache.buyOrderCache(listId);
 
     if (c.has(orderId)) {
       const buyOrder = c.get(orderId);
@@ -141,49 +238,32 @@ export class MarketListingsCache {
   }
 
   sellOrders(listId: MarketListIdType): SellOrder[] {
-    const result: SellOrder[] = [];
-    const c = this._sellOrderCache(listId);
-
-    for (const x of c.entries()) {
-      result.push(x[1]);
-    }
-
-    return result;
+    return this.cache.sellOrders(listId);
   }
 
   buyOrders(listId: MarketListIdType): BuyOrder[] {
-    const result: BuyOrder[] = [];
-    const c = this._buyOrderCache(listId);
-
-    for (const x of c.entries()) {
-      result.push(x[1]);
-    }
-
-    return result;
+    return this.cache.buyOrders(listId);
   }
 
   // ===============================================================
   // private
 
-  _buyOrderCache(listId: MarketListIdType): Map<string, BuyOrder> {
-    switch (listId) {
-      case 'validActive':
-        return this.cache.validActiveBuys;
-      case 'validInactive':
-        return this.cache.validInactiveBuys;
-      case 'invalid':
-        return this.cache.invalidBuys;
-    }
-  }
+  _scanOrders() {
+    if (!this.orderScanTimer) {
+      this.orderScanTimer = setTimeout(() => {
+        for (const order of this.cache.expiredOrders()) {
+          if (isOrderExpired(order.order)) {
+            // move order to invalid list
+            if (isBuyOrder(order.order)) {
+              void this._moveBuyOrder(order.order, order.listId, 'invalid');
+            } else {
+              void this._moveSellOrder(order.order as SellOrder, order.listId, 'invalid');
+            }
+          }
+        }
 
-  _sellOrderCache(listId: MarketListIdType): Map<string, SellOrder> {
-    switch (listId) {
-      case 'validActive':
-        return this.cache.validActiveSells;
-      case 'validInactive':
-        return this.cache.validInactiveSells;
-      case 'invalid':
-        return this.cache.invalidSells;
+        this.orderScanTimer = undefined;
+      }, orderTimerDelay);
     }
   }
 
