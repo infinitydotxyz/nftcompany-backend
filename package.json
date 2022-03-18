@@ -17,7 +17,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "update:lib": "npx ncu -f @infinityxyz/lib -u && npm install"
+    "update:lib": "npx npm-check-updates -f @infinityxyz/lib -u && npm install"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/mavriklabs/nftcompany-backend#readme",
   "dependencies": {
-    "@infinityxyz/lib": "^1.20.0",
+    "@infinityxyz/lib": "^1.24.0",
     "@nestjs/common": "^8.0.0",
     "@nestjs/config": "^2.0.0",
     "@nestjs/core": "^8.0.0",
