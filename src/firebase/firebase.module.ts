@@ -1,9 +1,22 @@
-import { Module } from '@nestjs/common';
-import NodemailerFirebaseProvider from './nodemailer.provider';
-import DefaultFirebaseProvider from './default.firebase.provider';
+import { FirebaseService } from './firebase.service';
+import { DynamicModule, Module } from '@nestjs/common';
+import { FirebaseModuleOptions } from './firebase.types';
+import { FIREBASE_OPTIONS } from './firebase.constants';
 
-@Module({
-  providers: [DefaultFirebaseProvider, NodemailerFirebaseProvider],
-  exports: [DefaultFirebaseProvider, NodemailerFirebaseProvider]
-})
-export class FirebaseModule {}
+@Module({})
+export class FirebaseModule {
+  static forRoot(options: FirebaseModuleOptions): DynamicModule {
+    return {
+      global: true,
+      module: FirebaseModule,
+      providers: [
+        {
+          provide: FIREBASE_OPTIONS,
+          useValue: options
+        },
+        FirebaseService
+      ],
+      exports: [FirebaseService]
+    };
+  }
+}
