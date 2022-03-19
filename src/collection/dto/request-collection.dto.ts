@@ -1,12 +1,11 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
 
-export class RequestCollectionByAddressDto {
-  @ApiProperty({
-    description: 'Collection Slug',
-    required: false
+export class RequestCollectionDto {
+  @ApiPropertyOptional({
+    description: 'Collection Slug'
   })
   @IsString({
     message: 'Invalid slug'
@@ -14,9 +13,8 @@ export class RequestCollectionByAddressDto {
   @IsOptional()
   readonly slug?: string;
 
-  @ApiProperty({
-    description: 'Collection Address',
-    required: false
+  @ApiPropertyOptional({
+    description: 'Collection Address'
   })
   @IsEthereumAddress({
     message: 'Invalid address'

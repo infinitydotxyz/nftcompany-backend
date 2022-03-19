@@ -2,6 +2,7 @@ import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
+import RequestCollectionsStatsDto, { CollectionStatsPeriod } from './dto/request-collections-stats.dto';
 
 interface CollectionQueryOptions {
   /**
@@ -20,6 +21,27 @@ export default class CollectionService {
     return {
       limitToCompleteCollections: true
     };
+  }
+
+  async getCollectionsStats(queryOptions: RequestCollectionsStatsDto) {
+    const collectionGroup = this.firebaseService.firestore.collectionGroup('daily');
+    switch (queryOptions.period) {
+      case CollectionStatsPeriod.Daily:
+      case CollectionStatsPeriod.AllTime:
+        break;
+
+      default:
+        throw new Error('not yet implemented');
+    }
+
+    const query = collectionGroup.orderBy(queryOptions.orderBy, queryOptions.orderDirection).limit(queryOptions.limit);
+
+    const res = await query.get();
+    const collectionStats = res.docs.map((snapShot) => {
+      return snapShot.data();
+    });
+
+    return collectionStats;
   }
 
   /**

@@ -1,10 +1,11 @@
-import { ChainId, Collection } from '@infinityxyz/lib/types/core';
+import { ChainId, Collection, CollectionStats } from '@infinityxyz/lib/types/core';
 import {
   BadRequestException,
   Controller,
   Get,
   Header,
   NotFoundException,
+  ParseIntPipe,
   Query,
   UseInterceptors
 } from '@nestjs/common';
@@ -13,7 +14,8 @@ import { CacheControlInterceptor } from 'common/interceptors/cache-control.inter
 import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
 import CollectionService from './collection.service';
 import { CollectionResponseDto } from './dto/collection-response.dto';
-import { RequestCollectionByAddressDto } from './dto/request-collection-by-address.dto';
+import { RequestCollectionDto } from './dto/request-collection.dto';
+import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
 
 @Controller('collection')
 export class CollectionController {
@@ -24,7 +26,7 @@ export class CollectionController {
   @ApiNotFoundResponse({ description: 'Collection not found' })
   @ApiInternalServerErrorResponse({ description: 'Internal server error' })
   @UseInterceptors(new CacheControlInterceptor())
-  async getOne(@Query(new NormalizeAddressPipe()) query: RequestCollectionByAddressDto): Promise<Collection> {
+  async getOne(@Query(new NormalizeAddressPipe()) query: RequestCollectionDto): Promise<Collection> {
     let collection: Collection | undefined;
     if ('slug' in query && query.slug) {
       collection = await this.getOneBySlug({ slug: query.slug, chainId: query.chainId });
@@ -39,6 +41,14 @@ export class CollectionController {
     }
 
     return collection;
+  }
+
+  @Get('/stats')
+  async getStats(@Query() query: RequestCollectionsStatsDto): Promise<any> {
+    console.log(query);
+    const res = await this.collectionService.getCollectionsStats(query);
+    console.log(res);
+    return res;
   }
 
   /**
