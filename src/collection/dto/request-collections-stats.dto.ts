@@ -1,7 +1,7 @@
-import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber } from 'class-validator';
-import { Transform, TransformFnParams } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export enum CollectionStat {
@@ -16,8 +16,8 @@ export default class RequestCollectionsStatsDto {
   @ApiProperty({
     description: 'Period to get stats for'
   })
-  @IsEnum(CollectionStatsPeriod)
-  period: CollectionStatsPeriod;
+  @IsEnum(StatsPeriod)
+  period: StatsPeriod;
 
   @ApiProperty({
     description: 'Specific date to get stats for'

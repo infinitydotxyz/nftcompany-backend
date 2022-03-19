@@ -1,8 +1,8 @@
-import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
+import { Collection, CreationFlow, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
-import RequestCollectionsStatsDto, { CollectionStatsPeriod } from './dto/request-collections-stats.dto';
+import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
 
 interface CollectionQueryOptions {
   /**
@@ -26,8 +26,8 @@ export default class CollectionService {
   async getCollectionsStats(queryOptions: RequestCollectionsStatsDto) {
     const collectionGroup = this.firebaseService.firestore.collectionGroup('daily');
     switch (queryOptions.period) {
-      case CollectionStatsPeriod.Daily:
-      case CollectionStatsPeriod.AllTime:
+      case StatsPeriod.Daily:
+      case StatsPeriod.All:
         break;
 
       default:

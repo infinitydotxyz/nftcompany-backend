@@ -1,7 +1,11 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType, SellOrder } from '@infinityxyz/lib/types/core';
+import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType } from '@infinityxyz/lib/types/core';
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
+/**
+ * types mismatch from lib
+ */
+type SellOrder = any;
 @singleton()
 export class MarketOrders {
   async buy(order: BuyOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
@@ -48,7 +52,8 @@ export class MarketOrders {
     for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
         if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
-          if (sellOrder.price <= buyOrder.budget) {
+          if ((sellOrder as any).price <= buyOrder.budget) {
+            // types from lib are broken
             candidates.push(sellOrder);
           }
         }
