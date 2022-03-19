@@ -71,24 +71,24 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery: FirebaseFirestore.DocumentData;
+      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // these queries are broken due to the new stats structure
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
           if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-              .orderBy(`averagePrice`, orderDirection);
+            // statsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`averagePrice`, orderDirection);
           } else {
-            statsQuery = firestore.db
-              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.averagePrice`, orderDirection);
+            // statsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
         case OrderBy.Volume:
-          statsQuery = firestore.db
-            .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-            .orderBy(`${interval}.volume`, orderDirection);
+          // statsQuery = firestore.db
+          //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+          //   .orderBy(`${interval}.volume`, orderDirection);
 
           break;
         default:
