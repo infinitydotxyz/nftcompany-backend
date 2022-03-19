@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';
-import { error, log, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
 
