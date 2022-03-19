@@ -1,10 +1,10 @@
 import { trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { queryBigData } from 'services/bigquery/BigQueryUtils';
-import { fetchUserFollows } from './collectionFollows';
+// import { fetchUserFollows } from './collectionFollows';
 import { validateInputs } from 'utils';
 
-const QUERY_BY_COLLECTIONS_LIMIT = 999;
+// const QUERY_BY_COLLECTIONS_LIMIT = 999;
 
 export const getUserFeed = async (
   req: Request<
@@ -24,38 +24,18 @@ export const getUserFeed = async (
     res.sendStatus(errorCode);
     return;
   }
-  const follows = await fetchUserFollows(user, QUERY_BY_COLLECTIONS_LIMIT);
-  const followAddresses = follows.map((item) => `'${item.address}'`).join(','); // 'addr1', 'addr2'
+  // const follows = await fetchUserFollows(user, QUERY_BY_COLLECTIONS_LIMIT);
+  // const followAddresses = follows.map((item) => `'${item.address}'`).join(','); // 'addr1', 'addr2'
 
   const query = `
-SELECT
-  JSON_EXTRACT_SCALAR(DATA, "$.collectionAddress") AS tokenAddress,
-  JSON_EXTRACT_SCALAR(DATA, "$.tokenId") AS tokenId,
-  JSON_EXTRACT_SCALAR(DATA, "$.buyer") AS buyer,
-  JSON_EXTRACT_SCALAR(DATA, "$.seller") AS seller,
-  JSON_EXTRACT_SCALAR(DATA, "$.price") AS price,
-  JSON_EXTRACT_SCALAR(DATA, "$.blockTimestamp") AS blockTimestamp,
-  "" AS type
-  -- CAST(JSON_EXTRACT_SCALAR(DATA,
-  --     "$.price") AS FLOAT64) AS price
+  SELECT
+  *
 FROM
-  \`nftc-dev.fs_mirror_sales.sales_raw_latest\`
-  WHERE JSON_EXTRACT_SCALAR(DATA, "$.collectionAddress") IN (${followAddresses})
-
-UNION ALL
-
-SELECT
-JSON_EXTRACT_SCALAR(data, "$.tokenAddress") AS tokenAddress,
-"" AS tokenId,
-"" AS buyer,
-"" AS seller,
-"" AS price,
-"" AS blockTimestamp,
-JSON_EXTRACT_SCALAR(data, "$.type") AS type
-FROM
-\`nftc-dev.fs_mirror_feed.feed_raw_latest\`
-WHERE JSON_EXTRACT_SCALAR(DATA, "$.tokenAddress") IN (${followAddresses})
-
+  \`nftc-dev.fs_mirror_feed.feed_schema_fs_bq_ext_feed_latest\` AS A
+INNER JOIN
+  \`nftc-dev.fs_mirror_users_collectionFollows.users_collectionFollows_schema_fs_bq_ext_users_collectionfollows_schema_latest\` AS B
+ON
+  A.collectionAddress = B.address
 LIMIT ${limit}
   `;
   // console.log('query', query)
