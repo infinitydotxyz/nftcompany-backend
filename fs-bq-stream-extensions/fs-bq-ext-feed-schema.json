@@ -30,7 +30,27 @@
       "type": "string"
     },
     {
+      "name": "collectionName",
+      "type": "string"
+    },
+    {
+      "name": "slug",
+      "type": "string"
+    },
+    {
+      "name": "tokenStandard",
+      "type": "string"
+    },
+    {
       "name": "tokenId",
+      "type": "string"
+    },
+    {
+      "name": "nftName",
+      "type": "string"
+    },
+    {
+      "name": "nftSlug",
       "type": "string"
     },
     {

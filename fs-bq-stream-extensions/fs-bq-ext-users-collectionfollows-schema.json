@@ -1,6 +1,10 @@
 {
   "fields": [
     {
+      "name": "userAddress",
+      "type": "string"
+    },
+    {
       "name": "address",
       "type": "string"
     },
