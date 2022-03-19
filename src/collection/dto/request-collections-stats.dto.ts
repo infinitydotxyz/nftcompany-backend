@@ -1,15 +1,24 @@
-import { OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { OrderDirection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export enum CollectionStat {
-  AveragePrice = 'avgPrice',
-  CeilPrice = 'ceilPrice',
   FloorPrice = 'floorPrice',
-  Sales = 'totalNumSales',
-  Volume = 'totalVolume'
+  FloorPriceChange = 'floorPricePercentChange',
+
+  CeilPrice = 'ceilPrice',
+  CeilPriceChange = 'ceilPricePercentChange',
+
+  Volume = 'volume',
+  VolumeChange = 'volumePercentChange',
+
+  Sales = 'numSales',
+  SalesChange = 'numSalesPercentChange',
+
+  AveragePrice = 'avgPrice',
+  AveragePriceChange = 'avgPricePercentChange'
 }
 
 export default class RequestCollectionsStatsDto {

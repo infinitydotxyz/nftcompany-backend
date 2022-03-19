@@ -24,7 +24,7 @@ export default class CollectionService {
   }
 
   async getCollectionsStats(queryOptions: RequestCollectionsStatsDto) {
-    const collectionGroup = this.firebaseService.firestore.collectionGroup('daily');
+    const collectionGroup = this.firebaseService.firestore.collectionGroup('collectionStatsDaily');
     switch (queryOptions.period) {
       case StatsPeriod.Daily:
       case StatsPeriod.All:
