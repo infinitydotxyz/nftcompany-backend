@@ -1,5 +1,12 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType, SellOrder } from '@infinityxyz/lib/types/core';
+import {
+  BuyOrder,
+  BuyOrderMatch,
+  calculateCurrentPrice,
+  isOrderExpired,
+  MarketListIdType,
+  SellOrder
+} from '@infinityxyz/lib/types/core';
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 @singleton()
@@ -48,7 +55,9 @@ export class MarketOrders {
     for (const sellOrder of marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
         if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
-          if (sellOrder.startPrice <= buyOrder.budget) {
+          const currentPrice = calculateCurrentPrice(sellOrder);
+
+          if (currentPrice <= buyOrder.budget) {
             candidates.push(sellOrder);
           }
         }
@@ -58,7 +67,10 @@ export class MarketOrders {
     if (candidates.length > 0) {
       // sort list
       candidates = candidates.sort((a, b) => {
-        return a.startPrice - b.startPrice;
+        const aPrice = calculateCurrentPrice(a);
+        const bPrice = calculateCurrentPrice(b);
+
+        return aPrice - bPrice;
       });
 
       let cash = buyOrder.budget;
@@ -66,9 +78,11 @@ export class MarketOrders {
       const result: SellOrder[] = [];
 
       for (const c of candidates) {
-        if (numNFTs > 0 && cash >= c.startPrice) {
+        const price = calculateCurrentPrice(c);
+
+        if (numNFTs > 0 && cash >= price) {
           result.push(c);
-          cash -= c.startPrice;
+          cash -= price;
           numNFTs -= 1;
         } else {
           break;
