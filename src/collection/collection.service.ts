@@ -31,7 +31,8 @@ export default class CollectionService {
     const query = collectionGroup
       .where('period', '==', queryOptions.period)
       .where('timestamp', '==', timestamp)
-      .orderBy(queryOptions.orderBy, queryOptions.orderDirection);
+      .orderBy(queryOptions.orderBy, queryOptions.orderDirection)
+      .limit(queryOptions.limit);
 
     const res = await query.get();
     const collectionStats = res.docs.map((snapShot) => {

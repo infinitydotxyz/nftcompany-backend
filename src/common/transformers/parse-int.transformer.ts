@@ -23,7 +23,7 @@ interface ParseIntTransformerOptions {
   min?: number;
 
   /**
-   * exclusive
+   * inclusive
    */
   max?: number;
 }
@@ -41,7 +41,7 @@ export function parseIntTransformer(options?: ParseIntTransformerOptions) {
       throw new BadRequestException(`${params.key} must be finite`);
     }
 
-    if (typeof options?.max === 'number' && parsed >= options.max) {
+    if (typeof options?.max === 'number' && parsed > options.max) {
       throw new BadRequestException(`${params.key} out of bounds, max value: ${options.max}`);
     }
 
