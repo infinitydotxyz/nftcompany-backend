@@ -14,7 +14,8 @@ import {
   Links,
   WithTimestamp,
   StatusCode,
-  CollectionIntegrations
+  CollectionIntegrations,
+  Collection
 } from '@infinityxyz/lib/types/core';
 import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
@@ -174,7 +175,7 @@ export async function updateCollectionIntegrations(
   try {
     const data: CollectionIntegrations = JSON.parse(req.body.data);
 
-    const ref = firestore.collection(fstrCnstnts.COLLECTIONS_COLL).doc(collectionAddress);
+    const ref = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionAddress);
 
     await ref.update(data);
 
@@ -228,18 +229,6 @@ export async function postCollectionInformation(
     } else if (data.profileImage.isDeleted) {
       profileImageUpdate = { profileImage: '' };
     }
-
-    const collectionInfoUpdate: Optional<
-      Pick<CollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships' | 'integrations'>,
-      'profileImage'
-    > = {
-      name: data.name ?? '',
-      description: data.description ?? '',
-      benefits: data.benefits ?? [],
-      partnerships: data.partnerships ?? [],
-      integrations: data.integrations ?? {},
-      ...profileImageUpdate
-    };
 
     const collectionLinkUpdate: Links = {
       timestamp: Date.now(),
