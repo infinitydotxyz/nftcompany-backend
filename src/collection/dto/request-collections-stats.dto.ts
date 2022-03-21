@@ -1,6 +1,6 @@
 import { OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
@@ -54,5 +54,10 @@ export default class RequestCollectionsStatsDto {
   @Transform(parseIntTransformer({ max: 50 }))
   limit: number;
 
-  startAfter: string;
+  @ApiPropertyOptional({
+    description: 'Cursor to start after'
+  })
+  @IsString()
+  @IsOptional()
+  cursor?: string;
 }

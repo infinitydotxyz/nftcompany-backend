@@ -1,4 +1,4 @@
-import { Collection, CreationFlow, OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { Collection, CreationFlow, Stats } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -23,23 +23,43 @@ export default class CollectionService {
     };
   }
 
-  async getCollectionsStats(queryOptions: RequestCollectionsStatsDto) {
+  async getCollectionsStats(queryOptions: RequestCollectionsStatsDto): Promise<{ data: Stats[]; cursor: string }> {
     const collectionGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_STATS_COLL);
     const date = queryOptions.date;
     const { timestamp } = getStatsDocInfo(date, queryOptions.period);
 
-    const query = collectionGroup
-      .where('period', '==', queryOptions.period)
+    let startAfter;
+    if (queryOptions.cursor) {
+      const [chainId, address] = queryOptions.cursor.split(':');
+      const startAfterDocResults = await collectionGroup
+        .where('period', '==', queryOptions.period)
+        .where('timestamp', '==', timestamp)
+        .where('collectionAddress', '==', address)
+        .where('chainId', '==', chainId)
+        .limit(1)
+        .get();
+      startAfter = startAfterDocResults.docs[0];
+    }
+
+    let query = collectionGroup
       .where('timestamp', '==', timestamp)
+      .where('period', '==', queryOptions.period)
       .orderBy(queryOptions.orderBy, queryOptions.orderDirection)
-      .limit(queryOptions.limit);
+      .orderBy('collectionAddress', 'asc');
+    if (startAfter) {
+      query = query.startAfter(startAfter);
+    }
+
+    query = query.limit(queryOptions.limit);
 
     const res = await query.get();
     const collectionStats = res.docs.map((snapShot) => {
       return snapShot.data();
-    });
+    }) as Stats[];
 
-    return collectionStats;
+    const cursorInfo = collectionStats[collectionStats.length - 1];
+    const cursor = `${cursorInfo.chainId}:${cursorInfo.collectionAddress}`;
+    return { data: collectionStats, cursor };
   }
 
   /**
