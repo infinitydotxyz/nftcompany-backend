@@ -1,10 +1,10 @@
-import { OrderDirection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
-export enum CollectionStat {
+export enum StatType {
   FloorPrice = 'floorPrice',
   FloorPriceChange = 'floorPricePercentChange',
 
@@ -29,7 +29,7 @@ export default class RequestCollectionsStatsDto {
   period: StatsPeriod;
 
   @ApiProperty({
-    description: 'Specific date to get stats for'
+    description: 'Specific time to get stats for. Epoch timestamp in milliseconds'
   })
   @IsNumber()
   @Transform(parseIntTransformer())
@@ -38,8 +38,8 @@ export default class RequestCollectionsStatsDto {
   @ApiProperty({
     description: 'Collection stat to order the collection by'
   })
-  @IsEnum(CollectionStat)
-  orderBy: CollectionStat;
+  @IsEnum(StatType)
+  orderBy: StatType;
 
   @ApiProperty({
     description: 'Direction to order by'
@@ -48,7 +48,7 @@ export default class RequestCollectionsStatsDto {
   orderDirection: OrderDirection;
 
   @ApiProperty({
-    description: 'Number of results to get'
+    description: 'Number of results to get. Max of 50.'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 50 }))

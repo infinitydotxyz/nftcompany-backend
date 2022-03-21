@@ -1,14 +1,5 @@
-import { ChainId, Collection, CollectionStats } from '@infinityxyz/lib/types/core';
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Header,
-  NotFoundException,
-  ParseIntPipe,
-  Query,
-  UseInterceptors
-} from '@nestjs/common';
+import { ChainId, Collection } from '@infinityxyz/lib/types/core';
+import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
@@ -45,9 +36,7 @@ export class CollectionController {
 
   @Get('/stats')
   async getStats(@Query() query: RequestCollectionsStatsDto): Promise<any> {
-    console.log(query);
     const res = await this.collectionService.getCollectionsStats(query);
-    console.log(res);
     return res;
   }
 

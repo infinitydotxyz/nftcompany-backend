@@ -1,5 +1,5 @@
-import { Collection, CreationFlow, StatsPeriod } from '@infinityxyz/lib/types/core';
-import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
+import { Collection, CreationFlow, OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { firestoreConstants, getCollectionDocId, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
 import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
@@ -24,17 +24,14 @@ export default class CollectionService {
   }
 
   async getCollectionsStats(queryOptions: RequestCollectionsStatsDto) {
-    const collectionGroup = this.firebaseService.firestore.collectionGroup('collectionStatsDaily');
-    switch (queryOptions.period) {
-      case StatsPeriod.Daily:
-      case StatsPeriod.All:
-        break;
+    const collectionGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_STATS_COLL);
+    const date = queryOptions.date;
+    const { timestamp } = getStatsDocInfo(date, queryOptions.period);
 
-      default:
-        throw new Error('not yet implemented');
-    }
-
-    const query = collectionGroup.orderBy(queryOptions.orderBy, queryOptions.orderDirection).limit(queryOptions.limit);
+    const query = collectionGroup
+      .where('period', '==', queryOptions.period)
+      .where('timestamp', '==', timestamp)
+      .orderBy(queryOptions.orderBy, queryOptions.orderDirection);
 
     const res = await query.get();
     const collectionStats = res.docs.map((snapShot) => {
