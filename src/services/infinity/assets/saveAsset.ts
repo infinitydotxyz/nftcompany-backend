@@ -1,8 +1,7 @@
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { covalentAssetDataToListing } from 'services/covalent/utils';
-import { error } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, getDocIdHash } from '@infinityxyz/lib/utils';
 import { getAssetAsListing } from '../utils';
 
 export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadata: CovalentWalletBalanceItem) {
@@ -16,10 +15,8 @@ export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadat
     const tokenAddress = marshalledData.asset.address.toLowerCase();
     const tokenId = marshalledData.asset.id;
     const newDoc = firestore
-      .collection(fstrCnstnts.ROOT_COLL)
-      .doc(fstrCnstnts.INFO_DOC)
-      .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+      .collection(firestoreConstants.ASSETS_COLL)
+      .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
   } catch (err) {

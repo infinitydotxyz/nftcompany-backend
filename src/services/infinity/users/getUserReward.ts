@@ -4,8 +4,8 @@ import { fstrCnstnts } from '../../../constants';
 import { bn } from 'utils';
 import { error, log } from '@infinityxyz/lib/utils';
 import { getEmptyUserInfo, getUserRewardTier } from '../utils';
-import { getUserInfoRef } from './getUser';
 import { refreshUserPendingTxns } from './refreshUserPendingTxns';
+import { getUserInfoRef } from './getUser';
 
 /**
  *

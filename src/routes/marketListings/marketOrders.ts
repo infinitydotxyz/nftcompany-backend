@@ -1,11 +1,18 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, isOrderExpired, SellOrder } from '@infinityxyz/lib/types/core';
+import {
+  BuyOrder,
+  BuyOrderMatch,
+  calculateCurrentPrice,
+  isOrderExpired,
+  MarketListIdType,
+  SellOrder
+} from '@infinityxyz/lib/types/core';
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 @singleton()
 export class MarketOrders {
-  async buy(order: BuyOrder): Promise<BuyOrderMatch[]> {
-    await marketListingsCache.addBuyOrder('validActive', order);
+  async buy(order: BuyOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+    await marketListingsCache.addBuyOrder(listId, order);
 
     const result = await this.findMatchForBuy(order);
 
@@ -16,8 +23,8 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: SellOrder): Promise<BuyOrderMatch[]> {
-    await marketListingsCache.addSellOrder('validActive', order);
+  async sell(order: SellOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+    await marketListingsCache.addSellOrder(listId, order);
 
     const result = await this.marketMatches();
 
@@ -27,7 +34,7 @@ export class MarketOrders {
   async marketMatches(): Promise<BuyOrderMatch[]> {
     const result: BuyOrderMatch[] = [];
 
-    for (const buyOrder of await marketListingsCache.buyOrders('validActive')) {
+    for (const buyOrder of marketListingsCache.buyOrders('validActive')) {
       if (!isOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder);
 
@@ -41,32 +48,41 @@ export class MarketOrders {
   }
 
   async findMatchForBuy(buyOrder: BuyOrder): Promise<BuyOrderMatch | null> {
-    let candiates: SellOrder[] = [];
+    let candidates: SellOrder[] = [];
 
-    for (const sellOrder of await marketListingsCache.sellOrders('validActive')) {
+    const buyAddresses = buyOrder.collectionAddresses.map((e) => e.address);
+
+    for (const sellOrder of marketListingsCache.sellOrders('validActive')) {
       if (!isOrderExpired(sellOrder)) {
-        if (buyOrder.collectionAddresses.includes(sellOrder.collectionAddress)) {
-          if (sellOrder.price <= buyOrder.budget) {
-            candiates.push(sellOrder);
+        if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
+          const currentPrice = calculateCurrentPrice(sellOrder);
+
+          if (currentPrice <= buyOrder.budget) {
+            candidates.push(sellOrder);
           }
         }
       }
     }
 
-    if (candiates.length > 0) {
+    if (candidates.length > 0) {
       // sort list
-      candiates = candiates.sort((a, b) => {
-        return a.price - b.price;
+      candidates = candidates.sort((a, b) => {
+        const aPrice = calculateCurrentPrice(a);
+        const bPrice = calculateCurrentPrice(b);
+
+        return aPrice - bPrice;
       });
 
       let cash = buyOrder.budget;
       let numNFTs = buyOrder.minNFTs;
       const result: SellOrder[] = [];
 
-      for (const c of candiates) {
-        if (numNFTs > 0 && cash >= c.price) {
+      for (const c of candidates) {
+        const price = calculateCurrentPrice(c);
+
+        if (numNFTs > 0 && cash >= price) {
           result.push(c);
-          cash -= c.price;
+          cash -= price;
           numNFTs -= 1;
         } else {
           break;

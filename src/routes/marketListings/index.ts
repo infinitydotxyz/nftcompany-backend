@@ -27,10 +27,10 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'list':
         switch (req.body.orderType) {
           case 'sellOrders':
-            sellOrders = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
+            sellOrders = marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
             break;
           case 'buyOrders':
-            buyOrders = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
+            buyOrders = marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
             break;
         }
 
@@ -52,7 +52,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'move':
         break;
       case 'buy':
-        await marketListingsCache.executeBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+        await marketListingsCache.executeBuyOrder(req.body.orderId ?? '');
         success = `buy: ${req.body.orderId}`;
         break;
       case 'match':

@@ -1,6 +1,6 @@
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { error, log, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
+import { error, log, trimLowerCase, jsonString, getDocIdHash, firestoreConstants } from '@infinityxyz/lib/utils';
 import { StatusCode, NFTDataSource, nftDataSources, AssetResponse, Asset } from '@infinityxyz/lib/types/core';
 import { getUserAssetsFromCovalent } from 'services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFromUnmarshal';
@@ -13,7 +13,6 @@ import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/coval
 import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { firestore } from 'container';
-import { fstrCnstnts } from '../../../constants';
 
 export const getUserAssets = async (
   req: Request<
@@ -183,12 +182,12 @@ function saveAssetsToFirestore(assets: Asset[]) {
   try {
     const fsBatchHandler = new FirestoreBatchHandler();
     for (const asset of assets) {
-      const docId = firestore.getDocIdHash({
+      const docId = getDocIdHash({
         chainId: asset.chainId,
         tokenId: asset.tokenId,
         collectionAddress: asset.collectionAddress
       });
-      const docRef = firestore.db.collection(fstrCnstnts.ASSETS_COLL).doc(docId);
+      const docRef = firestore.db.collection(firestoreConstants.ASSETS_COLL).doc(docId);
       fsBatchHandler.add(docRef, asset, { merge: true });
     }
     fsBatchHandler.flush().catch((err) => {

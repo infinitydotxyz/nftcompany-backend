@@ -1,4 +1,5 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { warn } from '@infinityxyz/lib/utils/logger';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
@@ -24,13 +25,15 @@ export const INFO_LOG = getEnvironmentVariable('INFO_LOG', false) === 'true';
 export const ERROR_LOG = getEnvironmentVariable('ERROR_LOG', false) === 'true';
 export const WARN_LOG = getEnvironmentVariable('WARN_LOG', false) === 'true';
 
-export const fstrCnstnts = {
+/**
+ * USE LIB firestoreConstants instead of this
+ */
+const fstr = {
   ROOT_COLL: TEST_ROOT,
   OPENSEA_COLL: 'combinedOpenseaSnapshot',
   INFO_DOC: 'info',
   COLLECTION_LISTINGS_COLL: 'collectionListings',
   COLLECTIONS_COLL: 'collections',
-  ALL_COLLECTIONS_COLL: 'allCollections',
   BONUS_REWARD_TOKENS_COLL: 'bonusRewardTokens',
   USERS_COLL: 'users',
   LISTINGS_COLL: 'listings',
@@ -50,19 +53,39 @@ export const fstrCnstnts = {
   COLLECTION_STATS_COLL: 'stats',
   COLLECTION_LINKS_DOC: 'links',
   COLLECTION_OPENSEA_STATS_DOC: 'opensea',
-  COLLECTION_SOCIALS_COLL: 'socials',
+  COLLECTION_DATA_COLL: 'data',
+  // COLLECTION_SOCIALS_COLL: 'socials',
   COLLECTION_TWITTER_DOC: 'twitter',
   COLLECTION_DISCORD_DOC: 'discord',
   AUTH_COLL: 'auth',
   EDITORS_DOC: 'editors',
   CREATOR_DOC: 'creator',
   ADMINS_DOC: 'admins',
-
   COLLECTION_FOLLOWS_COLL: 'collectionFollows',
   USER_FOLLOWS_COLL: 'userFollows',
   SELL_ORDERS_COLL: 'sellOrders',
   BUY_ORDERS_COLL: 'buyOrders'
 };
+
+/**
+ * deprecate access to an object (i.e. logs the warning message anytime the object is accessed)
+ *
+ */
+export function deprecateObject<T extends object>(obj: T, message: string): T {
+  const handler = {
+    get(target, prop) {
+      warn(message);
+      return Reflect.get(target, prop);
+    }
+  };
+
+  return new Proxy(obj, handler);
+}
+
+export const fstrCnstnts = deprecateObject(
+  fstr,
+  'fstrCnstnts is deprecated, prefer to use firestoreConstants from @infinityxyz/lib'
+);
 
 export const auth = {
   signature: 'X-AUTH-SIGNATURE',

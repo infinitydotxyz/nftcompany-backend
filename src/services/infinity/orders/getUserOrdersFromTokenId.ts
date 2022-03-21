@@ -1,6 +1,5 @@
 import { OrderSide } from '@infinityxyz/lib/types/core';
-import { fstrCnstnts } from '../../../constants';
-import { log } from '@infinityxyz/lib/utils';
+import { firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { getUserInfoRef } from '../users/getUser';
 
 export async function getUserOrdersFromTokenId(
@@ -11,7 +10,7 @@ export async function getUserOrdersFromTokenId(
 ) {
   log('Fetching order for', userAddress, tokenAddress, tokenId, side);
 
-  const collection = side === OrderSide.Buy ? fstrCnstnts.OFFERS_COLL : fstrCnstnts.LISTINGS_COLL;
+  const collection = side === OrderSide.Buy ? firestoreConstants.OFFERS_COLL : firestoreConstants.LISTINGS_COLL;
 
   const results = await getUserInfoRef(userAddress)
     .collection(collection)

@@ -16,11 +16,9 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
     let matches: BuyOrderMatch[] = [];
 
     if (req.body.buyOrder) {
-      matches = await marketOrders.buy(req.body.buyOrder);
-    }
-
-    if (req.body.sellOrder) {
-      matches = await marketOrders.sell(req.body.sellOrder);
+      matches = await marketOrders.buy(req.body.buyOrder, 'validActive');
+    } else if (req.body.sellOrder) {
+      matches = await marketOrders.sell(req.body.sellOrder, 'validActive');
     }
 
     // set result

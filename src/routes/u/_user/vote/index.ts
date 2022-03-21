@@ -1,10 +1,9 @@
 // import { firestore } from '@base/container';
 import { firestore } from 'container';
 import { StatusCode } from '@infinityxyz/lib/types/core';
-import { fstrCnstnts } from '../../../../constants';
 import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
-import { error } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
@@ -18,16 +17,17 @@ export async function getUserVotes(
   req: Request<{ user: string }, any, any, { collectionAddress: string; chainId: string }>,
   res: Response
 ) {
-  // const chainId = req.query.chainId?.trim?.();
+  const chainId = req.query.chainId?.trim?.();
   const user = req.params.user.toLowerCase();
   const collectionAddress = (req.query.collectionAddress ?? '').toLowerCase();
+  const collection = { collectionAddress, chainId };
 
   if (collectionAddress && !ethers.utils.isAddress(collectionAddress)) {
     res.send(StatusCode.BadRequest);
     return;
   }
 
-  const userVotes = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL);
+  const userVotes = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL);
 
   try {
     if (collectionAddress) {
@@ -38,7 +38,7 @@ export async function getUserVotes(
         res.send({});
         return;
       }
-      const collectionVotes = await getCollectionVotes(collectionAddress);
+      const collectionVotes = await getCollectionVotes(collection);
       res.send({ votes: collectionVotes, userVote: userVoteInCollection });
       return;
     } else {
@@ -62,14 +62,16 @@ export async function getUserVotes(
  * postUserVote can be used to set/update a user's vote for a collection
  */
 export async function postUserVote(
-  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean }>,
+  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean; chainId: string }>,
   res: Response
 ) {
-  const user = req.params.user.toLowerCase();
-  const collectionAddress = req.body.collectionAddress.toLowerCase();
+  const user = trimLowerCase(req.params.user);
+  const collectionAddress = trimLowerCase(req.body.collectionAddress);
   const votedFor = req.body.votedFor;
+  const chainId = req.body.chainId.trim();
+  const collection = { collectionAddress, chainId };
 
-  if (!ethers.utils.isAddress(collectionAddress) || typeof votedFor !== 'boolean') {
+  if (!ethers.utils.isAddress(collectionAddress) || typeof votedFor !== 'boolean' || !chainId) {
     res.send(StatusCode.BadRequest);
     return;
   }
@@ -80,16 +82,16 @@ export async function postUserVote(
   };
 
   try {
-    const userVotesCollRef = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL).doc(collectionAddress);
+    const userVotesCollRef = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL).doc(collectionAddress);
 
     const batch = firestore.db.batch();
 
     batch.set(userVotesCollRef, voteObj, {});
 
     const userCollectionVotesRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(collectionAddress)
-      .collection(fstrCnstnts.VOTES_COLL)
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.VOTES_COLL)
       .doc(user);
     batch.set(userCollectionVotesRef, voteObj);
 

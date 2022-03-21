@@ -29,7 +29,7 @@ export async function getListingByTokenAddressAndId(
     }
     return resp;
   } catch (err) {
-    error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
+    error('Failed to get listing by token address and id', tokenAddress, tokenId);
     error(err);
   }
 }
