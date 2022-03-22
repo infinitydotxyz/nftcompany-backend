@@ -12,67 +12,45 @@ export interface ExpiredCacheItem {
 }
 
 export class ListCache {
-  validActiveBuys: Map<string, BuyOrder> = new Map();
-  validActiveSells: Map<string, SellOrder> = new Map();
-
-  validInactiveBuys: Map<string, BuyOrder> = new Map();
-  validInactiveSells: Map<string, SellOrder> = new Map();
-
-  invalidBuys: Map<string, BuyOrder> = new Map();
-  invalidSells: Map<string, SellOrder> = new Map();
-
-  constructor() {
-    void this._load();
+  async buyOrderCache(listId: MarketListIdType): Promise<Map<string, BuyOrder>> {
+    return await this._loadBuyOrders(listId);
   }
 
-  buyOrderCache(listId: MarketListIdType): Map<string, BuyOrder> {
-    switch (listId) {
-      case 'validActive':
-        return this.validActiveBuys;
-      case 'validInactive':
-        return this.validInactiveBuys;
-      case 'invalid':
-        return this.invalidBuys;
-    }
+  async buyOrders(listId: MarketListIdType): Promise<BuyOrder[]> {
+    const orders = await this.buyOrderCache(listId);
+
+    return Array.from(orders.values());
   }
 
-  buyOrders(listId: MarketListIdType): BuyOrder[] {
-    return Array.from(this.buyOrderCache(listId).values());
+  async sellOrderCache(listId: MarketListIdType): Promise<Map<string, SellOrder>> {
+    return await this._loadSellOrders(listId);
   }
 
-  sellOrderCache(listId: MarketListIdType): Map<string, SellOrder> {
-    switch (listId) {
-      case 'validActive':
-        return this.validActiveSells;
-      case 'validInactive':
-        return this.validInactiveSells;
-      case 'invalid':
-        return this.invalidSells;
-    }
+  async sellOrders(listId: MarketListIdType): Promise<SellOrder[]> {
+    const orders = await this.sellOrderCache(listId);
+
+    return Array.from(orders.values());
   }
 
-  sellOrders(listId: MarketListIdType): SellOrder[] {
-    return Array.from(this.sellOrderCache(listId).values());
-  }
-
-  expiredOrders(): ExpiredCacheItem[] {
+  async expiredOrders(): Promise<ExpiredCacheItem[]> {
     const result: ExpiredCacheItem[] = [];
 
-    result.push(...this._expiredBuyOrders('validActive'));
-    result.push(...this._expiredBuyOrders('validInactive'));
-    // result.push(...this._expiredBuyOrders('invalid'));
+    result.push(...(await this._expiredBuyOrders('validActive')));
+    result.push(...(await this._expiredBuyOrders('validInactive')));
+    // result.push(...(await this._expiredBuyOrders('invalid')));
 
-    result.push(...this._expiredSellOrders('validActive'));
-    result.push(...this._expiredSellOrders('validInactive'));
-    // result.push(...this._expiredSellOrders('invalid'));
+    result.push(...(await this._expiredSellOrders('validActive')));
+    result.push(...(await this._expiredSellOrders('validInactive')));
+    // result.push(...(await this._expiredSellOrders('invalid')));
 
     return result;
   }
 
-  _expiredBuyOrders(listId: MarketListIdType): ExpiredCacheItem[] {
+  async _expiredBuyOrders(listId: MarketListIdType): Promise<ExpiredCacheItem[]> {
     const result: ExpiredCacheItem[] = [];
 
-    for (const order of this.buyOrders(listId)) {
+    const orders = await this.buyOrders(listId);
+    for (const order of orders) {
       if (isOrderExpired(order)) {
         result.push({ listId: listId, order: order });
       }
@@ -81,26 +59,17 @@ export class ListCache {
     return result;
   }
 
-  _expiredSellOrders(listId: MarketListIdType): ExpiredCacheItem[] {
+  async _expiredSellOrders(listId: MarketListIdType): Promise<ExpiredCacheItem[]> {
     const result: ExpiredCacheItem[] = [];
 
-    for (const order of this.sellOrders(listId)) {
+    const orders = await this.sellOrders(listId);
+    for (const order of orders) {
       if (isOrderExpired(order)) {
         result.push({ listId: listId, order: order });
       }
     }
 
     return result;
-  }
-
-  async _load() {
-    this.validActiveSells = await this._loadSellOrders('validActive');
-    this.validInactiveSells = await this._loadSellOrders('validInactive');
-    this.invalidSells = await this._loadSellOrders('invalid');
-
-    this.validActiveBuys = await this._loadBuyOrders('validActive');
-    this.invalidBuys = await this._loadBuyOrders('invalid');
-    this.validInactiveBuys = await this._loadBuyOrders('validInactive');
   }
 
   // ===============================================================
