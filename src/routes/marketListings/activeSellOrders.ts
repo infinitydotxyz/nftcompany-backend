@@ -13,63 +13,53 @@ export interface ActiveSellOrder extends SellOrder {
 }
 
 export class ActiveSellOrders {
-  orderByAddress: Map<string, ActiveSellOrder[]> = new Map<string, ActiveSellOrder[]>();
-  isDirty: boolean = true;
+  orderByAddress: Map<string, ActiveSellOrder[]>;
 
-  async refreshOrders() {
-    if (this.isDirty) {
-      this.isDirty = false;
+  async refreshOrders(addresses: string[]) {
+    if (!this.orderByAddress) {
+      this.orderByAddress = new Map<string, ActiveSellOrder[]>();
 
-      const newOrdersByAddress: Map<string, ActiveSellOrder[]> = new Map<string, ActiveSellOrder[]>();
       const orders = await marketListingsCache.sellOrders('validActive');
 
       for (const sellOrder of orders) {
-        // remove any expired
-        if (!isOrderExpired(sellOrder)) {
-          let orderArray = newOrdersByAddress.get(sellOrder.collectionAddress.address);
+        if (addresses.includes(sellOrder.collectionAddress.address)) {
+          if (!isOrderExpired(sellOrder)) {
+            let orderArray = this.orderByAddress.get(sellOrder.collectionAddress.address);
 
-          // SNG - better way to cast this?
-          const activeSellOrder: ActiveSellOrder = sellOrder as ActiveSellOrder;
-          activeSellOrder.currentPrice = calculateCurrentPrice(sellOrder);
+            const activeSellOrder: ActiveSellOrder = { ...sellOrder, currentPrice: calculateCurrentPrice(sellOrder) };
 
-          if (!orderArray) {
-            orderArray = [activeSellOrder];
-          } else {
-            orderArray.push(activeSellOrder);
+            if (!orderArray) {
+              orderArray = [activeSellOrder];
+            } else {
+              orderArray.push(activeSellOrder);
+            }
+
+            this.orderByAddress.set(sellOrder.collectionAddress.address, orderArray);
           }
-
-          newOrdersByAddress.set(sellOrder.collectionAddress.address, orderArray);
         }
-      }
-
-      // clear existing map
-      this.orderByAddress = new Map<string, ActiveSellOrder[]>();
-
-      // sort lists
-      for (const [key, sellOrders] of newOrdersByAddress) {
-        const sortedOrders = sellOrders.sort((a, b) => {
-          return a.currentPrice - b.currentPrice;
-        });
-
-        this.orderByAddress.set(key, sortedOrders);
       }
     }
   }
 
   async ordersInCollections(collectionAddresses: CollectionAddress[]): Promise<ActiveSellOrder[]> {
-    const sellOrders: ActiveSellOrder[] = [];
+    const result: ActiveSellOrder[] = [];
 
-    await this.refreshOrders();
+    const addresses = collectionAddresses.map((e) => e.address);
+    await this.refreshOrders(addresses);
 
     for (const address of collectionAddresses) {
       const orders = this.orderByAddress.get(address.address);
 
       if (orders) {
-        sellOrders.push(...orders);
+        result.push(...orders);
       }
     }
 
-    return sellOrders;
+    const sortedOrders = result.sort((a, b) => {
+      return a.currentPrice - b.currentPrice;
+    });
+
+    return sortedOrders;
   }
 
   async ordersForBuyOrder(buyOrder: BuyOrder): Promise<ActiveSellOrder[]> {
