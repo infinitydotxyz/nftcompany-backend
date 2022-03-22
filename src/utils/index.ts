@@ -70,7 +70,7 @@ interface validateInputsProps {
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType, chain, tokenAddress } = props;
+  const { listType, chain, user, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
@@ -96,6 +96,11 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
       error('Invalid chainId ', chain);
       return StatusCode.BadRequest;
     }
+  }
+
+  if (user && !user.startsWith('0x')) {
+    error(`Invalid user address`, user);
+    return StatusCode.BadRequest;
   }
 
   if (tokenAddress && !tokenAddress.startsWith('0x')) {
