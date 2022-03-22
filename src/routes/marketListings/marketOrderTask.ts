@@ -1,5 +1,5 @@
 import { isOrderExpired } from '@infinityxyz/lib/types/core';
-import { marketListingsCache } from './marketListingsCache';
+import { expiredOrders, moveOrder } from './marketFirebase';
 import { marketOrders } from './marketOrders';
 
 // ---------------------------------------------------------------
@@ -29,11 +29,11 @@ export class MarketOrderTask {
   scanForExpiredOrders() {
     if (!this.expiredScanTimer) {
       this.expiredScanTimer = setTimeout(async () => {
-        const orders = await marketListingsCache.expiredOrders();
+        const orders = await expiredOrders();
         for (const order of orders) {
           if (isOrderExpired(order.order)) {
             // move order to invalid list
-            await marketListingsCache._moveOrder(order.order, order.listId, 'invalid');
+            await moveOrder(order.order, order.listId, 'invalid');
           }
         }
 
@@ -49,7 +49,7 @@ export class MarketOrderTask {
 
         // execute the buys if found
         for (const m of matches) {
-          await marketListingsCache.executeBuyOrder(m.buyOrder.id ?? '');
+          await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
         }
 
         this.matchScanTimer = undefined;

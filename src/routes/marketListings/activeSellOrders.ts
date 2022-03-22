@@ -5,7 +5,7 @@ import {
   isOrderExpired,
   SellOrder
 } from '@infinityxyz/lib/types/core';
-import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
+import { sellOrdersWithParams } from './marketFirebase';
 
 // appending the current calculated price so we can sort faster
 export interface ActiveSellOrder extends SellOrder {
@@ -13,29 +13,31 @@ export interface ActiveSellOrder extends SellOrder {
 }
 
 export class ActiveSellOrders {
-  orderByAddress: Map<string, ActiveSellOrder[]>;
+  orderMap: Map<string, ActiveSellOrder[]> = new Map<string, ActiveSellOrder[]>();
+  collectionAddresses: string[] = [];
 
-  async refreshOrders(addresses: string[]) {
-    if (!this.orderByAddress) {
-      this.orderByAddress = new Map<string, ActiveSellOrder[]>();
+  async addCollectionAddresses(addresses: string[]) {
+    const diff = addresses.filter((x) => !this.collectionAddresses.includes(x));
 
-      const orders = await marketListingsCache.sellOrders('validActive');
+    if (diff.length > 0) {
+      this.collectionAddresses.push(...diff);
+
+      // NOTE: addresses is limited to 10, handle that later?
+      const orders = await sellOrdersWithParams('validActive', diff);
 
       for (const sellOrder of orders) {
-        if (addresses.includes(sellOrder.collectionAddress.address)) {
-          if (!isOrderExpired(sellOrder)) {
-            let orderArray = this.orderByAddress.get(sellOrder.collectionAddress.address);
+        if (!isOrderExpired(sellOrder)) {
+          let orderArray = this.orderMap.get(sellOrder.collectionAddress.address);
 
-            const activeSellOrder: ActiveSellOrder = { ...sellOrder, currentPrice: calculateCurrentPrice(sellOrder) };
+          const activeSellOrder: ActiveSellOrder = { ...sellOrder, currentPrice: calculateCurrentPrice(sellOrder) };
 
-            if (!orderArray) {
-              orderArray = [activeSellOrder];
-            } else {
-              orderArray.push(activeSellOrder);
-            }
-
-            this.orderByAddress.set(sellOrder.collectionAddress.address, orderArray);
+          if (!orderArray) {
+            orderArray = [activeSellOrder];
+          } else {
+            orderArray.push(activeSellOrder);
           }
+
+          this.orderMap.set(sellOrder.collectionAddress.address, orderArray);
         }
       }
     }
@@ -45,10 +47,10 @@ export class ActiveSellOrders {
     const result: ActiveSellOrder[] = [];
 
     const addresses = collectionAddresses.map((e) => e.address);
-    await this.refreshOrders(addresses);
+    await this.addCollectionAddresses(addresses);
 
     for (const address of collectionAddresses) {
-      const orders = this.orderByAddress.get(address.address);
+      const orders = this.orderMap.get(address.address);
 
       if (orders) {
         result.push(...orders);
