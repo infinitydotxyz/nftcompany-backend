@@ -5,7 +5,7 @@ import {
   isOrderExpired,
   SellOrder
 } from '@infinityxyz/lib/types/core';
-import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
+import { sellOrders } from './marketFirebase';
 
 // appending the current calculated price so we can sort faster
 export interface ActiveSellOrder extends SellOrder {
@@ -19,7 +19,7 @@ export class ActiveSellOrders {
     if (!this.orderByAddress) {
       this.orderByAddress = new Map<string, ActiveSellOrder[]>();
 
-      const orders = await marketListingsCache.sellOrders('validActive');
+      const orders = await sellOrders('validActive');
 
       for (const sellOrder of orders) {
         if (addresses.includes(sellOrder.collectionAddress.address)) {
