@@ -29,7 +29,8 @@ export class MarketOrderTask {
   scanForExpiredOrders() {
     if (!this.expiredScanTimer) {
       this.expiredScanTimer = setTimeout(async () => {
-        for (const order of marketListingsCache.expiredOrders()) {
+        const orders = await marketListingsCache.expiredOrders();
+        for (const order of orders) {
           if (isOrderExpired(order.order)) {
             // move order to invalid list
             await marketListingsCache._moveOrder(order.order, order.listId, 'invalid');

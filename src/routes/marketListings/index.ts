@@ -27,10 +27,10 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'list':
         switch (req.body.orderType) {
           case 'sellOrders':
-            sellOrders = marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
+            sellOrders = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
             break;
           case 'buyOrders':
-            buyOrders = marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
+            buyOrders = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
             break;
         }
 

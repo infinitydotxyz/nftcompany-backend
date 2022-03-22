@@ -5,6 +5,7 @@ import { fstrCnstnts } from '../../constants';
 import { marketOrders } from './marketOrders';
 import { MarketOrderTask } from './marketOrderTask';
 import { ExpiredCacheItem, ListCache } from './listCache';
+import { ActiveSellOrders } from './activeSellOrders';
 
 @singleton()
 export class MarketListingsCache {
@@ -14,53 +15,54 @@ export class MarketListingsCache {
   task: MarketOrderTask = new MarketOrderTask();
 
   async addBuyOrder(listId: MarketListIdType, buyOrder: BuyOrder): Promise<void> {
-    const c = this.cache.buyOrderCache(listId);
+    const c = await this.cache.buyOrderCache(listId);
 
     if (!c.has(orderHash(buyOrder))) {
-      const order = await this._saveBuyOrder(listId, buyOrder);
-
-      c.set(order.id ?? '', order);
+      await this._saveBuyOrder(listId, buyOrder);
+    } else {
+      console.log(`addBuyOrder already exists ${orderHash(buyOrder)} ${listId}`);
     }
   }
 
   async addSellOrder(listId: MarketListIdType, sellOrder: SellOrder): Promise<void> {
-    const c = this.cache.sellOrderCache(listId);
+    const c = await this.cache.sellOrderCache(listId);
 
     if (!c.has(orderHash(sellOrder))) {
-      const order = await this._saveSellOrder(listId, sellOrder);
-
-      c.set(order.id ?? '', order);
+      await this._saveSellOrder(listId, sellOrder);
+    } else {
+      console.log(`deleteBuyOrder order not found ${orderHash(sellOrder)} ${listId}`);
     }
   }
 
   async deleteBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    const c = this.cache.buyOrderCache(listId);
+    const c = await this.cache.buyOrderCache(listId);
 
     if (c.has(orderId)) {
-      c.delete(orderId);
-
-      await this._deleteBuyOrder(listId, orderId);
+      await this._deleteOrder(true, listId, orderId);
+    } else {
+      console.log(`deleteBuyOrder order not found ${orderId} ${listId}`);
     }
   }
 
   async deleteSellOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    const c = this.cache.sellOrderCache(listId);
+    const c = await this.cache.sellOrderCache(listId);
 
     if (c.has(orderId)) {
-      c.delete(orderId);
-
-      await this._deleteSellOrder(listId, orderId);
+      await this._deleteOrder(false, listId, orderId);
+    } else {
+      console.log(`deleteSellOrder order not found ${orderId} ${listId}`);
     }
   }
 
   async executeBuyOrder(orderId: string): Promise<void> {
-    const c = this.cache.buyOrderCache('validActive');
+    const c = await this.cache.buyOrderCache('validActive');
 
     if (c.has(orderId)) {
       const buyOrder = c.get(orderId);
 
       if (buyOrder) {
-        const result = await marketOrders.findMatchForBuy(buyOrder);
+        const aso = new ActiveSellOrders();
+        const result = await marketOrders.findMatchForBuy(buyOrder, aso);
 
         // do the block chain stuff here.  If success delete the orders
 
@@ -76,16 +78,16 @@ export class MarketListingsCache {
     }
   }
 
-  sellOrders(listId: MarketListIdType): SellOrder[] {
-    return this.cache.sellOrders(listId);
+  async sellOrders(listId: MarketListIdType): Promise<SellOrder[]> {
+    return await this.cache.sellOrders(listId);
   }
 
-  buyOrders(listId: MarketListIdType): BuyOrder[] {
-    return this.cache.buyOrders(listId);
+  async buyOrders(listId: MarketListIdType): Promise<BuyOrder[]> {
+    return await this.cache.buyOrders(listId);
   }
 
-  expiredOrders(): ExpiredCacheItem[] {
-    return this.cache.expiredOrders();
+  async expiredOrders(): Promise<ExpiredCacheItem[]> {
+    return await this.cache.expiredOrders();
   }
 
   // ===============================================================
@@ -118,14 +120,6 @@ export class MarketListingsCache {
   // ===============================================================
   // delete
 
-  async _deleteBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    await this._deleteOrder(true, listId, orderId);
-  }
-
-  async _deleteSellOrder(listId: MarketListIdType, orderId: string): Promise<void> {
-    await this._deleteOrder(false, listId, orderId);
-  }
-
   async _deleteOrder(isBuyOrder: boolean, listId: MarketListIdType, orderId: string): Promise<void> {
     if (orderId) {
       const collection = await firestore.db
@@ -133,11 +127,11 @@ export class MarketListingsCache {
         .doc(listId)
         .collection('orders');
 
-      const doc = await collection.doc(orderId);
+      const doc = collection.doc(orderId);
 
       await doc.delete();
     } else {
-      console.log('delete failed, id is blank');
+      console.log('_deleteOrder, id is blank');
     }
   }
 
@@ -158,7 +152,7 @@ export class MarketListingsCache {
         await this.deleteSellOrder(fromListId, order.id ?? '');
       }
     } else {
-      console.log('delete failed, id is blank');
+      console.log('delete failed, toListId || fromListId is blank');
     }
   }
 }
