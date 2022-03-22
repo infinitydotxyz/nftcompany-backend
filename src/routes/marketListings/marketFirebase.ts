@@ -135,6 +135,26 @@ export const sellOrderMap = async (listId: MarketListIdType): Promise<Map<string
   return new Map<string, SellOrder>();
 };
 
+export const sellOrdersWithParams = async (
+  listId: MarketListIdType,
+  collectionAddresses: string[]
+): Promise<SellOrder[]> => {
+  const result = await firestore.db
+    .collection(fstrCnstnts.SELL_ORDERS_COLL)
+    .doc(listId)
+    .collection('orders')
+    .where('collectionAddress.address', 'in', collectionAddresses)
+    .get();
+
+  if (result.docs) {
+    const { results } = docsToArray(result.docs);
+
+    return results;
+  }
+
+  return [];
+};
+
 export const addSellOrder = async (listId: MarketListIdType, sellOrder: SellOrder): Promise<void> => {
   const c = await sellOrderMap(listId);
 
