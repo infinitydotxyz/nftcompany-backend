@@ -3,10 +3,10 @@ import { BadRequestException, Controller, Get, NotFoundException, Query, UseInte
 import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
+import StatsRequestDto from 'stats/dto/stats-request.dto';
 import CollectionService from './collection.service';
 import { CollectionResponseDto } from './dto/collection-response.dto';
 import { RequestCollectionDto } from './dto/request-collection.dto';
-import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
 
 @Controller('collection')
 export class CollectionController {
@@ -35,7 +35,7 @@ export class CollectionController {
   }
 
   @Get('/stats')
-  async getStats(@Query() query: RequestCollectionsStatsDto): Promise<any> {
+  async getStats(@Query() query: StatsRequestDto): Promise<any> {
     const res = await this.collectionService.getCollectionsStats(query);
     return res;
   }

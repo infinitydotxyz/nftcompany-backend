@@ -18,10 +18,19 @@ export enum StatType {
   SalesChange = 'numSalesPercentChange',
 
   AveragePrice = 'avgPrice',
-  AveragePriceChange = 'avgPricePercentChange'
+  AveragePriceChange = 'avgPricePercentChange',
+
+  DiscordFollowers = 'discordFollowers',
+  DiscordFollowersPercentChange = 'discordFollowersPercentChange',
+
+  DiscordPresence = 'discordPresence',
+  DiscordPresencePercentChange = 'discordFollowersPercentChange',
+
+  TwitterFollowers = 'twitterFollowers',
+  TwitterFollowersPercentChange = 'twitterFollowersPercentChange'
 }
 
-export default class RequestCollectionsStatsDto {
+export default class StatsRequestDto {
   @ApiProperty({
     description: 'Period to get stats for'
   })

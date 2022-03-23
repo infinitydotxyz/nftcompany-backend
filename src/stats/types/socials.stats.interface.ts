@@ -1,6 +1,9 @@
 import { StatsPeriod } from '@infinityxyz/lib/types/core';
 
 export interface PreAggregatedSocialsStats {
+  chainId: string;
+  collectionAddress: string;
+
   discordFollowers: number;
   discordPresence: number;
   guildId: string;

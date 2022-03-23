@@ -2,7 +2,7 @@ import { Collection, CreationFlow, Stats } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
-import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
+import RequestStatsDto from 'stats/dto/stats-request.dto';
 
 interface CollectionQueryOptions {
   /**
@@ -23,7 +23,7 @@ export default class CollectionService {
     };
   }
 
-  async getCollectionsStats(queryOptions: RequestCollectionsStatsDto): Promise<{ data: Stats[]; cursor: string }> {
+  async getCollectionsStats(queryOptions: RequestStatsDto): Promise<{ data: Stats[]; cursor: string }> {
     const collectionGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_STATS_COLL);
     const date = queryOptions.date;
     const { timestamp } = getStatsDocInfo(date, queryOptions.period);
