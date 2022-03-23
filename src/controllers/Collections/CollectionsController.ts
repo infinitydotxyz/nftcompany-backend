@@ -167,17 +167,21 @@ export async function getCollectionInformationForEditor(
 }
 
 export async function updateCollectionIntegrations(
-  req: Request<{ collection: string; user: string }, any, { data: string }>,
+  req: Request<{ collection: string; user: string; chainId: string }, any, CollectionIntegrations>,
   res: Response<any, { authType: CollectionAuthType }>
 ) {
   const collectionAddress = req.params.collection.trim().toLowerCase();
 
   try {
-    const data: CollectionIntegrations = JSON.parse(req.body.data);
+    const integrations: CollectionIntegrations = req.body;
 
-    const ref = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionAddress);
+    const ref = firestore
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(`${req.params.chainId ?? 1}:${collectionAddress}`);
 
-    await ref.update(data);
+    await ref.update({
+      metadata: { integrations }
+    });
 
     res.sendStatus(StatusCode.Created);
 
