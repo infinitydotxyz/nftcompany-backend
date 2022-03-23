@@ -1,4 +1,4 @@
-import { ChainId } from '@infinityxyz/lib/types/core';
+import { ChainId, OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FirebaseService } from '../firebase/firebase.service';
 import { StatsService } from './stats.service';
@@ -7,6 +7,7 @@ import { TwitterService } from 'twitter/twitter.service';
 import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
+import StatsRequestDto, { StatType } from './dto/stats-request.dto';
 
 describe('StatsService', () => {
   let service: StatsService;
@@ -40,11 +41,29 @@ describe('StatsService', () => {
 
   it('should return some stats', async () => {
     const bayc = await firebaseService.getCollectionRef({
-      address: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
+      address: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
       chainId: ChainId.Mainnet
     });
     const stats = await service.getCurrentSocialsStats(bayc);
     console.log(stats);
     expect(stats).toBeDefined();
+  });
+
+  it('should return combined stats', async () => {
+    const query: StatsRequestDto = {
+      period: StatsPeriod.All,
+      date: 1648069200000,
+      orderBy: StatType.DiscordFollowers,
+      orderDirection: OrderDirection.Descending,
+      limit: 50
+    };
+    try {
+      const stats = await service.getStats(query);
+      console.log(stats);
+      expect(stats).toBeDefined();
+    } catch (err) {
+      console.error(err);
+      expect(err).toBeUndefined();
+    }
   });
 });

@@ -2,11 +2,12 @@ import { Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
 import { calcPercentChange } from '../utils';
-import RequestStatsDto, { StatType } from './dto/stats-request.dto';
+import StatsRequestDto, { StatType } from './dto/stats-request.dto';
 import { CollectionStats } from './types/collection.stats.interface';
 import { PreAggregatedSocialsStats, SocialsStats } from './types/socials.stats.interface';
 
@@ -21,7 +22,7 @@ export class StatsService {
     private firebaseService: FirebaseService
   ) {}
 
-  async getStats(queryOptions: RequestStatsDto) {
+  async getStats(queryOptions: StatsRequestDto) {
     const primaryStatsCollectionName = this.getStatsCollectionName(queryOptions.orderBy);
     const secondaryStatsCollectionName =
       primaryStatsCollectionName === this.statsGroup ? this.socialsGroup : this.statsGroup;
@@ -62,52 +63,66 @@ export class StatsService {
     primary: Partial<SocialsStats> & Partial<Stats>,
     secondary: Partial<SocialsStats> & Partial<Stats>
   ): CollectionStats {
+    console.log(primary);
+    console.log(secondary);
+    const mergeStat = (primary?: number, secondary?: number) => {
+      if (typeof primary === 'number' && !Number.isNaN(primary)) {
+        return primary;
+      } else if (typeof secondary === 'number' && !Number.isNaN(secondary)) {
+        return secondary;
+      }
+
+      return NaN;
+    };
+
     const mergedStats: CollectionStats = {
       chainId: primary?.chainId ?? secondary?.chainId ?? '',
       collectionAddress: primary?.collectionAddress ?? secondary?.collectionAddress ?? '',
       tokenId: primary?.tokenId ?? secondary?.tokenId ?? '',
-      floorPrice: primary?.floorPrice ?? secondary?.floorPrice ?? NaN,
-      prevFloorPrice: primary?.prevFloorPrice ?? secondary?.prevFloorPrice ?? NaN,
-      floorPricePercentChange: primary?.floorPricePercentChange ?? secondary?.floorPricePercentChange ?? NaN,
-      ceilPrice: primary?.ceilPrice ?? secondary?.ceilPrice ?? NaN,
-      prevCeilPrice: primary?.prevCeilPrice ?? secondary?.prevCeilPrice ?? NaN,
-      ceilPricePercentChange: primary?.ceilPricePercentChange ?? secondary?.ceilPricePercentChange ?? NaN,
-      volume: primary?.volume ?? secondary?.volume ?? NaN,
-      prevVolume: primary?.prevVolume ?? secondary?.prevVolume ?? NaN,
-      volumePercentChange: primary?.volumePercentChange ?? secondary?.volumePercentChange ?? NaN,
-      numSales: primary?.numSales ?? secondary?.numSales ?? NaN,
-      prevNumSales: primary?.prevNumSales ?? secondary?.prevNumSales ?? NaN,
-      numSalesPercentChange: primary?.numSalesPercentChange ?? secondary?.numSalesPercentChange ?? NaN,
-      avgPrice: primary?.avgPrice ?? secondary?.avgPrice ?? NaN,
-      prevAvgPrice: primary?.prevAvgPrice ?? secondary?.prevAvgPrice ?? NaN,
-      avgPricePercentChange: primary?.avgPricePercentChange ?? secondary?.avgPricePercentChange ?? NaN,
-
-      discordFollowers: primary?.discordFollowers ?? secondary?.discordFollowers ?? NaN,
-      prevDiscordFollowers: primary?.prevDiscordFollowers ?? secondary?.prevDiscordFollowers ?? NaN,
-      discordFollowersPercentChange:
-        primary?.discordFollowersPercentChange ?? secondary?.discordFollowersPercentChange ?? NaN,
-
-      discordPresence: primary?.discordPresence ?? secondary?.discordPresence ?? NaN,
-      prevDiscordPresence: primary?.prevDiscordPresence ?? secondary?.prevDiscordPresence ?? NaN,
-      discordPresencePercentChange:
-        primary?.discordPresencePercentChange ?? secondary?.discordPresencePercentChange ?? NaN,
-
-      twitterFollowers: primary?.twitterFollowers ?? secondary?.twitterFollowers ?? NaN,
-      prevTwitterFollowers: primary?.prevTwitterFollowers ?? secondary?.prevTwitterFollowers ?? NaN,
-      twitterFollowersPercentChange:
-        primary?.twitterFollowersPercentChange ?? secondary?.twitterFollowersPercentChange ?? NaN,
-
-      twitterFollowing: primary?.twitterFollowing ?? secondary?.twitterFollowing ?? NaN,
-      prevTwitterFollowing: primary?.prevTwitterFollowing ?? secondary?.prevTwitterFollowing ?? NaN,
-      twitterFollowingPercentChange:
-        primary?.twitterFollowingPercentChange ?? secondary?.twitterFollowingPercentChange ?? NaN,
-
+      floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
+      prevFloorPrice: mergeStat(primary?.prevFloorPrice, secondary?.prevFloorPrice),
+      floorPricePercentChange: mergeStat(primary?.floorPricePercentChange, secondary?.floorPricePercentChange),
+      ceilPrice: mergeStat(primary?.ceilPrice, secondary?.ceilPrice),
+      prevCeilPrice: mergeStat(primary?.prevCeilPrice, secondary?.prevCeilPrice),
+      ceilPricePercentChange: mergeStat(primary?.ceilPricePercentChange, secondary?.ceilPricePercentChange),
+      volume: mergeStat(primary?.volume, secondary?.volume),
+      prevVolume: mergeStat(primary?.prevVolume, secondary?.prevVolume),
+      volumePercentChange: mergeStat(primary?.volumePercentChange, secondary?.volumePercentChange),
+      numSales: mergeStat(primary?.numSales, secondary?.numSales),
+      prevNumSales: mergeStat(primary?.prevNumSales, secondary?.prevNumSales),
+      numSalesPercentChange: mergeStat(primary?.numSalesPercentChange, secondary?.numSalesPercentChange),
+      avgPrice: mergeStat(primary?.avgPrice, secondary?.avgPrice),
+      avgPricePercentChange: mergeStat(primary?.avgPricePercentChange, secondary?.avgPricePercentChange),
+      prevAvgPrice: mergeStat(primary?.prevAvgPrice, secondary?.prevAvgPrice),
+      prevDiscordFollowers: mergeStat(primary?.prevDiscordFollowers, secondary?.prevDiscordFollowers),
+      discordFollowersPercentChange: mergeStat(
+        primary?.discordFollowersPercentChange,
+        secondary?.discordFollowersPercentChange
+      ),
+      discordFollowers: mergeStat(primary?.discordFollowers, secondary?.discordFollowers),
+      discordPresence: mergeStat(primary?.discordPresence, secondary?.discordPresence),
+      prevDiscordPresence: mergeStat(primary?.prevDiscordPresence, secondary?.prevDiscordPresence),
+      discordPresencePercentChange: mergeStat(
+        primary?.discordPresencePercentChange,
+        secondary?.discordPresencePercentChange
+      ),
+      prevTwitterFollowers: mergeStat(primary?.prevTwitterFollowers, secondary?.prevTwitterFollowers),
+      twitterFollowersPercentChange: mergeStat(
+        primary?.twitterFollowersPercentChange,
+        secondary?.twitterFollowersPercentChange
+      ),
+      twitterFollowers: mergeStat(primary?.twitterFollowers, secondary?.twitterFollowers),
+      twitterFollowing: mergeStat(primary?.twitterFollowing, secondary?.twitterFollowing),
+      prevTwitterFollowing: mergeStat(primary?.prevTwitterFollowing, secondary?.prevTwitterFollowing),
+      twitterFollowingPercentChange: mergeStat(
+        primary?.twitterFollowingPercentChange,
+        secondary?.twitterFollowingPercentChange
+      ),
       guildId: primary?.guildId ?? secondary?.guildId ?? '',
       discordLink: primary?.discordLink ?? secondary?.discordLink ?? '',
       twitterId: primary?.twitterId ?? secondary?.twitterId ?? '',
       twitterHandle: primary?.twitterHandle ?? secondary?.twitterHandle ?? '',
       twitterLink: primary?.twitterLink ?? secondary?.twitterLink ?? '',
-
       updatedAt: primary?.updatedAt ?? NaN,
       timestamp: primary?.timestamp ?? secondary?.timestamp ?? NaN,
       period: primary?.period ?? secondary?.period
@@ -116,10 +131,11 @@ export class StatsService {
     return mergedStats;
   }
 
-  async getPrimaryStats(queryOptions: RequestStatsDto, statsGroupName: string) {
+  async getPrimaryStats(queryOptions: StatsRequestDto, statsGroupName: string) {
     const date = queryOptions.date;
     const { timestamp } = getStatsDocInfo(date, queryOptions.period);
     const collectionGroup = this.firebaseService.firestore.collectionGroup(statsGroupName);
+    console.log(statsGroupName);
 
     let startAfter;
     if (queryOptions.cursor) {
@@ -151,7 +167,10 @@ export class StatsService {
     }) as Stats[] | SocialsStats[];
 
     const cursorInfo = collectionStats[collectionStats.length - 1];
-    const cursor = `${cursorInfo.chainId}:${cursorInfo.collectionAddress}`;
+    let cursor = '';
+    if (cursorInfo?.chainId && cursorInfo?.collectionAddress) {
+      cursor = `${cursorInfo.chainId}:${cursorInfo.collectionAddress}`;
+    }
     return { data: collectionStats, cursor };
   }
 
