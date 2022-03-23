@@ -6,11 +6,10 @@ import { CollectionModule } from './collection/collection.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './firebase/firebase.module';
 import { StatsModule } from './stats/stats.module';
-import { DiscordService } from './discord/discord.service';
-import { TwitterService } from './twitter/twitter.service';
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { join } from 'path';
 import { TwitterModule } from './twitter/twitter.module';
+import { DiscordModule } from './discord/discord.module';
 
 @Module({
   imports: [
@@ -23,10 +22,11 @@ import { TwitterModule } from './twitter/twitter.module';
     }),
     CollectionModule,
     StatsModule,
-    TwitterModule
+    TwitterModule,
+    DiscordModule
   ],
   controllers: [AppController],
-  providers: [AppService, DiscordService, TwitterService]
+  providers: [AppService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
