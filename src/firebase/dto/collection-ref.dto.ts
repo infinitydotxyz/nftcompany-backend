@@ -2,9 +2,8 @@ import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
-import { CollectionRefViaAddressDto, CollectionRefViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class RequestCollectionDto implements CollectionRefViaAddressDto, CollectionRefViaSlugDto {
+export class CollectionRefViaSlugDto {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -13,7 +12,9 @@ export class RequestCollectionDto implements CollectionRefViaAddressDto, Collect
   })
   @IsOptional()
   readonly slug?: string;
+}
 
+export class CollectionRefViaAddressDto {
   @ApiPropertyOptional({
     description: 'Collection Address'
   })
@@ -32,3 +33,5 @@ export class RequestCollectionDto implements CollectionRefViaAddressDto, Collect
   })
   readonly chainId: ChainId;
 }
+
+export type CollectionRefDto = CollectionRefViaAddressDto | CollectionRefViaSlugDto;

@@ -36,7 +36,7 @@ export default class RequestCollectionsStatsDto {
   date: number;
 
   @ApiProperty({
-    description: 'Collection stat to order the collection by'
+    description: 'Collection stat to order the results by'
   })
   @IsEnum(StatType)
   orderBy: StatType;
@@ -48,7 +48,7 @@ export default class RequestCollectionsStatsDto {
   orderDirection: OrderDirection;
 
   @ApiProperty({
-    description: 'Number of results to get. Max of 50.'
+    description: 'Number of results to get. Max of 50'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 50 }))

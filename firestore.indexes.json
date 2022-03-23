@@ -725,6 +725,59 @@
         {
           "fieldPath": "floorPrice",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+
+    {
+      "collectionGroup": "collectionStats",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "period",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "chainId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "nftStats",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "period",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "chainId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tokenId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -743,6 +796,10 @@
         {
           "fieldPath": "floorPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -761,6 +818,10 @@
         {
           "fieldPath": "floorPricePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -779,6 +840,10 @@
         {
           "fieldPath": "floorPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -797,6 +862,10 @@
         {
           "fieldPath": "ceilPrice",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -815,6 +884,10 @@
         {
           "fieldPath": "ceilPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -833,6 +906,10 @@
         {
           "fieldPath": "ceilPricePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -851,6 +928,10 @@
         {
           "fieldPath": "ceilPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -869,6 +950,10 @@
         {
           "fieldPath": "volume",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -887,6 +972,10 @@
         {
           "fieldPath": "volume",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -905,6 +994,10 @@
         {
           "fieldPath": "volumePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -923,6 +1016,10 @@
         {
           "fieldPath": "volumePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -941,6 +1038,10 @@
         {
           "fieldPath": "numSales",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -959,6 +1060,10 @@
         {
           "fieldPath": "numSales",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -977,6 +1082,10 @@
         {
           "fieldPath": "numSalesPercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -995,6 +1104,10 @@
         {
           "fieldPath": "numSalesPercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1012,6 +1125,10 @@
         },
         {
           "fieldPath": "avgPrice",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
           "order": "ASCENDING"
         }
       ]
@@ -1031,6 +1148,10 @@
         {
           "fieldPath": "avgPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1048,6 +1169,10 @@
         },
         {
           "fieldPath": "avgPricePercentChange",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
           "order": "ASCENDING"
         }
       ]
@@ -1067,6 +1192,10 @@
         {
           "fieldPath": "avgPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1085,6 +1214,10 @@
         {
           "fieldPath": "floorPrice",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1103,6 +1236,10 @@
         {
           "fieldPath": "floorPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1121,6 +1258,10 @@
         {
           "fieldPath": "floorPricePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1139,6 +1280,10 @@
         {
           "fieldPath": "floorPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1157,6 +1302,10 @@
         {
           "fieldPath": "ceilPrice",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1175,6 +1324,10 @@
         {
           "fieldPath": "ceilPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1193,6 +1346,10 @@
         {
           "fieldPath": "ceilPricePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1211,6 +1368,10 @@
         {
           "fieldPath": "ceilPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1229,6 +1390,10 @@
         {
           "fieldPath": "volume",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1247,6 +1412,10 @@
         {
           "fieldPath": "volume",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1265,6 +1434,10 @@
         {
           "fieldPath": "volumePercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1283,6 +1456,10 @@
         {
           "fieldPath": "volumePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1301,6 +1478,10 @@
         {
           "fieldPath": "numSales",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1319,6 +1500,10 @@
         {
           "fieldPath": "numSales",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1337,6 +1522,10 @@
         {
           "fieldPath": "numSalesPercentChange",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1355,6 +1544,10 @@
         {
           "fieldPath": "numSalesPercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1372,6 +1565,10 @@
         },
         {
           "fieldPath": "avgPrice",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
           "order": "ASCENDING"
         }
       ]
@@ -1391,6 +1588,10 @@
         {
           "fieldPath": "avgPrice",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -1408,6 +1609,10 @@
         },
         {
           "fieldPath": "avgPricePercentChange",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
           "order": "ASCENDING"
         }
       ]
@@ -1427,6 +1632,10 @@
         {
           "fieldPath": "avgPricePercentChange",
           "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
         }
       ]
     }

@@ -7,7 +7,7 @@ import { map } from 'rxjs/operators';
  */
 @Injectable()
 export class CacheControlInterceptor implements NestInterceptor {
-  constructor(private maxAge = 60) {}
+  constructor(private options = { maxAge: 60 }) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
     const ctx = context.switchToHttp();
@@ -18,7 +18,7 @@ export class CacheControlInterceptor implements NestInterceptor {
         if (typeof data === 'object' && data) {
           const respStr = JSON.stringify(data, null, 2);
           res.set({
-            'Cache-Control': `must-revalidate, max-age=${this.maxAge}`,
+            'Cache-Control': `must-revalidate, max-age=${this.options.maxAge}`,
             'Content-Length': Buffer.byteLength(respStr, 'utf8')
           });
           return data;

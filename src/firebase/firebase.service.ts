@@ -1,5 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import firebaseAdmin from 'firebase-admin';
+import { CollectionRefDto } from './dto/collection-ref.dto';
 import { FIREBASE_OPTIONS } from './firebase.constants';
 import { FirebaseModuleOptions } from './firebase.types';
 
@@ -15,5 +17,32 @@ export class FirebaseService {
       options.certName
     );
     this.firestore = firebaseAdmin.firestore();
+  }
+
+  /**
+   * get a reference to a collection via a address + chainId or slug
+   */
+  async getCollectionRef(collectionRefProps: CollectionRefDto) {
+    if ('slug' in collectionRefProps) {
+      const docQuery = this.firestore
+        .collection(firestoreConstants.COLLECTIONS_COLL)
+        .where('slug', '==', collectionRefProps.slug);
+
+      const results = await docQuery.get();
+      const doc = results.docs?.[0];
+      if (!doc?.exists) {
+        throw new NotFoundException('Failed to find collection via slug');
+      }
+      return doc.ref;
+    } else if ('address' in collectionRefProps) {
+      const docId = getCollectionDocId({
+        collectionAddress: collectionRefProps.address,
+        chainId: collectionRefProps.chainId
+      });
+
+      return this.firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId);
+    } else {
+      throw new BadRequestException(`Failed to provide a collection slug or address`);
+    }
   }
 }
