@@ -21,9 +21,9 @@ import { DiscordModule } from './discord/discord.module';
       cert: serviceAccount
     }),
     CollectionModule,
-    StatsModule,
     TwitterModule,
-    DiscordModule
+    DiscordModule,
+    StatsModule
   ],
   controllers: [AppController],
   providers: [AppService]

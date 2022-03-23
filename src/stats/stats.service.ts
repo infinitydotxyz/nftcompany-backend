@@ -2,7 +2,6 @@ import { Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -31,16 +30,19 @@ export class StatsService {
     const primaryStats = await this.getPrimaryStats(queryOptions, primaryStatsCollectionName);
 
     const secondaryStatsPromises = primaryStats.data.map(async (item) => {
-      const address = item.collectionAddress;
-      const chainId = item.chainId;
-      const collectionRef = await this.firebaseService.getCollectionRef({ address, chainId });
-      const mostRecentStats = this.getMostRecentStats(
-        collectionRef,
-        secondaryStatsCollectionName,
-        queryOptions.period,
-        timestamp
-      );
-      return mostRecentStats;
+      return new Promise((resolve, reject) => {
+        const address = item.collectionAddress;
+        const chainId = item.chainId;
+        this.firebaseService
+          .getCollectionRef({ address, chainId })
+          .then((collectionRef) => {
+            return this.getMostRecentStats(collectionRef, secondaryStatsCollectionName, queryOptions.period, timestamp);
+          })
+          .then((mostRecentStats) => {
+            resolve(mostRecentStats);
+          })
+          .catch(reject);
+      });
     });
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
@@ -63,8 +65,6 @@ export class StatsService {
     primary: Partial<SocialsStats> & Partial<Stats>,
     secondary: Partial<SocialsStats> & Partial<Stats>
   ): CollectionStats {
-    console.log(primary);
-    console.log(secondary);
     const mergeStat = (primary?: number, secondary?: number) => {
       if (typeof primary === 'number' && !Number.isNaN(primary)) {
         return primary;
@@ -135,7 +135,6 @@ export class StatsService {
     const date = queryOptions.date;
     const { timestamp } = getStatsDocInfo(date, queryOptions.period);
     const collectionGroup = this.firebaseService.firestore.collectionGroup(statsGroupName);
-    console.log(statsGroupName);
 
     let startAfter;
     if (queryOptions.cursor) {
@@ -180,16 +179,21 @@ export class StatsService {
     period: StatsPeriod,
     date: number
   ) {
-    const timestamp = getStatsDocInfo(date, period).timestamp;
-    const statsQuery = collectionRef
-      .collection(statsCollectionName)
-      .where('period', '==', period)
-      .where('timestamp', '<=', timestamp)
-      .orderBy('timestamp', 'desc')
-      .limit(1);
-    const snapshot = await statsQuery.get();
-    const stats = snapshot.docs?.[0]?.data();
-    return stats as Stats | SocialsStats | undefined;
+    try {
+      const timestamp = getStatsDocInfo(date, period).timestamp;
+      const statsQuery = collectionRef
+        .collection(statsCollectionName)
+        .where('period', '==', period)
+        .where('timestamp', '<=', timestamp)
+        .orderBy('timestamp', 'desc')
+        .limit(1);
+      const snapshot = await statsQuery.get();
+      const stats = snapshot.docs?.[0]?.data();
+      return stats as Stats | SocialsStats | undefined;
+    } catch (err) {
+      console.error(err);
+      return undefined;
+    }
   }
 
   /**
