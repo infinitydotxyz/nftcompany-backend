@@ -4,7 +4,7 @@ import { warn } from '@infinityxyz/lib/utils/logger';
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
   if (required && !variable) {
-    throw new Error(`Missing environment variable ${name}`);
+    // throw new Error(`Missing environment variable ${name}`);
   }
   return variable;
 };

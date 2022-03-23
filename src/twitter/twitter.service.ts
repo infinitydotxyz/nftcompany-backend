@@ -9,11 +9,13 @@ import {
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
 import { TwitterEndpoint } from './twitter.constants';
 import { VerifiedMentionIncludes } from './types/verified-mention-includes';
 import { VerifiedMentionTweet } from './types/verified-mention-tweet';
 import { VerifiedMentionUser } from './types/verified-mention-user';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 /**
  * access level is Elevated
@@ -24,7 +26,8 @@ import { VerifiedMentionUser } from './types/verified-mention-user';
 @Injectable()
 export class TwitterService {
   private readonly client: AxiosInstance;
-  constructor(private config: ConfigService) {
+
+  constructor(private config: ConfigService, private firebaseService: FirebaseService) {
     const bearer = this.config.get<EnvironmentVariables>('twitterBearerToken');
 
     this.client = axios.create({
@@ -33,6 +36,27 @@ export class TwitterService {
         Authorization: `Bearer ${bearer}`
       }
     });
+  }
+
+  static extractTwitterUsername(url: string) {
+    const split = url.replace(/\/+$/, '').split('/');
+    return split[split.length - 1].replace('@', '');
+  }
+
+  static appendTwitterUsername(username: string) {
+    return `https://twitter.com/${username}`;
+  }
+
+  async saveMentions(collectionRef: FirebaseFirestore.DocumentReference, tweets: InfinityTweet[]) {
+    const mentionsCollection = collectionRef.collection(firestoreConstants.COLLECTION_MENTIONS_COLL);
+    const batch = this.firebaseService.firestore.batch();
+
+    for (const tweet of tweets) {
+      const tweetRef = mentionsCollection.doc(tweet.tweetId);
+      batch.set(tweetRef, tweet);
+    }
+
+    await batch.commit();
   }
 
   /**
@@ -53,7 +77,9 @@ export class TwitterService {
       const accountUser = await this.getUser(username);
       const account = this.transformAccount(accountUser);
       return { account, tweets: [] };
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
 
     throw new Error('Failed to get account and mentions');
   }

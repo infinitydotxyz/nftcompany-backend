@@ -1,4 +1,4 @@
-import { getChainId, getProvider } from 'utils/ethers';
+import { getChainId, getProvider } from './ethers';
 import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
 import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
@@ -119,4 +119,16 @@ export function hexToDecimalTokenId(tokenId: string): string {
     tokenId = String(parseInt(tokenId, 16));
   }
   return tokenId;
+}
+
+export function calcPercentChange(prev = NaN, current: number) {
+  const change = prev - current;
+  const decimal = change / Math.abs(prev);
+  const percent = decimal * 100;
+
+  if (Number.isNaN(percent)) {
+    return current;
+  }
+
+  return percent;
 }
