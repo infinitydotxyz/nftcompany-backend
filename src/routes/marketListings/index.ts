@@ -1,9 +1,8 @@
 import {
-  BuyOrder,
   BuyOrderMatch,
   MarketListingsBody,
   MarketListingsResponse,
-  SellOrder,
+  OBOrder,
   StatusCode
 } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
@@ -18,8 +17,8 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       return;
     }
 
-    let sellOrds: SellOrder[] = [];
-    let buyOrds: BuyOrder[] = [];
+    let sellOrds: OBOrder[] = [];
+    let buyOrds: OBOrder[] = [];
     let matches: BuyOrderMatch[] = [];
     let success: string = '';
 

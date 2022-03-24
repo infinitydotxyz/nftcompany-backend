@@ -1,8 +1,10 @@
 import { singleton, container } from 'tsyringe';
-import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType, SellOrder } from '@infinityxyz/lib/types/core';
+import { OBOrder, BuyOrderMatch, MarketListIdType } from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, buyOrderMap, buyOrders, moveOrder } from './marketFirebase';
+import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
+import { BigNumber } from 'ethers';
 
 @singleton()
 export class MarketOrders {
@@ -33,7 +35,7 @@ export class MarketOrders {
     }
   }
 
-  async buy(order: BuyOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async buy(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
     await addBuyOrder(listId, order);
 
     const aso = new ActiveSellOrders();
@@ -46,7 +48,7 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: SellOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async sell(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
     await addSellOrder(listId, order);
 
     const result = await this.marketMatches();
@@ -72,27 +74,27 @@ export class MarketOrders {
     return result;
   }
 
-  async findMatchForBuy(buyOrder: BuyOrder, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
+  async findMatchForBuy(buyOrder: OBOrder, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
     const sellOrders = await aso.ordersForBuyOrder(buyOrder);
 
     if (sellOrders.length > 0) {
-      let cash = buyOrder.budget;
-      let numNFTs = buyOrder.minNFTs;
-      const result: SellOrder[] = [];
+      let cash = getCurrentOrderPrice(buyOrder);
+      let numNFTs = buyOrder.numItems;
+      const result: OBOrder[] = [];
 
       for (const sellOrder of sellOrders) {
-        const price = sellOrder.currentPrice;
+        const price = getCurrentOrderPrice(sellOrder);
 
         if (numNFTs > 0 && cash >= price) {
           result.push(sellOrder);
-          cash -= price;
-          numNFTs -= 1;
+          cash = BigNumber.from(cash).sub(price);
+          numNFTs = BigNumber.from(numNFTs).sub(1);
         } else {
           break;
         }
       }
 
-      if (result.length === buyOrder.minNFTs) {
+      if (result.length === buyOrder.numItems) {
         return { buyOrder: buyOrder, sellOrders: result };
       }
     }

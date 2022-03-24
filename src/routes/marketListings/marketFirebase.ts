@@ -1,19 +1,12 @@
-import {
-  BuyOrder,
-  isBuyOrder,
-  isOrderExpired,
-  MarketListIdType,
-  MarketOrder,
-  orderHash,
-  SellOrder
-} from '@infinityxyz/lib/types/core';
+import { MarketListIdType, OBOrder } from '@infinityxyz/lib/types/core';
+import { isOrderExpired, orderHash } from '@infinityxyz/lib/utils';
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
 
 export interface ExpiredCacheItem {
   listId: MarketListIdType;
-  order: MarketOrder;
+  order: OBOrder;
 }
 
 export const deleteOrder = async (isBuyOrder: boolean, listId: MarketListIdType, orderId: string): Promise<void> => {
@@ -32,17 +25,17 @@ export const deleteOrder = async (isBuyOrder: boolean, listId: MarketListIdType,
 };
 
 export const moveOrder = async (
-  order: MarketOrder,
+  order: OBOrder,
   fromListId: MarketListIdType,
   toListId: MarketListIdType
 ): Promise<void> => {
   if (toListId && fromListId) {
-    if (isBuyOrder(order)) {
+    if (!order.isSellOrder) {
       await addBuyOrder(toListId, order);
 
       await deleteBuyOrder(fromListId, order.id ?? '');
     } else {
-      await addSellOrder(toListId, order as SellOrder);
+      await addSellOrder(toListId, order);
 
       await deleteSellOrder(fromListId, order.id ?? '');
     }
@@ -54,18 +47,18 @@ export const moveOrder = async (
 // ===============================================================
 // buy orders
 
-export const buyOrders = async (listId: MarketListIdType): Promise<BuyOrder[]> => {
+export const buyOrders = async (listId: MarketListIdType): Promise<OBOrder[]> => {
   const orders = await buyOrderMap(listId);
 
   return Array.from(orders.values());
 };
 
-export const buyOrderMap = async (listId: MarketListIdType): Promise<Map<string, BuyOrder>> => {
+export const buyOrderMap = async (listId: MarketListIdType): Promise<Map<string, OBOrder>> => {
   const result = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders').get();
   if (result.docs) {
     const { results } = docsToArray(result.docs);
 
-    const map: Map<string, BuyOrder> = new Map();
+    const map: Map<string, OBOrder> = new Map();
 
     for (const order of results) {
       map.set(order.id, order);
@@ -74,10 +67,10 @@ export const buyOrderMap = async (listId: MarketListIdType): Promise<Map<string,
     return map;
   }
 
-  return new Map<string, BuyOrder>();
+  return new Map<string, OBOrder>();
 };
 
-export const addBuyOrder = async (listId: MarketListIdType, buyOrder: BuyOrder): Promise<void> => {
+export const addBuyOrder = async (listId: MarketListIdType, buyOrder: OBOrder): Promise<void> => {
   const c = await buyOrderMap(listId);
 
   if (!c.has(orderHash(buyOrder))) {
@@ -97,7 +90,7 @@ export const deleteBuyOrder = async (listId: MarketListIdType, orderId: string):
   }
 };
 
-export const saveBuyOrder = async (listId: MarketListIdType, buyOrder: BuyOrder): Promise<BuyOrder> => {
+export const saveBuyOrder = async (listId: MarketListIdType, buyOrder: OBOrder): Promise<OBOrder> => {
   const collection = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders');
 
   // set id to hash
@@ -106,24 +99,24 @@ export const saveBuyOrder = async (listId: MarketListIdType, buyOrder: BuyOrder)
   const doc = collection.doc(buyOrder.id);
   await doc.set(buyOrder);
 
-  return (await doc.get()).data() as BuyOrder;
+  return (await doc.get()).data() as OBOrder;
 };
 
 // ===============================================================
 // sell orders
 
-export const sellOrders = async (listId: MarketListIdType): Promise<SellOrder[]> => {
+export const sellOrders = async (listId: MarketListIdType): Promise<OBOrder[]> => {
   const orders = await sellOrderMap(listId);
 
   return Array.from(orders.values());
 };
 
-export const sellOrderMap = async (listId: MarketListIdType): Promise<Map<string, SellOrder>> => {
+export const sellOrderMap = async (listId: MarketListIdType): Promise<Map<string, OBOrder>> => {
   const result = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders').get();
   if (result.docs) {
     const { results } = docsToArray(result.docs);
 
-    const map: Map<string, SellOrder> = new Map();
+    const map: Map<string, OBOrder> = new Map();
 
     for (const order of results) {
       map.set(order.id, order);
@@ -132,13 +125,13 @@ export const sellOrderMap = async (listId: MarketListIdType): Promise<Map<string
     return map;
   }
 
-  return new Map<string, SellOrder>();
+  return new Map<string, OBOrder>();
 };
 
 export const sellOrdersWithParams = async (
   listId: MarketListIdType,
   collectionAddresses: string[]
-): Promise<SellOrder[]> => {
+): Promise<OBOrder[]> => {
   const result = await firestore.db
     .collection(fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
@@ -155,7 +148,7 @@ export const sellOrdersWithParams = async (
   return [];
 };
 
-export const addSellOrder = async (listId: MarketListIdType, sellOrder: SellOrder): Promise<void> => {
+export const addSellOrder = async (listId: MarketListIdType, sellOrder: OBOrder): Promise<void> => {
   const c = await sellOrderMap(listId);
 
   if (!c.has(orderHash(sellOrder))) {
@@ -175,7 +168,7 @@ export const deleteSellOrder = async (listId: MarketListIdType, orderId: string)
   }
 };
 
-export const saveSellOrder = async (listId: MarketListIdType, sellOrder: SellOrder): Promise<SellOrder> => {
+export const saveSellOrder = async (listId: MarketListIdType, sellOrder: OBOrder): Promise<OBOrder> => {
   const collection = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders');
 
   // set id to hash
@@ -184,7 +177,7 @@ export const saveSellOrder = async (listId: MarketListIdType, sellOrder: SellOrd
   const doc = collection.doc(sellOrder.id);
   await doc.set(sellOrder);
 
-  return (await doc.get()).data() as SellOrder;
+  return (await doc.get()).data() as OBOrder;
 };
 
 // ===============================================================

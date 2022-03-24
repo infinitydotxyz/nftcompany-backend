@@ -1,19 +1,9 @@
-import {
-  BuyOrder,
-  calculateCurrentPrice,
-  CollectionAddress,
-  isOrderExpired,
-  SellOrder
-} from '@infinityxyz/lib/types/core';
+import { Item, OBOrder } from '@infinityxyz/lib/types/core';
+import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
 import { sellOrdersWithParams } from './marketFirebase';
 
-// appending the current calculated price so we can sort faster
-export interface ActiveSellOrder extends SellOrder {
-  currentPrice: number;
-}
-
 export class ActiveSellOrders {
-  orderMap: Map<string, ActiveSellOrder[]> = new Map<string, ActiveSellOrder[]>();
+  orderMap: Map<string, OBOrder[]> = new Map<string, OBOrder[]>();
   collectionAddresses: string[] = [];
 
   async addCollectionAddresses(addresses: string[]) {
@@ -27,30 +17,30 @@ export class ActiveSellOrders {
 
       for (const sellOrder of orders) {
         if (!isOrderExpired(sellOrder)) {
-          let orderArray = this.orderMap.get(sellOrder.collectionAddress.address);
-
-          const activeSellOrder: ActiveSellOrder = { ...sellOrder, currentPrice: calculateCurrentPrice(sellOrder) };
-
-          if (!orderArray) {
-            orderArray = [activeSellOrder];
-          } else {
-            orderArray.push(activeSellOrder);
+          const addrs = sellOrder.nfts.map((e) => e.collection);
+          for (const addr of addrs) {
+            let orderArray = this.orderMap.get(addr);
+            const activeSellOrder: OBOrder = { ...sellOrder };
+            if (!orderArray) {
+              orderArray = [activeSellOrder];
+            } else {
+              orderArray.push(activeSellOrder);
+            }
+            this.orderMap.set(addr, orderArray);
           }
-
-          this.orderMap.set(sellOrder.collectionAddress.address, orderArray);
         }
       }
     }
   }
 
-  async ordersInCollections(collectionAddresses: CollectionAddress[]): Promise<ActiveSellOrder[]> {
-    const result: ActiveSellOrder[] = [];
+  async ordersInCollections(nfts: Item[]): Promise<OBOrder[]> {
+    const result: OBOrder[] = [];
 
-    const addresses = collectionAddresses.map((e) => e.address);
+    const addresses = nfts.map((e) => e.collection);
     await this.addCollectionAddresses(addresses);
 
-    for (const address of collectionAddresses) {
-      const orders = this.orderMap.get(address.address);
+    for (const address of addresses) {
+      const orders = this.orderMap.get(address);
 
       if (orders) {
         result.push(...orders);
@@ -58,19 +48,23 @@ export class ActiveSellOrders {
     }
 
     const sortedOrders = result.sort((a, b) => {
-      return a.currentPrice - b.currentPrice;
+      const aCurrPrice = getCurrentOrderPrice(a);
+      const bCurrPrice = getCurrentOrderPrice(a);
+      // todo: might need to convert to ETH first to prevent overflow
+      return aCurrPrice.sub(bCurrPrice).toNumber();
     });
 
     return sortedOrders;
   }
 
-  async ordersForBuyOrder(buyOrder: BuyOrder): Promise<ActiveSellOrder[]> {
-    const result: ActiveSellOrder[] = [];
+  async ordersForBuyOrder(buyOrder: OBOrder): Promise<OBOrder[]> {
+    const result: OBOrder[] = [];
 
-    const sellOrders = await this.ordersInCollections(buyOrder.collectionAddresses);
-
+    const sellOrders = await this.ordersInCollections(buyOrder.nfts);
+    const buyCurrPrice = getCurrentOrderPrice(buyOrder);
     for (const sellOrder of sellOrders) {
-      if (sellOrder.currentPrice <= buyOrder.budget) {
+      const sellCurrPrice = getCurrentOrderPrice(sellOrder);
+      if (sellCurrPrice.lte(buyCurrPrice)) {
         result.push(sellOrder);
       }
     }

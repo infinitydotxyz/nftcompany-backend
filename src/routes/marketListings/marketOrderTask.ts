@@ -1,4 +1,4 @@
-import { isOrderExpired } from '@infinityxyz/lib/types/core';
+import { isOrderExpired } from '@infinityxyz/lib/utils';
 import { expiredOrders, moveOrder } from './marketFirebase';
 import { marketOrders } from './marketOrders';
 
