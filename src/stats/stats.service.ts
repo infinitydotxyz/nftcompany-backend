@@ -2,6 +2,7 @@ import { Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { collapseTextChangeRangesAcrossMultipleVersions } from 'typescript';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -189,6 +190,20 @@ export class StatsService {
         .limit(1);
       const snapshot = await statsQuery.get();
       const stats = snapshot.docs?.[0]?.data();
+      const currentTimestamp = getStatsDocInfo(Date.now(), period).timestamp;
+      const isMostRecent = timestamp === currentTimestamp;
+      /**
+       * attempt to update socials stats if they're out of date
+       */
+      if (isMostRecent && statsCollectionName === this.socialsGroup) {
+        if (this.areStatsStale(stats)) {
+          const updated = await this.updateSocialsStats(collectionRef);
+          if (updated) {
+            return updated as SocialsStats;
+          }
+        }
+      }
+
       return stats as Stats | SocialsStats | undefined;
     } catch (err) {
       console.error(err);
@@ -215,10 +230,16 @@ export class StatsService {
     const collectionData = await collectionRef.get();
     const collection = collectionData?.data() ?? ({} as Partial<Collection>);
 
-    if (!collection.address || !collection.chainId) {
-      throw new NotFoundException(
-        `Failed to find a collection with address: ${collection.address} and chainId: ${collection.chainId}`
-      );
+    let address = collection.address;
+    let chainId = collection.chainId;
+    if (!address || !chainId) {
+      const collectionId = collectionRef.id;
+      const [parsedChainId, parsedAddress] = collectionId.split(':');
+      address = parsedAddress;
+      chainId = parsedChainId;
+      if (!address || !chainId) {
+        throw new NotFoundException(`Failed to find a collection with address: ${address} and chainId: ${chainId}`);
+      }
     }
 
     let discordPromise = new Promise<
@@ -274,12 +295,14 @@ export class StatsService {
       twitterFollowing: twitterResponse?.account?.followingCount ?? NaN,
       twitterId: twitterResponse?.account?.id ?? '',
       twitterHandle: twitterResponse?.account?.username ?? '',
-      twitterLink: TwitterService.appendTwitterUsername(twitterResponse?.account?.username ?? '')
+      twitterLink: twitterResponse?.account?.username
+        ? TwitterService.appendTwitterUsername(twitterResponse.account.username)
+        : ''
     };
 
     const socialsStats: PreAggregatedSocialsStats = {
-      collectionAddress: collection.address,
-      chainId: collection.chainId,
+      collectionAddress: address,
+      chainId: chainId,
       ...discordStats,
       ...twitterStats,
       updatedAt: Date.now()
