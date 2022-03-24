@@ -5,58 +5,22 @@
 
 1. collections
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
-       |__{data}
-       |__collectionStatsAllTime
-            |__allTime 
-               {data}
-       |__collectionStatsDaily
-            |__yyyy-mm-dd
-               {data}
-       |__collectionStatsHourly
-            |__yyyy-mm-dd-hh
-               {data}
-       |__collectionStatsWeekly
-            |__yyyy-ww
-               {data}
-       |__collectionStatsMonthly
-            |__yyyy-mm
-               {data}
-       |__collectionStatsYearly
-            |__yyyy
-               {data}
-       |__data 
-            |__ twitter
-               |__{data}
-               |__historical
-                  |__yyyy-ww
-            |__ discord
-               |__{data}
-               |__historical
-                  |__yyyy-ww
-            |__ votes
-               |__ userVotes
-                  |__1:0xa5b8a0c3e43149c46e85117eadb1fa009bb73994 <chainId:userAddress in lowercase>
-                     |__{data}
+      |__{data}
+      |__collectionStats
+         |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+            {data}
+      |__socialsStats
+         |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+            {data}
+      |__ votes
+         |__1:0xa5b8a0c3e43149c46e85117eadb1fa009bb73994 <chainId:userAddress in lowercase>
+            |__{data}
       |__nfts
          |__1559 <tokenId>
             |__{data}
             |__nftStats
-                  |__{data}
-                  |__hourly
-                     |__yyyy-mm-dd-hh
-                        |__{data}
-                  |__daily
-                     |__yyyy-mm-dd
-                        |__{data}
-                  |__weekly
-                     |__yyyy-mm-ww
-                        |__{data}
-                  |__monthly
-                     |__yyyy-mm
-                        |__{data}
-                  |__yearly
-                     |__yyyy
-                        |__{data}
+               |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+                  {data}
 
 2. feed
     |__AAbghuuiIU <firestore uuid>
