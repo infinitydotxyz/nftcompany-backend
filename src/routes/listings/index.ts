@@ -71,14 +71,14 @@ router.get('/', async (req, res) => {
   const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
   // @ts-expect-error
   const tokenAddress = (req.query.tokenAddress ?? '').trim().toLowerCase();
   // @ts-expect-error
-  const collectionName = (req.query.collectionName ?? '').trim(); // preserve case
+  const collectionName = (req.query.collectionName ?? '').trim(); // Preserve case
   // @ts-expect-error
-  const text = (req.query.text ?? '').trim(); // preserve case
+  const text = (req.query.text ?? '').trim(); // Preserve case
   // @ts-expect-error
   const startAfterSearchTitle = (req.query.startAfterSearchTitle ?? '').trim();
   const startAfterBlueCheck = req.query.startAfterBlueCheck;

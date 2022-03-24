@@ -4,7 +4,7 @@ import { warn } from '@infinityxyz/lib/utils/logger';
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
   if (required && !variable) {
-    // throw new Error(`Missing environment variable ${name}`);
+    // Throw new Error(`Missing environment variable ${name}`);
   }
   return variable;
 };
@@ -68,7 +68,7 @@ const fstr = {
 };
 
 /**
- * deprecate access to an object (i.e. logs the warning message anytime the object is accessed)
+ * Deprecate access to an object (i.e. logs the warning message anytime the object is accessed)
  *
  */
 export function deprecateObject<T extends object>(obj: T, message: string): T {
@@ -106,13 +106,13 @@ export const NFTC_FEE_ADDRESS = '0xAAdd54c429a6eEBD4514135EaD53d98D0Cc57d57';
 export const NULL_HASH = '0x0000000000000000000000000000000000000000000000000000000000000000';
 export const NULL_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-export const FEATURED_LIMIT = 4; // number of featured collections
+export const FEATURED_LIMIT = 4; // Number of featured collections
 
 export const OPENSEA_API = 'https://api.opensea.io/api/v1/';
 
 export const DEFAULT_ITEMS_PER_PAGE = 50;
 export const DEFAULT_MIN_ETH = 0.0000001;
-export const DEFAULT_MAX_ETH = 1000000; // for listings
+export const DEFAULT_MAX_ETH = 1000000; // For listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
 
 export const INFINITY_EMAIL = 'hi@infinity.xyz';
@@ -121,9 +121,9 @@ export const FIREBASE_SERVICE_ACCOUNT = 'nftc-dev-firebase-creds.json';
 export const ORIGIN = /http:\/\/localhost:\d+/;
 export const INFINITY_URL = 'https://infinity.xyz/';
 
-export const ONE_HOUR = 3_600_000; // in ms
+export const ONE_HOUR = 3_600_000; // In ms
 export const ONE_DAY = ONE_HOUR * 24;
-export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // in ms
+export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // In ms
 export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min

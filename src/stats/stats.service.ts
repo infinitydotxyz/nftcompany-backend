@@ -192,7 +192,7 @@ export class StatsService {
       const currentTimestamp = getStatsDocInfo(Date.now(), period).timestamp;
       const isMostRecent = timestamp === currentTimestamp;
       /**
-       * attempt to update socials stats if they're out of date
+       * Attempt to update socials stats if they're out of date
        */
       if (isMostRecent && statsCollectionName === this.socialsGroup) {
         if (this.areStatsStale(stats)) {
@@ -211,7 +211,7 @@ export class StatsService {
   }
 
   /**
-   * get the current stats and update them if they are stale
+   * Get the current stats and update them if they are stale
    */
   async getCurrentSocialsStats(collectionRef: FirebaseFirestore.DocumentReference) {
     const mostRecentSocialStats = await this.getMostRecentSocialsStats(collectionRef, StatsPeriod.All);
@@ -334,7 +334,7 @@ export class StatsService {
     currentStats: PreAggregatedSocialsStats
   ): Promise<Record<StatsPeriod, SocialsStats>> {
     /**
-     * get the most recent stats for each period and store them in a map with the period as the key and the stats as the value
+     * Get the most recent stats for each period and store them in a map with the period as the key and the stats as the value
      */
     const statsPeriods = [
       StatsPeriod.Hourly,

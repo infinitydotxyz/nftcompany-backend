@@ -6,7 +6,7 @@ import { getUserTxnRef } from 'services/infinity/orders/getUserTxn';
 import { writeTxn } from 'services/infinity/orders/writeTxn';
 import { waitForTxn } from 'services/infinity/orders/waitForTxn';
 
-// check txn
+// Check txn
 export const postTxnCheck = async (req: Request<{ user: string }>, res: Response) => {
   try {
     const payload = req.body;
@@ -42,17 +42,17 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
       return;
     }
 
-    const actionType = payload.actionType.trim().toLowerCase(); // either fulfill or cancel
+    const actionType = payload.actionType.trim().toLowerCase(); // Either fulfill or cancel
     if (actionType !== 'fulfill' && actionType !== 'cancel') {
       error('Invalid action type', actionType);
       res.sendStatus(StatusCode.BadRequest);
       return;
     }
 
-    const txnHash = payload.txnHash.trim(); // preserve case
+    const txnHash = payload.txnHash.trim(); // Preserve case
     const chainId = payload.chainId;
 
-    // check if valid nftc txn
+    // Check if valid nftc txn
     const { isValid, from, buyer, seller, value } = await getTxnData(txnHash, chainId, actionType);
     if (!isValid) {
       error('Invalid NFTC txn', txnHash);
@@ -64,14 +64,14 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
     const txnDoc = await txnRef.get();
 
     if (txnDoc.exists) {
-      // listen for txn mined or not mined
+      // Listen for txn mined or not mined
       void waitForTxn(from, txnDoc.data());
       res.sendStatus(StatusCode.Ok);
       return;
     }
 
-    // txn is valid but it doesn't exist in firestore
-    // we write to firestore
+    // Txn is valid but it doesn't exist in firestore
+    // We write to firestore
     log('Txn', txnHash, 'is valid but it doesnt exist in firestore');
     await writeTxn(actionType, { isValid, from, buyer, seller, value, txnHash, chainId });
     res.sendStatus(StatusCode.Ok);

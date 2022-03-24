@@ -20,7 +20,7 @@ export class FirebaseService {
   }
 
   /**
-   * get a reference to a collection via a address + chainId or slug
+   * Get a reference to a collection via a address + chainId or slug
    */
   async getCollectionRef(collectionRefProps: CollectionRefDto) {
     if ('slug' in collectionRefProps) {

@@ -60,7 +60,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
         break;
     }
 
-    // set result
+    // Set result
     const resp = { buyOrders: buyOrders, sellOrders: sellOrders, error: '', success: success, matches: matches };
     res.send(resp);
     return;

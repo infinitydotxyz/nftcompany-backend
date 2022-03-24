@@ -16,13 +16,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let message: string | string[] = exception.message;
 
     /**
-     * get the message from a class-validator exception
+     * Get the message from a class-validator exception
      */
     if (typeof response === 'object' && 'message' in response) {
       message = (response as { message: string | string[] }).message;
     }
 
-    // return detailed error response
+    // Return detailed error response
     res.status(status).json({
       statusCode: status,
       message: message,

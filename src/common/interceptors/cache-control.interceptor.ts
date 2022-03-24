@@ -2,12 +2,20 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { Response } from 'express';
 import { map } from 'rxjs/operators';
 
+interface CacheControlInterceptorOptions {
+  /**
+   * The max age (seconds) of the cache control header
+   * @default 60
+   */
+  maxAge: number;
+}
+
 /**
- * interceptor that handles strignifying data and setting the cache-control
+ * Interceptor that handles strignifying data and setting the cache-control
  */
 @Injectable()
 export class CacheControlInterceptor implements NestInterceptor {
-  constructor(private options = { maxAge: 60 }) {}
+  constructor(private options: CacheControlInterceptorOptions = { maxAge: 60 }) {}
 
   intercept(context: ExecutionContext, next: CallHandler) {
     const ctx = context.switchToHttp();

@@ -5,7 +5,7 @@ import { FirebaseService } from 'firebase/firebase.service';
 
 interface CollectionQueryOptions {
   /**
-   * only show collections that have been fully indexed
+   * Only show collections that have been fully indexed
    *
    * defaults to true
    */
@@ -23,7 +23,7 @@ export default class CollectionService {
   }
 
   /**
-   * queries for a collection via address
+   * Queries for a collection via address
    */
   async getCollectionByAddress(
     collection: { address: string; chainId: string },
@@ -46,7 +46,7 @@ export default class CollectionService {
   }
 
   /**
-   * queries for a collection via slug
+   * Queries for a collection via slug
    */
   async getCollectionBySlug(
     collection: { slug: string; chainId: string },

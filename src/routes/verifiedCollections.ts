@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
     };
 
     const resp = jsonString(dataObj);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

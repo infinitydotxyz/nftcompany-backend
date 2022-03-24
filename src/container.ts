@@ -1,9 +1,9 @@
-// import Firestore from './databases/Firestore';
+// Import Firestore from './databases/Firestore';
 import { container } from 'tsyringe';
 
 class Firestore {}
 
 /**
- * hack to make this not complain
+ * Hack to make this not complain
  */
 export const firestore: any = container.resolve(Firestore);

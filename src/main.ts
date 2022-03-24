@@ -19,7 +19,7 @@ function setup(app: INestApplication) {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // strip validated object of any properties that do not use any validation decorators
+      whitelist: true, // Strip validated object of any properties that do not use any validation decorators
       transform: true
     })
   );

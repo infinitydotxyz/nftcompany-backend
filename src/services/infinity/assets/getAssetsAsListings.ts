@@ -20,12 +20,12 @@ export async function fetchAssetAsListingFromDb(
     let listings;
 
     if (!doc.exists) {
-      // todo: adi replace opensea and covalent
+      // Todo: adi replace opensea and covalent
       if (chainId === '1') {
-        // get from opensea
+        // Get from opensea
         listings = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
       } else if (chainId === '137') {
-        // get from covalent
+        // Get from covalent
         listings = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
       }
     } else {
@@ -35,7 +35,7 @@ export async function fetchAssetAsListingFromDb(
         const schema = order?.metadata?.schema;
         if (order && schema === 'ERC721') {
           /**
-           * check ownership change
+           * Check ownership change
            * update if necessary
            */
           const savedOwner = order?.metadata?.asset?.owner ?? '';

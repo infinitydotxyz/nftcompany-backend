@@ -3,7 +3,7 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { error, log, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 
-// fetch user reward
+// Fetch user reward
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
   const user = trimLowerCase(req.params.user);
   if (!user) {
@@ -19,7 +19,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
     if (resp != null) {
       respStr = jsonString(resp);
     }
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

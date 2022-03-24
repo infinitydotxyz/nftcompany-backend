@@ -3,7 +3,7 @@ import { BuyOrder, BuyOrderMatch, isOrderExpired, MarketListIdType } from '@infi
 import { marketListingsCache } from 'routes/marketListings/marketListingsCache';
 
 /**
- * types mismatch from lib
+ * Types mismatch from lib
  */
 type SellOrder = any;
 @singleton()
@@ -53,7 +53,7 @@ export class MarketOrders {
       if (!isOrderExpired(sellOrder)) {
         if (buyAddresses.includes(sellOrder.collectionAddress.address)) {
           if ((sellOrder as any).price <= buyOrder.budget) {
-            // types from lib are broken
+            // Types from lib are broken
             candidates.push(sellOrder);
           }
         }
@@ -61,7 +61,7 @@ export class MarketOrders {
     }
 
     if (candidates.length > 0) {
-      // sort list
+      // Sort list
       candidates = candidates.sort((a, b) => {
         return a.price - b.price;
       });
@@ -90,6 +90,6 @@ export class MarketOrders {
 }
 
 // ---------------------------------------------------------------
-// singleton
+// Singleton
 
 export const marketOrders: MarketOrders = container.resolve(MarketOrders);

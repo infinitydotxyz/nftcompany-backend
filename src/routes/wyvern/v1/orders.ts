@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
 
   if (id && typeof id === 'string') {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    docId = id.trim(); // preserve case
+    docId = id.trim(); // Preserve case
   }
 
   try {

@@ -23,7 +23,7 @@ export async function getTxnData(txnHash: string, chainId: string, actionType: '
     const functionName = decodedData.name;
     const args = decodedData.args;
 
-    // checks
+    // Checks
     const exchangeAddress = getExchangeAddress(chainId);
     if (to?.toLowerCase() !== exchangeAddress?.toLowerCase()) {
       isValid = false;

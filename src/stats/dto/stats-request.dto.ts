@@ -45,7 +45,7 @@ export default class StatsRequestDto {
   date: number;
 
   @ApiProperty({
-    description: 'Collection stat to order the results by'
+    description: 'Stat to order the results by'
   })
   @IsEnum(StatType)
   orderBy: StatType;

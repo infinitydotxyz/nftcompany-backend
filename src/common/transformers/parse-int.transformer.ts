@@ -3,27 +3,27 @@ import { TransformFnParams } from 'class-transformer';
 
 interface ParseIntTransformerOptions {
   /**
-   * defaults to 10
+   * Defaults to 10
    */
   base?: 10 | 16;
 
   /**
-   * defaults to false
+   * Defaults to false
    */
   allowNaN?: boolean;
 
   /**
-   * defaults to false
+   * Defaults to false
    */
   allowInfinity?: boolean;
 
   /**
-   * inclusive
+   * Inclusive
    */
   min?: number;
 
   /**
-   * inclusive
+   * Inclusive
    */
   max?: number;
 }

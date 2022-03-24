@@ -56,10 +56,10 @@ export default class Firestore {
   }
 
   // // NOTE: don't use this for new code; use getDocIdHash instead
-  // getAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
-  //   warn('Do not use this assetDocId');
-  //   const data = tokenAddress.trim() + tokenId.trim() + chainId;
-  //   return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  // GetAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
+  //   Warn('Do not use this assetDocId');
+  //   Const data = tokenAddress.trim() + tokenId.trim() + chainId;
+  //   Return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   // }
 
   getHistoricalDocId(year: number, week: number) {
@@ -69,7 +69,7 @@ export default class Firestore {
   async uploadBuffer(buffer: Buffer, path: string, contentType: string): Promise<File> {
     const remoteFile = this.bucket.file(path);
 
-    // no idea why exists() returns an array [boolean]
+    // No idea why exists() returns an array [boolean]
     const existsArray = await remoteFile.exists();
     if (existsArray && existsArray.length > 0 && !existsArray[0]) {
       return await new Promise<File>((resolve, reject) => {

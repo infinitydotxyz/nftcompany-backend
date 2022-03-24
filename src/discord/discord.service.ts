@@ -12,7 +12,7 @@ export class DiscordService {
   }
 
   /**
-   * get the stats from a guild invite
+   * Get the stats from a guild invite
    */
   async getGuildStats(
     inviteUrl: string

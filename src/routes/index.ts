@@ -33,7 +33,7 @@ router.use('/collection', collection);
 router.use('/marketListings', marketListings);
 
 /**
- * require auth
+ * Require auth
  */
 router.use('/u', u);
 

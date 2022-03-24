@@ -18,7 +18,7 @@ import { VerifiedMentionUser } from './types/verified-mention-user';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 /**
- * access level is Elevated
+ * Access level is Elevated
  * provides queries up to 512 chars
  *
  * docs: https://developer.twitter.com/en/docs/twitter-api/tweets/search/introduction
@@ -60,7 +60,7 @@ export class TwitterService {
   }
 
   /**
-   * first attempts to get verified mentions
+   * First attempts to get verified mentions
    * if that fails (typically when there are no verified mentions)
    * then, just get the user
    */
@@ -85,13 +85,13 @@ export class TwitterService {
   }
 
   /**
-   * get verified mentions of the given account
+   * Get verified mentions of the given account
    * returned user array contains the mentioned account and
    * all accounts who mentioned the given account
    */
   private async getVerifiedMentions(username: string) {
     /**
-     * match any tweet that mentions the given username
+     * Match any tweet that mentions the given username
      * and where the tweeter is verified
      */
     const query = `@${username} is:verified`;
@@ -109,7 +109,7 @@ export class TwitterService {
     if ('errors' in body) {
       throw new Error((body as any).errors?.[0].detail);
     } else if ('data' in body) {
-      const tweets = body.data ?? []; // ordered in reverse chronological order
+      const tweets = body.data ?? []; // Ordered in reverse chronological order
       const users = body.includes?.users ?? [];
       return { tweets, users };
     }
@@ -118,7 +118,7 @@ export class TwitterService {
   }
 
   /**
-   * get a specific user
+   * Get a specific user
    */
   private async getUser(username: string) {
     const response: AxiosResponse<

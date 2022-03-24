@@ -1,8 +1,14 @@
 import { ChainId, Collection } from '@infinityxyz/lib/types/core';
 import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
-import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse
+} from '@nestjs/swagger';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
+import { ResponseDescription } from 'common/response-description';
 import StatsRequestDto from 'stats/dto/stats-request.dto';
 import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
@@ -14,15 +20,16 @@ export class CollectionController {
   constructor(private collectionService: CollectionService, private statsService: StatsService) {}
 
   @Get()
-  @ApiOkResponse({ description: 'Success', type: CollectionResponseDto })
-  @ApiNotFoundResponse({ description: 'Collection not found' })
-  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getOne(@Query(new NormalizeAddressPipe()) query: RequestCollectionDto): Promise<Collection> {
     let collection: Collection | undefined;
-    if ('slug' in query && query.slug) {
+    if (query.slug) {
       collection = await this.getOneBySlug({ slug: query.slug, chainId: query.chainId });
-    } else if ('address' in query && query.address) {
+    } else if (query.address) {
       collection = await this.getOneByAddress({ address: query.address, chainId: query.chainId });
     } else {
       throw new BadRequestException({}, 'Failed to pass address or slug');
@@ -36,13 +43,16 @@ export class CollectionController {
   }
 
   @Get('/stats')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
   async getStats(@Query() query: StatsRequestDto): Promise<any> {
     const res = await this.statsService.getStats(query);
     return res;
   }
 
   /**
-   * get a single collection by address
+   * Get a single collection by address
    */
   private async getOneByAddress({ address, chainId }: { address: string; chainId: ChainId }): Promise<Collection> {
     const collection = await this.collectionService.getCollectionByAddress({
@@ -58,7 +68,7 @@ export class CollectionController {
   }
 
   /**
-   * get a single collection by slug
+   * Get a single collection by slug
    */
   private async getOneBySlug({ slug, chainId }: { slug: string; chainId: ChainId }): Promise<Collection> {
     const collection = await this.collectionService.getCollectionBySlug({

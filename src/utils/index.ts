@@ -21,16 +21,16 @@ export function deepCopy(object: any) {
 export function bn(num: BigNumber.Value) {
   // @ts-expect-error not sure
   const bigNum = BigNumber(num);
-  // console.log(num + '   ====== bigNUm ' + bigNum);
-  // console.log(__line);
+  // Console.log(num + '   ====== bigNUm ' + bigNum);
+  // Console.log(__line);
   return bigNum;
 }
 
 export function toFixed5(num: BigNumber.Value) {
   // eslint-disable-next-line no-undef
-  // console.log(__line);
+  // Console.log(__line);
   return +bn(num).toFixed(5);
-  // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+  // Return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 export function getUniqueItemsByProperties<T>(items: List<T> | null | undefined, property: string) {
@@ -56,11 +56,11 @@ export function getNextWeek(weekNumber: number, year: number) {
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
 
-// validate api inputs; return a StatusCode if error;
-// example: validateInputs({ user, listType }, ['user']) // require 'user'
+// Validate api inputs; return a StatusCode if error;
+// Example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
-  ids?: string; // comma separated string of ids.
+  ids?: string; // Comma separated string of ids.
   user?: string | undefined;
   sourceName?: string | undefined;
   chain?: string | undefined;

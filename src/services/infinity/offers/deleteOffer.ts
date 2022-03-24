@@ -13,9 +13,9 @@ export async function deleteOffer(batch: any, docRef: any) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  // delete offer
+  // Delete offer
   batch.delete(doc.ref);
 
-  // update num user offers
+  // Update num user offers
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
 }

@@ -11,7 +11,7 @@ import {
 import { getFilteredUserListings } from 'services/infinity/listings/getUserListing';
 import { validateInputs } from 'utils';
 
-// fetch listings of user
+// Fetch listings of user
 export const getUserListings = async (
   req: Request<
     { user: string },
@@ -36,7 +36,7 @@ export const getUserListings = async (
   const { listType, traitType, traitValue, collectionIds, startAfterBlueCheck } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
 
   let priceMin = +(req.query.priceMin ?? 0);

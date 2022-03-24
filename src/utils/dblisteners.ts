@@ -8,7 +8,7 @@ import {
 let setupAllCollectionsListenerDone = false;
 
 /*
- * set up DB Listener on 'ALL_COLLECTIONS_COLL' to update the cache.
+ * Set up DB Listener on 'ALL_COLLECTIONS_COLL' to update the cache.
  * todo: this needs to change to a listener on the `collections` collection.
  */
 export function setupAllCollectionsListener() {
@@ -17,12 +17,12 @@ export function setupAllCollectionsListener() {
   }
   const coll = firestore.collection(firestoreConstants.COLLECTIONS_COLL);
 
-  // listening to collection changes
+  // Listening to collection changes
   coll.onSnapshot(
     async (snapshot) => {
       log(`Collection changed: ${firestoreConstants.COLLECTIONS_COLL}`);
 
-      // from the 2nd+ callback run: (skip the 1st one, which is for full changes)
+      // From the 2nd+ callback run: (skip the 1st one, which is for full changes)
       if (setupAllCollectionsListenerDone) {
         snapshot.docChanges().forEach((change) => {
           const data = change.doc.data();
