@@ -11,7 +11,6 @@ import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
-// Import { ObjectResponse } from 'common/responses/object-response';
 import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
@@ -53,7 +52,6 @@ export class CollectionController {
    * Get a single collection by address
    */
   private async getOneByAddress({ address, chainId }: CollectionViaAddressDto): Promise<Collection> {
-    console.log(address);
     const collection = await this.collectionService.getCollectionByAddress({
       address,
       chainId

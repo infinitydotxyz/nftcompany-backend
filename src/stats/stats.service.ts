@@ -91,7 +91,6 @@ export class StatsService {
     const mergedStats: CollectionStatsDto = {
       chainId: primary?.chainId ?? secondary?.chainId ?? '',
       collectionAddress: primary?.collectionAddress ?? secondary?.collectionAddress ?? '',
-      // TokenId: primary?.tokenId ?? secondary?.tokenId ?? '',
       floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
       prevFloorPrice: mergeStat(primary?.prevFloorPrice, secondary?.prevFloorPrice),
       floorPricePercentChange: mergeStat(primary?.floorPricePercentChange, secondary?.floorPricePercentChange),
