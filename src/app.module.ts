@@ -11,6 +11,7 @@ import { join } from 'path';
 import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
 import { CollectionsModule } from './collections/collections.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { CollectionsModule } from './collections/collections.module';
     TwitterModule,
     DiscordModule,
     StatsModule,
-    CollectionsModule
+    CollectionsModule,
+    UserModule
   ],
   controllers: [AppController],
   providers: [AppService]

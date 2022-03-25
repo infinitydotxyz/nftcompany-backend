@@ -3,7 +3,7 @@ import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsEthereumAddress, IsEnum } from 'class-validator';
 import { RequestCollectionDto } from 'collection/dto/request-collection.dto';
-import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
+import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
 export class CollectionStatsRequest implements RequestCollectionDto {

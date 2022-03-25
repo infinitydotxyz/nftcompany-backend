@@ -2,7 +2,7 @@ import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
-import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
+import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
 export class CollectionViaSlugDto {
