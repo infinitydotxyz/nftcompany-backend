@@ -1,6 +1,7 @@
 import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
+import { CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 
 interface CollectionQueryOptions {
@@ -49,14 +50,13 @@ export default class CollectionService {
    * Queries for a collection via slug
    */
   async getCollectionBySlug(
-    collection: { slug: string; chainId: string },
+    collection: CollectionViaSlugDto,
     options?: CollectionQueryOptions
   ): Promise<Collection | undefined> {
     const queryOptions = options ?? this.defaultCollectionQueryOptions;
 
     let collectionQuery = this.firebaseService.firestore
       .collection(firestoreConstants.COLLECTIONS_COLL)
-      .where('chainId', '==', collection.chainId)
       .where('slug', '==', collection.slug);
 
     if (queryOptions.limitToCompleteCollections) {

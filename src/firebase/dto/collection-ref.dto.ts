@@ -1,9 +1,11 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
+import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
-export class CollectionRefViaSlugDto {
+export class CollectionViaSlugDto {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -11,18 +13,18 @@ export class CollectionRefViaSlugDto {
     message: 'Invalid slug'
   })
   @IsOptional()
-  readonly slug?: string;
+  readonly slug: string;
 }
 
-export class CollectionRefViaAddressDto {
+export class CollectionViaAddressDto {
   @ApiPropertyOptional({
     description: 'Collection Address'
   })
   @IsEthereumAddress({
     message: 'Invalid address'
   })
-  @IsOptional()
-  readonly address?: string;
+  @Transform(normalizeAddressTransformer())
+  readonly address: string;
 
   @ApiProperty({
     description: 'Collection chain id',
@@ -34,4 +36,4 @@ export class CollectionRefViaAddressDto {
   readonly chainId: ChainId;
 }
 
-export type CollectionRefDto = CollectionRefViaAddressDto | CollectionRefViaSlugDto;
+export type CollectionRefDto = CollectionViaAddressDto | CollectionViaSlugDto;

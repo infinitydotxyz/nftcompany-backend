@@ -1,4 +1,5 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { Request, Response } from 'express';
 
 /**
@@ -22,12 +23,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = (response as { message: string | string[] }).message;
     }
 
-    // Return detailed error response
-    res.status(status).json({
+    if (Array.isArray(message)) {
+      message = message.join(',\n');
+    }
+
+    const errorResponse: ErrorResponseDto = {
+      success: false,
       statusCode: status,
       message: message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().getTime(),
       path: req.url
-    });
+    };
+
+    // Return detailed error response
+    res.status(status).json(errorResponse);
   }
 }

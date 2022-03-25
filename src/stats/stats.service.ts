@@ -2,13 +2,15 @@ import { Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import RankingsRequestDto from 'collections/dto/rankings-request.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
 import { calcPercentChange } from '../utils';
-import StatsRequestDto, { StatType } from './dto/stats-request.dto';
-import { CollectionStats } from './types/collection.stats.interface';
+import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
+import { CollectionStatsDto } from './dto/collection.stats.dto';
 import { PreAggregatedSocialsStats, SocialsStats } from './types/socials.stats.interface';
+import { StatType } from './types/stat-type';
 
 @Injectable()
 export class StatsService {
@@ -21,13 +23,18 @@ export class StatsService {
     private firebaseService: FirebaseService
   ) {}
 
-  async getStats(queryOptions: StatsRequestDto) {
+  async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
     const primaryStatsCollectionName = this.getStatsCollectionName(queryOptions.orderBy);
     const secondaryStatsCollectionName =
       primaryStatsCollectionName === this.statsGroup ? this.socialsGroup : this.statsGroup;
     const timestamp = getStatsDocInfo(queryOptions.date, queryOptions.period).timestamp;
 
-    const primaryStats = await this.getPrimaryStats(queryOptions, primaryStatsCollectionName);
+    const query = {
+      ...queryOptions,
+      limit: queryOptions.limit + 1 // +1 to check if there are more results
+    };
+
+    const primaryStats = await this.getPrimaryStats(query, primaryStatsCollectionName);
 
     const secondaryStatsPromises = primaryStats.data.map(async (item) => {
       return new Promise((resolve, reject) => {
@@ -36,7 +43,7 @@ export class StatsService {
         this.firebaseService
           .getCollectionRef({ address, chainId })
           .then((collectionRef) => {
-            return this.getMostRecentStats(collectionRef, secondaryStatsCollectionName, queryOptions.period, timestamp);
+            return this.getMostRecentStats(collectionRef, secondaryStatsCollectionName, query.period, timestamp);
           })
           .then((mostRecentStats) => {
             resolve(mostRecentStats);
@@ -55,16 +62,22 @@ export class StatsService {
       return merged;
     });
 
+    const hasNextPage = combinedStats.length >= query.limit;
+    if (hasNextPage) {
+      combinedStats.pop(); // Remove the item that was added to check if there are more results
+    }
+
     return {
       data: combinedStats,
-      cursor: primaryStats.cursor
+      cursor: primaryStats.cursor,
+      hasNextPage
     };
   }
 
   private mergeStats(
     primary: Partial<SocialsStats> & Partial<Stats>,
     secondary: Partial<SocialsStats> & Partial<Stats>
-  ): CollectionStats {
+  ): CollectionStatsDto {
     const mergeStat = (primary?: number, secondary?: number) => {
       if (typeof primary === 'number' && !Number.isNaN(primary)) {
         return primary;
@@ -75,10 +88,10 @@ export class StatsService {
       return NaN;
     };
 
-    const mergedStats: CollectionStats = {
+    const mergedStats: CollectionStatsDto = {
       chainId: primary?.chainId ?? secondary?.chainId ?? '',
       collectionAddress: primary?.collectionAddress ?? secondary?.collectionAddress ?? '',
-      tokenId: primary?.tokenId ?? secondary?.tokenId ?? '',
+      // TokenId: primary?.tokenId ?? secondary?.tokenId ?? '',
       floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
       prevFloorPrice: mergeStat(primary?.prevFloorPrice, secondary?.prevFloorPrice),
       floorPricePercentChange: mergeStat(primary?.floorPricePercentChange, secondary?.floorPricePercentChange),
@@ -131,7 +144,7 @@ export class StatsService {
     return mergedStats;
   }
 
-  async getPrimaryStats(queryOptions: StatsRequestDto, statsGroupName: string) {
+  async getPrimaryStats(queryOptions: RankingsRequestDto, statsGroupName: string) {
     const date = queryOptions.date;
     const { timestamp } = getStatsDocInfo(date, queryOptions.period);
     const collectionGroup = this.firebaseService.firestore.collectionGroup(statsGroupName);

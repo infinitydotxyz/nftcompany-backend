@@ -1,12 +1,23 @@
-import { ChainId } from '@infinityxyz/lib/types/core';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ChainId, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
+import { IsString, IsOptional, IsEthereumAddress, IsEnum } from 'class-validator';
+import { RequestCollectionDto } from 'collection/dto/request-collection.dto';
 import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
-import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class RequestCollectionDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
+export class CollectionStatsRequest implements RequestCollectionDto {
+  @ApiPropertyOptional({
+    description: 'Date to get stats for'
+  })
+  date?: number;
+
+  @ApiProperty({
+    description: 'The period to get stats for'
+  })
+  @IsEnum(StatsPeriod)
+  period: StatsPeriod;
+
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })

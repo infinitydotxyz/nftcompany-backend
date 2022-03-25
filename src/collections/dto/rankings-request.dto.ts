@@ -3,34 +3,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
+import { StatType } from 'stats/types/stat-type';
 
-export enum StatType {
-  FloorPrice = 'floorPrice',
-  FloorPriceChange = 'floorPricePercentChange',
-
-  CeilPrice = 'ceilPrice',
-  CeilPriceChange = 'ceilPricePercentChange',
-
-  Volume = 'volume',
-  VolumeChange = 'volumePercentChange',
-
-  Sales = 'numSales',
-  SalesChange = 'numSalesPercentChange',
-
-  AveragePrice = 'avgPrice',
-  AveragePriceChange = 'avgPricePercentChange',
-
-  DiscordFollowers = 'discordFollowers',
-  DiscordFollowersPercentChange = 'discordFollowersPercentChange',
-
-  DiscordPresence = 'discordPresence',
-  DiscordPresencePercentChange = 'discordFollowersPercentChange',
-
-  TwitterFollowers = 'twitterFollowers',
-  TwitterFollowersPercentChange = 'twitterFollowersPercentChange'
-}
-
-export default class StatsRequestDto {
+export default class RankingsRequestDto {
   @ApiProperty({
     description: 'Period to get stats for'
   })

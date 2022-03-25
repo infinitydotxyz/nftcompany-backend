@@ -7,7 +7,8 @@ import { TwitterService } from 'twitter/twitter.service';
 import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
-import StatsRequestDto, { StatType } from './dto/stats-request.dto';
+import RankingsRequestDto from 'collections/dto/rankings-request.dto';
+import { StatType } from './types/stat-type';
 
 describe('StatsService', () => {
   let service: StatsService;
@@ -50,7 +51,7 @@ describe('StatsService', () => {
   });
 
   it('should return combined stats', async () => {
-    const query: StatsRequestDto = {
+    const query: RankingsRequestDto = {
       period: StatsPeriod.All,
       date: 1648069200000,
       orderBy: StatType.DiscordFollowers,
@@ -58,7 +59,7 @@ describe('StatsService', () => {
       limit: 50
     };
     try {
-      const stats = await service.getStats(query);
+      const stats = await service.getCollectionRankings(query);
       console.log(stats);
       expect(stats).toBeDefined();
     } catch (err) {
