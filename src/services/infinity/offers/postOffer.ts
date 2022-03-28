@@ -9,7 +9,7 @@ import ERC721ABI from 'abi/ERC721.json';
 
 export async function postOffer(maker: string, payload: any, batch: any, numOrders: number, hasBonus: boolean) {
   log('Writing offer to firestore for user', maker);
-  let taker = payload.metadata?.asset?.owner?.trim?.()?.toLowerCase?.() ?? ''; // get owner if undefined
+  let taker = payload.metadata?.asset?.owner?.trim?.()?.toLowerCase?.() ?? ''; // Get owner if undefined
   const { basePrice } = payload;
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
   const tokenId = payload.metadata.asset.id.trim();
@@ -33,7 +33,7 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
     throw new Error('invalid order, no owner');
   }
 
-  // store data in offers of maker
+  // Store data in offers of maker
   const offerRef = firestore
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -44,7 +44,7 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
   batch.set(offerRef, payload, { merge: true });
 
   log('updating num offers since offer does not exist');
-  // update num user offers made
+  // Update num user offers made
   updateNumOrders(batch, maker, numOrders, hasBonus, 0);
 
   if (taker) {

@@ -6,7 +6,7 @@ import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 const router = Router();
 
-// get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
+// Get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
 
 /**
  * @typedef {Object} FeaturedCollection

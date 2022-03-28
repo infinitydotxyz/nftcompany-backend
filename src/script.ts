@@ -8,7 +8,7 @@ import { updateSearchCollectionName } from './scripts/updateSearchCollectionName
 import { fstrCnstnts } from './constants';
 
 /**
- * an entry point for calling scripts
+ * An entry point for calling scripts
  *
  * Run with `npm run script`
  *
@@ -16,9 +16,9 @@ import { fstrCnstnts } from './constants';
  *
  */
 async function main() {
-  // const icyTools = new IcyToolsApi();
-  // await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
-  // await updateSearchCollectionName(200);
+  // Const icyTools = new IcyToolsApi();
+  // Await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
+  // Await updateSearchCollectionName(200);
 
   console.log(fstrCnstnts.ASSETS_COLL);
 }

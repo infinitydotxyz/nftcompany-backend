@@ -34,7 +34,7 @@ export const getCollectionFollows = async (
   }
 
   const resp = jsonString(result);
-  // to enable cdn cache
+  // To enable cdn cache
   res.set({
     'Cache-Control': 'must-revalidate, max-age=30',
     'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

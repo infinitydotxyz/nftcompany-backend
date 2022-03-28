@@ -10,7 +10,7 @@ import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 
-// fetch offer made by user
+// Fetch offer made by user
 export const getUserOffersMade = async (
   req: Request<
     { user: string },
@@ -31,7 +31,7 @@ export const getUserOffersMade = async (
   const { traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
   const startAfterBlueCheck = req.query.startAfterBlueCheck;
 

@@ -5,14 +5,14 @@ import { deleteListing } from './deleteListing';
 export async function cancelListing(userAddress: string, batch: any, docId: string) {
   log('Canceling listing for user', userAddress);
   try {
-    // check if listing exists first
+    // Check if listing exists first
     const listingRef = getUserInfoRef(userAddress).collection(firestoreConstants.LISTINGS_COLL).doc(docId);
     const doc = await listingRef.get();
     if (!doc.exists) {
       log('No listing ' + docId + ' to delete');
       return;
     }
-    // delete
+    // Delete
     await deleteListing(batch, listingRef);
   } catch (err) {
     error('Error cancelling listing');

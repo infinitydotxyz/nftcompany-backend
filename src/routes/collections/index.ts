@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
     if (success) {
       const deDupresp = getUniqueItemsByProperties(data, 'collectionName');
       const respStr = jsonString(deDupresp);
-      // to enable cdn cache
+      // To enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

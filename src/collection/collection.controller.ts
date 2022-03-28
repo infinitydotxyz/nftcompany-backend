@@ -1,27 +1,43 @@
-import { ChainId, Collection } from '@infinityxyz/lib/types/core';
+import { Collection } from '@infinityxyz/lib/types/core';
 import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
-import { ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation
+} from '@nestjs/swagger';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
+import { ApiTag } from 'common/api-tags';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
-import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
+import { ResponseDescription } from 'common/response-description';
+import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
+import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
+import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
 import { CollectionResponseDto } from './dto/collection-response.dto';
 import { RequestCollectionDto } from './dto/request-collection.dto';
-import RequestCollectionsStatsDto from './dto/request-collections-stats.dto';
 
 @Controller('collection')
 export class CollectionController {
-  constructor(private collectionService: CollectionService) {}
+  constructor(private collectionService: CollectionService, private statsService: StatsService) {}
 
   @Get()
-  @ApiOkResponse({ description: 'Success', type: CollectionResponseDto })
-  @ApiNotFoundResponse({ description: 'Collection not found' })
-  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
+  @ApiOperation({
+    tags: [ApiTag.Collection],
+    description: 'Get a single collection by address and chain id or by slug'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
-  async getOne(@Query(new NormalizeAddressPipe()) query: RequestCollectionDto): Promise<Collection> {
+  async getOne(@Query() query: RequestCollectionDto): Promise<Collection> {
     let collection: Collection | undefined;
-    if ('slug' in query && query.slug) {
-      collection = await this.getOneBySlug({ slug: query.slug, chainId: query.chainId });
-    } else if ('address' in query && query.address) {
+    if ('slug' in query) {
+      collection = await this.getOneBySlug({ slug: query.slug });
+    } else if ('address' in query) {
       collection = await this.getOneByAddress({ address: query.address, chainId: query.chainId });
     } else {
       throw new BadRequestException({}, 'Failed to pass address or slug');
@@ -34,16 +50,24 @@ export class CollectionController {
     return collection;
   }
 
-  @Get('/stats')
-  async getStats(@Query() query: RequestCollectionsStatsDto): Promise<any> {
-    const res = await this.collectionService.getCollectionsStats(query);
+  @Get('rankings')
+  @ApiOperation({
+    description: 'Get stats for collections ordered by a given field',
+    tags: [ApiTag.Collection, ApiTag.Stats]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
+  async getStats(@Query() query: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
+    const res = await this.statsService.getCollectionRankings(query);
     return res;
   }
 
   /**
-   * get a single collection by address
+   * Get a single collection by address
    */
-  private async getOneByAddress({ address, chainId }: { address: string; chainId: ChainId }): Promise<Collection> {
+  private async getOneByAddress({ address, chainId }: CollectionViaAddressDto): Promise<Collection> {
     const collection = await this.collectionService.getCollectionByAddress({
       address,
       chainId
@@ -57,12 +81,11 @@ export class CollectionController {
   }
 
   /**
-   * get a single collection by slug
+   * Get a single collection by slug
    */
-  private async getOneBySlug({ slug, chainId }: { slug: string; chainId: ChainId }): Promise<Collection> {
+  private async getOneBySlug({ slug }: CollectionViaSlugDto): Promise<Collection> {
     const collection = await this.collectionService.getCollectionBySlug({
-      slug,
-      chainId
+      slug
     });
 
     if (!collection) {

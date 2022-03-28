@@ -20,7 +20,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
 
     for (const doc of snapshot.docs) {
       const txn = doc.data();
-      // check status
+      // Check status
       if (txn.status === 'pending') {
         void waitForTxn(userAddress, txn);
       }
@@ -28,7 +28,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
 
     for (const doc of missedTxnSnapshot.docs) {
       const txn = doc.data();
-      // check status
+      // Check status
       if (txn.status === 'pending') {
         void waitForMissedTxn(userAddress, txn);
       }

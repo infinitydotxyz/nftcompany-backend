@@ -26,9 +26,9 @@ export async function getFilteredUserOffersMade(
   try {
     log('Getting filtered offers made by a user');
 
-    // let startAfterBlueCheckBool = true;
-    // if (startAfterBlueCheck !== undefined) {
-    //   startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+    // Let startAfterBlueCheckBool = true;
+    // If (startAfterBlueCheck !== undefined) {
+    //   StartAfterBlueCheckBool = startAfterBlueCheck === 'true';
     // }
 
     const runQuery = async ({
@@ -55,7 +55,7 @@ export async function getFilteredUserOffersMade(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 
@@ -126,7 +126,7 @@ export async function getFilteredUserOffersReceived(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 

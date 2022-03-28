@@ -5,18 +5,25 @@ import { AppService } from './app.service';
 import { CollectionModule } from './collection/collection.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './firebase/firebase.module';
+import { StatsModule } from './stats/stats.module';
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
+import { join } from 'path';
+import { TwitterModule } from './twitter/twitter.module';
+import { DiscordModule } from './discord/discord.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env',
+      envFilePath: join(__dirname, '../.env'),
       isGlobal: true
     }),
     FirebaseModule.forRoot({
       cert: serviceAccount
     }),
-    CollectionModule
+    CollectionModule,
+    TwitterModule,
+    DiscordModule,
+    StatsModule
   ],
   controllers: [AppController],
   providers: [AppService]

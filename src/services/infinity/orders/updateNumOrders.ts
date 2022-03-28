@@ -13,13 +13,13 @@ export function updateNumOrders(batch: any, user: string, numOrders: number, has
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
   if (side === 0) {
-    // offers
+    // Offers
     batch.set(ref, { numOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
       batch.set(ref, { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     }
   } else if (side === 1) {
-    // listings
+    // Listings
     batch.set(ref, { numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
       batch.set(ref, { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });

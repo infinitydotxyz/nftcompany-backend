@@ -1,9 +1,12 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/IsSuppportedChainId';
+import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
+import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class RequestCollectionDto {
+export class RequestCollectionDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -19,6 +22,7 @@ export class RequestCollectionDto {
   @IsEthereumAddress({
     message: 'Invalid address'
   })
+  @Transform(normalizeAddressTransformer)
   @IsOptional()
   readonly address?: string;
 

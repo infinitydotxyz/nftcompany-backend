@@ -6,7 +6,7 @@ import { fstrCnstnts } from '../../constants';
 import { marketOrders } from './marketOrders';
 
 // ---------------------------------------------------------------
-// listCache
+// ListCache
 
 class ListCache {
   validActiveBuys: Map<string, BuyOrder> = new Map();
@@ -33,7 +33,7 @@ class ListCache {
   }
 
   // ===============================================================
-  // load
+  // Load
 
   async _loadBuyOrders(listId: MarketListIdType): Promise<Map<string, BuyOrder>> {
     const result = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders').get();
@@ -126,10 +126,10 @@ export class MarketListingsCache {
       if (buyOrder) {
         const result = await marketOrders.findMatchForBuy(buyOrder);
 
-        // do the block chain stuff here.  If success delete the orders
+        // Do the block chain stuff here.  If success delete the orders
 
         if (result) {
-          // move order to validInactive
+          // Move order to validInactive
           await this._moveBuyOrder(result.buyOrder, listId, 'validInactive');
 
           for (const sellOrder of result.sellOrders) {
@@ -163,7 +163,7 @@ export class MarketListingsCache {
   }
 
   // ===============================================================
-  // private
+  // Private
 
   _buyOrderCache(listId: MarketListIdType): Map<string, BuyOrder> {
     switch (listId) {
@@ -188,12 +188,12 @@ export class MarketListingsCache {
   }
 
   // ===============================================================
-  // save
+  // Save
 
   async _saveSellOrder(listId: MarketListIdType, sellOrder: SellOrder): Promise<SellOrder> {
     const collection = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders');
 
-    // set id to hash
+    // Set id to hash
     sellOrder.id = orderHash(sellOrder);
 
     const doc = collection.doc(sellOrder.id);
@@ -205,7 +205,7 @@ export class MarketListingsCache {
   async _saveBuyOrder(listId: MarketListIdType, buyOrder: BuyOrder): Promise<BuyOrder> {
     const collection = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders');
 
-    // set id to hash
+    // Set id to hash
     buyOrder.id = orderHash(buyOrder);
 
     const doc = collection.doc(buyOrder.id);
@@ -215,7 +215,7 @@ export class MarketListingsCache {
   }
 
   // ===============================================================
-  // delete
+  // Delete
 
   async _deleteBuyOrder(listId: MarketListIdType, orderId: string): Promise<void> {
     await this._deleteOrder(true, listId, orderId);
@@ -241,7 +241,7 @@ export class MarketListingsCache {
   }
 
   // ===============================================================
-  // move
+  // Move
 
   async _moveBuyOrder(buyOrder: BuyOrder, fromListId: MarketListIdType, toListId: MarketListIdType): Promise<void> {
     await this._moveOrder(buyOrder, fromListId, toListId);
@@ -256,12 +256,12 @@ export class MarketListingsCache {
       if (isBuyOrder(order)) {
         await this.addBuyOrder(toListId, order);
 
-        // delete
+        // Delete
         await this.deleteBuyOrder(fromListId, order.id ?? '');
       } else {
         await this.addSellOrder(toListId, order as SellOrder);
 
-        // delete
+        // Delete
         await this.deleteSellOrder(fromListId, order.id ?? '');
       }
     } else {
@@ -271,6 +271,6 @@ export class MarketListingsCache {
 }
 
 // ---------------------------------------------------------------
-// singleton
+// Singleton
 
 export const marketListingsCache: MarketListingsCache = container.resolve(MarketListingsCache);

@@ -55,7 +55,7 @@ export const getUserAssets = async (
     }
 
     const resp = jsonString(data);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
@@ -88,27 +88,27 @@ export async function getAssets(
       resp = await getUserAssetsFromAlchemy(address, chainId, pageKey, collectionIds);
       resp.count = resp?.ownedNfts?.length;
       resp.assets = resp?.ownedNfts;
-      // store in firestore
+      // Store in firestore
       storeAlchemyAssetsInFirestore(address, chainId, resp as AlchemyUserAssetResponse);
       break;
     case NFTDataSource.Unmarshal:
-      // offset + 1 because Unmarshal starts index from 1
+      // Offset + 1 because Unmarshal starts index from 1
       resp = await getUserAssetsFromUnmarshal(address, chainId, offset + 1, limit, contract);
       resp.count = resp?.nft_assets?.length;
       resp.assets = resp?.nft_assets;
-      // store in firestore
+      // Store in firestore
       storeUnmarshalAssetsInFirestore(address, chainId, resp as UnmarshalUserAssetResponse);
       break;
     case NFTDataSource.OpenSea:
       resp.assets = await getUserAssetsFromOpenSea(address, offset, limit, collectionIds);
       resp.count = resp.assets?.length;
-      // store in firestore
+      // Store in firestore
       storeOpenSeaAssetsInFirestore(address, chainId, resp.assets);
       break;
     case NFTDataSource.Covalent:
       resp.assets = await getUserAssetsFromCovalent(address);
       resp.count = resp.assets?.length;
-      // store in firestore
+      // Store in firestore
       storeCovalentAssetsInFirestore(address, chainId, resp.assets);
       break;
     default:

@@ -5,7 +5,7 @@ import { ContractConnection, ContractsOrderBy } from '@infinityxyz/lib/types/ser
 import { icyToolsClient } from './utils';
 
 /**
- * docs: https://graphql.icy.tools/playground
+ * Docs: https://graphql.icy.tools/playground
  */
 export class IcyToolsApi {
   private readonly _client: AxiosInstance;

@@ -17,7 +17,7 @@ export function registerDocs(app: Application) {
     swaggerUIPath: '/docs',
     // Expose OpenAPI UI
     exposeSwaggerUI: true,
-    // multiple option in case you want more that one instance
+    // Multiple option in case you want more that one instance
     multiple: true
   };
   expressJSDocSwagger(app)(options);

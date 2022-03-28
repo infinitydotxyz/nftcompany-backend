@@ -1,4 +1,4 @@
-// import { firestore } from '@base/container';
+// Import { firestore } from '@base/container';
 import { firestore } from 'container';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 
 /**
- * getUserVotes supports 2 queries
+ * GetUserVotes supports 2 queries
  * 1. if a collectionAddress is NOT supplied, all votes by a user will be returned
  * 2. if a collectionAddress IS supplied, the user's vote on that collection along with vote data
  *      for the specified collection will be returned
@@ -32,9 +32,9 @@ export async function getUserVotes(
   try {
     if (collectionAddress) {
       const userVoteInCollection = (await userVotes.doc(collectionAddress).get()).data();
-      // user has not voted  on this collection
+      // User has not voted  on this collection
       if (!userVoteInCollection) {
-        // users must vote before they can see votes
+        // Users must vote before they can see votes
         res.send({});
         return;
       }
@@ -59,7 +59,7 @@ export async function getUserVotes(
 }
 
 /**
- * postUserVote can be used to set/update a user's vote for a collection
+ * PostUserVote can be used to set/update a user's vote for a collection
  */
 export async function postUserVote(
   req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean; chainId: string }>,

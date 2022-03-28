@@ -3,25 +3,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
+import { StatType } from 'stats/stats.types';
 
-export enum StatType {
-  FloorPrice = 'floorPrice',
-  FloorPriceChange = 'floorPricePercentChange',
-
-  CeilPrice = 'ceilPrice',
-  CeilPriceChange = 'ceilPricePercentChange',
-
-  Volume = 'volume',
-  VolumeChange = 'volumePercentChange',
-
-  Sales = 'numSales',
-  SalesChange = 'numSalesPercentChange',
-
-  AveragePrice = 'avgPrice',
-  AveragePriceChange = 'avgPricePercentChange'
-}
-
-export default class RequestCollectionsStatsDto {
+export default class RankingsRequestDto {
   @ApiProperty({
     description: 'Period to get stats for'
   })
@@ -36,7 +20,7 @@ export default class RequestCollectionsStatsDto {
   date: number;
 
   @ApiProperty({
-    description: 'Collection stat to order the collection by'
+    description: 'Stat to order the results by'
   })
   @IsEnum(StatType)
   orderBy: StatType;
@@ -48,7 +32,7 @@ export default class RequestCollectionsStatsDto {
   orderDirection: OrderDirection;
 
   @ApiProperty({
-    description: 'Number of results to get. Max of 50.'
+    description: 'Number of results to get. Max of 50'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 50 }))

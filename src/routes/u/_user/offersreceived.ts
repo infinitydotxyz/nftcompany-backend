@@ -12,7 +12,7 @@ import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/ge
 
 const router = Router();
 
-// fetch offer received by user
+// Fetch offer received by user
 export const getUserOffersReceived = async (
   req: Request<
     { user: string },
@@ -33,7 +33,7 @@ export const getUserOffersReceived = async (
   const { traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
   const startAfterBlueCheck = req.query.startAfterBlueCheck;
 

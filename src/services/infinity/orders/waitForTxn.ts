@@ -26,7 +26,7 @@ export async function waitForTxn(user: any, payload: any) {
   const confirms = 1;
 
   try {
-    // check if valid nftc txn
+    // Check if valid nftc txn
     const isValid = await isValidNftcTxn(origTxnHash, chainId, actionType);
     if (!isValid) {
       error('Invalid NFTC txn', origTxnHash);
@@ -40,13 +40,13 @@ export async function waitForTxn(user: any, payload: any) {
     }
     const receipt = await provider.waitForTransaction(origTxnHash, confirms);
 
-    // check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
+    // Check if txn status is not already updated in firestore by another call - (from the get txns method for instance)
     try {
       const isUpdated = await firestore.db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(origTxnDocRef);
         const status = txnDoc.get('status');
         if (status === 'pending') {
-          // orig txn confirmed
+          // Orig txn confirmed
           log(`Txn: ${origTxnHash} confirmed after ${receipt.confirmations} block(s)`);
           const txnData = JSON.parse(jsonString(receipt));
           const txnSuceeded = txnData.status === 1;
@@ -62,7 +62,7 @@ export async function waitForTxn(user: any, payload: any) {
         if (actionType === 'fulfill') {
           await fulfillOrder(user, batch, payload);
         } else if (actionType === 'cancel') {
-          const docId = payload.orderId.trim(); // preserve case
+          const docId = payload.orderId.trim(); // Preserve case
           const side = +payload.side;
           if (side === 0) {
             await cancelOffer(user, batch, docId);
@@ -77,7 +77,7 @@ export async function waitForTxn(user: any, payload: any) {
     }
   } catch (err) {
     error(`Txn: ${origTxnHash} was rejected`);
-    // if the txn failed, err.receipt.status = 0
+    // If the txn failed, err.receipt.status = 0
     if (err.receipt && err.receipt.status === 0) {
       error(`Txn with hash: ${origTxnHash} rejected`);
       error(err);
@@ -85,7 +85,7 @@ export async function waitForTxn(user: any, payload: any) {
       const txnData = JSON.parse(jsonString(err.receipt));
       batch.set(origTxnDocRef, { status: 'rejected', txnData }, { merge: true });
     }
-    // if the txn failed due to replacement or cancellation or repricing
+    // If the txn failed due to replacement or cancellation or repricing
     if (err?.reason && err.replacement) {
       error(`Txn with hash: ${origTxnHash} rejected with reason ${err.reason}`);
       error(err);
@@ -98,7 +98,7 @@ export async function waitForTxn(user: any, payload: any) {
         payload.txnType = 'replacement';
         batch.set(origTxnDocRef, { status: 'replaced', replaceTxnHash: replacementTxnHash }, { merge: true });
       }
-      // write a new pending txn in firestore
+      // Write a new pending txn in firestore
       log(`Writing replacement txn: ${replacementTxnHash} to firestore`);
       const newTxnDocRef = userTxnCollRef.doc(replacementTxnHash);
       payload.createdAt = Date.now();
@@ -110,12 +110,12 @@ export async function waitForTxn(user: any, payload: any) {
     }
   }
 
-  // commit batch
+  // Commit batch
   log('Committing the big `wait for txn`', origTxnHash, 'batch to firestore');
   batch
     .commit()
     .then(() => {
-      // no op
+      // No op
     })
     .catch((err) => {
       error('Failed to commit pending txn batch');
