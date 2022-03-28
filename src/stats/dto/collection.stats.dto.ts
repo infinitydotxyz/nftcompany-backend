@@ -1,6 +1,6 @@
 import { ChainId, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
-import { SocialsStats } from 'stats/types/stats.types';
+import { SocialsStats } from 'stats/stats.types';
 
 export class CollectionStatsDto implements SocialsStats, Stats {
   @ApiProperty({ description: 'Chain id' })

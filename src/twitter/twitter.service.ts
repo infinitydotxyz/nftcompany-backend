@@ -12,12 +12,7 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
-import {
-  VerifiedMentionTweet,
-  VerifiedMentionIncludes,
-  VerifiedMentionUser,
-  TwitterEndpoint
-} from './types/twitter.types';
+import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
 
 /**
  * Access level is Elevated

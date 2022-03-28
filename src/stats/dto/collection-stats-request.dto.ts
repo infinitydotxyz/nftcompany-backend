@@ -33,7 +33,7 @@ export class CollectionStatsRequest implements RequestCollectionDto {
   @IsEthereumAddress({
     message: 'Invalid address'
   })
-  @Transform(normalizeAddressTransformer())
+  @Transform(normalizeAddressTransformer)
   @IsOptional()
   readonly address?: string;
 
