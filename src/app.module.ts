@@ -10,7 +10,6 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { join } from 'path';
 import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
-import { CollectionsModule } from './collections/collections.module';
 
 @Module({
   imports: [
@@ -24,8 +23,7 @@ import { CollectionsModule } from './collections/collections.module';
     CollectionModule,
     TwitterModule,
     DiscordModule,
-    StatsModule,
-    CollectionsModule
+    StatsModule
   ],
   controllers: [AppController],
   providers: [AppService]

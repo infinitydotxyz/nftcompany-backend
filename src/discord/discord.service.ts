@@ -4,7 +4,8 @@ import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 @Injectable()
 export class DiscordService {
-  client: AxiosInstance;
+  private readonly client: AxiosInstance;
+
   constructor() {
     this.client = axios.create({
       baseURL: 'https://discord.com/api/v9/'
