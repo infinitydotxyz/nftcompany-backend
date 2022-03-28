@@ -9,8 +9,7 @@ import { TwitterService } from '../twitter/twitter.service';
 import { calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection.stats.dto';
-import { PreAggregatedSocialsStats, SocialsStats } from './types/socials.stats.interface';
-import { StatType } from './types/stat-type';
+import { PreAggregatedSocialsStats, SocialsStats, StatType } from './types/stats.types';
 
 @Injectable()
 export class StatsService {
