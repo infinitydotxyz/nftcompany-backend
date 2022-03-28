@@ -34,8 +34,10 @@ function setupSwagger(app: INestApplication, path: string) {
     .setContact('infinity', INFINITY_URL, INFINITY_EMAIL)
     .setVersion('1.0.0')
     .addSecurity('signature', {
-      type: 'http',
+      type: 'apiKey',
       scheme: 'x-auth-signature: <user signed message>, x-auth-message: <original message>',
+      name: 'x-auth-signature',
+      in: 'header',
       description:
         'Pass the user signed messaged in the x-auth-signature header and the message that was signed in the x-auth-message header'
     })
