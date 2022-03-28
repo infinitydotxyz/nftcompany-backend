@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -8,6 +8,7 @@ import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 import { ApiSignatureAuth } from 'api-signature.decorator';
+import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 
 @Controller('user')
 export class UserController {
@@ -23,6 +24,7 @@ export class UserController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
   async GetWatchlist(
     @Query() user: UserDto,
     @Query() query: RankingsRequestDto
