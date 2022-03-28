@@ -22,7 +22,7 @@ export class RequestCollectionDto implements Partial<CollectionViaAddressDto>, P
   @IsEthereumAddress({
     message: 'Invalid address'
   })
-  @Transform(normalizeAddressTransformer())
+  @Transform(normalizeAddressTransformer)
   @IsOptional()
   readonly address?: string;
 

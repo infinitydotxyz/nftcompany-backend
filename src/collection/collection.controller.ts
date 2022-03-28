@@ -7,11 +7,13 @@ import {
   ApiOkResponse,
   ApiOperation
 } from '@nestjs/swagger';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
+import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
 import { CollectionResponseDto } from './dto/collection-response.dto';
@@ -46,6 +48,20 @@ export class CollectionController {
     }
 
     return collection;
+  }
+
+  @Get('rankings')
+  @ApiOperation({
+    description: 'Get stats for collections ordered by a given field',
+    tags: [ApiTag.Collection, ApiTag.Stats]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
+  async getStats(@Query() query: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
+    const res = await this.statsService.getCollectionRankings(query);
+    return res;
   }
 
   /**

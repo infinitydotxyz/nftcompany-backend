@@ -7,7 +7,11 @@ import { FirebaseModuleOptions } from './firebase.types';
 
 @Injectable()
 export class FirebaseService {
-  firestore: FirebaseFirestore.Firestore;
+  private readonly _firestore: FirebaseFirestore.Firestore;
+
+  public get firestore() {
+    return this._firestore;
+  }
 
   constructor(@Inject(FIREBASE_OPTIONS) private options: FirebaseModuleOptions) {
     firebaseAdmin.initializeApp(
@@ -16,7 +20,7 @@ export class FirebaseService {
       },
       options.certName
     );
-    this.firestore = firebaseAdmin.firestore();
+    this._firestore = firebaseAdmin.firestore();
   }
 
   /**

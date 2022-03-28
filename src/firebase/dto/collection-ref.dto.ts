@@ -23,7 +23,7 @@ export class CollectionViaAddressDto {
   @IsEthereumAddress({
     message: 'Invalid address'
   })
-  @Transform(normalizeAddressTransformer())
+  @Transform(normalizeAddressTransformer)
   readonly address: string;
 
   @ApiProperty({

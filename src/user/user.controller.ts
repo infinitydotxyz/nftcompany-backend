@@ -1,12 +1,12 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
-import RankingsRequestDto from 'collections/dto/rankings-request.dto';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
 import { ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 
 @Controller('user')
 export class UserController {

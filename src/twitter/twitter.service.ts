@@ -11,11 +11,8 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
-import { TwitterEndpoint } from './twitter.constants';
-import { VerifiedMentionIncludes } from './types/verified-mention-includes';
-import { VerifiedMentionTweet } from './types/verified-mention-tweet';
-import { VerifiedMentionUser } from './types/verified-mention-user';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
 
 /**
  * Access level is Elevated

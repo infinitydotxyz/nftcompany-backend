@@ -1,5 +1,3 @@
-import { StringBoolean } from './string-boolean';
-
 export interface EnvironmentVariables {
   firestoreTestRoot: string;
   covalentKey: string;
@@ -12,8 +10,4 @@ export interface EnvironmentVariables {
   icyToolsApiKey: string;
   alchemyNftAPiBaseUrlEth: string;
   alchemyNftAPiBaseUrlPolygon: string;
-  TRACE_LOG: StringBoolean;
-  INFO_LOG: StringBoolean;
-  ERROR_LOG: StringBoolean;
-  WARN_LOG: StringBoolean;
 }

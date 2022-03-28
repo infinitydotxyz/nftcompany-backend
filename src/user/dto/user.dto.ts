@@ -12,7 +12,7 @@ export class UserDto {
   @IsEthereumAddress({
     message: 'Invalid address'
   })
-  @Transform(normalizeAddressTransformer())
+  @Transform(normalizeAddressTransformer)
   readonly userAddress: string;
 
   @ApiProperty({

@@ -1,7 +1,7 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
-import RankingsRequestDto from 'collections/dto/rankings-request.dto';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserDto } from './dto/user.dto';

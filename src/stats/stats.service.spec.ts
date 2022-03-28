@@ -7,7 +7,7 @@ import { TwitterService } from 'twitter/twitter.service';
 import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
-import RankingsRequestDto from 'collections/dto/rankings-request.dto';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 import { StatType } from './types/stat-type';
 
 describe('StatsService', () => {

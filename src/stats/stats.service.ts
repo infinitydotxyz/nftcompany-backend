@@ -2,15 +2,14 @@ import { ChainId, Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import RankingsRequestDto from 'collections/dto/rankings-request.dto';
+import RankingsRequestDto from 'collection/dto/rankings-request.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
 import { calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection.stats.dto';
-import { PreAggregatedSocialsStats, SocialsStats } from './types/socials.stats.interface';
-import { StatType } from './types/stat-type';
+import { PreAggregatedSocialsStats, SocialsStats, StatType } from './stats.types';
 
 @Injectable()
 export class StatsService {
