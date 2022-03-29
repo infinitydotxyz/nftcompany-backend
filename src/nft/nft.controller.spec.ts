@@ -6,7 +6,7 @@ describe('NftController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [NftController],
+      controllers: [NftController]
     }).compile();
 
     controller = module.get<NftController>(NftController);

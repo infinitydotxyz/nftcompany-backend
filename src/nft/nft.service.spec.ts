@@ -6,7 +6,7 @@ describe('NftService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [NftService],
+      providers: [NftService]
     }).compile();
 
     service = module.get<NftService>(NftService);

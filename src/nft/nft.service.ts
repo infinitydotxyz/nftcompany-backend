@@ -10,9 +10,9 @@ export class NftService {
   async getNft(nftQuery: NftQueryDto) {
     const collectionDocRef = await this.firebaseService.getCollectionRef(nftQuery as any);
 
-    const nftRef = await collectionDocRef.collection(firestoreConstants.COLLECTION_NFTS_COLL).doc(nftQuery.tokenId);
+    const nftDocRef = collectionDocRef.collection(firestoreConstants.COLLECTION_NFTS_COLL).doc(nftQuery.tokenId);
 
-    const nftSnapshot = await nftRef.get();
+    const [nftSnapshot, collectionSnapshot] = await Promise.all([nftDocRef.get(), collectionDocRef.get()]);
 
     return nftSnapshot.data();
   }
