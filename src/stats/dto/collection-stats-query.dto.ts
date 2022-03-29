@@ -2,11 +2,11 @@ import { ChainId, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsEthereumAddress, IsEnum } from 'class-validator';
-import { RequestCollectionDto } from 'collection/dto/request-collection.dto';
+import { CollectionQueryDto } from 'collection/dto/collection-query.dto';
 import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
-export class CollectionStatsRequest implements RequestCollectionDto {
+export class CollectionStatsQueryDto implements CollectionQueryDto {
   @ApiPropertyOptional({
     description: 'Date to get stats for'
   })

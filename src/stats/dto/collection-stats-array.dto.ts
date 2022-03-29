@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CollectionStatsDto } from './collection.stats.dto';
+import { CollectionStatsDto } from './collection-stats.dto';
 
 export class CollectionStatsArrayResponseDto {
   @ApiProperty({ description: 'Array of collection stats', type: [CollectionStatsDto] })
