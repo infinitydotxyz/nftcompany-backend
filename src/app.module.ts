@@ -11,7 +11,7 @@ import { join } from 'path';
 import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
-import { AssetModule } from './asset/asset.module';
+import { NftModule } from './nft/nft.module';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { AssetModule } from './asset/asset.module';
     DiscordModule,
     StatsModule,
     UserModule,
-    AssetModule
+    NftModule
   ],
   controllers: [AppController],
   providers: [AppService]

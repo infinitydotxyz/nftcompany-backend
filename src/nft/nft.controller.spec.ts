@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AssetController } from './asset.controller';
+import { NftController } from './nft.controller';
 
-describe('AssetController', () => {
-  let controller: AssetController;
+describe('NftController', () => {
+  let controller: NftController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [AssetController]
+      controllers: [NftController],
     }).compile();
 
-    controller = module.get<AssetController>(AssetController);
+    controller = module.get<NftController>(NftController);
   });
 
   it('should be defined', () => {

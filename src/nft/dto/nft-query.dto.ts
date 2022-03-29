@@ -5,7 +5,7 @@ import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
-export class AssetQueryDto {
+export class NftQueryDto {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -35,7 +35,7 @@ export class AssetQueryDto {
   readonly chainId: ChainId;
 
   @ApiProperty({
-    description: 'Token id of the asset to get'
+    description: 'Token id of the nft to get'
   })
   @IsString()
   tokenId: string;
