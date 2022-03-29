@@ -1,8 +1,9 @@
 import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CollectionQueryDto } from './dto/collection-query.dto';
 
 interface CollectionQueryOptions {
   /**
@@ -23,10 +24,29 @@ export default class CollectionService {
     };
   }
 
+  async getCollectionBySlugOrAddress(query: CollectionQueryDto): Promise<Collection> {
+    let collection: Collection | undefined;
+    if (query?.slug) {
+      collection = await this.getCollectionBySlug({ slug: query.slug });
+    } else if (query?.address && query?.chainId) {
+      collection = await this.getCollectionByAddress({ address: query.address, chainId: query.chainId });
+    } else {
+      throw new BadRequestException('Failed to pass address or slug');
+    }
+
+    if (!collection) {
+      throw new NotFoundException(
+        `Failed to find collection with slug: ${query.slug} address: ${query.address} chainId: ${query.chainId}`
+      );
+    }
+
+    return collection;
+  }
+
   /**
    * Queries for a collection via address
    */
-  async getCollectionByAddress(
+  private async getCollectionByAddress(
     collection: { address: string; chainId: string },
     options?: CollectionQueryOptions
   ): Promise<Collection | undefined> {
@@ -49,7 +69,7 @@ export default class CollectionService {
   /**
    * Queries for a collection via slug
    */
-  async getCollectionBySlug(
+  private async getCollectionBySlug(
     collection: CollectionViaSlugDto,
     options?: CollectionQueryOptions
   ): Promise<Collection | undefined> {

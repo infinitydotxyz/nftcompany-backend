@@ -1,5 +1,5 @@
 import { Collection } from '@infinityxyz/lib/types/core';
-import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -12,7 +12,6 @@ import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
-import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
@@ -34,14 +33,7 @@ export class CollectionController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
   async getOne(@Query() query: CollectionQueryDto): Promise<Collection> {
-    let collection: Collection | undefined;
-    if ('slug' in query) {
-      collection = await this.getOneBySlug({ slug: query.slug });
-    } else if ('address' in query) {
-      collection = await this.getOneByAddress({ address: query.address, chainId: query.chainId });
-    } else {
-      throw new BadRequestException({}, 'Failed to pass address or slug');
-    }
+    const collection = this.collectionService.getCollectionBySlugOrAddress(query);
 
     if (!collection) {
       throw new NotFoundException();
@@ -62,36 +54,5 @@ export class CollectionController {
   async getStats(@Query() query: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
     const res = await this.statsService.getCollectionRankings(query);
     return res;
-  }
-
-  /**
-   * Get a single collection by address
-   */
-  private async getOneByAddress({ address, chainId }: CollectionViaAddressDto): Promise<Collection> {
-    const collection = await this.collectionService.getCollectionByAddress({
-      address,
-      chainId
-    });
-
-    if (!collection) {
-      throw new NotFoundException();
-    }
-
-    return collection;
-  }
-
-  /**
-   * Get a single collection by slug
-   */
-  private async getOneBySlug({ slug }: CollectionViaSlugDto): Promise<Collection> {
-    const collection = await this.collectionService.getCollectionBySlug({
-      slug
-    });
-
-    if (!collection) {
-      throw new NotFoundException();
-    }
-
-    return collection;
   }
 }
