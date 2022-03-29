@@ -3,14 +3,14 @@ import {
   Collection,
   CollectionAttributes,
   CollectionMetadata,
-  CreationFlow,
   TokenStandard
 } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
+import { CollectionStateDto } from './collection-state.dto';
 
 type CollectionType = Omit<Collection, 'tokenStandard'> & { tokenStandard: TokenStandard };
 
-export class CollectionResponseDto implements CollectionType {
+export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Collection token standard',
     enum: TokenStandard
@@ -96,9 +96,5 @@ export class CollectionResponseDto implements CollectionType {
   @ApiProperty({
     description: 'Current state of the collection indexing process'
   })
-  state: {
-    version: number;
-    create: { step: CreationFlow; updatedAt: number; error?: Record<string, any>; progress: number };
-    export: { done: boolean };
-  };
+  state: CollectionStateDto;
 }

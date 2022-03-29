@@ -6,7 +6,7 @@ import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class RequestCollectionDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
+export class CollectionQueryDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })

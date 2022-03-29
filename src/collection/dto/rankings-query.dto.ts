@@ -5,7 +5,7 @@ import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 import { StatType } from 'stats/stats.types';
 
-export default class RankingsRequestDto {
+export default class RankingQueryDto {
   @ApiProperty({
     description: 'Period to get stats for',
     enum: StatsPeriod

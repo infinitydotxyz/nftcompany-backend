@@ -6,7 +6,7 @@ import { ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation, ApiUnautho
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
-import RankingsRequestDto from 'collection/dto/rankings-request.dto';
+import RankingsRequestDto from 'collection/dto/rankings-query.dto';
 import { ApiSignatureAuth } from 'api-signature.decorator';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 

@@ -7,7 +7,7 @@ import {
   ApiOkResponse,
   ApiOperation
 } from '@nestjs/swagger';
-import RankingsRequestDto from 'collection/dto/rankings-request.dto';
+import RankingsRequestDto from 'collection/dto/rankings-query.dto';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
@@ -16,8 +16,8 @@ import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/coll
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import { StatsService } from 'stats/stats.service';
 import CollectionService from './collection.service';
-import { CollectionResponseDto } from './dto/collection-response.dto';
-import { RequestCollectionDto } from './dto/request-collection.dto';
+import { CollectionQueryDto } from './dto/collection-query.dto';
+import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collection')
 export class CollectionController {
@@ -28,12 +28,12 @@ export class CollectionController {
     tags: [ApiTag.Collection],
     description: 'Get a single collection by address and chain id or by slug'
   })
-  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionResponseDto })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
-  async getOne(@Query() query: RequestCollectionDto): Promise<Collection> {
+  async getOne(@Query() query: CollectionQueryDto): Promise<Collection> {
     let collection: Collection | undefined;
     if ('slug' in query) {
       collection = await this.getOneBySlug({ slug: query.slug });
