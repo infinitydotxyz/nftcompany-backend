@@ -1,11 +1,12 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
 import { IsSupportedChainId } from 'common/decorators/is-supported-chain-id';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
+import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class CollectionViaSlugDto {
+export class CollectionQueryDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -13,10 +14,8 @@ export class CollectionViaSlugDto {
     message: 'Invalid slug'
   })
   @IsOptional()
-  readonly slug: string;
-}
+  readonly slug?: string;
 
-export class CollectionViaAddressDto {
   @ApiPropertyOptional({
     description: 'Collection Address'
   })
@@ -24,16 +23,15 @@ export class CollectionViaAddressDto {
     message: 'Invalid address'
   })
   @Transform(normalizeAddressTransformer)
-  readonly address: string;
+  @IsOptional()
+  readonly address?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Collection chain id',
     enum: ChainId
   })
   @IsSupportedChainId({
     message: 'Invalid chainId'
   })
-  readonly chainId: ChainId;
+  readonly chainId?: ChainId;
 }
-
-export type CollectionRefDto = CollectionViaAddressDto | CollectionViaSlugDto;

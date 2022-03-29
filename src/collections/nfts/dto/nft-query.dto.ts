@@ -1,20 +1,11 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
-import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
+import { IsEthereumAddress, IsString } from 'class-validator';
+import { IsSupportedChainId } from 'common/decorators/is-supported-chain-id';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
 export class NftQueryDto {
-  @ApiPropertyOptional({
-    description: 'Collection Slug'
-  })
-  @IsString({
-    message: 'Invalid slug'
-  })
-  @IsOptional()
-  readonly slug?: string;
-
   @ApiPropertyOptional({
     description: 'Collection Address'
   })
@@ -22,8 +13,7 @@ export class NftQueryDto {
     message: 'Invalid address'
   })
   @Transform(normalizeAddressTransformer)
-  @IsOptional()
-  readonly address?: string;
+  readonly address: string;
 
   @ApiProperty({
     description: 'Collection chain id',

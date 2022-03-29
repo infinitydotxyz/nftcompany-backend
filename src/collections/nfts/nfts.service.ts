@@ -1,18 +1,18 @@
 import { CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import CollectionService from 'collection/collection.service';
-import { CollectionDto } from 'collection/dto/collection.dto';
+import CollectionsService from 'collections/collections.service';
+import { CollectionDto } from 'collections/dto/collection.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { NftQueryDto } from './dto/nft-query.dto';
 import { NftDto } from './dto/nft.dto';
 
 @Injectable()
-export class NftService {
-  constructor(private firebaseService: FirebaseService, private collectionService: CollectionService) {}
+export class NftsService {
+  constructor(private firebaseService: FirebaseService, private collectionsService: CollectionsService) {}
 
   async getNft(nftQuery: NftQueryDto): Promise<NftDto> {
-    const collection: CollectionDto = await this.collectionService.getCollectionBySlugOrAddress(nftQuery);
+    const collection: CollectionDto = await this.collectionsService.getCollectionBySlugOrAddress(nftQuery);
 
     const collectionDocId = getCollectionDocId({ collectionAddress: collection.address, chainId: collection.chainId });
 

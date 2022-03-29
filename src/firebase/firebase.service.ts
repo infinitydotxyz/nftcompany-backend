@@ -27,10 +27,11 @@ export class FirebaseService {
    * Get a reference to a collection via a address + chainId or slug
    */
   async getCollectionRef(collectionRefProps: CollectionRefDto) {
-    if ('slug' in collectionRefProps) {
+    if ('slug' in collectionRefProps && collectionRefProps?.slug) {
       const docQuery = this.firestore
         .collection(firestoreConstants.COLLECTIONS_COLL)
-        .where('slug', '==', collectionRefProps.slug);
+        .where('slug', '==', collectionRefProps.slug)
+        .select('address', 'chainId', 'slug');
 
       const results = await docQuery.get();
       const doc = results.docs?.[0];
@@ -38,7 +39,7 @@ export class FirebaseService {
         throw new NotFoundException('Failed to find collection via slug');
       }
       return doc.ref;
-    } else if ('address' in collectionRefProps) {
+    } else if ('address' in collectionRefProps && collectionRefProps?.address && collectionRefProps?.chainId) {
       const docId = getCollectionDocId({
         collectionAddress: collectionRefProps.address,
         chainId: collectionRefProps.chainId

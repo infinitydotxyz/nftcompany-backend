@@ -15,7 +15,7 @@ interface CollectionQueryOptions {
 }
 
 @Injectable()
-export default class CollectionService {
+export default class CollectionsService {
   constructor(private firebaseService: FirebaseService) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {

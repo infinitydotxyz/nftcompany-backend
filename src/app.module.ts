@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { LoggerMiddleware } from 'logger.middleware';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { CollectionModule } from './collection/collection.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './firebase/firebase.module';
 import { StatsModule } from './stats/stats.module';
@@ -11,7 +10,7 @@ import { join } from 'path';
 import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
-import { NftModule } from './nft/nft.module';
+import { CollectionsModule } from 'collections/collections.module';
 
 @Module({
   imports: [
@@ -22,12 +21,11 @@ import { NftModule } from './nft/nft.module';
     FirebaseModule.forRoot({
       cert: serviceAccount
     }),
-    CollectionModule,
+    CollectionsModule,
     TwitterModule,
     DiscordModule,
     StatsModule,
-    UserModule,
-    NftModule
+    UserModule
   ],
   controllers: [AppController],
   providers: [AppService]

@@ -1,12 +1,17 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEthereumAddress, IsOptional, IsString } from 'class-validator';
-import { IsSupportedChainId } from 'common/decorators/IsSupportedChainId';
+import { IsString, IsOptional, IsEthereumAddress, IsArray, IsEnum } from 'class-validator';
+import { IsSupportedChainId } from 'common/decorators/is-supported-chain-id';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
-import { CollectionViaAddressDto, CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 
-export class CollectionQueryDto implements Partial<CollectionViaAddressDto>, Partial<CollectionViaSlugDto> {
+enum ActivityType {
+  Transfer = 'transfer',
+  Sale = 'sale',
+  Offer = 'offer'
+}
+
+export class NftActivityQuery {
   @ApiPropertyOptional({
     description: 'Collection Slug'
   })
@@ -26,12 +31,25 @@ export class CollectionQueryDto implements Partial<CollectionViaAddressDto>, Par
   @IsOptional()
   readonly address?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Collection chain id',
     enum: ChainId
   })
   @IsSupportedChainId({
     message: 'Invalid chainId'
   })
-  readonly chainId?: ChainId;
+  readonly chainId: ChainId;
+
+  @ApiProperty({
+    description: 'Token id of the nft to get'
+  })
+  @IsString()
+  tokenId: string;
+
+  @ApiProperty({
+    description: 'Activity types to include in the response'
+  })
+  @IsArray()
+  @IsEnum(ActivityType, { each: true })
+  eventTypes: ActivityType[];
 }
