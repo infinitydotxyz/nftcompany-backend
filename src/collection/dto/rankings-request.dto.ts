@@ -7,7 +7,8 @@ import { StatType } from 'stats/stats.types';
 
 export default class RankingsRequestDto {
   @ApiProperty({
-    description: 'Period to get stats for'
+    description: 'Period to get stats for',
+    enum: StatsPeriod
   })
   @IsEnum(StatsPeriod)
   period: StatsPeriod;
@@ -20,13 +21,15 @@ export default class RankingsRequestDto {
   date: number;
 
   @ApiProperty({
-    description: 'Stat to order the results by'
+    description: 'Stat to order the results by',
+    enum: StatType
   })
   @IsEnum(StatType)
   orderBy: StatType;
 
   @ApiProperty({
-    description: 'Direction to order by'
+    description: 'Direction to order by',
+    enum: OrderDirection
   })
   @IsEnum(OrderDirection)
   orderDirection: OrderDirection;

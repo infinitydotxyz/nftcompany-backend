@@ -16,6 +16,15 @@ export class StatsService {
   private readonly socialsGroup = firestoreConstants.COLLECTION_SOCIALS_STATS_COLL;
   private readonly statsGroup = firestoreConstants.COLLECTION_STATS_COLL;
 
+  private socialsStats = [
+    StatType.DiscordFollowers,
+    StatType.DiscordFollowersPercentChange,
+    StatType.DiscordPresence,
+    StatType.DiscordPresencePercentChange,
+    StatType.TwitterFollowers,
+    StatType.TwitterFollowersPercentChange
+  ];
+
   constructor(
     private discordService: DiscordService,
     private twitterService: TwitterService,
@@ -23,10 +32,8 @@ export class StatsService {
   ) {}
 
   async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
-    const primaryStatsCollectionName = this.getStatsCollectionName(queryOptions.orderBy);
-    const secondaryStatsCollectionName =
-      primaryStatsCollectionName === this.statsGroup ? this.socialsGroup : this.statsGroup;
-    const timestamp = getStatsDocInfo(queryOptions.date, queryOptions.period).timestamp;
+    const { primary: primaryStatsCollectionName, secondary: secondaryStatsCollectionName } =
+      this.getStatsCollectionNames(queryOptions.orderBy);
 
     const query = {
       ...queryOptions,
@@ -35,20 +42,9 @@ export class StatsService {
 
     const primaryStats = await this.getPrimaryStats(query, primaryStatsCollectionName);
 
-    const secondaryStatsPromises = primaryStats.data.map(async (item) => {
-      return new Promise((resolve, reject) => {
-        const address = item.collectionAddress;
-        const chainId = item.chainId;
-        this.firebaseService
-          .getCollectionRef({ address, chainId })
-          .then((collectionRef) => {
-            return this.getMostRecentStats(collectionRef, secondaryStatsCollectionName, query.period, timestamp);
-          })
-          .then((mostRecentStats) => {
-            resolve(mostRecentStats);
-          })
-          .catch(reject);
-      });
+    const timestamp = getStatsDocInfo(queryOptions.date, queryOptions.period).timestamp;
+    const secondaryStatsPromises = primaryStats.data.map(async (primaryStat) => {
+      return this.getSecondaryStats(primaryStat, secondaryStatsCollectionName, query.period, timestamp);
     });
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
@@ -57,7 +53,8 @@ export class StatsService {
       const secondaryPromiseResult = secondaryStats[index];
 
       const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-      const merged = this.mergeStats(primary, secondary);
+      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+      const merged = this.mergeStats(primary, secondary, collection);
       return merged;
     });
 
@@ -73,9 +70,44 @@ export class StatsService {
     };
   }
 
+  async getCollectionStats(
+    collection: { address: string; chainId: ChainId },
+    options: { period: StatsPeriod; date: number }
+  ) {
+    const collectionRef = await this.firebaseService.getCollectionRef(collection);
+    const stats = await this.getCollectionStatsForPeriod(collectionRef, this.statsGroup, options.period, options.date);
+    const socialStats = await this.getCollectionStatsForPeriod(
+      collectionRef,
+      this.socialsGroup,
+      options.period,
+      options.date
+    );
+    const collectionStats = this.mergeStats(stats, socialStats, collection);
+    return collectionStats;
+  }
+
+  private async getSecondaryStats(
+    primaryStat: Stats | SocialsStats,
+    secondaryStatsCollectionName: string,
+    period: StatsPeriod,
+    timestamp: number
+  ) {
+    const address = primaryStat.collectionAddress;
+    const chainId = primaryStat.chainId as ChainId;
+    const collectionRef = await this.firebaseService.getCollectionRef({ address, chainId });
+    const mostRecentStats = await this.getCollectionStatsForPeriod(
+      collectionRef,
+      secondaryStatsCollectionName,
+      period,
+      timestamp
+    );
+    return mostRecentStats;
+  }
+
   private mergeStats(
     primary: Partial<SocialsStats> & Partial<Stats>,
-    secondary: Partial<SocialsStats> & Partial<Stats>
+    secondary: Partial<SocialsStats> & Partial<Stats>,
+    collection: { chainId: ChainId; address: string }
   ): CollectionStatsDto {
     const mergeStat = (primary?: number, secondary?: number) => {
       if (typeof primary === 'number' && !Number.isNaN(primary)) {
@@ -88,8 +120,8 @@ export class StatsService {
     };
 
     const mergedStats: CollectionStatsDto = {
-      chainId: (primary?.chainId ?? secondary?.chainId ?? '') as ChainId,
-      collectionAddress: primary?.collectionAddress ?? secondary?.collectionAddress ?? '',
+      chainId: collection.chainId,
+      collectionAddress: collection.address,
       floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
       prevFloorPrice: mergeStat(primary?.prevFloorPrice, secondary?.prevFloorPrice),
       floorPricePercentChange: mergeStat(primary?.floorPricePercentChange, secondary?.floorPricePercentChange),
@@ -184,7 +216,7 @@ export class StatsService {
     return { data: collectionStats, cursor };
   }
 
-  async getMostRecentStats(
+  async getCollectionStatsForPeriod(
     collectionRef: FirebaseFirestore.DocumentReference,
     statsCollectionName: string,
     period: StatsPeriod,
@@ -414,16 +446,10 @@ export class StatsService {
     return stats as SocialsStats | undefined;
   }
 
-  private getStatsCollectionName(statType: StatType) {
-    const socialsStats = [
-      StatType.DiscordFollowers,
-      StatType.DiscordFollowersPercentChange,
-      StatType.DiscordPresence,
-      StatType.DiscordPresencePercentChange,
-      StatType.TwitterFollowers,
-      StatType.TwitterFollowersPercentChange
-    ];
-    const collectionGroupName = socialsStats.includes(statType) ? this.socialsGroup : this.statsGroup;
-    return collectionGroupName;
+  private getStatsCollectionNames(statType: StatType) {
+    const collectionGroupNames = this.socialsStats.includes(statType)
+      ? { primary: this.socialsGroup, secondary: this.statsGroup }
+      : { primary: this.statsGroup, secondary: this.socialsGroup };
+    return collectionGroupNames;
   }
 }
