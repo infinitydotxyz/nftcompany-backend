@@ -17,11 +17,28 @@ import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-arra
 import { StatsService } from 'stats/stats.service';
 import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe';
 import CollectionsService from './collections.service';
+import { CollectionHistoricalStatsQueryDto } from './dto/collection-historical-stats-query.dto';
+import { CollectionSearchArrayDto } from './dto/collection-search-array.dto';
+import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
 export class CollectionsController {
   constructor(private collectionsService: CollectionsService, private statsService: StatsService) {}
+
+  @Get('search')
+  @ApiOperation({
+    description: 'Search for a collection by name',
+    tags: [ApiTag.Collection]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionSearchArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async searchByName(@Query() search: CollectionSearchQueryDto) {
+    const response = await this.collectionsService.searchByName(search);
+
+    return response;
+  }
 
   @Get('rankings')
   @ApiOperation({
@@ -57,5 +74,24 @@ export class CollectionsController {
     }
 
     return collection;
+  }
+
+  @Get('/:id/stats')
+  @ApiOperation({
+    tags: [ApiTag.Collection, ApiTag.Stats],
+    description: 'Get historical stats for a single collection'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionHistoricalStats(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Query() query: CollectionHistoricalStatsQueryDto
+  ): Promise<CollectionStatsArrayResponseDto> {
+    const response = await this.statsService.getCollectionHistoricalStats(collection, query);
+
+    return response;
   }
 }

@@ -2,6 +2,8 @@ import { ChainId, Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ParsedCollectionId } from 'collections/collection-id.pipe';
+import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
@@ -66,6 +68,67 @@ export class StatsService {
     return {
       data: combinedStats,
       cursor: primaryStats.cursor,
+      hasNextPage
+    };
+  }
+
+  async getCollectionHistoricalStats(
+    collection: ParsedCollectionId,
+    query: CollectionHistoricalStatsQueryDto
+  ): Promise<CollectionStatsArrayResponseDto> {
+    const startAfterCursorStr = base64Decode(query.cursor);
+    const startAfterCursor = startAfterCursorStr ? parseInt(startAfterCursorStr, 10) : '';
+
+    const minDate = query.minDate;
+    const maxDate = query.maxDate;
+    const orderDirection = query.orderDirection;
+    const limit = query.limit;
+    const period = query.period;
+
+    const minTimestamp = getStatsDocInfo(minDate, period).timestamp;
+    const maxTimestamp = getStatsDocInfo(maxDate, period).timestamp;
+
+    let statsQuery = collection.ref
+      .collection(this.statsGroup)
+      .where('period', '==', period)
+      .where('timestamp', '<=', maxTimestamp)
+      .where('timestamp', '>=', minTimestamp)
+      .orderBy('timestamp', orderDirection);
+    if (typeof startAfterCursor === 'number' && !Number.isNaN(startAfterCursor)) {
+      statsQuery = statsQuery.startAfter(startAfterCursor);
+    }
+    statsQuery = statsQuery.limit(limit + 1); // +1 to check if there are more results
+
+    const stats = (await statsQuery.get()).docs.map((item) => item.data()) as Stats[];
+
+    const secondaryStatsPromises = stats.map(async (primaryStat) => {
+      return this.getSecondaryStats(primaryStat, this.socialsGroup, query.period, primaryStat.timestamp);
+    });
+
+    const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
+
+    const combinedStats = stats.map((primary, index) => {
+      const secondaryPromiseResult = secondaryStats[index];
+
+      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+      const merged = this.mergeStats(primary, secondary, {
+        chainId: collection.chainId as ChainId,
+        address: collection.address
+      });
+      return merged;
+    });
+
+    const hasNextPage = stats.length >= limit;
+    if (hasNextPage) {
+      combinedStats.pop(); // Remove the item that was added to check if there are more results
+    }
+    const cursorTimestamp = combinedStats?.[combinedStats?.length - 1]?.timestamp;
+    const cursor = base64Encode(cursorTimestamp ? `${cursorTimestamp}` : '');
+
+    return {
+      data: combinedStats,
+      cursor,
       hasNextPage
     };
   }
