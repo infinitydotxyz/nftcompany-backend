@@ -1,11 +1,15 @@
-import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
+import { Collection, CreationFlow, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId, getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CollectionStatsDto } from 'stats/dto/collection-stats.dto';
+import { StatsService } from 'stats/stats.service';
 import { base64Decode, base64Encode } from 'utils';
+import { ParsedCollectionId } from './collection-id.pipe';
 import { CollectionQueryDto } from './dto/collection-query.dto';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
+import { CollectionStatsQueryDto } from './dto/collection-stats-query.dto';
 
 interface CollectionQueryOptions {
   /**
@@ -18,7 +22,7 @@ interface CollectionQueryOptions {
 
 @Injectable()
 export default class CollectionsService {
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {
     return {
@@ -88,6 +92,33 @@ export default class CollectionsService {
       cursor,
       hasNextPage
     };
+  }
+
+  async getCollectionStatsByPeriod(
+    collection: ParsedCollectionId,
+    query: CollectionStatsQueryDto
+  ): Promise<Record<StatsPeriod, CollectionStatsDto>> {
+    const date = query.date ?? Date.now();
+
+    const periods = Array.isArray(query.period) ? query.period : [query.period];
+
+    const statPromises = periods.map((period) => {
+      return this.statsService.getCollectionStats(
+        { chainId: collection.chainId, address: collection.address },
+        { period, date }
+      );
+    });
+
+    const stats = await Promise.all(statPromises);
+
+    const response: Record<StatsPeriod, CollectionStatsDto> = periods.reduce((acc: any, item: StatsPeriod, index) => {
+      return {
+        ...acc,
+        [item]: stats[index]
+      };
+    }, {} as any);
+
+    return response;
   }
 
   /**

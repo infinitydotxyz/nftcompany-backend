@@ -19,6 +19,8 @@ import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe'
 import CollectionsService from './collections.service';
 import { CollectionSearchArrayDto } from './dto/collection-search-array.dto';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
+import { CollectionStatsByPeriod } from './dto/collection-stats-by-period.dto';
+import { CollectionStatsQueryDto } from './dto/collection-stats-query.dto';
 import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
@@ -73,5 +75,25 @@ export class CollectionsController {
     }
 
     return collection;
+  }
+
+  @Get('/:id/stats')
+  @ApiOperation({
+    tags: [ApiTag.Collection],
+    description:
+      'Get stats for a single collection. Only periods included in the query will be returned in the response'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsByPeriod })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionStats(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Query() query: CollectionStatsQueryDto
+  ): Promise<any> {
+    const response = await this.collectionsService.getCollectionStatsByPeriod(collection, query);
+
+    return response;
   }
 }

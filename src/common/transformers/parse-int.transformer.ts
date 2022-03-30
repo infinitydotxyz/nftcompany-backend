@@ -26,12 +26,18 @@ interface ParseIntTransformerOptions {
    * Inclusive
    */
   max?: number;
+
+  optional?: boolean;
 }
 
 export function parseIntTransformer(options?: ParseIntTransformerOptions) {
   return (params: TransformFnParams) => {
     const base = options?.base ?? 10;
     const parsed = parseInt(params.value, base);
+
+    if (!params.value && options?.optional) {
+      return undefined;
+    }
 
     if (!options?.allowNaN && Number.isNaN(parsed)) {
       throw new BadRequestException(`${params.key} must be a base: ${base} integer`);
