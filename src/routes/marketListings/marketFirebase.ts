@@ -136,6 +136,7 @@ export const sellOrdersWithParams = async (
     .collection(fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
     .collection('orders')
+    // SNG how do I search nfts for collectionName?
     .where('collectionAddress.address', 'in', collectionAddresses)
     .get();
 
