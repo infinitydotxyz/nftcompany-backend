@@ -3,8 +3,6 @@ import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
 import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
-import { ParsedQs } from 'qs';
-import { error } from '@infinityxyz/lib/utils';
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -19,18 +17,13 @@ export function deepCopy(object: any) {
 }
 
 export function bn(num: BigNumber.Value) {
-  // @ts-expect-error not sure
+  // @ts-expect-error not sure, why do we not use BigNumber from ethers utils?
   const bigNum = BigNumber(num);
-  // Console.log(num + '   ====== bigNUm ' + bigNum);
-  // Console.log(__line);
   return bigNum;
 }
 
 export function toFixed5(num: BigNumber.Value) {
-  // eslint-disable-next-line no-undef
-  // Console.log(__line);
   return +bn(num).toFixed(5);
-  // Return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 export function getUniqueItemsByProperties<T>(items: List<T> | null | undefined, property: string) {
@@ -54,56 +47,6 @@ export function getWeekNumber(d: Date) {
 export function getNextWeek(weekNumber: number, year: number) {
   const nextWeek = (weekNumber + 1) % 53;
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
-}
-
-// Validate api inputs; return a StatusCode if error;
-// Example: validateInputs({ user, listType }, ['user']) // require 'user'
-interface validateInputsProps {
-  listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
-  ids?: string; // Comma separated string of ids.
-  user?: string | undefined;
-  sourceName?: string | undefined;
-  chain?: string | undefined;
-  chainId?: string | undefined;
-  tokenAddress?: string | undefined;
-  tokenId?: string | undefined;
-}
-
-export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType, chain, tokenAddress } = props;
-
-  for (const requiredProp of requiredProps) {
-    if (!props[requiredProp]) {
-      error(`Required input: ${requiredProp}`);
-      return StatusCode.BadRequest;
-    }
-  }
-
-  if (
-    listType &&
-    listType !== ListingType.FixedPrice &&
-    listType !== ListingType.DutchAuction &&
-    listType !== ListingType.EnglishAuction
-  ) {
-    error(`Input error - invalid list type: ${listType as string}`);
-    return StatusCode.BadRequest;
-  }
-
-  if (chain) {
-    const chainId = getChainId(chain);
-    const provider = getProvider(chainId);
-    if (!provider) {
-      error('Invalid chainId ', chain);
-      return StatusCode.BadRequest;
-    }
-  }
-
-  if (tokenAddress && !tokenAddress.startsWith('0x')) {
-    error(`Invalid tokenAddress`, tokenAddress);
-    return StatusCode.BadRequest;
-  }
-
-  return 0;
 }
 
 export function getPaymentTokenAddress(listingType?: string, chainId?: string): string | undefined {
