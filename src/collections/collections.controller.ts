@@ -17,11 +17,27 @@ import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-arra
 import { StatsService } from 'stats/stats.service';
 import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe';
 import CollectionsService from './collections.service';
+import { CollectionSearchArrayDto } from './dto/collection-search-array.dto';
+import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
 export class CollectionsController {
   constructor(private collectionsService: CollectionsService, private statsService: StatsService) {}
+
+  @Get('search')
+  @ApiOperation({
+    description: 'Search for a collection by name',
+    tags: [ApiTag.Collection]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionSearchArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async searchByName(@Query() search: CollectionSearchQueryDto) {
+    const response = await this.collectionsService.searchByName(search);
+
+    return response;
+  }
 
   @Get('rankings')
   @ApiOperation({
