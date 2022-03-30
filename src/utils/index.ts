@@ -1,8 +1,11 @@
-import { getChainId, getProvider } from './ethers';
 import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
-import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
+import { ListingType } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
+
+export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
+
+export const base64Decode = (data?: string) => Buffer.from(data ?? '', 'base64').toString();
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
