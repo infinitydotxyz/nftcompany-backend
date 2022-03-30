@@ -17,10 +17,9 @@ import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-arra
 import { StatsService } from 'stats/stats.service';
 import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe';
 import CollectionsService from './collections.service';
+import { CollectionHistoricalStatsQueryDto } from './dto/collection-historical-stats-query.dto';
 import { CollectionSearchArrayDto } from './dto/collection-search-array.dto';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
-import { CollectionStatsByPeriod } from './dto/collection-stats-by-period.dto';
-import { CollectionStatsQueryDto } from './dto/collection-stats-query.dto';
 import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
@@ -79,20 +78,19 @@ export class CollectionsController {
 
   @Get('/:id/stats')
   @ApiOperation({
-    tags: [ApiTag.Collection],
-    description:
-      'Get stats for a single collection. Only periods included in the query will be returned in the response'
+    tags: [ApiTag.Collection, ApiTag.Stats],
+    description: 'Get historical stats for a single collection'
   })
-  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsByPeriod })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
-  async getCollectionStats(
+  async getCollectionHistoricalStats(
     @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Query() query: CollectionStatsQueryDto
-  ): Promise<any> {
-    const response = await this.collectionsService.getCollectionStatsByPeriod(collection, query);
+    @Query() query: CollectionHistoricalStatsQueryDto
+  ): Promise<CollectionStatsArrayResponseDto> {
+    const response = await this.statsService.getCollectionHistoricalStats(collection, query);
 
     return response;
   }
