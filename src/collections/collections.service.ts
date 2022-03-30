@@ -3,6 +3,7 @@ import { firestoreConstants, getCollectionDocId, getEndCode, getSearchFriendlySt
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CollectionViaSlugDto } from 'firebase/dto/collection-ref.dto';
 import { FirebaseService } from 'firebase/firebase.service';
+import { StatsService } from 'stats/stats.service';
 import { base64Decode, base64Encode } from 'utils';
 import { CollectionQueryDto } from './dto/collection-query.dto';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';

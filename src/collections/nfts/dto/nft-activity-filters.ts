@@ -12,7 +12,7 @@ export class NftActivityFilters {
     type: [ActivityType]
   })
   @IsEnumArray(ActivityType, { message: 'Invalid event type' })
-  eventType: ActivityType;
+  eventType: ActivityType[];
 
   @ApiProperty({
     description: 'Max number of events to get. Max of 50'

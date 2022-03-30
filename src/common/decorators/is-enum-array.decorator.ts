@@ -11,13 +11,13 @@ export function IsEnumArray<T extends object>(enumValue: T, validationOptions?: 
         validate(value: any) {
           const enumArray = Object.values(enumValue);
 
-          if (typeof value === 'string') {
+          if (!Array.isArray(value)) {
             return enumArray.includes(value);
-          } else {
-            for (const v of value) {
-              if (!enumArray.includes(v)) {
-                return false;
-              }
+          }
+
+          for (const v of value) {
+            if (!enumArray.includes(v)) {
+              return false;
             }
           }
 
