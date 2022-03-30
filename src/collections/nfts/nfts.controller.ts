@@ -1,4 +1,3 @@
-import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Controller, Get, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
