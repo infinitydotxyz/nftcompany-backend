@@ -6,6 +6,10 @@ import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
 import { error } from '@infinityxyz/lib/utils';
 
+export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
+
+export const base64Decode = (data?: string) => Buffer.from(data ?? '', 'base64').toString();
+
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
     setTimeout(() => {

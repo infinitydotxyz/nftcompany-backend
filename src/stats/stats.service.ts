@@ -6,7 +6,7 @@ import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
-import { calcPercentChange } from '../utils';
+import { base64Decode, base64Encode, calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection-stats.dto';
 import { PreAggregatedSocialsStats, SocialsStats, StatType } from './stats.types';
@@ -181,7 +181,8 @@ export class StatsService {
 
     let startAfter;
     if (queryOptions.cursor) {
-      const [chainId, address] = queryOptions.cursor.split(':');
+      const decodedCursor = base64Decode(queryOptions.cursor);
+      const [chainId, address] = decodedCursor.split(':');
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)
         .where('timestamp', '==', timestamp)
@@ -211,7 +212,7 @@ export class StatsService {
     const cursorInfo = collectionStats[collectionStats.length - 1];
     let cursor = '';
     if (cursorInfo?.chainId && cursorInfo?.collectionAddress) {
-      cursor = `${cursorInfo.chainId}:${cursorInfo.collectionAddress}`;
+      cursor = base64Encode(`${cursorInfo.chainId}:${cursorInfo.collectionAddress}`);
     }
     return { data: collectionStats, cursor };
   }

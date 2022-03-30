@@ -5,6 +5,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import CollectionsService from 'collections/collections.service';
 import { CollectionDto } from 'collections/dto/collection.dto';
 import { FirebaseService } from 'firebase/firebase.service';
+import { base64Decode, base64Encode } from 'utils';
 import { NftActivityFilters } from './dto/nft-activity-filters';
 import { NftActivity } from './dto/nft-activity.dto';
 import { NftQueryDto } from './dto/nft-query.dto';
@@ -44,9 +45,6 @@ export class NftsService {
   }
 
   async getNftActivity(nftQuery: NftQueryDto, filter: NftActivityFilters) {
-    const encodeCursor = (cursor: string) => Buffer.from(cursor).toString('base64');
-    const decodeCursor = (cursor: string) => Buffer.from(cursor, 'base64').toString();
-
     const eventTypes = typeof filter.eventType === 'string' ? [filter.eventType] : filter.eventType;
     const events = eventTypes?.map((item) => activityTypeToEventType[item]).filter((item) => !!item);
     let activityQuery = this.firebaseService.firestore
@@ -58,7 +56,7 @@ export class NftsService {
       .orderBy('timestamp', 'desc');
 
     if (filter.cursor) {
-      const decodedCursor = parseInt(decodeCursor(filter.cursor), 10);
+      const decodedCursor = parseInt(base64Decode(filter.cursor), 10);
       activityQuery = activityQuery.startAfter(decodedCursor);
     }
 
@@ -103,7 +101,7 @@ export class NftsService {
     }
 
     const rawCursor = `${activities?.[activities?.length - 1]?.timestamp ?? ''}`;
-    const cursor = encodeCursor(rawCursor);
+    const cursor = base64Encode(rawCursor);
 
     return {
       data: activities,
