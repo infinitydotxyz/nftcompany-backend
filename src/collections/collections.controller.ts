@@ -1,16 +1,15 @@
 import { Collection } from '@infinityxyz/lib/types/core';
-import { Controller, Get, NotFoundException, Param, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiOperation,
-  ApiParam
+  ApiOperation
 } from '@nestjs/swagger';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ApiTag } from 'common/api-tags';
-import { ApiParamCollectionId } from 'common/decorators/api-param-collection-id';
+import { ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
@@ -49,7 +48,7 @@ export class CollectionsController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
   async getOne(
-    @ApiParamCollectionId('id', ParseCollectionIdPipe) { chainId, address }: ParsedCollectionId
+    @ParamCollectionId('id', ParseCollectionIdPipe) { chainId, address }: ParsedCollectionId
   ): Promise<Collection> {
     const collection = this.collectionsService.getCollectionBySlugOrAddress({ chainId, address });
 
