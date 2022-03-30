@@ -10,7 +10,7 @@ export const ParamCollectionId = createParamDecorator(
   [
     (target: any, key: string) => {
       ApiParam({
-        name: 'Collection Id',
+        name: 'id',
         description: 'The id of the collection',
         required: true,
         examples: {

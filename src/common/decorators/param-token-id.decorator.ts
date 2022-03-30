@@ -10,7 +10,7 @@ export const ParamTokenId = createParamDecorator(
   [
     (target: any, key: string) => {
       ApiParam({
-        name: 'TokenId',
+        name: 'tokenId',
         description: 'The token id of the nft',
         required: true,
         example: '8880',
