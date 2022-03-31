@@ -6,6 +6,7 @@ import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
+import { fstrCnstnts } from '../../../../constants';
 
 /**
  * getUserVotes supports 2 queries
@@ -27,7 +28,7 @@ export async function getUserVotes(
     return;
   }
 
-  const userVotes = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL);
+  const userVotes = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL);
 
   try {
     if (collectionAddress) {
@@ -82,7 +83,7 @@ export async function postUserVote(
   };
 
   try {
-    const userVotesCollRef = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL).doc(collectionAddress);
+    const userVotesCollRef = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL).doc(collectionAddress);
 
     const batch = firestore.db.batch();
 
@@ -91,7 +92,7 @@ export async function postUserVote(
     const userCollectionVotesRef = firestore
       .collection(firestoreConstants.COLLECTIONS_COLL)
       .doc(getCollectionDocId(collection))
-      .collection(firestoreConstants.VOTES_COLL)
+      .collection(fstrCnstnts.VOTES_COLL)
       .doc(user);
     batch.set(userCollectionVotesRef, voteObj);
 

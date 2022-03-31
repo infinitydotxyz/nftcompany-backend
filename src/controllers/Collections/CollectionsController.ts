@@ -3,7 +3,7 @@ import { InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter'
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
-import { MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '../../constants';
+import { fstrCnstnts, MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '../../constants';
 import {
   DiscordSnippet,
   TwitterSnippet,
@@ -334,7 +334,7 @@ async function countVotes(collection: { collectionAddress: string; chainId: stri
   const votesRef = firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
     .doc(getCollectionDocId(collection))
-    .collection(firestoreConstants.VOTES_COLL);
+    .collection(fstrCnstnts.VOTES_COLL);
 
   const stream = votesRef.stream();
 
