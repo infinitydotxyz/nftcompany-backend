@@ -66,7 +66,7 @@ export class CollectionsController {
   async getOne(
     @ParamCollectionId('id', ParseCollectionIdPipe) { chainId, address }: ParsedCollectionId
   ): Promise<Collection> {
-    const collection = this.collectionsService.getCollectionBySlugOrAddress({ chainId, address });
+    const collection = await this.collectionsService.getCollectionByAddress({ chainId, address });
 
     if (!collection) {
       throw new NotFoundException();

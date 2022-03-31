@@ -344,7 +344,7 @@ export class StatsService {
       address = parsedAddress;
       chainId = parsedChainId;
       if (!address || !chainId) {
-        throw new NotFoundException(`Failed to find a collection with address: ${address} and chainId: ${chainId}`);
+        return;
       }
     }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -38,6 +38,12 @@ export class NftsController {
     @ParamTokenId('tokenId') tokenId: string
   ) {
     const nft = await this.nftService.getNft({ address, chainId, tokenId });
+    if (!nft) {
+      throw new NotFoundException(
+        `Failed to find nft with address: ${address}, chainId: ${chainId} and tokenId: ${tokenId}`
+      );
+    }
+
     return nft;
   }
 

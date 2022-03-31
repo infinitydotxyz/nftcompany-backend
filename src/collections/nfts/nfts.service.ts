@@ -1,7 +1,7 @@
 import { ChainId, CreationFlow } from '@infinityxyz/lib/types/core';
 import { FeedEventType, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import CollectionsService from 'collections/collections.service';
 import { CollectionDto } from 'collections/dto/collection.dto';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -16,15 +16,13 @@ import { ActivityType, activityTypeToEventType } from './nft-activity.types';
 export class NftsService {
   constructor(private firebaseService: FirebaseService, private collectionsService: CollectionsService) {}
 
-  async getNft(nftQuery: NftQueryDto): Promise<NftDto> {
-    const collection: CollectionDto = await this.collectionsService.getCollectionBySlugOrAddress(nftQuery);
+  async getNft(nftQuery: NftQueryDto): Promise<NftDto | undefined> {
+    const collection: CollectionDto = await this.collectionsService.getCollectionByAddress(nftQuery);
 
     const collectionDocId = getCollectionDocId({ collectionAddress: collection.address, chainId: collection.chainId });
 
     if (collection?.state?.create?.step !== CreationFlow.Complete || !collectionDocId) {
-      throw new NotFoundException(
-        `Failed to find collection with address: ${nftQuery.address} and chainId: ${nftQuery.chainId}`
-      );
+      return undefined;
     }
 
     const nftDocRef = this.firebaseService.firestore
@@ -36,10 +34,6 @@ export class NftsService {
     const nftSnapshot = await nftDocRef.get();
 
     const nft = nftSnapshot.data() as NftDto | undefined;
-
-    if (!nft) {
-      throw new NotFoundException(`Failed to find nft with tokenId: ${nftQuery.tokenId}`);
-    }
 
     return nft;
   }
