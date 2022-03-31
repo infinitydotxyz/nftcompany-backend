@@ -7,6 +7,8 @@ import { UserDto } from 'user/dto/user.dto';
 import { base64Decode, base64Encode } from 'utils';
 import { CollectionVotesDto } from './dto/collection-votes.dto';
 import { UserCollectionVoteDto } from './dto/user-collection-vote.dto';
+import { UserCollectionVotesArrayDto } from './dto/user-collection-votes-array.dto';
+import { UserCollectionVotesQuery } from './dto/user-collection-votes-query.dto';
 import { collectionVotesShards } from './votes.constants';
 
 @Injectable()
@@ -91,7 +93,7 @@ export class VotesService {
     });
   }
 
-  async getUserVotes(user: UserDto, options: { limit?: number; cursor?: string }) {
+  async getUserVotes(user: UserDto, options: UserCollectionVotesQuery): Promise<UserCollectionVotesArrayDto> {
     const votesGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_VOTES_COLL);
     let votesQuery = votesGroup
       .where('userAddress', '==', user.userAddress)

@@ -10,12 +10,16 @@ import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ApiSignatureAuth } from 'api-signature.decorator';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { VotesService } from 'votes/votes.service';
+import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
+import { ParamUserId } from 'common/decorators/param-user-id.decorator';
+import { ParseUserIdPipe } from './user-id.pipe';
+import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService, private votesService: VotesService) {}
 
-  @Get('watchlist')
+  @Get(':userId/watchlist')
   @ApiOperation({
     description: "Get a user's watchlist",
     tags: [ApiTag.User, ApiTag.Stats]
@@ -26,8 +30,8 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
-  async GetWatchlist(
-    @Query() user: UserDto, // TODO this should not be a query param
+  async getWatchlist(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
     @Query() query: RankingsRequestDto
   ): Promise<CollectionStatsArrayResponseDto> {
     const watchlist = await this.userService.getUserWatchlist(user, query);
@@ -41,14 +45,18 @@ export class UserController {
     return response;
   }
 
-  // @Get('collections/votes')
-  // @ApiSignatureAuth()
-  // @UseGuards(new AuthGuard())
-  // @ApiOperation({
-  //   Description: "Get a user's votes",
-  //   Tags: [ApiTag.User, ApiTag.Votes]
-  // })
-  // Async getUserCollectionVotes(@Param() user: UserDto, query: VotesRequest) {
-  //   Const userVotes = this.votesService.getUserVotes();
-  // }
+  @Get(':userId/collections/votes')
+  @ApiSignatureAuth()
+  @UseGuards(new AuthGuard())
+  @ApiOperation({
+    description: "Get a user's votes on collections",
+    tags: [ApiTag.User, ApiTag.Votes]
+  })
+  async getUserCollectionVotes(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Query() query: UserCollectionVotesQuery
+  ): Promise<UserCollectionVotesArrayDto> {
+    const userVotes = await this.votesService.getUserVotes(user, query);
+    return userVotes;
+  }
 }

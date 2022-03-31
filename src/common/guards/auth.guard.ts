@@ -13,8 +13,8 @@ export class AuthGuard implements CanActivate {
       try {
         signature = JSON.parse(request.headers['x-auth-signature']);
         signingAddress = trimLowerCase(ethers.utils.verifyMessage(message, signature));
-
-        userAddress = trimLowerCase(request.query.userAddress);
+        const [, address] = request.params.userId.split(':').map((item) => trimLowerCase(item));
+        userAddress = address;
       } catch (err) {
         return false;
       }

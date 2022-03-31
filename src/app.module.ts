@@ -11,7 +11,6 @@ import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
-import { VotesService } from './votes/votes.service';
 
 @Module({
   imports: [
@@ -29,7 +28,7 @@ import { VotesService } from './votes/votes.service';
     UserModule
   ],
   controllers: [AppController],
-  providers: [AppService, VotesService]
+  providers: [AppService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
