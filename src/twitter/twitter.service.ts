@@ -1,10 +1,8 @@
-import { Concrete } from '@infinityxyz/lib/types/core';
 import {
   InfinityTweet,
   InfinityTwitterAccount,
   SearchResponse,
-  TwitterUserResponse,
-  User
+  TwitterUserResponse
 } from '@infinityxyz/lib/types/services/twitter';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +11,10 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
+import { PaginatedQuery } from 'common/dto/paginated-query.dto';
+import { base64Decode, base64Encode } from 'utils';
+import { TweetDto } from './dto/tweet.dto';
+import { TweetArrayDto } from './dto/tweet-array.dto';
 
 /**
  * Access level is Elevated
@@ -44,16 +46,64 @@ export class TwitterService {
     return `https://twitter.com/${username}`;
   }
 
-  async saveMentions(collectionRef: FirebaseFirestore.DocumentReference, tweets: InfinityTweet[]) {
+  async saveCollectionMentions(collectionRef: FirebaseFirestore.DocumentReference, tweets: InfinityTweet[]) {
     const mentionsCollection = collectionRef.collection(firestoreConstants.COLLECTION_MENTIONS_COLL);
     const batch = this.firebaseService.firestore.batch();
 
     for (const tweet of tweets) {
-      const tweetRef = mentionsCollection.doc(tweet.tweetId);
+      const tweetRef = mentionsCollection.doc(tweet.author.id); // Only store one tweet per author
       batch.set(tweetRef, tweet);
     }
 
     await batch.commit();
+  }
+
+  async getCollectionTopMentions(
+    collectionRef: FirebaseFirestore.DocumentReference,
+    query: PaginatedQuery
+  ): Promise<TweetArrayDto> {
+    const mentionsRef = collectionRef.collection(firestoreConstants.COLLECTION_MENTIONS_COLL);
+
+    const limit = query.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
+
+    let startAfterCursor;
+    if (query.cursor) {
+      try {
+        startAfterCursor = JSON.parse(base64Decode(query.cursor));
+      } catch (e) {}
+    }
+
+    let topMentionsQuery = mentionsRef.orderBy('author.followersCount', 'desc').orderBy('author.id');
+
+    if (startAfterCursor?.id && startAfterCursor?.followersCount) {
+      topMentionsQuery = topMentionsQuery.startAfter(startAfterCursor.followersCount, startAfterCursor.id);
+    }
+
+    topMentionsQuery = topMentionsQuery.limit(limit + 1); // +1 to check if there are more results
+
+    const topMentionsSnapshot = await topMentionsQuery.get();
+
+    const topMentions = topMentionsSnapshot.docs.map((doc) => doc.data()) as TweetDto[];
+
+    const hasNextPage = topMentions.length > limit;
+
+    if (hasNextPage) {
+      topMentions.pop(); // Remove the last item used to check for more results
+    }
+
+    const lastItem = topMentions?.[topMentions?.length - 1];
+    const cursor = base64Encode(
+      JSON.stringify({
+        Id: lastItem?.author.id,
+        FollowersCount: lastItem?.author.followersCount
+      })
+    );
+
+    return {
+      data: topMentions,
+      cursor,
+      hasNextPage
+    };
   }
 
   /**
@@ -98,7 +148,7 @@ export class TwitterService {
           query,
           expansions: 'author_id,entities.mentions.username',
           'tweet.fields': 'public_metrics,created_at',
-          'user.fields': 'public_metrics'
+          'user.fields': 'public_metrics,profile_image_url'
         }
       });
     const body = response.data;
@@ -118,14 +168,15 @@ export class TwitterService {
    * Get a specific user
    */
   private async getUser(username: string) {
-    const response: AxiosResponse<
-      TwitterUserResponse<Concrete<Pick<User, 'id' | 'public_metrics' | 'name' | 'username'>>>
-    > = await this.client.get(TwitterEndpoint.Users, {
-      params: {
-        usernames: username,
-        'user.fields': 'public_metrics'
+    const response: AxiosResponse<TwitterUserResponse<VerifiedMentionUser>> = await this.client.get(
+      TwitterEndpoint.Users,
+      {
+        params: {
+          usernames: username,
+          'user.fields': 'public_metrics'
+        }
       }
-    });
+    );
 
     const body = response.data;
 
@@ -145,7 +196,8 @@ export class TwitterService {
       followersCount: user.public_metrics.followers_count ?? 0,
       followingCount: user.public_metrics.following_count ?? 0,
       tweetCount: user.public_metrics.tweet_count ?? 0,
-      listedCount: user.public_metrics.listed_count ?? 0
+      listedCount: user.public_metrics.listed_count ?? 0,
+      profileImageUrl: user.profile_image_url ?? ''
     };
     return account;
   }
@@ -162,7 +214,8 @@ export class TwitterService {
           followersCount: user?.public_metrics?.followers_count ?? 0,
           followingCount: user?.public_metrics?.following_count ?? 0,
           tweetCount: user?.public_metrics.tweet_count ?? 0,
-          listedCount: user?.public_metrics.listed_count ?? 0
+          listedCount: user?.public_metrics.listed_count ?? 0,
+          profileImageUrl: user?.profile_image_url ?? ''
         };
         const createdAt = new Date(tweet.created_at).getTime();
         return {

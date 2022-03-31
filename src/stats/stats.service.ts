@@ -418,7 +418,7 @@ export class StatsService {
     const twitterResponse = twitterPromiseResult.status === 'fulfilled' ? twitterPromiseResult.value : undefined;
 
     if (twitterResponse?.tweets?.length) {
-      void this.twitterService.saveMentions(collectionRef, twitterResponse?.tweets);
+      void this.twitterService.saveCollectionMentions(collectionRef, twitterResponse?.tweets);
     }
 
     const discordStats: Pick<
