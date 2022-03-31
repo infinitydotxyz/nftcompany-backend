@@ -15,6 +15,8 @@ import { CacheControlInterceptor } from 'common/interceptors/cache-control.inter
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import { StatsService } from 'stats/stats.service';
+import { CollectionVotesDto } from 'votes/dto/collection-votes.dto';
+import { VotesService } from 'votes/votes.service';
 import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe';
 import CollectionsService from './collections.service';
 import { CollectionHistoricalStatsQueryDto } from './dto/collection-historical-stats-query.dto';
@@ -24,7 +26,11 @@ import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
 export class CollectionsController {
-  constructor(private collectionsService: CollectionsService, private statsService: StatsService) {}
+  constructor(
+    private collectionsService: CollectionsService,
+    private statsService: StatsService,
+    private votesService: VotesService
+  ) {}
 
   @Get('search')
   @ApiOperation({
@@ -90,6 +96,24 @@ export class CollectionsController {
     @Query() query: CollectionHistoricalStatsQueryDto
   ): Promise<CollectionStatsArrayResponseDto> {
     const response = await this.statsService.getCollectionHistoricalStats(collection, query);
+
+    return response;
+  }
+
+  @Get('/:id/votes')
+  @ApiOperation({
+    tags: [ApiTag.Collection, ApiTag.Votes],
+    description: 'Get votes for a single collection'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionVotesDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionVotes(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<CollectionVotesDto> {
+    const response = await this.votesService.getCollectionVotes(collection);
 
     return response;
   }

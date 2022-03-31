@@ -11,6 +11,7 @@ import { TwitterModule } from './twitter/twitter.module';
 import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
+import { VotesModule } from './votes/votes.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { CollectionsModule } from 'collections/collections.module';
     TwitterModule,
     DiscordModule,
     StatsModule,
-    UserModule
+    UserModule,
+    VotesModule
   ],
   controllers: [AppController],
   providers: [AppService]
