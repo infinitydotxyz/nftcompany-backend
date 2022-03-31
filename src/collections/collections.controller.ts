@@ -83,6 +83,25 @@ export class CollectionsController {
     return collection;
   }
 
+  @Get('/:id/stats')
+  @ApiOperation({
+    tags: [ApiTag.Collection, ApiTag.Stats],
+    description: 'Get historical stats for a single collection'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionHistoricalStats(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Query() query: CollectionHistoricalStatsQueryDto
+  ): Promise<CollectionStatsArrayResponseDto> {
+    const response = await this.statsService.getCollectionHistoricalStats(collection, query);
+
+    return response;
+  }
+
   @Get('/:id/stats/:date')
   @ApiOperation({
     tags: [ApiTag.Collection, ApiTag.Stats],
@@ -99,25 +118,6 @@ export class CollectionsController {
     @Query() query: CollectionStatsQueryDto
   ): Promise<CollectionStatsByPeriodDto> {
     const response = await this.statsService.getCollectionStatsByPeriodAndDate(collection, date, query.periods);
-
-    return response;
-  }
-
-  @Get('/:id/stats')
-  @ApiOperation({
-    tags: [ApiTag.Collection, ApiTag.Stats],
-    description: 'Get historical stats for a single collection'
-  })
-  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
-  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
-  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
-  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
-  @UseInterceptors(new CacheControlInterceptor())
-  async getCollectionHistoricalStats(
-    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Query() query: CollectionHistoricalStatsQueryDto
-  ): Promise<CollectionStatsArrayResponseDto> {
-    const response = await this.statsService.getCollectionHistoricalStats(collection, query);
 
     return response;
   }

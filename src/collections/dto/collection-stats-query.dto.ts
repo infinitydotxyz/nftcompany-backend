@@ -10,7 +10,7 @@ export class CollectionStatsQueryDto {
     enum: StatsPeriod,
     type: [StatsPeriod]
   })
-  @IsEnumArray(StatsPeriod)
+  @IsEnumArray(StatsPeriod, { message: 'Invalid periods' })
   @Transform(arrayTransformer)
   periods: StatsPeriod[];
 }
