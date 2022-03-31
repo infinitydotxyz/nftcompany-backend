@@ -2,11 +2,10 @@ import { trimLowerCase, jsonString, firestoreConstants } from '@infinityxyz/lib/
 import { Request, Response } from 'express';
 import { validateInputs } from 'utils';
 import { BaseFeedEvent } from '@infinityxyz/lib/types/core/feed';
-import { fetchUserFollows } from './collectionFollows';
+import { fetchFollowingCollectionsByUser } from './collectionFollows';
 import { firestore } from 'container';
 
 const QUERY_ARRAY_IN_LIMIT = 10; // limit of Firestore where-in-array items.
-const QUERY_BY_COLLECTIONS_LIMIT = 999;
 
 const flattenArray = (array) => array.reduce((x, y) => x.concat(y.docs), []);
 
@@ -31,7 +30,7 @@ export const getUserFeed = async (
     return;
   }
 
-  const follows = await fetchUserFollows(user, QUERY_BY_COLLECTIONS_LIMIT);
+  const follows = await fetchFollowingCollectionsByUser(user);
   const followAddresses = follows.map((item) => item.address);
   const eventsRef = firestore.db.collection(firestoreConstants.FEED_COLL);
 
@@ -55,7 +54,7 @@ export const getUserFeed = async (
 
   // to enable cdn cache
   res.set({
-    'Cache-Control': 'must-revalidate, max-age=30',
+    'Cache-Control': 'must-revalidate, max-age=60',
     'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
   });
   res.send(resp);
