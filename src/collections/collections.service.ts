@@ -12,7 +12,7 @@ interface CollectionQueryOptions {
   /**
    * Only show collections that have been fully indexed
    *
-   * defaults to true
+   * Defaults to `true`.
    */
   limitToCompleteCollections: boolean;
 }
