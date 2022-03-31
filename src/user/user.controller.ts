@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -26,7 +26,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
   async GetWatchlist(
-    @Query() user: UserDto,
+    @Query() user: UserDto, // TODO this should not be a query param
     @Query() query: RankingsRequestDto
   ): Promise<CollectionStatsArrayResponseDto> {
     const watchlist = await this.userService.getUserWatchlist(user, query);
@@ -39,4 +39,14 @@ export class UserController {
 
     return response;
   }
+
+  // @Get('collections/votes')
+  // @ApiOperation({
+  //   Description: "Get a user's votes",
+  //   Tags: [ApiTag.User, ApiTag.Votes]
+  // })
+  // Async getUserCollectionVotes() {
+
+  // }
+  // }
 }
