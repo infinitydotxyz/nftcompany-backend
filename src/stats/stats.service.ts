@@ -1,7 +1,7 @@
 import { ChainId, Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';

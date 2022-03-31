@@ -30,7 +30,9 @@ export const getNftDetails = async (
 
     if (doc.exists) {
       const docData = doc.data();
-      if (!docData) return;
+      if (!docData) {
+        return;
+      }
       const imageUrl = docData?.image?.url || docData?.image?.originalUrl;
       const respStr = JSON.stringify({ imageUrl });
       res.set({
