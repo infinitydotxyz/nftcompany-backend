@@ -8,6 +8,7 @@ import { FirebaseModuleOptions } from './firebase.types';
 @Injectable()
 export class FirebaseService {
   private readonly _firestore: FirebaseFirestore.Firestore;
+  public readonly firestoreNamespace = firebaseAdmin.firestore;
 
   public static readonly DEFAULT_ITEMS_PER_PAGE = 50;
 

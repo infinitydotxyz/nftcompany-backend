@@ -1,8 +1,14 @@
-import { Controller, Get, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
-import { ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiUnauthorizedResponse
+} from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
@@ -14,6 +20,8 @@ import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-arr
 import { ParamUserId } from 'common/decorators/param-user-id.decorator';
 import { ParseUserIdPipe } from './user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
+import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
+import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
 
 @Controller('user')
 export class UserController {
@@ -52,11 +60,39 @@ export class UserController {
     description: "Get a user's votes on collections",
     tags: [ApiTag.User, ApiTag.Votes]
   })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionVotesArrayDto })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
   async getUserCollectionVotes(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
     @Query() query: UserCollectionVotesQuery
   ): Promise<UserCollectionVotesArrayDto> {
     const userVotes = await this.votesService.getUserVotes(user, query);
     return userVotes;
+  }
+
+  @Post(':userId/collections/votes')
+  @ApiSignatureAuth()
+  @UseGuards(new AuthGuard())
+  @ApiOperation({
+    description: "Update a user's vote on a collection",
+    tags: [ApiTag.User, ApiTag.Votes]
+  })
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async saveUserCollectionVote(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() vote: UserCollectionVoteBodyDto
+  ): Promise<void> {
+    const userVote: UserCollectionVoteDto = {
+      ...vote,
+      userAddress: user.userAddress,
+      userChainId: user.userChainId,
+      updatedAt: Date.now()
+    };
+    await this.votesService.saveUserCollectionVote(userVote);
   }
 }

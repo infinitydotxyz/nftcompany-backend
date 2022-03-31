@@ -39,13 +39,13 @@ export class VotesService {
     return totalVotes;
   }
 
-  async saveCollectionVote(vote: UserCollectionVoteDto) {
+  async saveUserCollectionVote(vote: UserCollectionVoteDto) {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: vote.collectionChainId,
       address: vote.collectionAddress
     });
 
-    this.firebaseService.firestore.runTransaction(async (tx) => {
+    await this.firebaseService.firestore.runTransaction(async (tx) => {
       const userVoteDoc = collectionRef
         .collection(firestoreConstants.COLLECTION_VOTES_COLL)
         .doc(VotesService.getVoteDocId(vote));
@@ -67,6 +67,7 @@ export class VotesService {
           collectionChainId: vote.collectionChainId
         };
         shardData = initialShard;
+        tx.set(shard, initialShard); // Create shard
       }
 
       if (!currentVote.exists) {
@@ -74,8 +75,8 @@ export class VotesService {
         tx.set(userVoteDoc, vote);
         tx.update(shard, {
           ...shardData,
-          votesFor: FirebaseFirestore.FieldValue.increment(vote.votedFor ? 1 : 0),
-          votesAgainst: FirebaseFirestore.FieldValue.increment(vote.votedFor ? 0 : 1)
+          votesFor: this.firebaseService.firestoreNamespace.FieldValue.increment(vote.votedFor ? 1 : 0),
+          votesAgainst: this.firebaseService.firestoreNamespace.FieldValue.increment(vote.votedFor ? 0 : 1)
         });
         return;
       }
@@ -87,8 +88,8 @@ export class VotesService {
 
       tx.set(userVoteDoc, vote);
       tx.update(shard, {
-        votesFor: FirebaseFirestore.FieldValue.increment(vote.votedFor ? 1 : -1),
-        votesAgainst: FirebaseFirestore.FieldValue.increment(vote.votedFor ? -1 : 1)
+        votesFor: this.firebaseService.firestoreNamespace.FieldValue.increment(vote.votedFor ? 1 : -1),
+        votesAgainst: this.firebaseService.firestoreNamespace.FieldValue.increment(vote.votedFor ? -1 : 1)
       });
     });
   }
