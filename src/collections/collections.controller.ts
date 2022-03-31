@@ -35,9 +35,8 @@ export class CollectionsController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async searchByName(@Query() search: CollectionSearchQueryDto) {
-    const response = await this.collectionsService.searchByName(search);
-
-    return response;
+    const res = await this.collectionsService.searchByName(search);
+    return res;
   }
 
   @Get('rankings')
