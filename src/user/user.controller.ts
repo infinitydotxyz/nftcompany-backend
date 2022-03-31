@@ -1,4 +1,15 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+  UseInterceptors
+} from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -22,6 +33,7 @@ import { ParseUserIdPipe } from './user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 
 @Controller('user')
 export class UserController {
@@ -93,6 +105,14 @@ export class UserController {
       userChainId: user.userChainId,
       updatedAt: Date.now()
     };
-    await this.votesService.saveUserCollectionVote(userVote);
+
+    try {
+      await this.votesService.saveUserCollectionVote(userVote);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
   }
 }

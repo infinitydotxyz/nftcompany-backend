@@ -1,6 +1,8 @@
-import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
+import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { UserDto } from 'user/dto/user.dto';
@@ -14,7 +16,7 @@ import { collectionVotesShards } from './votes.constants';
 @Injectable()
 export class VotesService {
   private static getVoteDocId(user: UserDto) {
-    return `${user.userChainId}:${trimLowerCase(user.userAddress)}`;
+    return `${user.userChainId}:${user.userAddress}`;
   }
 
   private static getShardDocId(shardNumber: number) {
@@ -39,11 +41,20 @@ export class VotesService {
     return totalVotes;
   }
 
-  async saveUserCollectionVote(vote: UserCollectionVoteDto) {
+  async saveUserCollectionVote(vote: UserCollectionVoteDto): Promise<void> {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: vote.collectionChainId,
       address: vote.collectionAddress
     });
+
+    const collection = (await collectionRef.get()).data();
+    if (collection?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(
+        vote.collectionAddress,
+        vote.collectionChainId,
+        'Collection is not fully indexed'
+      );
+    }
 
     await this.firebaseService.firestore.runTransaction(async (tx) => {
       const userVoteDoc = collectionRef
@@ -96,18 +107,19 @@ export class VotesService {
 
   async getUserVotes(user: UserDto, options: UserCollectionVotesQuery): Promise<UserCollectionVotesArrayDto> {
     const votesGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_VOTES_COLL);
+    const orderDirection = options.orderDirection ?? OrderDirection.Descending;
     let votesQuery = votesGroup
       .where('userAddress', '==', user.userAddress)
       .where('userChainId', '==', user.userChainId)
-      .orderBy('updatedAt', 'desc');
+      .orderBy('updatedAt', orderDirection);
 
     const decodedCursor = parseInt(base64Decode(options.cursor), 10);
     if (!Number.isNaN(decodedCursor)) {
-      votesQuery = votesGroup.startAfter(decodedCursor);
+      votesQuery = votesQuery.startAfter(decodedCursor);
     }
 
     const limit = options?.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
-    votesQuery = votesGroup.limit(limit + 1);
+    votesQuery = votesQuery.limit(limit + 1);
     const votesSnapshot = await votesQuery.get();
     const votes = votesSnapshot.docs.map((item) => item.data() as UserCollectionVoteDto);
 
@@ -115,6 +127,7 @@ export class VotesService {
 
     if (hasNextPage) {
       votes.pop();
+      votesSnapshot.docs.pop();
     }
 
     const rawCursor = votes?.[votes?.length - 1]?.updatedAt;
