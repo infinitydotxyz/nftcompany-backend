@@ -9,6 +9,10 @@ export interface ExpiredCacheItem {
   order: OBOrder;
 }
 
+interface SellOrderSave extends OBOrder {
+  collectionAddresses: string[];
+}
+
 export const deleteOrder = async (isBuyOrder: boolean, listId: MarketListIdType, orderId: string): Promise<void> => {
   if (orderId) {
     const collection = await firestore.db
@@ -136,8 +140,8 @@ export const sellOrdersWithParams = async (
     .collection(fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
     .collection('orders')
-    // SNG how do I search nfts for collectionName?
-    .where('collectionAddress.address', 'in', collectionAddresses)
+    // collectionAddresses is added on save, it's not part of the OBOrder
+    .where('collectionAddresses', 'array-contains-any', collectionAddresses)
     .get();
 
   if (result.docs) {
@@ -175,8 +179,16 @@ export const saveSellOrder = async (listId: MarketListIdType, sellOrder: OBOrder
   // set id to hash
   sellOrder.id = orderHash(sellOrder);
 
-  const doc = collection.doc(sellOrder.id);
-  await doc.set(sellOrder);
+  // add collectionAddresses which is used for queries
+  const collectionAddresses: string[] = [];
+  for (const nft of sellOrder.nfts) {
+    collectionAddresses.push(nft.collection);
+  }
+  const saveOrder = sellOrder as SellOrderSave;
+  saveOrder.collectionAddresses = collectionAddresses;
+
+  const doc = collection.doc(saveOrder.id);
+  await doc.set(saveOrder);
 
   return (await doc.get()).data() as OBOrder;
 };
