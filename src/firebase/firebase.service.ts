@@ -9,6 +9,8 @@ import { FirebaseModuleOptions } from './firebase.types';
 export class FirebaseService {
   private readonly _firestore: FirebaseFirestore.Firestore;
 
+  public static readonly DEFAULT_ITEMS_PER_PAGE = 50;
+
   public get firestore() {
     return this._firestore;
   }
