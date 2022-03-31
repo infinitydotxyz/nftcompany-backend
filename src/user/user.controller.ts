@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
@@ -9,10 +9,11 @@ import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-arra
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ApiSignatureAuth } from 'api-signature.decorator';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
+import { VotesService } from 'votes/votes.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private votesService: VotesService) {}
 
   @Get('watchlist')
   @ApiOperation({
@@ -41,12 +42,13 @@ export class UserController {
   }
 
   // @Get('collections/votes')
+  // @ApiSignatureAuth()
+  // @UseGuards(new AuthGuard())
   // @ApiOperation({
   //   Description: "Get a user's votes",
   //   Tags: [ApiTag.User, ApiTag.Votes]
   // })
-  // Async getUserCollectionVotes() {
-
-  // }
+  // Async getUserCollectionVotes(@Param() user: UserDto, query: VotesRequest) {
+  //   Const userVotes = this.votesService.getUserVotes();
   // }
 }
