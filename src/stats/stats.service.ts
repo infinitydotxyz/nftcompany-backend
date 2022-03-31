@@ -5,7 +5,6 @@ import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
 import { CollectionStatsByPeriodDto } from 'collections/dto/collection-stats-by-period.dto';
-import { CollectionStatsQueryDto } from 'collections/dto/collection-stats-query.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';

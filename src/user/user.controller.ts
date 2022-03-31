@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  NotFoundException,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-  UseInterceptors
-} from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
