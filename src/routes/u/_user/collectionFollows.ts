@@ -1,8 +1,26 @@
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error, trimLowerCase, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
+
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { CollectionFollow } from '@infinityxyz/lib/types/core/Follows';
+
+// fetch collections that a user follows.
+export const fetchFollowingCollectionsByUser = async (userAddress: string, limit = 0) => {
+  const follows = getUserInfoRef(userAddress).collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
+
+  let followDocs;
+  if (limit) {
+    followDocs = await follows.limit(limit).get();
+  } else {
+    followDocs = await follows.get();
+  }
+  const result: FirebaseFirestore.DocumentData[] = [];
+  for (const doc of followDocs.docs) {
+    result.push(doc.data() as CollectionFollow);
+  }
+  return result;
+};
 
 export const getCollectionFollows = async (
   req: Request<
@@ -16,22 +34,14 @@ export const getCollectionFollows = async (
   res: Response
 ) => {
   const user = trimLowerCase(req.params.user);
-  const limit = +req.query.limit ?? 50;
+  const limit = +req.query.limit ?? 0;
 
   if (!user) {
     error('Invalid input');
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-
-  const follows = getUserInfoRef(user).collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
-
-  const followDocs = await follows.limit(limit).get();
-
-  const result: FirebaseFirestore.DocumentData[] = [];
-  for (const doc of followDocs.docs) {
-    result.push(doc.data() as CollectionFollow);
-  }
+  const result = await fetchFollowingCollectionsByUser(user, limit);
 
   const resp = jsonString(result);
   // to enable cdn cache
