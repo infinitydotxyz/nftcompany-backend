@@ -7,19 +7,19 @@ export const metadataKey = 'params';
  *
  * @example
  *
- * You have a URL like `http://localhost:3030/1:0x123456789/watchlist` that returns the user's NFT collection watchlist.
+ * You have a URL like `http://localhost:3030/users/1:0x123456789/watchlist` that returns the user's NFT collection watchlist.
  * In order to verify that the user that's requesting this resource is the owner of the account int the URL, your code would (minimally) look like this:
  * ```
  * \@Get(':userId/watchlist')
- * \@ApiSignatureAuth()
- * \@UseGuards(new AuthGuard())
+ * \@UseGuards(AuthGuard)
  * \@MatchSigner('userId')
- * async getWatchlist()
+ * async getWatchlist() {}
  * ```
  *
  * In this example, `AuthGuard` will know to look for the `userId` in the query params and check if it matches the signing address.
+ * If you were to omit the `MatchSigner` decorator, it would just check whether the signature is valid.
  *
- * You can also specify multiple params to validate, if necessary.
+ * You can also specify multiple params to validate, if that would ever be necessary.
  * @param params Names of the url query parameters.
  * @returns
  */
