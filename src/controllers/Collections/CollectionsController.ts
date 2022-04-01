@@ -3,18 +3,17 @@ import { InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter'
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
 import { firestore } from 'container';
-import { MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '../../constants';
+import { fstrCnstnts, MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '../../constants';
 import {
-  CollectionInfo,
   DiscordSnippet,
   TwitterSnippet,
-  CollectionData,
   UpdateCollectionDataRequest,
   Keys,
   Links,
   WithTimestamp,
   StatusCode,
-  Collection
+  Collection,
+  BaseCollection
 } from '@infinityxyz/lib/types/core';
 import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
@@ -69,7 +68,7 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
   try {
     log('Fetching collection info for', slugOrAddress);
 
-    let collectionInfo: CollectionInfo | undefined;
+    let collectionInfo: BaseCollection | undefined;
     /**
      * Get base collection info
      */
@@ -82,12 +81,12 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
       collectionInfo = data?.[0];
     }
 
-    if (!collectionInfo?.name) {
+    if (!collectionInfo?.address) {
       res.sendStatus(StatusCode.NotFound);
       return;
     }
 
-    let collectionData: CollectionData | undefined;
+    let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
       collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
     }
@@ -116,8 +115,9 @@ export async function getCollectionInformationForEditor(
 ) {
   const address = trimLowerCase(req.params.collection);
   const chainId = req.params.chainId;
-  const editorType = res.locals.authType;
-  const isCreator = editorType === CollectionAuthType.Creator;
+  // TODO: editorType and isCreator are still being used?
+  // Const editorType = res.locals.authType;
+  // Const isCreator = editorType === CollectionAuthType.Creator;
 
   /**
    * This can be used for controlling permissions based on if the
@@ -136,7 +136,7 @@ export async function getCollectionInformationForEditor(
      * Get base collection info
      */
     const collectionInfo = await getCollectionInfoByAddress({ chainId, address });
-    let collectionData: CollectionData | undefined;
+    let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
       collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
     }
@@ -144,11 +144,12 @@ export async function getCollectionInformationForEditor(
     /**
      * Creator clicked edit button for the first time
      */
-    if (!collectionData?.isClaimed && isCreator) {
-      const collectionDocId = `${chainId}:${address}`;
-      const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionDocId);
-      await collectionInfoRef.set({ isClaimed: true }, { merge: true });
-    }
+    // TODO: .isClaimed is still being used?
+    // If (!collectionData?.isClaimed && isCreator) {
+    //   Const collectionDocId = `${chainId}:${address}`;
+    //   Const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionDocId);
+    //   Await collectionInfoRef.set({ isClaimed: true }, { merge: true });
+    // }
 
     const respStr = jsonString(collectionData ?? {});
     // To enable cdn cache
@@ -273,8 +274,8 @@ export async function postCollectionInformation(
   }
 }
 
-async function getCollectionDataFromCollectionInfo(collectionInfo: CollectionInfo) {
-  const collectionData: CollectionData = {
+async function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollection) {
+  const collectionData: BaseCollection = {
     ...collectionInfo
   };
   const collection = {
@@ -284,30 +285,30 @@ async function getCollectionDataFromCollectionInfo(collectionInfo: CollectionInf
 
   const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
   let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
-  if (collectionData?.links?.discord) {
-    discordSnippetPromise = getDiscordSnippet(collection, collectionData.links.discord);
+  if (collectionData?.metadata?.links?.discord) {
+    discordSnippetPromise = getDiscordSnippet(collection, collectionData.metadata?.links.discord);
     promises.push(discordSnippetPromise);
   }
 
   let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
-  if (collectionData?.links?.twitter) {
-    twitterSnippetPromise = getTwitterSnippet(collection, collectionData.links.twitter);
+  if (collectionData?.metadata?.links?.twitter) {
+    twitterSnippetPromise = getTwitterSnippet(collection, collectionData.metadata?.links.twitter);
     promises.push(twitterSnippetPromise);
   }
   /**
    * Pulled/updated concurrently
    */
-  const results = await Promise.all(promises);
-
-  for (const result of results) {
-    if (result && collectionData) {
-      if ('membersCount' in result) {
-        collectionData.discordSnippet = result;
-      } else if (result) {
-        collectionData.twitterSnippet = result;
-      }
-    }
-  }
+  // TODO: .discordSnippet is still being used?
+  // Const results = await Promise.all(promises);
+  // For (const result of results) {
+  //   If (result && collectionData) {
+  //     If ('membersCount' in result) {
+  //       CollectionData.discordSnippet = result;
+  //     } else if (result) {
+  //       CollectionData.twitterSnippet = result;
+  //     }
+  //   }
+  // }
 
   return collectionData;
 }
@@ -333,7 +334,7 @@ async function countVotes(collection: { collectionAddress: string; chainId: stri
   const votesRef = firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
     .doc(getCollectionDocId(collection))
-    .collection(firestoreConstants.VOTES_COLL);
+    .collection(fstrCnstnts.VOTES_COLL);
 
   const stream = votesRef.stream();
 
@@ -492,12 +493,12 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
 async function getCollectionInfoByAddress(data: {
   chainId: string;
   address: string;
-}): Promise<CollectionInfo | undefined> {
+}): Promise<BaseCollection | undefined> {
   const docId = `${data.chainId}:${trimLowerCase(data.address)}`;
   const doc = await firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId).get();
 
   if (doc.exists) {
-    const data = doc.data() as CollectionInfo;
+    const data = doc.data() as BaseCollection;
     return data;
   }
 }
@@ -507,16 +508,15 @@ async function getCollectionInfoByAddress(data: {
  * array of the corresponding collection info objects
  *
  */
-async function getCollectionInfoByName(searchCollectionName: string, limit: number): Promise<CollectionInfo[]> {
+async function getCollectionInfoByName(searchCollectionName: string, limit: number): Promise<BaseCollection[]> {
   const res = await firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
-    .where('searchCollectionName', '==', searchCollectionName)
+    .where('slug', '==', searchCollectionName)
     .limit(limit)
     .get();
-  const data: CollectionInfo[] = res.docs.map((doc) => {
-    return doc.data() as CollectionInfo;
+  const data: BaseCollection[] = res.docs.map((doc) => {
+    return doc.data() as BaseCollection;
   });
-
   return data;
 }
 

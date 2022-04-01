@@ -1,12 +1,15 @@
-import { ChainId, Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { ChainId, Collection, OrderDirection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import RankingsRequestDto from 'collection/dto/rankings-query.dto';
+import { Injectable } from '@nestjs/common';
+import { ParsedCollectionId } from 'collections/collection-id.pipe';
+import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
+import { CollectionStatsByPeriodDto } from 'collections/dto/collection-stats-by-period.dto';
+import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
-import { calcPercentChange } from '../utils';
+import { base64Decode, base64Encode, calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection-stats.dto';
 import { PreAggregatedSocialsStats, SocialsStats, StatType } from './stats.types';
@@ -58,7 +61,7 @@ export class StatsService {
       return merged;
     });
 
-    const hasNextPage = combinedStats.length >= query.limit;
+    const hasNextPage = combinedStats.length > query.limit;
     if (hasNextPage) {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
@@ -66,6 +69,104 @@ export class StatsService {
     return {
       data: combinedStats,
       cursor: primaryStats.cursor,
+      hasNextPage
+    };
+  }
+
+  async getCollectionStatsByPeriodAndDate(
+    collection: ParsedCollectionId,
+    date: number,
+    periods: StatsPeriod[]
+  ): Promise<CollectionStatsByPeriodDto> {
+    const getQuery = (period: StatsPeriod) => {
+      const query: CollectionHistoricalStatsQueryDto = {
+        period,
+        orderDirection: OrderDirection.Descending,
+        limit: 1,
+        maxDate: date,
+        minDate: 0
+      };
+      return query;
+    };
+
+    const queries = periods.map((period) => getQuery(period));
+
+    const responses = await Promise.all(queries.map((query) => this.getCollectionHistoricalStats(collection, query)));
+
+    const statsByPeriod: CollectionStatsByPeriodDto = responses.reduce(
+      (acc: Record<StatsPeriod, CollectionStatsDto>, statResponse) => {
+        const period = statResponse?.data?.[0]?.period;
+        if (period) {
+          return {
+            ...acc,
+            [period]: statResponse.data[0]
+          };
+        }
+        return acc;
+      },
+      {} as any
+    );
+
+    return statsByPeriod;
+  }
+
+  async getCollectionHistoricalStats(
+    collection: ParsedCollectionId,
+    query: CollectionHistoricalStatsQueryDto
+  ): Promise<CollectionStatsArrayResponseDto> {
+    const startAfterCursorStr = base64Decode(query.cursor);
+    const startAfterCursor = startAfterCursorStr ? parseInt(startAfterCursorStr, 10) : '';
+
+    const minDate = query.minDate;
+    const maxDate = query.maxDate;
+    const orderDirection = query.orderDirection;
+    const limit = query.limit;
+    const period = query.period;
+
+    const minTimestamp = getStatsDocInfo(minDate, period).timestamp;
+    const maxTimestamp = getStatsDocInfo(maxDate, period).timestamp;
+
+    let statsQuery = collection.ref
+      .collection(this.statsGroup)
+      .where('period', '==', period)
+      .where('timestamp', '<=', maxTimestamp)
+      .where('timestamp', '>=', minTimestamp)
+      .orderBy('timestamp', orderDirection);
+    if (typeof startAfterCursor === 'number' && !Number.isNaN(startAfterCursor)) {
+      statsQuery = statsQuery.startAfter(startAfterCursor);
+    }
+    statsQuery = statsQuery.limit(limit + 1); // +1 to check if there are more results
+
+    const stats = (await statsQuery.get()).docs.map((item) => item.data()) as Stats[];
+
+    const secondaryStatsPromises = stats.map(async (primaryStat) => {
+      return this.getSecondaryStats(primaryStat, this.socialsGroup, query.period, primaryStat.timestamp);
+    });
+
+    const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
+
+    const combinedStats = stats.map((primary, index) => {
+      const secondaryPromiseResult = secondaryStats[index];
+
+      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+      const merged = this.mergeStats(primary, secondary, {
+        chainId: collection.chainId as ChainId,
+        address: collection.address
+      });
+      return merged;
+    });
+
+    const hasNextPage = combinedStats.length > limit;
+    if (hasNextPage) {
+      combinedStats.pop(); // Remove the item that was added to check if there are more results
+    }
+    const cursorTimestamp = combinedStats?.[combinedStats?.length - 1]?.timestamp;
+    const cursor = base64Encode(cursorTimestamp ? `${cursorTimestamp}` : '');
+
+    return {
+      data: combinedStats,
+      cursor,
       hasNextPage
     };
   }
@@ -181,7 +282,8 @@ export class StatsService {
 
     let startAfter;
     if (queryOptions.cursor) {
-      const [chainId, address] = queryOptions.cursor.split(':');
+      const decodedCursor = base64Decode(queryOptions.cursor);
+      const [chainId, address] = decodedCursor.split(':');
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)
         .where('timestamp', '==', timestamp)
@@ -211,7 +313,7 @@ export class StatsService {
     const cursorInfo = collectionStats[collectionStats.length - 1];
     let cursor = '';
     if (cursorInfo?.chainId && cursorInfo?.collectionAddress) {
-      cursor = `${cursorInfo.chainId}:${cursorInfo.collectionAddress}`;
+      cursor = base64Encode(`${cursorInfo.chainId}:${cursorInfo.collectionAddress}`);
     }
     return { data: collectionStats, cursor };
   }
@@ -280,7 +382,7 @@ export class StatsService {
       address = parsedAddress;
       chainId = parsedChainId;
       if (!address || !chainId) {
-        throw new NotFoundException(`Failed to find a collection with address: ${address} and chainId: ${chainId}`);
+        return;
       }
     }
 
@@ -316,7 +418,7 @@ export class StatsService {
     const twitterResponse = twitterPromiseResult.status === 'fulfilled' ? twitterPromiseResult.value : undefined;
 
     if (twitterResponse?.tweets?.length) {
-      void this.twitterService.saveMentions(collectionRef, twitterResponse?.tweets);
+      void this.twitterService.saveCollectionMentions(collectionRef, twitterResponse?.tweets);
     }
 
     const discordStats: Pick<

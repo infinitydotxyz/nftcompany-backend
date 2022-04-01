@@ -1,15 +1,14 @@
 import {
-  BuyOrder,
   BuyOrderMatch,
   MarketListingsBody,
   MarketListingsResponse,
-  SellOrder,
+  OBOrder,
   StatusCode
 } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { error } from '@infinityxyz/lib/utils';
-import { marketListingsCache } from './marketListingsCache';
 import { marketOrders } from './marketOrders';
+import { buyOrders, deleteBuyOrder, deleteSellOrder, sellOrders } from './marketFirebase';
 
 const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
   try {
@@ -18,8 +17,8 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       return;
     }
 
-    let sellOrders: SellOrder[] = [];
-    let buyOrders: BuyOrder[] = [];
+    let sellOrds: OBOrder[] = [];
+    let buyOrds: OBOrder[] = [];
     let matches: BuyOrderMatch[] = [];
     let success = '';
 
@@ -27,10 +26,10 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'list':
         switch (req.body.orderType) {
           case 'sellOrders':
-            sellOrders = await marketListingsCache.sellOrders(req.body.listId ?? 'validActive');
+            sellOrds = await sellOrders(req.body.listId ?? 'validActive');
             break;
           case 'buyOrders':
-            buyOrders = await marketListingsCache.buyOrders(req.body.listId ?? 'validActive');
+            buyOrds = await buyOrders(req.body.listId ?? 'validActive');
             break;
         }
 
@@ -38,12 +37,12 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'delete':
         switch (req.body.orderType) {
           case 'sellOrders':
-            await marketListingsCache.deleteSellOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+            await deleteSellOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
 
             success = `deleted sell: ${req.body.orderId}`;
             break;
           case 'buyOrders':
-            await marketListingsCache.deleteBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+            await deleteBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
             success = `deleted buy: ${req.body.orderId}`;
             break;
         }
@@ -52,7 +51,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
       case 'move':
         break;
       case 'buy':
-        await marketListingsCache.executeBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+        await marketOrders.executeBuyOrder(req.body.orderId ?? '');
         success = `buy: ${req.body.orderId}`;
         break;
       case 'match':
@@ -61,7 +60,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
     }
 
     // Set result
-    const resp = { buyOrders: buyOrders, sellOrders: sellOrders, error: '', success: success, matches: matches };
+    const resp = { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
     res.send(resp);
     return;
   } catch (err) {

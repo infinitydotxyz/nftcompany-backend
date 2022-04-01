@@ -6,6 +6,10 @@ import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
 import { error } from '@infinityxyz/lib/utils';
 
+export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
+
+export const base64Decode = (data?: string) => Buffer.from(data ?? '', 'base64').toString();
+
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
     setTimeout(() => {
@@ -70,7 +74,7 @@ interface validateInputsProps {
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType, chain, tokenAddress } = props;
+  const { listType, chain, user, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
@@ -96,6 +100,11 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
       error('Invalid chainId ', chain);
       return StatusCode.BadRequest;
     }
+  }
+
+  if (user && !user.startsWith('0x')) {
+    error(`Invalid user address`, user);
+    return StatusCode.BadRequest;
   }
 
   if (tokenAddress && !tokenAddress.startsWith('0x')) {
