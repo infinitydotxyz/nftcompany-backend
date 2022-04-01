@@ -1,5 +1,3 @@
-import { config as loadEnv } from 'dotenv';
-loadEnv();
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
