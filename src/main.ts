@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 import { INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import listingsRouter from './routes/listings';
 
 function setup(app: INestApplication) {
   app.enableCors({
@@ -23,6 +24,13 @@ function setup(app: INestApplication) {
       transform: true
     })
   );
+
+  /**
+   * Unconverted routes needed for FE development
+   *
+   * Only register the specific route that you need
+   */
+  app.use('/listings', listingsRouter);
 
   setupSwagger(app, 'docs');
 }
