@@ -1,4 +1,5 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { Request, Response } from 'express';
 
 /**
@@ -11,13 +12,30 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request>();
     const status = exception.getStatus();
+    const response = exception.getResponse();
 
-    // return detailed error response
-    res.status(status).json({
+    let message: string | string[] = exception.message;
+
+    /**
+     * Get the message from a class-validator exception
+     */
+    if (typeof response === 'object' && 'message' in response) {
+      message = (response as { message: string | string[] }).message;
+    }
+
+    if (Array.isArray(message)) {
+      message = message.join(',\n');
+    }
+
+    const errorResponse: ErrorResponseDto = {
+      success: false,
       statusCode: status,
-      message: exception.message,
-      timestamp: new Date().toISOString(),
+      message: message,
+      timestamp: new Date().getTime(),
       path: req.url
-    });
+    };
+
+    // Return detailed error response
+    res.status(status).json(errorResponse);
   }
 }

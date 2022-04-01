@@ -8,7 +8,7 @@ import { error, jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 
-// transaction events (for a collection or a token)
+// Transaction events (for a collection or a token)
 router.get(
   '/',
   async (
@@ -51,7 +51,7 @@ router.get(
 
     let respStr = '';
     try {
-      // have to fetch order data from a diff end point if token id is supplied
+      // Have to fetch order data from a diff end point if token id is supplied
       if (eventType === 'bid_entered' && tokenId) {
         const data = await fetchOffersFromOSAndInfinity(req);
         respStr = jsonString(data);
@@ -62,7 +62,7 @@ router.get(
         const data = await getOpenseaEvents(queryStr);
         respStr = jsonString(data);
       }
-      // to enable cdn cache
+      // To enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
@@ -76,7 +76,7 @@ router.get(
   }
 );
 
-// fetches offers from both OS and Infinity
+// Fetches offers from both OS and Infinity
 export async function fetchOffersFromOSAndInfinity(
   req: Request<
     any,
@@ -122,7 +122,7 @@ export async function fetchOffersFromOSAndInfinity(
           to_account: {
             address: order.asset.owner.address
           },
-          chainId: '1', // assuming opensea is only used for eth mainnet
+          chainId: '1', // Assuming opensea is only used for eth mainnet
           created_date: order.listing_time * 1000,
           offerSource: 'OpenSea',
           bid_amount: order.base_price,

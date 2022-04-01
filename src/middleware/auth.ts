@@ -6,8 +6,8 @@ import { firestore } from 'container';
 import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
-  // todo: adi for testing only
-  // return true;
+  // Todo: adi for testing only
+  // Return true;
 
   const userId = trimLowerCase(req.params.user);
   const signature = req.header(auth.signature);
@@ -17,7 +17,7 @@ export async function authenticateUser(req: Request<{ user: string }>, res: Resp
     return;
   }
   try {
-    // verify signature
+    // Verify signature
     const sign = JSON.parse(signature);
     const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
     if (actualAddress === userId) {
@@ -77,7 +77,7 @@ export function authorizeCollectionEditor(
         creator,
         hash
       };
-      // save creator
+      // Save creator
       if (creatorObj.creator && creatorObj.hash) {
         await creatorDocRef.set(creatorObj);
       } else {
@@ -87,7 +87,7 @@ export function authorizeCollectionEditor(
     }
 
     if (userAddress === creatorObj.creator) {
-      // creator is authorized
+      // Creator is authorized
       res.locals.authType = CollectionAuthType.Creator;
       next();
       return;
@@ -101,7 +101,7 @@ export function authorizeCollectionEditor(
 
     const editors = (await editorsDocRef.get()).data();
     if (editors?.[userAddress]?.authorized) {
-      // editor is authorized
+      // Editor is authorized
       res.locals.authType = CollectionAuthType.Editor;
       next();
       return;
@@ -112,7 +112,7 @@ export function authorizeCollectionEditor(
     const admins = (await adminDocRef.get()).data();
 
     if (admins?.[userAddress]?.authorized) {
-      // admin is authorized
+      // Admin is authorized
       res.locals.authType = CollectionAuthType.Admin;
       next();
       return;

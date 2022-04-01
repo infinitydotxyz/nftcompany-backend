@@ -5,7 +5,7 @@ import { NextFunction, Request, Response } from 'express';
 import { getRequestLogPrefix } from './logger';
 
 /**
- * express middleware error handler
+ * Express middleware error handler
  *
  * must have all 4 argements listed so express can
  * identify it as an error handler

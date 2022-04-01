@@ -38,7 +38,7 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
     }
 
     /**
-     * limit to eth and weth
+     * Limit to eth and weth
      */
     if (!chainId || chainId === '1') {
       paymentTokenAddress = listingType === ListingType.EnglishAuction ? WETH_ADDRESS : '';

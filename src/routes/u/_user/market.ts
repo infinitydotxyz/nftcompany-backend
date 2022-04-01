@@ -10,8 +10,8 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
       return;
     }
 
-    // user is in the order, but we could check if they match?
-    // const user = trimLowerCase(req.params.user);
+    // User is in the order, but we could check if they match?
+    // Const user = trimLowerCase(req.params.user);
 
     let matches: BuyOrderMatch[] = [];
 
@@ -21,7 +21,7 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
       matches = await marketOrders.sell(req.body.sellOrder, 'validActive');
     }
 
-    // set result
+    // Set result
     const resp = { matches: matches, error: '', success: 'OK' };
     res.send(resp);
     return;

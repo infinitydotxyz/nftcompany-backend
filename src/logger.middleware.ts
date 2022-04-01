@@ -17,8 +17,11 @@ export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     res.on('finish', () => {
       const line = this.toLog(req, res);
-      if (res.statusCode >= 400) this.logger.error(line);
-      else this.logger.log(line);
+      if (res.statusCode >= 400) {
+        this.logger.error(line);
+      } else {
+        this.logger.log(line);
+      }
     });
 
     next();

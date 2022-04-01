@@ -2,7 +2,7 @@
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';
-import { error, log, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
 
@@ -72,24 +72,24 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery: FirebaseFirestore.DocumentData;
+      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // These queries are broken due to the new stats structure
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
           if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-              .orderBy(`averagePrice`, orderDirection);
+            // StatsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`averagePrice`, orderDirection);
           } else {
-            statsQuery = firestore.db
-              .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.averagePrice`, orderDirection);
+            // StatsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
         case OrderBy.Volume:
-          statsQuery = firestore.db
-            .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
-            .orderBy(`${interval}.volume`, orderDirection);
+          // StatsQuery = firestore.db
+          //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+          //   .orderBy(`${interval}.volume`, orderDirection);
 
           break;
         default:
@@ -106,7 +106,7 @@ router.get(
       const results = await statsQuery.limit(limit).get();
 
       const data = (results.docs ?? []).map((item) => {
-        // add startAfter which is the path
+        // Add startAfter which is the path
         const result = item.data();
         result.startAfter = item.ref.path;
 

@@ -6,7 +6,9 @@ export async function getCollectionByAddress(collection: { collectionAddress: st
 
   if (doc.exists) {
     const data = doc.data();
-    if (!data) return;
+    if (!data) {
+      return;
+    }
 
     return data;
   }

@@ -44,7 +44,7 @@ export function getOrderTypeFromRawSellOrder(order: WyvernSellOrder) {
 }
 
 /**
- *  converts listings
+ *  Converts listings
  *
  * @param rawAssetDataArray to be converted to infinity listings
  * @returns an array of listings following the infinity schema
@@ -88,7 +88,7 @@ export async function convertOpenseaListingsToInfinityListings(
     return assetListings;
   }, []);
 
-  // async store in db
+  // Async store in db
   void saveRawOpenseaAssetBatchInDatabase(assetListings);
 
   const listings: Listing[] = listingMetadataArray.reduce((listings, listingMetadata) => {
@@ -183,7 +183,7 @@ export function rawSellOrderToBaseOrder(order: WyvernSellOrder): Order | undefin
 export function getInfinityOrderData(asset: OpenSeaAsset, hasBlueCheck: boolean) {
   const chainId = '1';
   const infinityOrder: InfinityOrderData = {
-    source: 1, // opensea
+    source: 1, // Opensea
     tokenId: asset.id ?? '',
     tokenAddress: asset.address ?? '',
     hasBlueCheck: hasBlueCheck,
@@ -220,7 +220,7 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
       batch.set(newDoc, listing, { merge: true });
     }
 
-    // commit batch
+    // Commit batch
     batch.commit().catch((err) => {
       error('Error occured while batch saving asset data in database');
       error(err);

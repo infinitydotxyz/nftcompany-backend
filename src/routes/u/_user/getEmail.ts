@@ -17,7 +17,7 @@ export const getUserEmail = async (req: Request<{ user: string }>, res: Response
   const data = userDoc.data();
   if (data?.profileInfo?.email?.address) {
     const resp = jsonString(data.profileInfo.email);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

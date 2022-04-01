@@ -1,4 +1,4 @@
-// import { firestore } from '@base/container';
+// Import { firestore } from '@base/container';
 import { firestore } from 'container';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
@@ -6,9 +6,10 @@ import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
+import { fstrCnstnts } from '../../../../constants';
 
 /**
- * getUserVotes supports 2 queries
+ * GetUserVotes supports 2 queries
  * 1. if a collectionAddress is NOT supplied, all votes by a user will be returned
  * 2. if a collectionAddress IS supplied, the user's vote on that collection along with vote data
  *      for the specified collection will be returned
@@ -27,14 +28,14 @@ export async function getUserVotes(
     return;
   }
 
-  const userVotes = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL);
+  const userVotes = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL);
 
   try {
     if (collectionAddress) {
       const userVoteInCollection = (await userVotes.doc(collectionAddress).get()).data();
-      // user has not voted  on this collection
+      // User has not voted  on this collection
       if (!userVoteInCollection) {
-        // users must vote before they can see votes
+        // Users must vote before they can see votes
         res.send({});
         return;
       }
@@ -59,7 +60,7 @@ export async function getUserVotes(
 }
 
 /**
- * postUserVote can be used to set/update a user's vote for a collection
+ * PostUserVote can be used to set/update a user's vote for a collection
  */
 export async function postUserVote(
   req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean; chainId: string }>,
@@ -82,7 +83,7 @@ export async function postUserVote(
   };
 
   try {
-    const userVotesCollRef = getUserInfoRef(user).collection(firestoreConstants.VOTES_COLL).doc(collectionAddress);
+    const userVotesCollRef = getUserInfoRef(user).collection(fstrCnstnts.VOTES_COLL).doc(collectionAddress);
 
     const batch = firestore.db.batch();
 
@@ -91,7 +92,7 @@ export async function postUserVote(
     const userCollectionVotesRef = firestore
       .collection(firestoreConstants.COLLECTIONS_COLL)
       .doc(getCollectionDocId(collection))
-      .collection(firestoreConstants.VOTES_COLL)
+      .collection(fstrCnstnts.VOTES_COLL)
       .doc(user);
     batch.set(userCollectionVotesRef, voteObj);
 

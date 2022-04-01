@@ -15,10 +15,10 @@ export async function deleteListing(batch: any, docRef: any) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  // delete listing
+  // Delete listing
   batch.delete(doc.ref);
 
-  // update num collection listings
+  // Update num collection listings
   try {
     const tokenAddress = doc.data().metadata.asset.address;
     await firestore
@@ -29,6 +29,6 @@ export async function deleteListing(batch: any, docRef: any) {
     error('Error updating root collection data on delete listing');
     error(err);
   }
-  // update num user listings
+  // Update num user listings
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 1);
 }

@@ -30,7 +30,7 @@ export async function getRawOpenseaOrdersByTokenAddress(
 
   if (tokenId) {
     /**
-     * sometimes token_id fails with a response of
+     * Sometimes token_id fails with a response of
      * "You need to set asset_contract_address and token_id (or token_ids)"
      *
      * using token_ids seems to work all of the time
@@ -118,7 +118,7 @@ export async function getOpenseaOrders({
       };
     }
 
-    // reduce to one asset per contract/tokenId with a list of openseaListings
+    // Reduce to one asset per contract/tokenId with a list of openseaListings
     const assetIdToListingIndex: Record<string, number> = {};
 
     const convertOpenseaOrdersToOpenseaListings = (orders: OpenseaOrder[]) => {

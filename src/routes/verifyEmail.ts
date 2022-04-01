@@ -21,19 +21,19 @@ router.get('/', async (req, res) => {
 
   const userDocRef = getUserInfoRef(user);
   const userDoc = await userDocRef.get();
-  // check email
+  // Check email
   const storedEmail = userDoc.data()?.profileInfo?.email?.address;
   if (storedEmail !== email) {
     res.status(StatusCode.Unauthorized).send('Wrong email');
     return;
   }
-  // check guid
+  // Check guid
   const storedGuid = userDoc.data()?.profileInfo?.email?.verificationGuid;
   if (storedGuid !== guid) {
     res.status(StatusCode.Unauthorized).send('Wrong verification code');
     return;
   }
-  // all good
+  // All good
   userDocRef
     .set(
       {

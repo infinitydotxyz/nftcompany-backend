@@ -18,7 +18,7 @@ export async function isValidNftcTxn(txnHash: string, chainId: string, actionTyp
     const functionName = decodedData.name;
     const args = decodedData.args;
 
-    // checks
+    // Checks
     const exchangeAddress = getExchangeAddress(chainId);
     if (to?.toLowerCase() !== exchangeAddress?.toLowerCase()) {
       isValid = false;

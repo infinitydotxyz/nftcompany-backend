@@ -42,7 +42,7 @@ const getTraits = async (req: Request<{ id: string }, any, any, { chainId: strin
     resp = {
       traits
     };
-    // store in firestore for future use
+    // Store in firestore for future use
     if (traits) {
       void saveCollectionTraits({ collectionAddress: contractAddress, chainId }, traits);
     }
