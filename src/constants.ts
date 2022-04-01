@@ -88,8 +88,8 @@ export const fstrCnstnts = deprecateObject(
 );
 
 export const auth = {
-  signature: 'X-AUTH-SIGNATURE',
-  message: 'X-AUTH-MESSAGE'
+  signature: 'x-auth-signature',
+  message: 'x-auth-message'
 };
 
 export const API_BASE = 'http://localhost:9090';
