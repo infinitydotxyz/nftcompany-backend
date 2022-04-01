@@ -1,9 +1,10 @@
-import { ChainId, Collection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { ChainId, Collection, OrderDirection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
+import { CollectionStatsByPeriodDto } from 'collections/dto/collection-stats-by-period.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
@@ -60,7 +61,7 @@ export class StatsService {
       return merged;
     });
 
-    const hasNextPage = combinedStats.length >= query.limit;
+    const hasNextPage = combinedStats.length > query.limit;
     if (hasNextPage) {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
@@ -70,6 +71,43 @@ export class StatsService {
       cursor: primaryStats.cursor,
       hasNextPage
     };
+  }
+
+  async getCollectionStatsByPeriodAndDate(
+    collection: ParsedCollectionId,
+    date: number,
+    periods: StatsPeriod[]
+  ): Promise<CollectionStatsByPeriodDto> {
+    const getQuery = (period: StatsPeriod) => {
+      const query: CollectionHistoricalStatsQueryDto = {
+        period,
+        orderDirection: OrderDirection.Descending,
+        limit: 1,
+        maxDate: date,
+        minDate: 0
+      };
+      return query;
+    };
+
+    const queries = periods.map((period) => getQuery(period));
+
+    const responses = await Promise.all(queries.map((query) => this.getCollectionHistoricalStats(collection, query)));
+
+    const statsByPeriod: CollectionStatsByPeriodDto = responses.reduce(
+      (acc: Record<StatsPeriod, CollectionStatsDto>, statResponse) => {
+        const period = statResponse?.data?.[0]?.period;
+        if (period) {
+          return {
+            ...acc,
+            [period]: statResponse.data[0]
+          };
+        }
+        return acc;
+      },
+      {} as any
+    );
+
+    return statsByPeriod;
   }
 
   async getCollectionHistoricalStats(
@@ -119,7 +157,7 @@ export class StatsService {
       return merged;
     });
 
-    const hasNextPage = stats.length >= limit;
+    const hasNextPage = combinedStats.length > limit;
     if (hasNextPage) {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
@@ -380,7 +418,7 @@ export class StatsService {
     const twitterResponse = twitterPromiseResult.status === 'fulfilled' ? twitterPromiseResult.value : undefined;
 
     if (twitterResponse?.tweets?.length) {
-      void this.twitterService.saveMentions(collectionRef, twitterResponse?.tweets);
+      void this.twitterService.saveCollectionMentions(collectionRef, twitterResponse?.tweets);
     }
 
     const discordStats: Pick<

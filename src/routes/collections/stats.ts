@@ -72,7 +72,7 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery: FirebaseFirestore.DocumentData = {} as any;
+      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // These queries are broken due to the new stats structure
 
       switch (orderBy) {
         case OrderBy.AveragePrice:

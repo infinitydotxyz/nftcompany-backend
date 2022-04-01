@@ -22,4 +22,6 @@ export type VerifiedMentionTweet = Concrete<
   };
 };
 
-export type VerifiedMentionUser = Concrete<Pick<User, 'id' | 'name' | 'username' | 'public_metrics'>>;
+export type VerifiedMentionUser = Concrete<
+  Pick<User, 'id' | 'name' | 'username' | 'public_metrics' | 'profile_image_url'>
+>;

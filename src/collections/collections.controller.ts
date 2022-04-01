@@ -1,5 +1,5 @@
 import { Collection } from '@infinityxyz/lib/types/core';
-import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -11,20 +11,32 @@ import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ApiTag } from 'common/api-tags';
 import { ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { PaginatedQuery } from 'common/dto/paginated-query.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import { StatsService } from 'stats/stats.service';
+import { TweetArrayDto } from 'twitter/dto/tweet-array.dto';
+import { TwitterService } from 'twitter/twitter.service';
+import { CollectionVotesDto } from 'votes/dto/collection-votes.dto';
+import { VotesService } from 'votes/votes.service';
 import { ParseCollectionIdPipe, ParsedCollectionId } from './collection-id.pipe';
 import CollectionsService from './collections.service';
 import { CollectionHistoricalStatsQueryDto } from './dto/collection-historical-stats-query.dto';
 import { CollectionSearchArrayDto } from './dto/collection-search-array.dto';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
+import { CollectionStatsByPeriodDto } from './dto/collection-stats-by-period.dto';
+import { CollectionStatsQueryDto } from './dto/collection-stats-query.dto';
 import { CollectionDto } from './dto/collection.dto';
 
 @Controller('collections')
 export class CollectionsController {
-  constructor(private collectionsService: CollectionsService, private statsService: StatsService) {}
+  constructor(
+    private collectionsService: CollectionsService,
+    private statsService: StatsService,
+    private votesService: VotesService,
+    private twitterService: TwitterService
+  ) {}
 
   @Get('search')
   @ApiOperation({
@@ -90,6 +102,62 @@ export class CollectionsController {
     @Query() query: CollectionHistoricalStatsQueryDto
   ): Promise<CollectionStatsArrayResponseDto> {
     const response = await this.statsService.getCollectionHistoricalStats(collection, query);
+
+    return response;
+  }
+
+  @Get('/:id/stats/:date')
+  @ApiOperation({
+    tags: [ApiTag.Collection, ApiTag.Stats],
+    description: 'Get stats for a single collection, at a specific date, for all periods passed in the query'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsByPeriodDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getStatsByDate(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Param('date', ParseIntPipe) date: number,
+    @Query() query: CollectionStatsQueryDto
+  ): Promise<CollectionStatsByPeriodDto> {
+    const response = await this.statsService.getCollectionStatsByPeriodAndDate(collection, date, query.periods);
+
+    return response;
+  }
+
+  @Get('/:id/votes')
+  @ApiOperation({
+    tags: [ApiTag.Collection, ApiTag.Votes],
+    description: 'Get votes for a single collection'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionVotesDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionVotes(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<CollectionVotesDto> {
+    const response = await this.votesService.getCollectionVotes(collection);
+
+    return response;
+  }
+
+  @Get('/:id/mentions')
+  @ApiOperation({
+    tags: [ApiTag.Collection],
+    description: 'Get twitter mentions for a single collection ordered by author followers'
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: TweetArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getCollectionTwitterMentions(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Query() query: PaginatedQuery
+  ): Promise<TweetArrayDto> {
+    const response = await this.twitterService.getCollectionTopMentions(collection.ref, query);
 
     return response;
   }

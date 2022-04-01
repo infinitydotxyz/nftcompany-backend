@@ -2,8 +2,8 @@ import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId, getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
-import { base64Decode, base64Encode } from 'utils';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
+import { base64Encode, base64Decode } from 'utils';
 
 interface CollectionQueryOptions {
   /**

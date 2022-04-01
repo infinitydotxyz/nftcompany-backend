@@ -1,3 +1,4 @@
+import { Collection } from '@infinityxyz/lib/types/core/Collection';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import firebaseAdmin from 'firebase-admin';
@@ -8,6 +9,9 @@ import { FirebaseModuleOptions } from './firebase.types';
 @Injectable()
 export class FirebaseService {
   private readonly _firestore: FirebaseFirestore.Firestore;
+  public readonly firestoreNamespace = firebaseAdmin.firestore;
+
+  public static readonly DEFAULT_ITEMS_PER_PAGE = 50;
 
   public get firestore() {
     return this._firestore;
@@ -26,7 +30,9 @@ export class FirebaseService {
   /**
    * Get a reference to a collection via a address + chainId or slug
    */
-  async getCollectionRef(collectionRefProps: CollectionRefDto) {
+  async getCollectionRef(
+    collectionRefProps: CollectionRefDto
+  ): Promise<FirebaseFirestore.DocumentReference<Partial<Collection>>> {
     if ('slug' in collectionRefProps && collectionRefProps?.slug) {
       const docQuery = this.firestore
         .collection(firestoreConstants.COLLECTIONS_COLL)
