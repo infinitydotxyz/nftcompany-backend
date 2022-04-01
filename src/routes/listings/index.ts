@@ -8,7 +8,6 @@ import {
 } from '../../constants';
 import { parseQueryFields } from 'utils/parsers';
 import { Router } from 'express';
-import importListings from './import';
 import {
   getListingsByCollectionNameAndPrice,
   getListingsStartingWithText
@@ -19,7 +18,7 @@ import { validateInputs } from 'utils/index';
 
 const router = Router();
 
-router.use('/import', importListings);
+// Router.use('/import', importListings);
 
 /**
  * @typedef {Object} ListingsResponse
