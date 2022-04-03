@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Logger,
   NotFoundException,
   Post,
   Put,
@@ -16,6 +17,7 @@ import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
 import {
+  ApiConsumes,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
@@ -43,14 +45,21 @@ import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param
 import CollectionsService from 'collections/collections.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from 'storage/storage.service';
+import { DiscordService } from 'discord/discord.service';
+import { TwitterService } from 'twitter/twitter.service';
+import { Links } from '@infinityxyz/lib/types/core';
 
 @Controller('user')
 export class UserController {
+  private readonly logger = new Logger(UserController.name);
+
   constructor(
     private userService: UserService,
     private votesService: VotesService,
     private collectionsService: CollectionsService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private discordService: DiscordService,
+    private twitterService: TwitterService
   ) {}
 
   @Get(':userId/watchlist')
@@ -148,27 +157,44 @@ export class UserController {
   })
   @ApiParamUserId('userId')
   @ApiParamCollectionId('collectionId')
+  @ApiConsumes('multipart/form-data')
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Body() { metadata }: UpdateCollectionDto,
+    @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
     }
 
+    // TODO(sleeyax): do we want a separate endpoint to CRUD the profile image?
     if (profileImage && profileImage.size > 0) {
-      await this.storageService.saveImage(profileImage.filename, {
+      const image = await this.storageService.saveImage(profileImage.filename, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
+      metadata.profileImage = image.publicUrl();
+    } else if (deleteProfileImage) {
+      metadata.profileImage = '';
     }
 
-    // TODO: update twitter & discord snippets (run promises in bg)
-    // Await this.collectionsService.setCollectionMetadata(collection, metadata);
-    return 'k';
+    await this.collectionsService.setCollectionMetadata(collection, metadata);
+
+    // Update social media snipptes in the background (do NOT await this call).
+    // Errors will be logged to console but won't halt execution.
+    this.updateSnippets(collection, metadata.links);
+  }
+
+  private async updateSnippets(collection: ParsedCollectionId, links: Links) {
+    try {
+      const force = true;
+      await this.twitterService.getTwitterSnippet(collection, links.twitter, force);
+      await this.discordService.getDiscordSnippet(collection, links.discord, force);
+    } catch (err) {
+      this.logger.error(err);
+    }
   }
 }

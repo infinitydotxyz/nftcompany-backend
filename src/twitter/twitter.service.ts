@@ -9,12 +9,24 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
-import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
+import { firestoreConstants, getWeekNumber } from '@infinityxyz/lib/utils';
+import {
+  VerifiedMentionTweet,
+  VerifiedMentionIncludes,
+  VerifiedMentionUser,
+  TwitterEndpoint,
+  AggregatedFollowerData,
+  FollowerData
+} from './twitter.types';
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
 import { base64Decode, base64Encode } from 'utils';
 import { TweetDto } from './dto/tweet.dto';
 import { TweetArrayDto } from './dto/tweet-array.dto';
+import { ParsedCollectionId } from 'collections/collection-id.pipe';
+import { TwitterSnippet } from '@infinityxyz/lib/types/core';
+import { MIN_TWITTER_UPDATE_INTERVAL } from '../constants';
+import { Twitter } from 'services/twitter/Twitter';
+import { aggregateHistoricalData } from 'services/infinity/aggregateHistoricalData';
 
 /**
  * Access level is Elevated
@@ -129,6 +141,141 @@ export class TwitterService {
     }
 
     throw new Error('Failed to get account and mentions');
+  }
+
+  async getTwitterSnippet(collection: ParsedCollectionId, twitterLink: string, forceUpdate = false) {
+    if (!collection.address || !twitterLink) {
+      return;
+    }
+
+    const twitterRef = collection.ref
+      .collection(firestoreConstants.DATA_SUB_COLL)
+      .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
+
+    const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
+    const updatedTwitterSnippet = await this.updateTwitterData(twitterSnippet, collection, twitterLink, forceUpdate);
+
+    return updatedTwitterSnippet;
+  }
+
+  /**
+   * UpdateTwitterData requests recent tweets from twitter (if it should be updated), saves the data to the database and
+   * returns the updated collection info
+   */
+  private async updateTwitterData(
+    twitterSnippet: TwitterSnippet,
+    collection: ParsedCollectionId,
+    twitterLink: string,
+    force = false
+  ): Promise<TwitterSnippet> {
+    const now = new Date().getTime();
+    const updatedAt: number = typeof twitterSnippet?.timestamp === 'number' ? twitterSnippet?.timestamp : 0;
+
+    if (force || (twitterLink && now - updatedAt > MIN_TWITTER_UPDATE_INTERVAL)) {
+      const twitterUsernameRegex = /twitter.com\/([a-zA-Z0-9_]*)/;
+      const username = twitterLink.match(twitterUsernameRegex)?.[1];
+
+      if (username) {
+        // Get twitter data
+        const twitterClient = new Twitter();
+        const twitterData = await twitterClient.getVerifiedAccountMentions(username);
+
+        const newMentions = (twitterData?.tweets || []).map((item) => item.author);
+        const ids = new Set();
+        const mentions = [...(twitterSnippet?.topMentions ?? []), ...newMentions]
+          .sort((itemA, itemB) => itemB.followersCount - itemA.followersCount)
+          .filter((item) => {
+            if (!ids.has(item.id)) {
+              ids.add(item.id);
+              return true;
+            }
+            return false;
+          });
+        const mentionsSortedByFollowerCount = mentions.sort(
+          (userOne: InfinityTwitterAccount, userTwo: InfinityTwitterAccount) =>
+            userTwo.followersCount - userOne.followersCount
+        );
+        const topMentions = mentionsSortedByFollowerCount.slice(0, 10);
+        const date = new Date(now);
+
+        const account = twitterData.account ? { account: twitterData.account } : {};
+        const updatedTwitterSnippet: TwitterSnippet = {
+          recentTweets: twitterData.tweets,
+          timestamp: now,
+          topMentions: topMentions,
+          ...account
+        };
+
+        const batch = this.firebaseService.firestore.batch();
+
+        const twitterRef = collection.ref
+          .collection(firestoreConstants.DATA_SUB_COLL)
+          .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
+
+        /**
+         * Update collection info tweet snippet
+         */
+        batch.set(
+          twitterRef,
+          {
+            twitterSnippet: updatedTwitterSnippet
+          },
+          { merge: true }
+        );
+
+        const [year, week] = getWeekNumber(date);
+        const docId = `${year}-${week}`;
+        const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
+        const weekDocRef = twitterRef.collection(firestoreConstants.HISTORICAL_COLL).doc(docId);
+
+        /**
+         * Update historical data
+         */
+        batch.set(
+          weekDocRef,
+          {
+            aggregated: { timestamp: now },
+            [hourOfTheWeek]: { followersCount: twitterData.account?.followersCount ?? 0, timestamp: now }
+          },
+          { merge: true }
+        );
+
+        // Commit this batch so the updated data is available to aggregate the historical data
+        await batch.commit();
+
+        const batch2 = this.firebaseService.firestore.batch();
+
+        const historicalRef = twitterRef.collection(firestoreConstants.HISTORICAL_COLL);
+
+        const aggregated = await aggregateHistoricalData<FollowerData, AggregatedFollowerData>(
+          historicalRef,
+          10,
+          batch2
+        );
+
+        /**
+         *  Update snippet with aggregated data
+         */
+        batch2.set(
+          twitterRef,
+          {
+            twitterSnippet: {
+              ...updatedTwitterSnippet,
+              aggregated
+            }
+          },
+          { merge: true }
+        );
+
+        await batch2.commit();
+
+        return {
+          ...updatedTwitterSnippet
+        };
+      }
+    }
+
+    return twitterSnippet;
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Concrete } from '@infinityxyz/lib/types/core';
+import { Concrete, Keys } from '@infinityxyz/lib/types/core';
 import { Tweet } from '@infinityxyz/lib/types/services/twitter';
 import { User } from '@infinityxyz/lib/types/services/twitter';
 
@@ -25,3 +25,22 @@ export type VerifiedMentionTweet = Concrete<
 export type VerifiedMentionUser = Concrete<
   Pick<User, 'id' | 'name' | 'username' | 'public_metrics' | 'profile_image_url'>
 >;
+
+export interface FollowerData {
+  followersCount: number;
+  timestamp: number;
+}
+
+export type FollowerDataAverages = Record<Keys<Omit<FollowerData, 'timestamp'>>, number>;
+
+export interface AggregatedFollowerData {
+  weekStart: FollowerData;
+  weekEnd: FollowerData;
+  timestamp: number;
+  averages: FollowerDataAverages;
+}
+
+export interface TwitterHistoricalData {
+  timestamp: number;
+  followers: number;
+}
