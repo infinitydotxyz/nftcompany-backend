@@ -1,5 +1,6 @@
 import {
   Body,
+  Header,
   Controller,
   Get,
   HttpCode,
@@ -11,7 +12,9 @@ import {
   UnauthorizedException,
   UploadedFile,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
+  HttpStatus,
+  Headers
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
@@ -19,6 +22,8 @@ import { UserService } from './user.service';
 import {
   ApiConsumes,
   ApiCreatedResponse,
+  ApiHeader,
+  ApiHeaders,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -146,7 +151,7 @@ export class UserController {
   }
 
   @Put(':userId/collections/:collectionId')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AuthGuard)
   @UseInterceptors(new CacheControlInterceptor())
   @UseInterceptors(FileInterceptor('profileImage'))
@@ -157,12 +162,17 @@ export class UserController {
   })
   @ApiParamUserId('userId')
   @ApiParamCollectionId('collectionId')
-  @ApiConsumes('multipart/form-data')
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiHeader({
+    name: 'Content-Type',
+    required: false
+  })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Headers('Content-Type') contentType: string,
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
@@ -170,17 +180,23 @@ export class UserController {
       throw new UnauthorizedException();
     }
 
-    // TODO(sleeyax): do we want a separate endpoint to CRUD the profile image?
-    if (profileImage && profileImage.size > 0) {
+    if (deleteProfileImage) {
+      metadata.profileImage = '';
+    }
+
+    // Upload image if we're submitting a file.
+    // Note that we can't both update the collection and update the image at the same time.
+    // This is done intentionally to keep things simpler.
+    if (contentType === 'multipart/form-data' && profileImage && profileImage.size > 0) {
       const image = await this.storageService.saveImage(profileImage.filename, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
       metadata.profileImage = image.publicUrl();
-    } else if (deleteProfileImage) {
-      metadata.profileImage = '';
+      return;
     }
 
+    // TODO: validate metadata props
     await this.collectionsService.setCollectionMetadata(collection, metadata);
 
     // Update social media snipptes in the background (do NOT await this call).

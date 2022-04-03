@@ -47,6 +47,10 @@ export class DiscordService {
   }
 
   async getDiscordSnippet(collection: ParsedCollectionId, inviteLink: string, forceUpdate = false) {
+    if (!collection.address || !inviteLink) {
+      return;
+    }
+
     const discordRef = collection.ref
       .collection(firestoreConstants.DATA_SUB_COLL)
       .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
