@@ -22,12 +22,9 @@ export class FirebaseModule {
   }
 
   static forRootTest() {
-    return FirebaseModule.default();
-  }
-
-  static default() {
     return FirebaseModule.forRoot({
-      cert: serviceAccount
+      cert: serviceAccount,
+      isTest: true
     });
   }
 }

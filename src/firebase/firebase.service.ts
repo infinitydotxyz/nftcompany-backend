@@ -23,7 +23,7 @@ export class FirebaseService {
   }
 
   constructor(@Inject(FIREBASE_OPTIONS) private options: FirebaseModuleOptions) {
-    if (firebaseAdmin.apps.length == 0) {
+    if ((options.isTest && firebaseAdmin.apps.length == 0) || !options.isTest) {
       firebaseAdmin.initializeApp(
         {
           credential: firebaseAdmin.credential.cert(options.cert)
