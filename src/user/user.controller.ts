@@ -175,8 +175,6 @@ export class UserController {
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
-    console.log(metadata);
-
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
     }
@@ -199,7 +197,7 @@ export class UserController {
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
 
-    // Update social media snipptes in the background (do NOT await this call).
+    // Update social media snippets in the background (do NOT await this call).
     // Errors will be logged to console but won't halt execution.
     this.updateSnippets(collection, metadata.links);
   }
