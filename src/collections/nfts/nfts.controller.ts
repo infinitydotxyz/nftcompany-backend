@@ -8,8 +8,8 @@ import {
 } from '@nestjs/swagger';
 import { ParseCollectionIdPipe, ParsedCollectionId } from 'collections/collection-id.pipe';
 import { ApiTag } from 'common/api-tags';
-import { ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
-import { ParamTokenId } from 'common/decorators/param-token-id.decorator';
+import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
+import { ApiParamTokenId, ParamTokenId } from 'common/decorators/param-token-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
@@ -28,6 +28,8 @@ export class NftsController {
     description: 'Get a single nft',
     tags: [ApiTag.Nft]
   })
+  @ApiParamCollectionId('id')
+  @ApiParamTokenId('tokenId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -52,6 +54,8 @@ export class NftsController {
     description: 'Get activity for a specific nft',
     tags: [ApiTag.Nft]
   })
+  @ApiParamCollectionId('id')
+  @ApiParamTokenId('tokenId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArray })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })

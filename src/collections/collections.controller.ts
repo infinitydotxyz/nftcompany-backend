@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ApiTag } from 'common/api-tags';
-import { ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
+import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
@@ -70,6 +70,7 @@ export class CollectionsController {
     tags: [ApiTag.Collection],
     description: 'Get a single collection by address and chain id or by slug'
   })
+  @ApiParamCollectionId()
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -92,6 +93,7 @@ export class CollectionsController {
     tags: [ApiTag.Collection, ApiTag.Stats],
     description: 'Get historical stats for a single collection'
   })
+  @ApiParamCollectionId()
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -111,6 +113,7 @@ export class CollectionsController {
     tags: [ApiTag.Collection, ApiTag.Stats],
     description: 'Get stats for a single collection, at a specific date, for all periods passed in the query'
   })
+  @ApiParamCollectionId()
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsByPeriodDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -131,6 +134,7 @@ export class CollectionsController {
     tags: [ApiTag.Collection, ApiTag.Votes],
     description: 'Get votes for a single collection'
   })
+  @ApiParamCollectionId()
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionVotesDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -149,6 +153,7 @@ export class CollectionsController {
     tags: [ApiTag.Collection],
     description: 'Get twitter mentions for a single collection ordered by author followers'
   })
+  @ApiParamCollectionId()
   @ApiOkResponse({ description: ResponseDescription.Success, type: TweetArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })

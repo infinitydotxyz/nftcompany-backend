@@ -1,9 +1,11 @@
-import { Collection, CreationFlow } from '@infinityxyz/lib/types/core';
+import { Collection, CollectionMetadata, CreationFlow } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, getCollectionDocId, getEndCode, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { base64Encode, base64Decode } from 'utils';
+import { ParsedCollectionId } from './collection-id.pipe';
+import { EtherscanService } from 'etherscan/etherscan.service';
 
 interface CollectionQueryOptions {
   /**
@@ -16,7 +18,7 @@ interface CollectionQueryOptions {
 
 @Injectable()
 export default class CollectionsService {
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(private firebaseService: FirebaseService, private etherscanService: EtherscanService) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {
     return {
@@ -90,5 +92,66 @@ export default class CollectionsService {
     }
 
     return result;
+  }
+
+  async setCollectionMetadata(collection: ParsedCollectionId, metadata: CollectionMetadata) {
+    await collection.ref.set({ metadata }, { merge: true });
+  }
+
+  /**
+   * Verify whether the given user address is the creator of the collection.
+   */
+  async isCreator(userAddress: string, { ref, address: collectionAddress }: ParsedCollectionId) {
+    const creatorDocRef = ref.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.CREATOR_DOC);
+    const document = await creatorDocRef.get();
+    const data = document.data();
+
+    if (data?.creator) {
+      return userAddress === data.creator;
+    }
+
+    // If we don't know the creator based on what we have stored in our database, look up the transaction history.
+    const creator = await this.etherscanService.findCreator(collectionAddress);
+
+    if (!creator.creator || !creator.hash) {
+      throw new Error(`creator of contract address ${collectionAddress} not found!`);
+    }
+
+    await creatorDocRef.set(creator);
+
+    return userAddress === creator.creator;
+  }
+
+  /**
+   * Verify whether the given user address is an editor of the collection.
+   */
+  async isEditor(userAddress: string, { ref }: ParsedCollectionId) {
+    const editorsDocRef = ref.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.EDITORS_DOC);
+    const document = await editorsDocRef.get();
+    const data = document.data();
+
+    return data?.[userAddress]?.authorized;
+  }
+
+  /**
+   * Verify whether the given user address is the admin of the collection.
+   */
+  async isAdmin(userAddress: string, { ref }: ParsedCollectionId) {
+    const adminDocRef = ref.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.ADMINS_DOC);
+    const document = await adminDocRef.get();
+    const data = document.data();
+
+    return data?.[userAddress]?.authorized;
+  }
+
+  /**
+   * Verify whether the given user address can modify the collection.
+   */
+  async canModify(userAddress: string, parsedCollection: ParsedCollectionId) {
+    return (
+      (await this.isCreator(userAddress, parsedCollection)) ||
+      (await this.isEditor(userAddress, parsedCollection)) ||
+      (await this.isAdmin(userAddress, parsedCollection))
+    );
   }
 }

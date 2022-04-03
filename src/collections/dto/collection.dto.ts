@@ -5,7 +5,7 @@ import {
   CollectionMetadata,
   TokenStandard
 } from '@infinityxyz/lib/types/core';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType, PickType } from '@nestjs/swagger';
 import { CollectionStateDto } from './collection-state.dto';
 
 type CollectionType = Omit<Collection, 'tokenStandard'> & { tokenStandard: TokenStandard };
@@ -98,3 +98,5 @@ export class CollectionDto implements CollectionType {
   })
   state: CollectionStateDto;
 }
+
+export class UpdateCollectionDto extends PartialType(PickType(CollectionDto, ['metadata'] as const)) {}

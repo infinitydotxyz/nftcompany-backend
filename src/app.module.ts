@@ -1,3 +1,4 @@
+import { EtherscanModule } from './etherscan/etherscan.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { LoggerMiddleware } from 'logger.middleware';
 import { AppController } from './app.controller';
@@ -27,7 +28,8 @@ import { VotesModule } from './votes/votes.module';
     DiscordModule,
     StatsModule,
     UserModule,
-    VotesModule
+    VotesModule,
+    EtherscanModule
   ],
   controllers: [AppController],
   providers: [AppService]
