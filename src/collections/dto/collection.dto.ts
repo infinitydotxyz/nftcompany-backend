@@ -1,11 +1,8 @@
-import {
-  ChainId,
-  Collection,
-  CollectionAttributes,
-  CollectionMetadata,
-  TokenStandard
-} from '@infinityxyz/lib/types/core';
+import { ChainId, Collection, CollectionAttributes, TokenStandard } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional, PartialType, PickType } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsObject, ValidateNested } from 'class-validator';
+import { CollectionMetaDataDto } from './collection-metadata.dto';
 import { CollectionStateDto } from './collection-state.dto';
 
 type CollectionType = Omit<Collection, 'tokenStandard'> & { tokenStandard: TokenStandard };
@@ -66,7 +63,10 @@ export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Metadata about the collection'
   })
-  metadata: CollectionMetadata;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CollectionMetaDataDto)
+  metadata: CollectionMetaDataDto;
 
   @ApiProperty({
     description: 'Slug of the collection'
@@ -96,10 +96,12 @@ export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Current state of the collection indexing process'
   })
+  @ValidateNested()
+  @Type(() => CollectionStateDto)
   state: CollectionStateDto;
 }
 
-export class UpdateCollectionDto extends PartialType(PickType(CollectionDto, ['metadata'] as const)) {
+export class UpdateCollectionDto extends PickType(CollectionDto, ['metadata'] as const) {
   @ApiPropertyOptional({
     description: 'Whether to remove the current profile image'
   })

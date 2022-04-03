@@ -1,6 +1,5 @@
 import {
   Body,
-  Header,
   Controller,
   Get,
   HttpCode,
@@ -23,7 +22,6 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiHeader,
-  ApiHeaders,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
@@ -52,7 +50,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from 'storage/storage.service';
 import { DiscordService } from 'discord/discord.service';
 import { TwitterService } from 'twitter/twitter.service';
-import { Links } from '@infinityxyz/lib/types/core';
+import { CollectionMetadata, Links } from '@infinityxyz/lib/types/core';
+import { instanceToPlain } from 'class-transformer';
 
 @Controller('user')
 export class UserController {
@@ -176,6 +175,8 @@ export class UserController {
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
+    console.log(metadata);
+
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
     }
@@ -196,8 +197,7 @@ export class UserController {
       return;
     }
 
-    // TODO: validate metadata props
-    await this.collectionsService.setCollectionMetadata(collection, metadata);
+    await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
 
     // Update social media snipptes in the background (do NOT await this call).
     // Errors will be logged to console but won't halt execution.
