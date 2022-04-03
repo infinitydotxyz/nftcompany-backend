@@ -12,32 +12,33 @@ export class AuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    const paramsToValidate = this.reflector.get<string[]>(metadataKey, context.getHandler());
+    const paramName = this.reflector.get<string>(metadataKey, context.getHandler());
     const messageHeader = request.headers?.[auth.message];
     const signatureHeader = request.headers?.[auth.signature];
 
-    if (!messageHeader || !signatureHeader) return false;
+    if (!messageHeader || !signatureHeader) {
+      return false;
+    }
 
     try {
       const signingAddress = trimLowerCase(ethers.utils.verifyMessage(messageHeader, JSON.parse(signatureHeader)));
 
-      if (!signingAddress) return false;
+      if (!signingAddress) {
+        return false;
+      }
 
-      // this will always return true if paramsToValidate is an empty array
-      return (paramsToValidate ?? []).every((paramName) => {
-        const paramValue = request.params[paramName];
+      const paramValue = request.params[paramName];
 
-        let address = paramValue;
+      let address = paramValue;
 
-        // chain:address
-        if (paramValue.includes(':')) {
-          const split = paramValue.split(':');
-          address = toLower(split[1]);
-        }
+      // Chain:address
+      if (paramValue.includes(':')) {
+        const split = paramValue.split(':');
+        address = toLower(split[1]);
+      }
 
-        // address
-        return address === signingAddress;
-      });
+      // Address
+      return address === signingAddress;
     } catch (err) {
       return false;
     }
