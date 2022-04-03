@@ -23,12 +23,14 @@ export class FirebaseService {
   }
 
   constructor(@Inject(FIREBASE_OPTIONS) private options: FirebaseModuleOptions) {
-    firebaseAdmin.initializeApp(
-      {
-        credential: firebaseAdmin.credential.cert(options.cert)
-      },
-      options.certName
-    );
+    if (firebaseAdmin.apps.length == 0) {
+      firebaseAdmin.initializeApp(
+        {
+          credential: firebaseAdmin.credential.cert(options.cert)
+        },
+        options.certName
+      );
+    }
     this._firestore = firebaseAdmin.firestore();
   }
 
