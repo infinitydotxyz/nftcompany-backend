@@ -8,6 +8,7 @@ import {
   Put,
   Query,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
   UseInterceptors
 } from '@nestjs/common';
@@ -40,13 +41,16 @@ import { ParseCollectionIdPipe, ParsedCollectionId } from 'collections/collectio
 import { UpdateCollectionDto } from 'collections/dto/collection.dto';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import CollectionsService from 'collections/collections.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { StorageService } from 'storage/storage.service';
 
 @Controller('user')
 export class UserController {
   constructor(
     private userService: UserService,
     private votesService: VotesService,
-    private collectionsService: CollectionsService
+    private collectionsService: CollectionsService,
+    private storageService: StorageService
   ) {}
 
   @Get(':userId/watchlist')
@@ -136,6 +140,7 @@ export class UserController {
   @HttpCode(204)
   @UseGuards(AuthGuard)
   @UseInterceptors(new CacheControlInterceptor())
+  @UseInterceptors(FileInterceptor('profileImage'))
   @ApiSignatureAuth()
   @ApiOperation({
     description: 'Update collection information',
@@ -148,13 +153,20 @@ export class UserController {
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Body() { metadata }: UpdateCollectionDto
+    @Body() { metadata }: UpdateCollectionDto,
+    @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
     }
 
-    // TODO: detect & upload profile image (using service)
+    if (profileImage && profileImage.size > 0) {
+      await this.storageService.saveImage(profileImage.filename, {
+        contentType: profileImage.mimetype,
+        data: profileImage.buffer
+      });
+    }
+
     // TODO: update twitter & discord snippets (run promises in bg)
     // Await this.collectionsService.setCollectionMetadata(collection, metadata);
     return 'k';
