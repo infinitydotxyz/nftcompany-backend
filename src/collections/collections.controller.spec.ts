@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EtherscanModule } from 'etherscan/etherscan.module';
 import { StatsModule } from 'stats/stats.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { VotesModule } from 'votes/votes.module';
@@ -12,7 +11,7 @@ describe('CollectionController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [TestModule, StatsModule, VotesModule, TwitterModule, EtherscanModule],
+      imports: [TestModule, StatsModule, VotesModule, TwitterModule],
       controllers: [CollectionsController],
       providers: [CollectionsService]
     }).compile();

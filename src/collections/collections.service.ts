@@ -5,7 +5,6 @@ import { FirebaseService } from 'firebase/firebase.service';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { base64Encode, base64Decode } from 'utils';
 import { ParsedCollectionId } from './collection-id.pipe';
-import { EtherscanService } from 'etherscan/etherscan.service';
 
 interface CollectionQueryOptions {
   /**
@@ -18,7 +17,7 @@ interface CollectionQueryOptions {
 
 @Injectable()
 export default class CollectionsService {
-  constructor(private firebaseService: FirebaseService, private etherscanService: EtherscanService) {}
+  constructor(private firebaseService: FirebaseService) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {
     return {
@@ -99,27 +98,12 @@ export default class CollectionsService {
   }
 
   /**
-   * Verify whether the given user address is the creator of the collection.
+   * Verify whether the given user address is the deployer/creator of the collection.
    */
-  async isCreator(userAddress: string, { ref, address: collectionAddress }: ParsedCollectionId) {
-    const creatorDocRef = ref.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.CREATOR_DOC);
-    const document = await creatorDocRef.get();
+  async isDeployer(userAddress: string, { ref }: ParsedCollectionId) {
+    const document = await ref.get();
     const data = document.data();
-
-    if (data?.creator) {
-      return userAddress === data.creator;
-    }
-
-    // If we don't know the creator based on what we have stored in our database, look up the transaction history.
-    const creator = await this.etherscanService.findCreator(collectionAddress);
-
-    if (!creator.creator || !creator.hash) {
-      throw new Error(`creator of contract address ${collectionAddress} not found!`);
-    }
-
-    await creatorDocRef.set(creator);
-
-    return userAddress === creator.creator;
+    return userAddress === data.deployer;
   }
 
   /**
@@ -134,13 +118,14 @@ export default class CollectionsService {
   }
 
   /**
-   * Verify whether the given user address is the admin of the collection.
+   * Verify whether the given user address is an administrator of the infnity platform.
    */
-  async isAdmin(userAddress: string, { ref }: ParsedCollectionId) {
-    const adminDocRef = ref.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.ADMINS_DOC);
+  async isAdmin(userAddress: string) {
+    const adminDocRef = this.firebaseService.firestore
+      .collection(firestoreConstants.AUTH_COLL)
+      .doc(firestoreConstants.ADMINS_DOC);
     const document = await adminDocRef.get();
     const data = document.data();
-
     return data?.[userAddress]?.authorized;
   }
 
@@ -149,9 +134,9 @@ export default class CollectionsService {
    */
   async canModify(userAddress: string, parsedCollection: ParsedCollectionId) {
     return (
-      (await this.isCreator(userAddress, parsedCollection)) ||
+      (await this.isDeployer(userAddress, parsedCollection)) ||
       (await this.isEditor(userAddress, parsedCollection)) ||
-      (await this.isAdmin(userAddress, parsedCollection))
+      (await this.isAdmin(userAddress))
     );
   }
 }
