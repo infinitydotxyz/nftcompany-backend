@@ -32,7 +32,7 @@ describe('StatsService', () => {
       chainId: ChainId.Mainnet
     });
     const stats = await service.getCurrentSocialsStats(bayc);
-    console.log(stats);
+    // Console.log(stats);
     expect(stats).toBeDefined();
   });
 
@@ -46,7 +46,7 @@ describe('StatsService', () => {
     };
     try {
       const stats = await service.getCollectionRankings(query);
-      console.log(stats);
+      // Console.log(stats);
       expect(stats).toBeDefined();
     } catch (err) {
       console.error(err);
