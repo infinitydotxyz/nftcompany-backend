@@ -52,6 +52,7 @@ import { DiscordService } from 'discord/discord.service';
 import { TwitterService } from 'twitter/twitter.service';
 import { CollectionMetadata, Links } from '@infinityxyz/lib/types/core';
 import { instanceToPlain } from 'class-transformer';
+import { StatsService } from 'stats/stats.service';
 
 @Controller('user')
 export class UserController {
@@ -62,8 +63,7 @@ export class UserController {
     private votesService: VotesService,
     private collectionsService: CollectionsService,
     private storageService: StorageService,
-    private discordService: DiscordService,
-    private twitterService: TwitterService
+    private statsService: StatsService
   ) {}
 
   @Get(':userId/watchlist')
@@ -197,18 +197,7 @@ export class UserController {
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
 
-    // Update social media snippets in the background (do NOT await this call).
-    // Errors will be logged to console but won't halt execution.
-    this.updateSnippets(collection, metadata.links);
-  }
-
-  private async updateSnippets(collection: ParsedCollectionId, links: Links) {
-    try {
-      const force = true;
-      await this.twitterService.getTwitterSnippet(collection, links.twitter, force);
-      await this.discordService.getDiscordSnippet(collection, links.discord, force);
-    } catch (err) {
-      this.logger.error(err);
-    }
+    // Update stats in the background (do NOT await this call).
+    this.statsService.getCurrentSocialsStats(collection.ref);
   }
 }
