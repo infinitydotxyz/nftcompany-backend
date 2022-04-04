@@ -23,6 +23,7 @@ import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { MatchSigner } from 'common/decorators/match-signer.decorator';
 
 @Controller('user')
 export class UserController {
@@ -34,7 +35,8 @@ export class UserController {
     tags: [ApiTag.User, ApiTag.Stats]
   })
   @ApiSignatureAuth()
-  @UseGuards(new AuthGuard())
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
@@ -56,7 +58,8 @@ export class UserController {
 
   @Get(':userId/collections/votes')
   @ApiSignatureAuth()
-  @UseGuards(new AuthGuard())
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
   @ApiOperation({
     description: "Get a user's votes on collections",
     tags: [ApiTag.User, ApiTag.Votes]
@@ -75,7 +78,8 @@ export class UserController {
 
   @Post(':userId/collections/votes')
   @ApiSignatureAuth()
-  @UseGuards(new AuthGuard())
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
   @ApiOperation({
     description: "Update a user's vote on a collection",
     tags: [ApiTag.User, ApiTag.Votes]
