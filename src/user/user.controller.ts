@@ -172,7 +172,7 @@ export class UserController {
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Headers('Content-Type') contentType: string,
-    @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
+    @Body() { metadata = {}, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
@@ -192,7 +192,6 @@ export class UserController {
         data: profileImage.buffer
       });
       metadata.profileImage = image.publicUrl();
-      return;
     }
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);

@@ -1,8 +1,8 @@
 import { ChainId, Collection, CollectionAttributes, TokenStandard } from '@infinityxyz/lib/types/core';
-import { ApiProperty, ApiPropertyOptional, PartialType, PickType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsObject, ValidateNested } from 'class-validator';
-import { CollectionMetaDataDto } from './collection-metadata.dto';
+import { CollectionMetaDataDto, PartialCollectionMetadataDto } from './collection-metadata.dto';
 import { CollectionStateDto } from './collection-state.dto';
 
 type CollectionType = Omit<Collection, 'tokenStandard'> & { tokenStandard: TokenStandard };
@@ -101,7 +101,7 @@ export class CollectionDto implements CollectionType {
   state: CollectionStateDto;
 }
 
-export class UpdateCollectionDto extends PickType(CollectionDto, ['metadata'] as const) {
+export class UpdateCollectionDto {
   @ApiPropertyOptional({
     description: 'Whether to remove the current profile image'
   })
@@ -113,5 +113,12 @@ export class UpdateCollectionDto extends PickType(CollectionDto, ['metadata'] as
     required: false,
     type: 'file'
   })
-  profileImage: string;
+  profileImage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Metadata about the collection'
+  })
+  @ValidateNested()
+  @Type(() => CollectionMetaDataDto)
+  metadata?: PartialCollectionMetadataDto;
 }

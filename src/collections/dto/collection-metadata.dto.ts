@@ -1,5 +1,5 @@
 import { CollectionMetadata } from '@infinityxyz/lib/types/core';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { CollectionIntegrationsDto } from './collection-integrations.dto';
@@ -68,3 +68,5 @@ export class CollectionMetaDataDto implements CollectionMetadata {
   @IsOptional()
   displayType?: string;
 }
+
+export class PartialCollectionMetadataDto extends PartialType(CollectionMetaDataDto) {}
