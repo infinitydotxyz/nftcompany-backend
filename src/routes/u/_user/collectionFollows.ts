@@ -5,7 +5,7 @@ import { Request, Response } from 'express';
 import { StatusCode } from '@infinityxyz/lib/types/core';
 import { CollectionFollow } from '@infinityxyz/lib/types/core/Follows';
 
-// fetch collections that a user follows.
+// Fetch collections that a user follows.
 export const fetchFollowingCollectionsByUser = async (userAddress: string, limit = 0) => {
   const follows = getUserInfoRef(userAddress).collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
 
@@ -44,7 +44,7 @@ export const getCollectionFollows = async (
   const result = await fetchFollowingCollectionsByUser(user, limit);
 
   const resp = jsonString(result);
-  // to enable cdn cache
+  // To enable cdn cache
   res.set({
     'Cache-Control': 'must-revalidate, max-age=30',
     'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

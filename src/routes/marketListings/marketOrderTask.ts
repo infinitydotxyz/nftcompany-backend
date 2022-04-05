@@ -13,7 +13,7 @@ export class MarketOrderTask {
   matchScanTimer: NodeJS.Timeout | undefined;
 
   constructor() {
-    // schedule a scan
+    // Schedule a scan
     this.scan();
 
     setInterval(() => {
@@ -32,7 +32,7 @@ export class MarketOrderTask {
         const orders = await expiredOrders();
         for (const order of orders) {
           if (isOrderExpired(order.order)) {
-            // move order to invalid list
+            // Move order to invalid list
             await moveOrder(order.order, order.listId, 'invalid');
           }
         }
@@ -47,7 +47,7 @@ export class MarketOrderTask {
       this.matchScanTimer = setTimeout(async () => {
         const matches = await marketOrders.marketMatches();
 
-        // execute the buys if found
+        // Execute the buys if found
         for (const m of matches) {
           await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
         }

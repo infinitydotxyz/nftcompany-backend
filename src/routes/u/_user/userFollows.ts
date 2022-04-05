@@ -1,4 +1,4 @@
-// import { firestore } from '@base/container';
+// Import { firestore } from '@base/container';
 import { getUserInfoRef } from 'services/infinity/users/getUser';
 import { error, trimLowerCase, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
@@ -35,7 +35,7 @@ export const getUserFollows = async (
   }
 
   const resp = jsonString(result);
-  // to enable cdn cache
+  // To enable cdn cache
   res.set({
     'Cache-Control': 'must-revalidate, max-age=30',
     'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

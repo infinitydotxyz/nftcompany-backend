@@ -8,7 +8,7 @@ import { BigNumber } from 'ethers';
 
 @singleton()
 export class MarketOrders {
-  // runs in the background, scanning the order list
+  // Runs in the background, scanning the order list
   task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
@@ -21,10 +21,10 @@ export class MarketOrders {
         const aso = new ActiveSellOrders();
         const result = await marketOrders.findMatchForBuy(buyOrder, aso);
 
-        // do the block chain stuff here.  If success delete the orders
+        // Do the block chain stuff here.  If success delete the orders
 
         if (result) {
-          // move order to validInactive
+          // Move order to validInactive
           await moveOrder(result.buyOrder, 'validActive', 'validInactive');
 
           for (const sellOrder of result.sellOrders) {
@@ -104,6 +104,6 @@ export class MarketOrders {
 }
 
 // ---------------------------------------------------------------
-// singleton
+// Singleton
 
 export const marketOrders: MarketOrders = container.resolve(MarketOrders);

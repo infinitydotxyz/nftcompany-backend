@@ -5,7 +5,7 @@ import { BaseFeedEvent } from '@infinityxyz/lib/types/core/feed';
 import { fetchFollowingCollectionsByUser } from './collectionFollows';
 import { firestore } from 'container';
 
-const QUERY_ARRAY_IN_LIMIT = 10; // limit of Firestore where-in-array items.
+const QUERY_ARRAY_IN_LIMIT = 10; // Limit of Firestore where-in-array items.
 
 const flattenArray = (array) => array.reduce((x, y) => x.concat(y.docs), []);
 
@@ -34,7 +34,7 @@ export const getUserFeed = async (
   const followAddresses = follows.map((item) => item.address);
   const eventsRef = firestore.db.collection(firestoreConstants.FEED_COLL);
 
-  // since firestore has a limit of 10 array items for the query 'in'
+  // Since firestore has a limit of 10 array items for the query 'in'
   // => split the followAddresses into chunks of 10 addresses, then query them in parallel.
   const promises: Array<Promise<FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>>> = [];
   for (let i = 0; i < followAddresses.length; i += QUERY_ARRAY_IN_LIMIT) {
@@ -52,7 +52,7 @@ export const getUserFeed = async (
     data
   });
 
-  // to enable cdn cache
+  // To enable cdn cache
   res.set({
     'Cache-Control': 'must-revalidate, max-age=60',
     'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

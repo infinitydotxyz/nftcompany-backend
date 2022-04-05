@@ -32,7 +32,7 @@ export function isOrderExpired(doc: any) {
   const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
   const orderExpirationTime = +order.expirationTime;
   if (orderExpirationTime === 0) {
-    // special case of never expire
+    // Special case of never expire
     return false;
   }
   return orderExpirationTime <= utcSecondsSinceEpoch;
@@ -51,14 +51,22 @@ export function getOrdersResponseFromArray(docs: any) {
       void checkOwnershipChange(doc)
         .then((ownershipChanged) => {
           if (ownershipChanged) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           } else {
             return validateOrder(doc);
           }
         })
         .then((isValid) => {
           if (!isValid) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           }
         })
         .catch((err) => {
@@ -163,7 +171,7 @@ export async function validateOrder(doc: any): Promise<boolean> {
   try {
     const order = doc?.data?.();
     /**
-     * we use order hash to verify that this listing
+     * We use order hash to verify that this listing
      * has an actual order
      */
     if (!order.hash) {

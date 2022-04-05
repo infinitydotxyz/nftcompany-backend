@@ -17,7 +17,7 @@ export async function getAssetFromCovalent(chainId: string, tokenId: string, tok
     const items = data.data.items;
 
     if (items.length > 0) {
-      // save in db for future use
+      // Save in db for future use
       return await saveRawCovalentAssetInDatabase(chainId, items[0]);
     } else {
       return {

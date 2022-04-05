@@ -1,10 +1,14 @@
-import { getChainId, getProvider } from 'utils/ethers';
+import { getChainId, getProvider } from './ethers';
 import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
 import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
 import { error } from '@infinityxyz/lib/utils';
+
+export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
+
+export const base64Decode = (data?: string) => Buffer.from(data ?? '', 'base64').toString();
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -19,18 +23,18 @@ export function deepCopy(object: any) {
 }
 
 export function bn(num: BigNumber.Value) {
-  // @ts-expect-error
+  // @ts-expect-error not sure
   const bigNum = BigNumber(num);
-  // console.log(num + '   ====== bigNUm ' + bigNum);
-  // console.log(__line);
+  // Console.log(num + '   ====== bigNUm ' + bigNum);
+  // Console.log(__line);
   return bigNum;
 }
 
 export function toFixed5(num: BigNumber.Value) {
   // eslint-disable-next-line no-undef
-  // console.log(__line);
+  // Console.log(__line);
   return +bn(num).toFixed(5);
-  // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+  // Return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 export function getUniqueItemsByProperties<T>(items: List<T> | null | undefined, property: string) {
@@ -56,11 +60,11 @@ export function getNextWeek(weekNumber: number, year: number) {
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
 
-// validate api inputs; return a StatusCode if error;
-// example: validateInputs({ user, listType }, ['user']) // require 'user'
+// Validate api inputs; return a StatusCode if error;
+// Example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
-  ids?: string; // comma separated string of ids.
+  ids?: string; // Comma separated string of ids.
   user?: string | undefined;
   sourceName?: string | undefined;
   chain?: string | undefined;
@@ -124,4 +128,16 @@ export function hexToDecimalTokenId(tokenId: string): string {
     tokenId = String(parseInt(tokenId, 16));
   }
   return tokenId;
+}
+
+export function calcPercentChange(prev = NaN, current: number) {
+  const change = prev - current;
+  const decimal = change / Math.abs(prev);
+  const percent = decimal * 100;
+
+  if (Number.isNaN(percent)) {
+    return current;
+  }
+
+  return percent;
 }

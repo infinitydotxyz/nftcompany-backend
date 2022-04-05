@@ -4,7 +4,7 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
 
-// check if token is verified or has bonus reward
+// Check if token is verified or has bonus reward
 export const getVerifiedBonusReward = async (
   req: Request<{ tokenAddress: string; chainId: string }>,
   res: Response
@@ -31,7 +31,7 @@ export const getVerifiedBonusReward = async (
 
     const respStr = jsonString(resp);
 
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=3600',
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

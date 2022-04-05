@@ -56,7 +56,7 @@ export async function getReward(userAddress: string) {
 
   const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
-  // initiate refresh pending txns
+  // Initiate refresh pending txns
   void refreshUserPendingTxns(userAddress);
 
   const resp = {
@@ -81,7 +81,7 @@ export async function getReward(userAddress: string) {
     usPerson
   };
 
-  // write net reward to firestore async for leaderboard purpose
+  // Write net reward to firestore async for leaderboard purpose
   getUserInfoRef(userAddress)
     .set(
       {

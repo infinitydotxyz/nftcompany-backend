@@ -48,12 +48,12 @@ export default class FirestoreBatchHandler {
           await batch.commit();
           return;
         } catch (err) {
-          // logger.error('Failed to commit batch', err);
+          // Logger.error('Failed to commit batch', err);
           if (attempt > maxAttempts) {
             error(`Failed to commit batch`);
             throw err;
           }
-          await sleep(1000); // firebase has a limit of 1 write per doc per second
+          await sleep(1000); // Firebase has a limit of 1 write per doc per second
         }
       }
     }

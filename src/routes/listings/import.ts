@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
 import { getOpenseaOrders } from 'services/opensea/orders';
@@ -37,7 +38,7 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
     }
 
     /**
-     * limit to eth and weth
+     * Limit to eth and weth
      */
     if (!chainId || chainId === '1') {
       paymentTokenAddress = listingType === ListingType.EnglishAuction ? WETH_ADDRESS : '';

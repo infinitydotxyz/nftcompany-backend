@@ -1,6 +1,6 @@
 /**
  *
- * iterates through collection in the ALL_COLLECTIONS collection
+ * Iterates through collection in the ALL_COLLECTIONS collection
  * gets searchCollectionNames from listings (20)
  * makes sure it only received one searchCollectionName from all listings (20)
  * updates the collection info the ALL_COLLECTIONS collection with the
@@ -16,7 +16,7 @@ import { sleep } from 'utils';
 
 /**
  *
- * delay in ms after updating a collection, in-case you want to double check
+ * Delay in ms after updating a collection, in-case you want to double check
  * changes as the script updates
  */
 export async function updateSearchCollectionName(delay: number) {
@@ -50,7 +50,7 @@ export async function updateSearchCollectionName(delay: number) {
 
         if (listingSearchCollectionNames.length === 1 && updatedSearchCollectionName) {
           /**
-           * update collection info
+           * Update collection info
            */
           try {
             await collectionDoc.ref.update('searchCollectionName', updatedSearchCollectionName);

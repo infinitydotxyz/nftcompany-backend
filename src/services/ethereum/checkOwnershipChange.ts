@@ -13,7 +13,7 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
   const id = order.metadata.asset.id;
   const chainId = order.metadata.chainId;
   if (side === 1) {
-    // listing
+    // Listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
       return await checkERC721Ownership(doc, chainId, maker, address, id);
@@ -21,7 +21,7 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
       return await checkERC1155Ownership(doc, chainId, maker, address, id);
     }
   } else if (side === 0) {
-    // offer
+    // Offer
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
       return await checkERC721Ownership(doc, chainId, owner, address, id);

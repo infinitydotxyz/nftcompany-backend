@@ -15,10 +15,10 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
     return;
   }
 
-  // generate guid
+  // Generate guid
   const guid = crypto.randomBytes(30).toString('hex');
 
-  // store
+  // Store
   try {
     await getUserInfoRef(user).set(
       {
@@ -34,7 +34,7 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
       { merge: true }
     );
 
-    // send email
+    // Send email
     const subject = 'Verify your email for Infinity';
     const link = `${API_BASE}/verifyEmail?email=${email}&user=${user}&guid=${guid}`;
     const html =

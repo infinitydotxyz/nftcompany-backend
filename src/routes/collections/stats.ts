@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { firestore } from 'container';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';
@@ -71,22 +72,22 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // these queries are broken due to the new stats structure
+      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // These queries are broken due to the new stats structure
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
           if (interval === Interval.Total) {
-            // statsQuery = firestore.db
+            // StatsQuery = firestore.db
             //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
             //   .orderBy(`averagePrice`, orderDirection);
           } else {
-            // statsQuery = firestore.db
+            // StatsQuery = firestore.db
             //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
             //   .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
         case OrderBy.Volume:
-          // statsQuery = firestore.db
+          // StatsQuery = firestore.db
           //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
           //   .orderBy(`${interval}.volume`, orderDirection);
 
@@ -105,7 +106,7 @@ router.get(
       const results = await statsQuery.limit(limit).get();
 
       const data = (results.docs ?? []).map((item) => {
-        // add startAfter which is the path
+        // Add startAfter which is the path
         const result = item.data();
         result.startAfter = item.ref.path;
 

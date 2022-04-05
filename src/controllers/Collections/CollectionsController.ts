@@ -55,7 +55,7 @@ interface TwitterHistoricalData {
 }
 
 /**
- * getCollectionInfo handles a request for collection info by slug or collection address
+ * GetCollectionInfo handles a request for collection info by slug or collection address
  */
 export async function getCollectionInfo(req: Request<{ slug: string; chainId: string }>, res: Response) {
   const slugOrAddress = req.params.slug;
@@ -70,7 +70,7 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
 
     let collectionInfo: BaseCollection | undefined;
     /**
-     * get base collection info
+     * Get base collection info
      */
     if (ethers.utils.isAddress(slugOrAddress)) {
       const address = trimLowerCase(slugOrAddress);
@@ -92,7 +92,7 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
     }
 
     const respStr = jsonString(collectionData ?? {});
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -107,7 +107,7 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
 }
 
 /**
- * getCollectionInfo handles a request for collection info by slug or collection address
+ * GetCollectionInfo handles a request for collection info by slug or collection address
  */
 export async function getCollectionInformationForEditor(
   req: Request<{ collection: string; user: string; chainId: string }>,
@@ -116,11 +116,11 @@ export async function getCollectionInformationForEditor(
   const address = trimLowerCase(req.params.collection);
   const chainId = req.params.chainId;
   // TODO: editorType and isCreator are still being used?
-  // const editorType = res.locals.authType;
-  // const isCreator = editorType === CollectionAuthType.Creator;
+  // Const editorType = res.locals.authType;
+  // Const isCreator = editorType === CollectionAuthType.Creator;
 
   /**
-   * this can be used for controlling permissions based on if the
+   * This can be used for controlling permissions based on if the
    * user is a contract creator, editor or infinity admin
    */
 
@@ -133,7 +133,7 @@ export async function getCollectionInformationForEditor(
     log('Fetching collection info for', address);
 
     /**
-     * get base collection info
+     * Get base collection info
      */
     const collectionInfo = await getCollectionInfoByAddress({ chainId, address });
     let collectionData: BaseCollection | undefined;
@@ -142,17 +142,17 @@ export async function getCollectionInformationForEditor(
     }
 
     /**
-     * creator clicked edit button for the first time
+     * Creator clicked edit button for the first time
      */
     // TODO: .isClaimed is still being used?
-    // if (!collectionData?.isClaimed && isCreator) {
-    //   const collectionDocId = `${chainId}:${address}`;
-    //   const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionDocId);
-    //   await collectionInfoRef.set({ isClaimed: true }, { merge: true });
+    // If (!collectionData?.isClaimed && isCreator) {
+    //   Const collectionDocId = `${chainId}:${address}`;
+    //   Const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionDocId);
+    //   Await collectionInfoRef.set({ isClaimed: true }, { merge: true });
     // }
 
     const respStr = jsonString(collectionData ?? {});
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -172,15 +172,15 @@ export async function postCollectionInformation(
 ) {
   const chainId = req.params.chainId ?? '1';
   const collectionAddress = trimLowerCase(req.params.collection);
-  // const editor = trimLowerCase(req.params.user);
-  // const editorType = res.locals.authType;
+  // Const editor = trimLowerCase(req.params.user);
+  // Const editorType = res.locals.authType;
 
   try {
     const data: UpdateCollectionDataRequest = JSON.parse(req.body.data);
     const profileImageFile: UploadedFile = req?.files?.profileImage as UploadedFile;
     let profileImageUpdate: { profileImage: string } = {} as any;
     /**
-     * upload profile image to google cloud storage bucket
+     * Upload profile image to google cloud storage bucket
      */
     if (profileImageFile) {
       const hash = profileImageFile.md5;
@@ -243,7 +243,7 @@ export async function postCollectionInformation(
 
     const forceUpdate = true;
     /**
-     * handles updating twitter data
+     * Handles updating twitter data
      */
     getTwitterSnippet({ collectionAddress, chainId }, data.twitter, forceUpdate)
       .then(() => {
@@ -255,7 +255,7 @@ export async function postCollectionInformation(
       });
 
     /**
-     * handles updating discord data
+     * Handles updating discord data
      */
     getDiscordSnippet({ collectionAddress, chainId }, data.discord, forceUpdate)
       .then(() => {
@@ -296,16 +296,16 @@ async function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollectio
     promises.push(twitterSnippetPromise);
   }
   /**
-   * pulled/updated concurrently
+   * Pulled/updated concurrently
    */
   // TODO: .discordSnippet is still being used?
-  // const results = await Promise.all(promises);
-  // for (const result of results) {
-  //   if (result && collectionData) {
-  //     if ('membersCount' in result) {
-  //       collectionData.discordSnippet = result;
+  // Const results = await Promise.all(promises);
+  // For (const result of results) {
+  //   If (result && collectionData) {
+  //     If ('membersCount' in result) {
+  //       CollectionData.discordSnippet = result;
   //     } else if (result) {
-  //       collectionData.twitterSnippet = result;
+  //       CollectionData.twitterSnippet = result;
   //     }
   //   }
   // }
@@ -314,7 +314,7 @@ async function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollectio
 }
 
 /**
- * getCollectionVotes is a proxy for getting votes for a collection
+ * GetCollectionVotes is a proxy for getting votes for a collection
  *
  * **NOTE** votes should only be available to those that are authenticated, therefore requesting votes
  * for a collection is handled by the votes endpoint under the authenticated user path
@@ -424,7 +424,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
       historicalData.sort((itemA, itemB) => itemA.timestamp - itemB.timestamp);
 
       const respStr = jsonString(historicalData ?? {});
-      // to enable cdn cache
+      // To enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -454,7 +454,7 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
     .collection(firestoreConstants.DATA_SUB_COLL)
     .doc(historicalDocId)
     .collection(firestoreConstants.HISTORICAL_COLL);
-  let timestamp: number = Number(startAt);
+  let timestamp = Number(startAt);
 
   let dataPoints: Array<Record<keyof Data, number>> = [];
   let dataPointLimit = limit;
@@ -486,7 +486,7 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
 }
 
 /**
- * getCollectionInfoByAddress takes an address and returns the matching collection
+ * GetCollectionInfoByAddress takes an address and returns the matching collection
  * info object if it exists
  *
  */
@@ -504,7 +504,7 @@ async function getCollectionInfoByAddress(data: {
 }
 
 /**
- * getCollectionInfoByName takes a collection name/slug and a limit then returns an
+ * GetCollectionInfoByName takes a collection name/slug and a limit then returns an
  * array of the corresponding collection info objects
  *
  */
@@ -529,7 +529,7 @@ async function getTwitterSnippet(
     return;
   }
   const docId = getCollectionDocId(collection);
-  // get snippet
+  // Get snippet
   const twitterRef = firestore
     .collection(firestoreConstants.COLLECTIONS_COLL)
     .doc(docId)
@@ -543,7 +543,7 @@ async function getTwitterSnippet(
 }
 
 /**
- * updateTwitterData requests recent tweets from twitter (if it should be updated), saves the data to the database and
+ * UpdateTwitterData requests recent tweets from twitter (if it should be updated), saves the data to the database and
  * returns the updated collection info
  */
 async function updateTwitterData(
@@ -560,7 +560,7 @@ async function updateTwitterData(
       const username = twitterLink.match(twitterUsernameRegex)?.[1];
 
       if (username) {
-        // get twitter data
+        // Get twitter data
         const twitterClient = new Twitter();
         const twitterData = await twitterClient.getVerifiedAccountMentions(username);
 
@@ -600,7 +600,7 @@ async function updateTwitterData(
           .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
 
         /**
-         * update collection info tweet snippet
+         * Update collection info tweet snippet
          */
         batch.set(
           twitterRef,
@@ -616,7 +616,7 @@ async function updateTwitterData(
         const weekDocRef = twitterRef.collection(firestoreConstants.HISTORICAL_COLL).doc(docId);
 
         /**
-         * update historical data
+         * Update historical data
          */
         batch.set(
           weekDocRef,
@@ -627,7 +627,7 @@ async function updateTwitterData(
           { merge: true }
         );
 
-        // commit this batch so the updated data is available to aggregate the historical data
+        // Commit this batch so the updated data is available to aggregate the historical data
         await batch.commit();
 
         const batch2 = firestore.db.batch();
@@ -641,7 +641,7 @@ async function updateTwitterData(
         );
 
         /**
-         *  update snippet with aggregated data
+         *  Update snippet with aggregated data
          */
         batch2.set(
           twitterRef,
@@ -722,7 +722,7 @@ export async function updateDiscordSnippet(
           .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
 
         /**
-         * update collection info tweet snippet
+         * Update collection info tweet snippet
          */
         batch.set(
           discordRef,
@@ -741,7 +741,7 @@ export async function updateDiscordSnippet(
         const weekDocRef = discordRef.collection(firestoreConstants.HISTORICAL_COLL).doc(docId);
 
         /**
-         * update historical data
+         * Update historical data
          */
         batch.set(
           weekDocRef,
@@ -752,7 +752,7 @@ export async function updateDiscordSnippet(
           { merge: true }
         );
 
-        // commit this batch so the updated data is available to aggregate the historical data
+        // Commit this batch so the updated data is available to aggregate the historical data
         await batch.commit();
 
         const batch2 = firestore.db.batch();
@@ -766,7 +766,7 @@ export async function updateDiscordSnippet(
         );
 
         /**
-         *  update snippet with aggregated data
+         *  Update snippet with aggregated data
          */
         batch2.set(
           discordRef,

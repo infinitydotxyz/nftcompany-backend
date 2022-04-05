@@ -13,7 +13,7 @@ export async function getVerifiedCollectionIds() {
 
   try {
     if (verifiedCollectionIds && verifiedCollectionIds.length > 0) {
-      return verifiedCollectionIds; // return cached data if any.
+      return verifiedCollectionIds; // Return cached data if any.
     }
     isFetching = true;
     log('getVerifiedCollectionIds: fetching verified collection ids');
@@ -28,7 +28,7 @@ export async function getVerifiedCollectionIds() {
       return doc.id;
     });
 
-    setupAllCollectionsListener(); // listen to db changes to update cache.
+    setupAllCollectionsListener(); // Listen to db changes to update cache.
   } catch (err) {
     throw new Error(`error in getVerifiedCollectionIds ${err}`);
   }

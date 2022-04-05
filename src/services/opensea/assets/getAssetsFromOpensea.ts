@@ -59,7 +59,7 @@ export async function getAssetsFromOpensea(
     : { order_direction: defaultOrderDirection };
 
   const offsetQuery = offset ? { offset } : { offset: 0 };
-  // limit is capped at 50
+  // Limit is capped at 50
   const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
   const collectionQuery = collection ? { collection } : {};
 

@@ -13,7 +13,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
   const tokenId = payload.metadata.asset.id.trim();
   const chainId = payload.metadata.chainId;
 
-  // check if token is verified if payload instructs so
+  // Check if token is verified if payload instructs so
   let blueCheck = payload.metadata.hasBlueCheck;
   if (payload.metadata.checkBlueCheck) {
     blueCheck = await isTokenVerified(tokenAddress);
@@ -21,11 +21,11 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
   payload.metadata.hasBlueCheck = blueCheck;
   payload.metadata.createdAt = Date.now();
 
-  // write listing
+  // Write listing
   const listingRef = getUserListingRef(maker, { tokenAddress, tokenId, basePrice });
   batch.set(listingRef, payload, { merge: true });
 
-  // store as asset for future use
+  // Store as asset for future use
   const listingAsAssetRef = firestore
     .collection(fstrCnstnts.ROOT_COLL)
     .doc(fstrCnstnts.INFO_DOC)
@@ -34,7 +34,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
 
   batch.set(listingAsAssetRef, payload, { merge: true });
 
-  // update collection listings
+  // Update collection listings
   try {
     await firestore
       .collection(fstrCnstnts.COLLECTION_LISTINGS_COLL)
@@ -63,6 +63,6 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
     error(err);
   }
 
-  // update num user listings
+  // Update num user listings
   updateNumOrders(batch, maker, numOrders, hasBonus, 1);
 }

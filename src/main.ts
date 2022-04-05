@@ -1,44 +1,69 @@
-import 'reflect-metadata';
-import './globals';
-import express from 'express';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as helmet from 'helmet';
+import { AppModule } from './app.module';
+import { auth, INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
+import { HttpExceptionFilter } from './http-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import listingsRouter from './routes/listings';
 
-import helmet from 'helmet';
-import cors from 'cors';
-import router from 'routes';
-import { requestErrorHandler } from 'middleware/errorHandler';
-import { requestLogger } from 'middleware/logger';
-import { registerDocs } from './docs';
-import { ORIGIN } from './constants';
-import { log } from '@infinityxyz/lib/utils';
-
-const app = express();
-
-const registerMiddleware = () => {
-  app.use(express.json());
-  const corsOptions: cors.CorsOptions = {
+function setup(app: INestApplication) {
+  app.enableCors({
     origin: ORIGIN,
     optionsSuccessStatus: 200
-  };
-  app.use(cors(corsOptions));
+  });
   app.use(helmet());
-  app.use(requestLogger);
-};
+  app.useGlobalFilters(new HttpExceptionFilter());
 
-const registerRoutes = () => {
-  app.use('/', router);
-};
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip validated object of any properties that do not use any validation decorators
+      transform: true
+    })
+  );
 
-const registerErrorHandler = () => {
-  app.use(requestErrorHandler);
-};
+  /**
+   * Unconverted routes needed for FE development
+   *
+   * Only register the specific route that you need
+   */
+  app.use('/listings', listingsRouter);
 
-registerDocs(app);
-registerMiddleware();
-registerRoutes();
-// error handler should be the last middleware registered
-registerErrorHandler();
+  setupSwagger(app, 'docs');
+}
 
-const PORT = process.env.PORT ?? 9090;
-app.listen(PORT, () => {
-  log(`Server listening on port ${PORT}...`);
-});
+function setupSwagger(app: INestApplication, path: string) {
+  const config = new DocumentBuilder()
+    .setTitle('Infinity API')
+    .setDescription('Developer API')
+    .setContact('infinity', INFINITY_URL, INFINITY_EMAIL)
+    .setVersion('1.0.0')
+    .addSecurity(auth.signature, {
+      type: 'apiKey',
+      scheme: `${auth.signature}: <user signed message>`,
+      name: auth.signature,
+      in: 'header',
+      description: `Pass the user signed messaged in the ${auth.signature} header`
+    })
+    .addSecurity(auth.message, {
+      type: 'apiKey',
+      scheme: `${auth.message}: <original message>`,
+      name: auth.message,
+      in: 'header',
+      description: `Pass the message that was signed in the ${auth.message} header`
+    })
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup(path, app, document);
+}
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  setup(app);
+  await app.listen(process.env.PORT || 9090);
+}
+
+bootstrap();

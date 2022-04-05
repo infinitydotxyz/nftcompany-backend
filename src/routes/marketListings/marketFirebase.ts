@@ -49,7 +49,7 @@ export const moveOrder = async (
 };
 
 // ===============================================================
-// buy orders
+// Buy orders
 
 export const buyOrders = async (listId: MarketListIdType): Promise<OBOrder[]> => {
   const orders = await buyOrderMap(listId);
@@ -97,7 +97,7 @@ export const deleteBuyOrder = async (listId: MarketListIdType, orderId: string):
 export const saveBuyOrder = async (listId: MarketListIdType, buyOrder: OBOrder): Promise<OBOrder> => {
   const collection = await firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders');
 
-  // set id to hash
+  // Set id to hash
   buyOrder.id = orderHash(buyOrder);
 
   const doc = collection.doc(buyOrder.id);
@@ -107,7 +107,7 @@ export const saveBuyOrder = async (listId: MarketListIdType, buyOrder: OBOrder):
 };
 
 // ===============================================================
-// sell orders
+// Sell orders
 
 export const sellOrders = async (listId: MarketListIdType): Promise<OBOrder[]> => {
   const orders = await sellOrderMap(listId);
@@ -140,7 +140,7 @@ export const sellOrdersWithParams = async (
     .collection(fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
     .collection('orders')
-    // collectionAddresses is added on save, it's not part of the OBOrder
+    // CollectionAddresses is added on save, it's not part of the OBOrder
     .where('collectionAddresses', 'array-contains-any', collectionAddresses)
     .get();
 
@@ -176,10 +176,10 @@ export const deleteSellOrder = async (listId: MarketListIdType, orderId: string)
 export const saveSellOrder = async (listId: MarketListIdType, sellOrder: OBOrder): Promise<OBOrder> => {
   const collection = await firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders');
 
-  // set id to hash
+  // Set id to hash
   sellOrder.id = orderHash(sellOrder);
 
-  // add collectionAddresses which is used for queries
+  // Add collectionAddresses which is used for queries
   const collectionAddresses: string[] = [];
   for (const nft of sellOrder.nfts) {
     collectionAddresses.push(nft.collection);
@@ -194,18 +194,18 @@ export const saveSellOrder = async (listId: MarketListIdType, sellOrder: OBOrder
 };
 
 // ===============================================================
-// expired orders
+// Expired orders
 
 export const expiredOrders = async (): Promise<ExpiredCacheItem[]> => {
   const result: ExpiredCacheItem[] = [];
 
   result.push(...(await expiredBuyOrders('validActive')));
   result.push(...(await expiredBuyOrders('validInactive')));
-  // result.push(...(await expiredBuyOrders('invalid')));
+  // Result.push(...(await expiredBuyOrders('invalid')));
 
   result.push(...(await expiredSellOrders('validActive')));
   result.push(...(await expiredSellOrders('validInactive')));
-  // result.push(...(await expiredSellOrders('invalid')));
+  // Result.push(...(await expiredSellOrders('invalid')));
 
   return result;
 };

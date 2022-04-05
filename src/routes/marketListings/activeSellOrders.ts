@@ -49,8 +49,8 @@ export class ActiveSellOrders {
 
     const sortedOrders = result.sort((a, b) => {
       const aCurrPrice = getCurrentOrderPrice(a);
-      const bCurrPrice = getCurrentOrderPrice(a);
-      // todo: might need to convert to ETH first to prevent overflow
+      const bCurrPrice = getCurrentOrderPrice(a); // TODO this doesn't seem right
+      // Todo: might need to convert to ETH first to prevent overflow
       return aCurrPrice.sub(bCurrPrice).toNumber();
     });
 

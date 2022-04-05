@@ -10,7 +10,7 @@ export async function getAssetFromOpensea(chainId: string, tokenId: string, toke
     const url = OPENSEA_API + 'asset/' + tokenAddress + '/' + tokenId;
 
     const { data }: AxiosResponse<WyvernAssetData> = await openseaClient.get(url);
-    // store asset for future use
+    // Store asset for future use
     return await saveRawOpenseaAssetInDatabase(chainId, data);
   } catch (err) {
     error('Failed to get asset from opensea', tokenAddress, tokenId);

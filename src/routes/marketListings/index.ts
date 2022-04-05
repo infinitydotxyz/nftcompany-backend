@@ -12,7 +12,7 @@ import { buyOrders, deleteBuyOrder, deleteSellOrder, sellOrders } from './market
 
 const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
   try {
-    if (badRequest(req, res)) {
+    if (badRequest(req)) {
       res.sendStatus(StatusCode.BadRequest);
       return;
     }
@@ -20,7 +20,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
     let sellOrds: OBOrder[] = [];
     let buyOrds: OBOrder[] = [];
     let matches: BuyOrderMatch[] = [];
-    let success: string = '';
+    let success = '';
 
     switch (req.body.action) {
       case 'list':
@@ -59,7 +59,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
         break;
     }
 
-    // set result
+    // Set result
     const resp = { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
     res.send(resp);
     return;
@@ -69,7 +69,7 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
   }
 };
 
-const badRequest = (req: Request<any, any, MarketListingsBody>, res: Response): boolean => {
+const badRequest = (req: Request<any, any, MarketListingsBody>): boolean => {
   if (Object.keys(req.body).length === 0) {
     error('Invalid input - body empty');
     return true;
