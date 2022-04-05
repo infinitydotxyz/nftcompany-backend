@@ -6,6 +6,12 @@
 $ npm install
 ```
 
+## Setup 
+* Fill out `.env.example` and rename to `.env`
+* Create credentials 
+    * `src/creds/nftc-dev-firebase-creds.json`
+    
+
 ## Running the app
 
 ```bash

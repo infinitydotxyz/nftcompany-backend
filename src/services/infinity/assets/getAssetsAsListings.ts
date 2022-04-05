@@ -20,7 +20,6 @@ export async function fetchAssetAsListingFromDb(
     let listings;
 
     if (!doc.exists) {
-      // Todo: adi replace opensea and covalent
       if (chainId === '1') {
         // Get from opensea
         listings = await getAssetFromOpensea(chainId, tokenId, tokenAddress);

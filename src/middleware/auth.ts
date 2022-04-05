@@ -6,7 +6,6 @@ import { firestore } from 'container';
 import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
-  // Todo: adi for testing only
   // Return true;
 
   const userId = trimLowerCase(req.params.user);
