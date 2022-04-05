@@ -68,7 +68,7 @@ export async function getCollectionStats(openseaCollectionSlug: string): Promise
       reports: stats.num_reports,
       marketCap: stats.market_cap,
       floorPrice: stats.floor_price
-    };
+    } as any; // Not worth fixing since it will be deleted
   } catch (e) {
     error('Error occurred while fetching collection stats from opensea');
     error(e);
