@@ -1,10 +1,10 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts, SITE_BASE } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts, SITE_BASE } from '../../../constants';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getEmptyUserProfileInfo } from '../utils';
 import { sendEmail } from './sendEmail';
 
-// right now emails are sent when an item is purchased, offer is made or an offer is accepted
+// Right now emails are sent when an item is purchased, offer is made or an offer is accepted
 export async function prepareEmail(user: any, order: any, type: any) {
   log('Preparing to send email to user', user, 'for action type', type);
   const userDoc = await firestore
@@ -50,6 +50,6 @@ export async function prepareEmail(user: any, order: any, type: any) {
   }
 
   const html = '<p>See it here:</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
-  // send email
+  // Send email
   sendEmail(email, subject, html);
 }

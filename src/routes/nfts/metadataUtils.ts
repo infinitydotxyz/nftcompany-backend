@@ -38,7 +38,7 @@ export const generateDoge2048NftMetadata = (
   result.tokenAddress = tokenAddress;
   result.levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
 
-  // get eye trait
+  // Get eye trait
   for (const val of Object.values(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {
       result.eyeTrait = val.traitType;
@@ -46,7 +46,7 @@ export const generateDoge2048NftMetadata = (
     }
   }
 
-  // get head trait
+  // Get head trait
   for (const val of Object.values(doge2048NftMetadata.plays.levels)) {
     if (numPlays >= val.min && numPlays <= val.max) {
       result.headTrait = val.traitType;
@@ -54,7 +54,7 @@ export const generateDoge2048NftMetadata = (
     }
   }
 
-  // get neck trait
+  // Get neck trait
   for (const val of Object.values(doge2048NftMetadata.dogTokenBalanceInNft.levels)) {
     if (dogBalance >= val.min && dogBalance <= val.max) {
       result.neckTrait = val.traitType;
@@ -62,7 +62,7 @@ export const generateDoge2048NftMetadata = (
     }
   }
 
-  // get background
+  // Get background
   for (const val of Object.values(doge2048NftMetadata.background.levels)) {
     if (dogBalance >= val.min && dogBalance <= val.max) {
       result.background = val.traitType;
@@ -74,22 +74,22 @@ export const generateDoge2048NftMetadata = (
 };
 
 export const getDoge2048NftLevelId = (score: number, numPlays: number, dogBalance: number): string => {
-  let scoreLevel: string = '';
-  let playsLevel: string = '';
-  let dogBalanceLevel: string = '';
-  // get eye level
+  let scoreLevel = '';
+  let playsLevel = '';
+  let dogBalanceLevel = '';
+  // Get eye level
   for (const [key, val] of Object.entries(doge2048NftMetadata.scores.levels)) {
     if (score >= val.min && score <= val.max) {
       scoreLevel = key;
     }
   }
-  // get head level
+  // Get head level
   for (const [key, val] of Object.entries(doge2048NftMetadata.scores.levels)) {
     if (numPlays >= val.min && numPlays <= val.max) {
       playsLevel = key;
     }
   }
-  // get neck level
+  // Get neck level
   for (const [key, val] of Object.entries(doge2048NftMetadata.scores.levels)) {
     if (dogBalance >= val.min && dogBalance <= val.max) {
       dogBalanceLevel = key;

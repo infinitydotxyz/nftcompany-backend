@@ -1,14 +1,14 @@
 import axios, { AxiosInstance } from 'axios';
-import { ALCHEMY_NFT_BASE_URL_ETH_MAINNET, ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET } from '@base/constants';
-import { alchemyParamSerializer } from '@base/utils/formatters';
+import { ALCHEMY_NFT_BASE_URL_ETH_MAINNET, ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET } from '../../constants';
+import { alchemyParamSerializer } from 'utils/formatters';
 
-// eth mainnet
+// Eth mainnet
 export const alchemyMainnetClient = axios.create({
   baseURL: ALCHEMY_NFT_BASE_URL_ETH_MAINNET,
   paramsSerializer: alchemyParamSerializer
 });
 
-// polygon mainnet
+// Polygon mainnet
 export const alchemyPolygonClient = axios.create({
   baseURL: ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET,
   paramsSerializer: alchemyParamSerializer

@@ -1,6 +1,6 @@
 /**
  *
- * iterates through collection in the ALL_COLLECTIONS collection
+ * Iterates through collection in the ALL_COLLECTIONS collection
  * gets searchCollectionNames from listings (20)
  * makes sure it only received one searchCollectionName from all listings (20)
  * updates the collection info the ALL_COLLECTIONS collection with the
@@ -10,20 +10,20 @@
  *
  */
 
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { sleep } from '@utils/index';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestore } from 'container';
+import { sleep } from 'utils';
 
 /**
  *
- * delay in ms after updating a collection, in-case you want to double check
+ * Delay in ms after updating a collection, in-case you want to double check
  * changes as the script updates
  */
 export async function updateSearchCollectionName(delay: number) {
-  const allCollectionsQuery = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).get();
+  const collectionsQuery = await firestore.collection(firestoreConstants.COLLECTIONS_COLL).get();
   let collectionsUpdated = 0;
 
-  for (const collectionDoc of allCollectionsQuery.docs) {
+  for (const collectionDoc of collectionsQuery.docs) {
     const collection = collectionDoc.data();
     const collectionAddress = collection?.address?.trim()?.toLowerCase();
     const searchCollectionName = collection?.searchCollectionName;
@@ -50,7 +50,7 @@ export async function updateSearchCollectionName(delay: number) {
 
         if (listingSearchCollectionNames.length === 1 && updatedSearchCollectionName) {
           /**
-           * update collection info
+           * Update collection info
            */
           try {
             await collectionDoc.ref.update('searchCollectionName', updatedSearchCollectionName);
@@ -76,7 +76,7 @@ export async function updateSearchCollectionName(delay: number) {
 
 async function getCollectionNamesFromListings(collectionAddress: string, collectionInfoSearchCollectionName: string) {
   const collectionListingsQuery = await firestore.db
-    .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+    .collectionGroup(firestoreConstants.LISTINGS_COLL)
     .where('metadata.asset.address', '==', collectionAddress)
     .limit(20)
     .get();

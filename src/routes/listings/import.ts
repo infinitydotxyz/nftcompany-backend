@@ -1,11 +1,9 @@
-import { ListingType, OrderSide } from '@base/types/NftInterface';
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
-import { jsonString } from '@utils/formatters';
+/* eslint-disable prefer-const */
+import { ListingType, OrderSide, OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { Request, Response, Router } from 'express';
-import { getOpenseaOrders } from '@services/opensea/orders';
-import { error } from '@utils/logger';
-import { WETH_ADDRESS } from '@base/constants';
+import { getOpenseaOrders } from 'services/opensea/orders';
+import { error, jsonString } from '@infinityxyz/lib/utils';
+import { WETH_ADDRESS } from '../../constants';
 
 const router = Router();
 
@@ -40,7 +38,7 @@ router.get('/', async (req: Request<any>, res: Response<any>) => {
     }
 
     /**
-     * limit to eth and weth
+     * Limit to eth and weth
      */
     if (!chainId || chainId === '1') {
       paymentTokenAddress = listingType === ListingType.EnglishAuction ? WETH_ADDRESS : '';

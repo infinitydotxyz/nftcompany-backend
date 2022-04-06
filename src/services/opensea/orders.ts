@@ -1,10 +1,7 @@
-import { Listing } from '@base/types/Listing';
-import { ListingResponse } from '@base/types/ListingResponse';
-import { OrderSide } from '@base/types/NftInterface';
-import { OrderDirection } from '@base/types/Queries';
-import { WyvernAssetData, WyvernSellOrder } from '@base/types/wyvern/WyvernOrder';
-import { deepCopy } from '@utils/index';
-import { error, log } from '@utils/logger';
+import { Listing, ListingResponse, OrderSide, OrderDirection } from '@infinityxyz/lib/types/core';
+import { WyvernAssetData, WyvernSellOrder } from '@infinityxyz/lib/types/protocols/wyvern';
+import { deepCopy } from 'utils';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from './utils';
 
@@ -33,7 +30,7 @@ export async function getRawOpenseaOrdersByTokenAddress(
 
   if (tokenId) {
     /**
-     * sometimes token_id fails with a response of
+     * Sometimes token_id fails with a response of
      * "You need to set asset_contract_address and token_id (or token_ids)"
      *
      * using token_ids seems to work all of the time
@@ -121,7 +118,7 @@ export async function getOpenseaOrders({
       };
     }
 
-    // reduce to one asset per contract/tokenId with a list of openseaListings
+    // Reduce to one asset per contract/tokenId with a list of openseaListings
     const assetIdToListingIndex: Record<string, number> = {};
 
     const convertOpenseaOrdersToOpenseaListings = (orders: OpenseaOrder[]) => {
@@ -163,7 +160,10 @@ export async function getOpenseaOrders({
 
     const openseaListings = convertOpenseaOrdersToOpenseaListings(data.orders);
 
-    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(openseaListings.listings, true);
+    const listingsResponse: ListingResponse = await convertOpenseaListingsToInfinityListings(
+      openseaListings.listings,
+      true
+    );
 
     const aggregateListingAsOrders = (listings: Listing[]) => {
       return listings?.reduce?.(

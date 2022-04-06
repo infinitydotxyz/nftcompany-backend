@@ -1,12 +1,12 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { FEATURED_LIMIT } from '@base/constants';
-import { getFeaturedCollectionsRef } from '@services/infinity/collections/getFeaturedCollections';
-import { docsToArray, jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { FEATURED_LIMIT } from '../../constants';
+import { getFeaturedCollectionsRef } from 'services/infinity/collections/getFeaturedCollections';
+import { docsToArray } from 'utils/formatters';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 const router = Router();
 
-// get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
+// Get featured collections data. Data is imported from CSV file into DB using "firestore.js" script.
 
 /**
  * @typedef {Object} FeaturedCollection

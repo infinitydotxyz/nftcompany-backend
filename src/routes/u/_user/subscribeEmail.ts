@@ -1,10 +1,10 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 
 export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const data = req.body;
 
   if (!user || Object.keys(data).length === 0) {

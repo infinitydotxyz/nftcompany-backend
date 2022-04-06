@@ -1,15 +1,13 @@
-import { ListingMetadata } from '@base/types/ListingMetadata';
-import { RewardTiers } from '@base/types/Rewards';
-import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '@base/constants';
-import { checkOwnershipChange } from '@services/ethereum/checkOwnershipChange';
-import { getProvider } from '@utils/ethers';
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { ListingMetadata, RewardTiers } from '@infinityxyz/lib/types/core';
+import { fstrCnstnts, NULL_HASH, POLYGON_WYVERN_EXCHANGE_ADDRESS, WYVERN_EXCHANGE_ADDRESS } from '../../constants';
+import { checkOwnershipChange } from 'services/ethereum/checkOwnershipChange';
+import { getProvider } from 'utils/ethers';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
 import { Contract, ethers } from 'ethers';
 import { deleteExpiredOrder } from './orders/deleteExpiredOrder';
-import openseaExchangeContract from '@base/abi/openseaExchangeContract.json';
+import openseaExchangeContract from 'abi/openseaExchangeContract.json';
 import { Provider } from '@ethersproject/abstract-provider';
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 
 export function getAssetAsListing(docId: string, data: any) {
   log('Converting asset to listing');
@@ -34,7 +32,7 @@ export function isOrderExpired(doc: any) {
   const utcSecondsSinceEpoch = Math.round(Date.now() / 1000);
   const orderExpirationTime = +order.expirationTime;
   if (orderExpirationTime === 0) {
-    // special case of never expire
+    // Special case of never expire
     return false;
   }
   return orderExpirationTime <= utcSecondsSinceEpoch;
@@ -53,14 +51,22 @@ export function getOrdersResponseFromArray(docs: any) {
       void checkOwnershipChange(doc)
         .then((ownershipChanged) => {
           if (ownershipChanged) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           } else {
             return validateOrder(doc);
           }
         })
         .then((isValid) => {
           if (!isValid) {
-            void handleStaleListing(doc).catch(() => {});
+            void handleStaleListing(doc)
+              .then()
+              .catch(() => {
+                return;
+              });
           }
         })
         .catch((err) => {
@@ -165,7 +171,7 @@ export async function validateOrder(doc: any): Promise<boolean> {
   try {
     const order = doc?.data?.();
     /**
-     * we use order hash to verify that this listing
+     * We use order hash to verify that this listing
      * has an actual order
      */
     if (!order.hash) {

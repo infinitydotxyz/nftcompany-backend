@@ -1,10 +1,10 @@
-import { firestore } from '@base/container';
-import { log } from '@utils/logger';
+import { firestore } from 'container';
+import { log } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { getUserMissedTxnRef } from './getUserTxn';
 
 /**
- * value should be in wei
+ * Value should be in wei
  * @returns
  */
 export async function writeTxn(
@@ -54,7 +54,7 @@ export async function writeTxn(
     throw new Error(`invalid action type`);
   }
 
-  // commit batch
+  // Commit batch
   log('Committing the non-existent valid txn', txnData.txnHash, ' batch to firestore');
 
   return await batch.commit();

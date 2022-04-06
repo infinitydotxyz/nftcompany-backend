@@ -1,8 +1,8 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { getProvider } from '@utils/ethers';
-import { jsonString } from '@utils/formatters';
-import { error, log, trace } from '@utils/logger';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { getProvider } from 'utils/ethers';
+import { error, log, trace, jsonString } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 import { isValidNftcTxn } from './isValidNftcTxn';
@@ -26,7 +26,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
   const confirms = 1;
 
   try {
-    // check if valid nftc txn
+    // Check if valid nftc txn
     const isValid = await isValidNftcTxn(txnHash, chainId, actionType);
     if (!isValid) {
       error('Invalid NFTC txn', txnHash);
@@ -40,7 +40,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
     }
     const receipt = await provider.waitForTransaction(txnHash, confirms);
 
-    // check if txn status is not already updated in firestore by another call
+    // Check if txn status is not already updated in firestore by another call
     try {
       const isUpdated = await firestore.db.runTransaction(async (txn) => {
         const txnDoc = await txn.get(txnDocRef);
@@ -70,7 +70,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
           const buyerStatus = buyerTxnDoc.get('status');
           const sellerStatus = sellerTxnDoc.get('status');
           if (buyerStatus === 'pending' && sellerStatus === 'pending') {
-            // orig txn confirmed
+            // Orig txn confirmed
             log(`Missed fulfill txn: ${txnHash} confirmed after ${receipt.confirmations} block(s)`);
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
@@ -93,7 +93,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
           const doc = await txn.get(docRef);
           const status = doc.get('status');
           if (status === 'pending') {
-            // orig txn confirmed
+            // Orig txn confirmed
             log(`Missed cancel txn: ${txnHash} confirmed after ${receipt.confirmations} block(s)`);
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
@@ -138,13 +138,13 @@ export async function waitForMissedTxn(user: any, payload: any) {
             sellerInfo = { ...sellerInfo, ...sellerInfoRef.data() };
           }
 
-          // update user txn stats
+          // Update user txn stats
           // @ts-expect-error
           const purchasesTotal = bn(buyerInfo.purchasesTotal).plus(valueInEth).toString();
           // @ts-expect-error
           const purchasesTotalNumeric = toFixed5(purchasesTotal);
 
-          // update user txn stats
+          // Update user txn stats
           // @ts-expect-error
           const salesTotal = bn(sellerInfo.salesTotal).plus(valueInEth).toString();
           // @ts-expect-error
@@ -185,12 +185,12 @@ export async function waitForMissedTxn(user: any, payload: any) {
             { merge: true }
           );
 
-          // commit batch
+          // Commit batch
           log('Updating purchase and sale data for missed txn', txnHash, 'in firestore');
           batch
             .commit()
-            .then((resp) => {
-              // no op
+            .then(() => {
+              // No op
             })
             .catch((err) => {
               error('Failed updating purchase and sale data for missed txn', txnHash);

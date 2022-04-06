@@ -1,17 +1,14 @@
-import { firestore } from '@base/container';
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
-import { DEFAULT_ITEMS_PER_PAGE, fstrCnstnts } from '@base/constants';
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+/* eslint-disable @typescript-eslint/ban-types */
+import { firestore } from 'container';
+import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
+import { DEFAULT_ITEMS_PER_PAGE } from '../../constants';
+import { error, log, jsonString } from '@infinityxyz/lib/utils';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Router } from 'express';
 
 const router = Router();
 
 enum OrderBy {
-  Twitter = 'twitter',
-  Discord = 'discord',
   //   Floor = 'floor', // TODO add floor
   Volume = 'volume',
   AveragePrice = 'averagePrice'
@@ -75,74 +72,46 @@ router.get(
     log(`Fetching stats for ${orderBy} ${orderDirection}`);
 
     try {
-      let statsQuery;
+      let statsQuery: FirebaseFirestore.DocumentData = {} as any; // These queries are broken due to the new stats structure
 
       switch (orderBy) {
         case OrderBy.AveragePrice:
-          // eslint-disable-next-line no-case-declarations
           if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`averagePrice`, orderDirection);
+            // StatsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`averagePrice`, orderDirection);
           } else {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.averagePrice`, orderDirection);
+            // StatsQuery = firestore.db
+            //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+            //   .orderBy(`${interval}.averagePrice`, orderDirection);
           }
           break;
-
         case OrderBy.Volume:
-          statsQuery = firestore.db
-            .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-            .orderBy(`${interval}.volume`, orderDirection);
+          // StatsQuery = firestore.db
+          //   .collectionGroup(firestoreConstants.COLLECTION_STATS_COLL)
+          //   .orderBy(`${interval}.volume`, orderDirection);
 
           break;
-
-        case OrderBy.Discord:
-          if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`discordMembers`, orderDirection);
-          } else {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.discordMembers`, orderDirection);
-          }
-
-          break;
-
-        case OrderBy.Twitter:
-          if (interval === Interval.Total) {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`twitterFollowers`, orderDirection);
-          } else {
-            statsQuery = firestore.db
-              .collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL)
-              .orderBy(`${interval}.twitterFollowers`, orderDirection);
-          }
-
-          break;
-
         default:
           res.sendStatus(StatusCode.BadRequest);
           return;
       }
 
       if (startAfter) {
-        statsQuery = statsQuery.startAfter(startAfter);
+        const doc = await firestore.db.doc(startAfter).get();
+
+        statsQuery = statsQuery.startAfter(doc);
       }
 
       const results = await statsQuery.limit(limit).get();
 
       const data = (results.docs ?? []).map((item) => {
-        return item.data();
-      });
+        // Add startAfter which is the path
+        const result = item.data();
+        result.startAfter = item.ref.path;
 
-      // const collectionsToUpdate = data.filter((collection) => Date.now() > collection.timestamp + ONE_HOUR);
-      // for (const collection of data) {
-      //   // update collection
-      // }
+        return result;
+      });
 
       const respStr = jsonString(data);
 

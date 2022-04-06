@@ -1,10 +1,11 @@
-import { StatusCode } from '@base/types/StatusCode';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { error, log } from '@infinityxyz/lib/utils';
 import { NextFunction, Request, Response } from 'express';
-import { error, log } from '../utils/logger';
 import { getRequestLogPrefix } from './logger';
 
 /**
- * express middleware error handler
+ * Express middleware error handler
  *
  * must have all 4 argements listed so express can
  * identify it as an error handler

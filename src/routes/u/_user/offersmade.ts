@@ -3,15 +3,14 @@ import {
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
-import { getFilteredUserOffersMade } from '@services/infinity/users/offers/getUserOffersRef';
-import { error } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+} from '../../../constants';
+import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
+import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUserOffersRef';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 
-// fetch offer made by user
+// Fetch offer made by user
 export const getUserOffersMade = async (
   req: Request<
     { user: string },
@@ -32,12 +31,13 @@ export const getUserOffersMade = async (
   const { traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
   const startAfterBlueCheck = req.query.startAfterBlueCheck;
 
   let priceMin = +(req.query.priceMin ?? 0);
   let priceMax = +(req.query.priceMax ?? 0);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
   const sortByPriceDirection = (req.query.sortByPrice ?? '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const queries = parseQueryFields(
@@ -54,7 +54,7 @@ export const getUserOffersMade = async (
     return;
   }
 
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Empty user');
     res.sendStatus(StatusCode.BadRequest);
@@ -90,7 +90,7 @@ export const getUserOffersMade = async (
     }
     res.send(resp);
   } catch (err) {
-    error('Failed to get offers made by user ' + user);
+    error(`Failed to get offers made by user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }

@@ -1,9 +1,9 @@
-import { NULL_ADDRESS } from '@base/constants';
-import { getProvider } from '@utils/ethers';
+import { NULL_ADDRESS } from '../../constants';
+import { getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
-import ERC721ABI from '@base/abi/ERC721.json';
-import ERC1155ABI from '@base/abi/ERC1155.json';
-import { error } from '@utils/logger';
+import ERC721ABI from 'abi/ERC721.json';
+import ERC1155ABI from 'abi/ERC1155.json';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function checkOwnershipChange(doc: any): Promise<boolean> {
   const order = doc.data();
@@ -13,7 +13,7 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
   const id = order.metadata.asset.id;
   const chainId = order.metadata.chainId;
   if (side === 1) {
-    // listing
+    // Listing
     const maker = order.maker;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
       return await checkERC721Ownership(doc, chainId, maker, address, id);
@@ -21,7 +21,7 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
       return await checkERC1155Ownership(doc, chainId, maker, address, id);
     }
   } else if (side === 0) {
-    // offer
+    // Offer
     const owner = order.metadata.asset.owner;
     if (schema && schema.trim().toLowerCase() === 'erc721') {
       return await checkERC721Ownership(doc, chainId, owner, address, id);

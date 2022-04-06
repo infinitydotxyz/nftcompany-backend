@@ -1,16 +1,16 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getUniqueItemsByProperties } from '@utils/index';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getUniqueItemsByProperties } from 'utils/index';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 import { getTraits } from './_id/traits';
-import { fuzzySearchCollection } from '@services/infinity/collections/fuzzySearchCollection';
+import { fuzzySearchCollection } from 'services/infinity/collections/fuzzySearchCollection';
 import featured from './featured';
 import verified from './verified';
 import verifiedIds from './verifiedIds';
 import { getCollectionInfo } from './_slug';
 import { getHistoricalTwitterData } from './_id/twitter';
 import { getHistoricalDiscordData } from './_id/discord';
+import { getNftDetails } from './_id/_tokenId/_chain/details';
 import stats from './stats';
 
 const router = Router();
@@ -23,6 +23,7 @@ router.use('/featured', featured);
 router.use('/verified', verified);
 router.use('/verifiedIds', verifiedIds);
 router.get('/:slug', getCollectionInfo);
+router.get('/:chain/:tokenAddress/:tokenId/image', getNftDetails);
 
 router.get('/', async (req, res) => {
   const startsWithOrig = req.query.startsWith;
@@ -33,7 +34,7 @@ router.get('/', async (req, res) => {
     if (success) {
       const deDupresp = getUniqueItemsByProperties(data, 'collectionName');
       const respStr = jsonString(deDupresp);
-      // to enable cdn cache
+      // To enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

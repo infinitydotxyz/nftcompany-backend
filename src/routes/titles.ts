@@ -1,8 +1,7 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { fuzzySearchTitle } from '@services/infinity/collections/fuzzySearchTitle';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { fuzzySearchTitle } from 'services/infinity/collections/fuzzySearchTitle';
 import { Router } from 'express';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

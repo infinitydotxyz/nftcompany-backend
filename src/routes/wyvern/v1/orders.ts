@@ -1,15 +1,14 @@
-import { OrderSide } from '@base/types/NftInterface';
-import { StatusCode } from '@base/types/StatusCode';
-import { getUserOrdersFromDocId } from '@services/infinity/orders/getUserOrderFromDocId';
-import { error, log } from '@utils/logger';
+import { OrderSide, StatusCode } from '@infinityxyz/lib/types/core';
+import { getUserOrdersFromDocId } from 'services/infinity/orders/getUserOrderFromDocId';
+import { error, log } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
-import { getUserOrdersFromTokenId } from '@services/infinity/orders/getUserOrdersFromTokenId';
+import { getUserOrdersFromTokenId } from 'services/infinity/orders/getUserOrdersFromTokenId';
 import { ethers } from 'ethers';
 
 const router = Router();
 
 /**
- * @typedef { import("../../../types/Order").Order } Order
+ * @typedef { import("@infinityxyz/lib/types/core';
  */
 
 /**
@@ -39,9 +38,9 @@ router.get('/', async (req, res) => {
   const { maker, id, side, tokenAddress, tokenId } = req.query;
   let docId;
 
-  if (id) {
-    // @ts-expect-error
-    docId = id.trim(); // preserve case
+  if (id && typeof id === 'string') {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    docId = id.trim(); // Preserve case
   }
 
   try {

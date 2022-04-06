@@ -1,6 +1,7 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 const router = Router();
 
@@ -20,19 +21,19 @@ router.get('/', async (req, res) => {
 
   const userDocRef = getUserInfoRef(user);
   const userDoc = await userDocRef.get();
-  // check email
+  // Check email
   const storedEmail = userDoc.data()?.profileInfo?.email?.address;
   if (storedEmail !== email) {
     res.status(StatusCode.Unauthorized).send('Wrong email');
     return;
   }
-  // check guid
+  // Check guid
   const storedGuid = userDoc.data()?.profileInfo?.email?.verificationGuid;
   if (storedGuid !== guid) {
     res.status(StatusCode.Unauthorized).send('Wrong verification code');
     return;
   }
-  // all good
+  // All good
   userDocRef
     .set(
       {
@@ -45,7 +46,7 @@ router.get('/', async (req, res) => {
       },
       { merge: true }
     )
-    .then((data) => {
+    .then(() => {
       res.sendStatus(StatusCode.Ok);
     })
     .catch((err) => {

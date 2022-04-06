@@ -1,12 +1,12 @@
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
-import { OrderDirection } from '@base/types/Queries';
-import { error, log } from '@utils/logger';
+import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../../constants';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { error, firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { getUserInfoRef } from '../getUser';
-import { firestore } from '@base/container';
-import { getOrdersResponseFromArray } from '@services/infinity/utils';
+import { firestore } from 'container';
+import { getOrdersResponseFromArray } from 'services/infinity/utils';
 
 export function getUserOffersRef(userAddress: string) {
-  return getUserInfoRef(userAddress).collection(fstrCnstnts.OFFERS_COLL);
+  return getUserInfoRef(userAddress).collection(firestoreConstants.OFFERS_COLL);
 }
 
 export async function getFilteredUserOffersMade(
@@ -26,9 +26,9 @@ export async function getFilteredUserOffersMade(
   try {
     log('Getting filtered offers made by a user');
 
-    // let startAfterBlueCheckBool = true;
-    // if (startAfterBlueCheck !== undefined) {
-    //   startAfterBlueCheckBool = startAfterBlueCheck === 'true';
+    // Let startAfterBlueCheckBool = true;
+    // If (startAfterBlueCheck !== undefined) {
+    //   StartAfterBlueCheckBool = startAfterBlueCheck === 'true';
     // }
 
     const runQuery = async ({
@@ -55,7 +55,7 @@ export async function getFilteredUserOffersMade(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 
@@ -115,7 +115,7 @@ export async function getFilteredUserOffersReceived(
       limit: number;
     }) => {
       let queryRef = firestore.db
-        .collectionGroup(fstrCnstnts.OFFERS_COLL)
+        .collectionGroup(firestoreConstants.OFFERS_COLL)
         .where('metadata.asset.owner', '==', user)
         .where('metadata.chainId', '==', chainId)
         .where('metadata.basePriceInEth', '>=', +priceMin)
@@ -126,7 +126,7 @@ export async function getFilteredUserOffersReceived(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 

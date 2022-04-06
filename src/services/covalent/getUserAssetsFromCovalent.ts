@@ -1,8 +1,8 @@
-import { error, log } from '@utils/logger';
-import { CovalentWalletBalanceItem } from './types/CovalentNFTMetadata';
+import { error, log } from '@infinityxyz/lib/utils';
+import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { covalentClient } from './utils';
 
-export async function getUserAssetsFromCovalent(address: string) {
+export async function getUserAssetsFromCovalent(address: string): Promise<CovalentWalletBalanceItem[]> {
   log('Fetching assets from covalent');
   const chainId = '137';
   const path = `${chainId}/address/${address}/balances_v2/`;
@@ -16,7 +16,8 @@ export async function getUserAssetsFromCovalent(address: string) {
     const items: CovalentWalletBalanceItem[] = data.data.items;
     return items;
   } catch (err) {
-    error('Error occured while fetching assets from covalent');
+    error('Error occurred while fetching assets from covalent');
     error(err);
   }
+  return [];
 }

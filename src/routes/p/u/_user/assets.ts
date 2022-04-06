@@ -1,4 +1,4 @@
-import { getUserAssets as getUserAssetsHelper } from '@routes/u/_user/assets';
+import { getUserAssets as getUserAssetsHelper } from 'routes/u/_user/assets';
 import { Request, Response } from 'express';
 
 export const getUserAssets = async (

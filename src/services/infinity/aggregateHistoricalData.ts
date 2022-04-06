@@ -1,10 +1,8 @@
-import { HistoricalWeek, Hourly, WithTimestamp } from '@base/types/Historical';
-import { OrderDirection } from '@base/types/Queries';
-import { Keys } from '@base/types/UtilityTypes';
-import { ONE_DAY } from '@base/constants';
+import { HistoricalWeek, Hourly, WithTimestamp, OrderDirection, Keys } from '@infinityxyz/lib/types/core';
+import { ONE_DAY } from '../../constants';
 
 /**
- *  expects the database to be formatted as below
+ *  Expects the database to be formatted as below
  *
  *   - collection of historical data (the ref that gets passed to this function)
  *
@@ -52,7 +50,7 @@ export async function aggregateHistoricalData<Data extends WithTimestamp, Aggreg
 
   const weekIndex = 0;
   /**
-   * iterate through the data from most recent to the oldest
+   * Iterate through the data from most recent to the oldest
    */
   for (const week of weeklyData) {
     const { aggregated } = week;
@@ -130,7 +128,7 @@ export async function aggregateHistoricalData<Data extends WithTimestamp, Aggreg
 }
 
 /**
- * averageHistoricalData averages all number fields (except the timestamp) of the hourly data passed
+ * AverageHistoricalData averages all number fields (except the timestamp) of the hourly data passed
  * and returns an object containing these averages using the original keys
  *
  * @param hourlyData containing fields to calculate the average of

@@ -1,9 +1,11 @@
-import { firestore } from '@base/container';
-import { OrderDirection } from '@base/types/Queries';
-import { fstrCnstnts } from '@base/constants';
+import { firestore } from 'container';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 export async function getOrdersByTokenId(tokenAddress: string, tokenId: string, limit: number) {
-  let query = firestore.db.collectionGroup(fstrCnstnts.OFFERS_COLL).where('metadata.asset.address', '==', tokenAddress);
+  let query = firestore.db
+    .collectionGroup(firestoreConstants.OFFERS_COLL)
+    .where('metadata.asset.address', '==', tokenAddress);
   if (tokenId) {
     query = query.where('metadata.asset.id', '==', tokenId);
   }

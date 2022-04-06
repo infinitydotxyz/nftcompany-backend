@@ -1,15 +1,15 @@
-// import { firestore } from '@base/container';
-import { firestore } from '@base/container';
-import { StatusCode } from '@base/types/StatusCode';
-import { fstrCnstnts } from '@base/constants';
-import { getCollectionVotes } from '@base/controllers/Collections/CollectionsController';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+// Import { firestore } from '@base/container';
+import { firestore } from 'container';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getCollectionVotes } from 'controllers/Collections/CollectionsController';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
+import { fstrCnstnts } from '../../../../constants';
 
 /**
- * getUserVotes supports 2 queries
+ * GetUserVotes supports 2 queries
  * 1. if a collectionAddress is NOT supplied, all votes by a user will be returned
  * 2. if a collectionAddress IS supplied, the user's vote on that collection along with vote data
  *      for the specified collection will be returned
@@ -18,9 +18,10 @@ export async function getUserVotes(
   req: Request<{ user: string }, any, any, { collectionAddress: string; chainId: string }>,
   res: Response
 ) {
-  // const chainId = req.query.chainId?.trim?.();
+  const chainId = req.query.chainId?.trim?.();
   const user = req.params.user.toLowerCase();
   const collectionAddress = (req.query.collectionAddress ?? '').toLowerCase();
+  const collection = { collectionAddress, chainId };
 
   if (collectionAddress && !ethers.utils.isAddress(collectionAddress)) {
     res.send(StatusCode.BadRequest);
@@ -32,13 +33,13 @@ export async function getUserVotes(
   try {
     if (collectionAddress) {
       const userVoteInCollection = (await userVotes.doc(collectionAddress).get()).data();
-      // user has not voted  on this collection
+      // User has not voted  on this collection
       if (!userVoteInCollection) {
-        // users must vote before they can see votes
+        // Users must vote before they can see votes
         res.send({});
         return;
       }
-      const collectionVotes = await getCollectionVotes(collectionAddress);
+      const collectionVotes = await getCollectionVotes(collection);
       res.send({ votes: collectionVotes, userVote: userVoteInCollection });
       return;
     } else {
@@ -59,17 +60,19 @@ export async function getUserVotes(
 }
 
 /**
- * postUserVote can be used to set/update a user's vote for a collection
+ * PostUserVote can be used to set/update a user's vote for a collection
  */
 export async function postUserVote(
-  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean }>,
+  req: Request<{ user: string }, any, { collectionAddress: string; votedFor: boolean; chainId: string }>,
   res: Response
 ) {
-  const user = req.params.user.toLowerCase();
-  const collectionAddress = req.body.collectionAddress.toLowerCase();
+  const user = trimLowerCase(req.params.user);
+  const collectionAddress = trimLowerCase(req.body.collectionAddress);
   const votedFor = req.body.votedFor;
+  const chainId = req.body.chainId.trim();
+  const collection = { collectionAddress, chainId };
 
-  if (!ethers.utils.isAddress(collectionAddress) || typeof votedFor !== 'boolean') {
+  if (!ethers.utils.isAddress(collectionAddress) || typeof votedFor !== 'boolean' || !chainId) {
     res.send(StatusCode.BadRequest);
     return;
   }
@@ -87,8 +90,8 @@ export async function postUserVote(
     batch.set(userVotesCollRef, voteObj, {});
 
     const userCollectionVotesRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(collectionAddress)
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
       .collection(fstrCnstnts.VOTES_COLL)
       .doc(user);
     batch.set(userCollectionVotesRef, voteObj);

@@ -1,15 +1,29 @@
 // this doc outlines the high level data structure of firestore
 /*
 
+// NOTE: All {data} items must have chainId:string except collection-stats and nft-stats sub-collections
+
 1. collections
     |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
-       |__{data}
-       |__nfts
-          |__1559 <tokenId>
-             |__{data}
+      |__{data}
+      |__collectionStats
+         |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+            {data}
+      |__socialsStats
+         |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+            {data}
+      |__ votes
+         |__1:0xa5b8a0c3e43149c46e85117eadb1fa009bb73994 <chainId:userAddress in lowercase>
+            |__{data}
+      |__nfts
+         |__1559 <tokenId>
+            |__{data}
+            |__nftStats
+               |__ all | yyyy-yearly | yyyy-mm-monthly | yyyy-mm-dd-hh-hourly | yyyy-mm-dd-daily | yyyy-ww-weekly
+                  {data}
 
 2. feed
-    |__1:AAbghuuiIU <chainId:firestore uuid>
+    |__AAbghuuiIU <firestore uuid>
        |__{data}
 
 3. users
@@ -23,11 +37,11 @@
              |__{data}
 
 4. sales
-    |__1:AAbghuuiIU <chainId:firestore uuid>
+    |__AAbghuuiIU <firestore uuid>
        |__{data}
 
 5. listings
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -40,7 +54,7 @@
              |__{data}
 
 6. offers
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
        |__validActive
           |__AAbghuuiIU <firestore uuid>
@@ -52,28 +66,8 @@
           |__AAbghuuiIU <firestore uuid>
              |__{data}
 
-7. collection-stats
-    |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress>
-       |__{data}
-       |__hourly
-          |__hh-dd-mm-yyyy
-             |__{data}
-       |__daily
-          |__dd-mm-yyyy
-             |__{data}
-       |__monthly
-          |__mm-yyyy
-             |__{data}
-       |__yearly
-          |__yyyy
-             |__{data}
-
-8. nft-stats
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
-       |__{data}
-
-9. assets
-    |__dceafaaghiuyt <hash(chainId:collectionAddress:tokenId)>
+7. assets
+    |__dceafaaghiuyt <hash(chainId::collectionAddress::tokenId)>
        |__{data}
     
 */

@@ -2,17 +2,57 @@
 
 ## Installation
 
-Execute the following commands:
-
 ```bash
-# install dependencies
 $ npm install
-# copy environment variables (and edit these afterwards!)
-$ cp .env.example .env
 ```
 
-Finaly create a `creds` directory at the project root and add the required authentication files (ask a team member).
+## Setup 
+* Fill out `.env.example` and rename to `.env`
+* Create credentials 
+    * `src/creds/nftc-dev-firebase-creds.json`
+    
 
-## Development
+## Running the app
 
-Run `npm run dev` to start the development server.
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start
+```
+
+## Test
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## References
+
+- [NestJS docs](https://docs.nestjs.com/).
+
+
+
+## Conventions
+
+### Pagination 
+* Follow the response schema displayed below
+* Example: [`getCollectionHistoricalStats`](src/stats/stats.service.ts) located in `stats.service.ts`
+```
+{
+    data: <ARRAY OF ITEMS>,
+    cursor: <BASE 64 ENCODED CURSOR>, // cursor should be used to get the next page (not including the previous last item)
+    hasNextPage: <BOOLEAN> // indicates if there is another page to get 
+}
+```

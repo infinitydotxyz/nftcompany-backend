@@ -1,9 +1,7 @@
-import { firestore } from '@base/container';
-import { ListingType } from '@base/types/NftInterface';
-import { OrderDirection } from '@base/types/Queries';
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
-import { getEndCode, getSearchFriendlyString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { ListingType, OrderDirection } from '@infinityxyz/lib/types/core';
+import { DEFAULT_MAX_ETH } from '../../../constants';
+import { error, log, getEndCode, getSearchFriendlyString, firestoreConstants } from '@infinityxyz/lib/utils';
 import { getOrdersResponse, getOrdersResponseFromArray } from '../utils';
 
 export async function getListingsStartingWithText(
@@ -18,13 +16,13 @@ export async function getListingsStartingWithText(
   try {
     log('Getting listings starting with text:', text);
 
-    // search for listings which title startsWith text
+    // Search for listings which title startsWith text
     const startsWith = getSearchFriendlyString(text);
     const limit1 = Math.ceil(limit / 2);
     const limit2 = limit - limit1;
 
     const queryRef1 = firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .where('metadata.asset.searchTitle', '>=', startsWith)
       .where('metadata.asset.searchTitle', '<', getEndCode(startsWith))
       .orderBy('metadata.asset.searchTitle', OrderDirection.Ascending)
@@ -34,9 +32,9 @@ export async function getListingsStartingWithText(
       .limit(limit1);
     const resultByTitle = await queryRef1.get();
 
-    // search for listings which collectionName startsWith text
+    // Search for listings which collectionName startsWith text
     const queryRef2 = firestore.db
-      .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+      .collectionGroup(firestoreConstants.LISTINGS_COLL)
       .where('metadata.asset.searchCollectionName', '>=', startsWith)
       .where('metadata.asset.searchCollectionName', '<', getEndCode(startsWith))
       .orderBy('metadata.asset.searchCollectionName', OrderDirection.Ascending)
@@ -46,7 +44,7 @@ export async function getListingsStartingWithText(
       .limit(limit2);
     const resultByCollectionName = await queryRef2.get();
 
-    // combine both results:
+    // Combine both results:
     return getOrdersResponse({ docs: [...resultByCollectionName.docs, ...resultByTitle.docs] });
   } catch (err) {
     error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
@@ -88,7 +86,7 @@ export async function getListingsByCollectionNameAndPrice(
       limit: number;
     }) => {
       let queryRef = firestore.db
-        .collectionGroup(fstrCnstnts.LISTINGS_COLL)
+        .collectionGroup(firestoreConstants.LISTINGS_COLL)
         .where('metadata.hasBlueCheck', '==', hasBlueCheckValue)
         .where('metadata.basePriceInEth', '>=', +priceMin)
         .where('metadata.basePriceInEth', '<=', +priceMax);
@@ -106,19 +104,19 @@ export async function getListingsByCollectionNameAndPrice(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 
       if (traitType && traitValue) {
         const traitQueryArr: any[] = [];
         if (traitType.indexOf(',') > 0) {
-          // multi-trait query
+          // Multi-trait query
           const typesArr = traitType.split(',');
           const valuesArr = traitValue.split(',');
           if (typesArr.length === valuesArr.length) {
             for (let j = 0; j < typesArr.length; j++) {
-              const valArr = valuesArr[j].split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+              const valArr = valuesArr[j].split('|'); // ValuesArr[j] may contain multiple values like: Blue|White
               for (let v = 0; v < typesArr.length; v++) {
                 traitQueryArr.push({
                   traitType: typesArr[j],
@@ -128,8 +126,8 @@ export async function getListingsByCollectionNameAndPrice(
             }
           }
         } else {
-          // single-trait query
-          const valArr = traitValue.split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+          // Single-trait query
+          const valArr = traitValue.split('|'); // ValuesArr[j] may contain multiple values like: Blue|White
           for (let v = 0; v < valArr.length; v++) {
             traitQueryArr.push({
               traitType,

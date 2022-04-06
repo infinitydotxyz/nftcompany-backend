@@ -1,15 +1,14 @@
 import { ethers } from 'ethers';
 import { NextFunction, Response, Request } from 'express';
-import { auth, ETHERSCAN_API_KEY, fstrCnstnts } from '@base/constants';
-import { error } from '../utils/logger';
-import { StatusCode } from '@base/types/StatusCode';
-import { firestore } from '@base/container';
+import { auth, ETHERSCAN_API_KEY } from '../constants';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { firestore } from 'container';
+import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
-export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
-  // todo: adi for testing only
-  // return true;
+export function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
+  // Return true;
 
-  const userId = req.params.user.trim().toLowerCase();
+  const userId = trimLowerCase(req.params.user);
   const signature = req.header(auth.signature);
   const message = req.header(auth.message);
   if (!signature || !message) {
@@ -17,7 +16,7 @@ export async function authenticateUser(req: Request<{ user: string }>, res: Resp
     return;
   }
   try {
-    // verify signature
+    // Verify signature
     const sign = JSON.parse(signature);
     const actualAddress = ethers.utils.verifyMessage(message, sign).toLowerCase();
     if (actualAddress === userId) {
@@ -25,7 +24,7 @@ export async function authenticateUser(req: Request<{ user: string }>, res: Resp
       return;
     }
   } catch (err) {
-    error('Cannot authenticate user ' + userId);
+    error(`Cannot authenticate user ${userId}`);
     error(err);
   }
   res.sendStatus(StatusCode.Unauthorized);
@@ -48,25 +47,27 @@ export function authorizeCollectionEditor(
   next: NextFunction
 ) {
   const asyncHandler = async () => {
-    const userAddress = req.params.user.trim?.()?.toLowerCase?.();
-    const contractAddress = req.params.collection?.trim?.()?.toLowerCase?.();
+    const userAddress = trimLowerCase(req.params.user);
+    const collectionAddress = trimLowerCase(req.params.collection);
 
-    // const chainId = req.query.chainId?.trim?.();
+    const chainId = req.query.chainId?.trim?.();
+
+    const collection = { collectionAddress, chainId };
 
     const creatorDocRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(contractAddress)
-      .collection(fstrCnstnts.AUTH_COLL)
-      .doc(fstrCnstnts.CREATOR_DOC);
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.AUTH_COLL)
+      .doc(firestoreConstants.CREATOR_DOC);
 
-    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any;
+    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data();
 
     if (!creatorObj?.creator) {
       const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);
 
-      const txHistory = await provider.getHistory(contractAddress);
+      const txHistory = await provider.getHistory(collectionAddress);
       const creationTx = txHistory.find((tx) => {
-        return (tx as any)?.creates?.toLowerCase?.() === contractAddress;
+        return (tx as any)?.creates?.toLowerCase?.() === collectionAddress;
       });
 
       const creator = creationTx?.from?.toLowerCase?.() ?? '';
@@ -75,37 +76,42 @@ export function authorizeCollectionEditor(
         creator,
         hash
       };
-      // save creator
-      await creatorDocRef.set(creatorObj);
+      // Save creator
+      if (creatorObj.creator && creatorObj.hash) {
+        await creatorDocRef.set(creatorObj);
+      } else {
+        res.sendStatus(StatusCode.InternalServerError);
+        return;
+      }
     }
 
     if (userAddress === creatorObj.creator) {
-      // creator is authorized
+      // Creator is authorized
       res.locals.authType = CollectionAuthType.Creator;
       next();
       return;
     }
 
     const editorsDocRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(contractAddress)
-      .collection(fstrCnstnts.AUTH_COLL)
-      .doc(fstrCnstnts.EDITORS_DOC);
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.AUTH_COLL)
+      .doc(firestoreConstants.EDITORS_DOC);
 
     const editors = (await editorsDocRef.get()).data();
     if (editors?.[userAddress]?.authorized) {
-      // editor is authorized
+      // Editor is authorized
       res.locals.authType = CollectionAuthType.Editor;
       next();
       return;
     }
 
-    const adminDocRef = firestore.collection(fstrCnstnts.AUTH_COLL).doc(fstrCnstnts.ADMINS_DOC);
+    const adminDocRef = firestore.collection(firestoreConstants.AUTH_COLL).doc(firestoreConstants.ADMINS_DOC);
 
     const admins = (await adminDocRef.get()).data();
 
     if (admins?.[userAddress]?.authorized) {
-      // admin is authorized
+      // Admin is authorized
       res.locals.authType = CollectionAuthType.Admin;
       next();
       return;
@@ -115,7 +121,7 @@ export function authorizeCollectionEditor(
   };
 
   asyncHandler()
-    .then(() => {})
+    .then()
     .catch((err) => {
       error(`error occurred while authorizing user`);
       error(err);

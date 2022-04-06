@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { OrderDirection } from '@base/types/Queries';
-import { fstrCnstnts } from '@base/constants';
+import { firestore } from 'container';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { fstrCnstnts } from '../../../../constants';
 
 export async function getSaleLeaders(limit: number) {
   const sales = await firestore

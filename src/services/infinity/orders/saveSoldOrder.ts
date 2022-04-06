@@ -1,7 +1,7 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { bn, toFixed5 } from '@utils/index';
-import { log, trace } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { bn, toFixed5 } from 'utils';
+import { trace, log } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 
@@ -28,12 +28,12 @@ export async function saveSoldOrder(user: any, order: any, batch: any, numOrders
     .get();
   const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
 
-  // update user txn stats
+  // Update user txn stats
   const salesTotal = bn(userInfo.salesTotal).plus(salePriceInEth).toString();
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
-  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
+  const salesAndPurchasesTotalNumeric = (userInfo.salesAndPurchasesTotalNumeric as number) + salesTotalNumeric;
 
   trace(
     'User',

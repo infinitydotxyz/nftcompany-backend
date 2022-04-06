@@ -1,4 +1,4 @@
-import { log } from '@utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { updateNumOrders } from '../orders/updateNumOrders';
 
 export async function deleteOffer(batch: any, docRef: any) {
@@ -13,9 +13,9 @@ export async function deleteOffer(batch: any, docRef: any) {
   const hasBonus = doc.data().metadata.hasBonusReward;
   const numOrders = 1;
 
-  // delete offer
+  // Delete offer
   batch.delete(doc.ref);
 
-  // update num user offers
+  // Update num user offers
   updateNumOrders(batch, user, -1 * numOrders, hasBonus, 0);
 }

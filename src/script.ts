@@ -1,13 +1,15 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import 'reflect-metadata';
 import './globals';
-import { OrderDirection } from './types/Queries';
-import { IcyToolsApi } from '@services/icytools';
-import { ContractsOrderBy } from '@services/icytools/types';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { IcyToolsApi } from 'services/icytools';
+import { ContractsOrderBy } from '@infinityxyz/lib/types/services/icytools';
 import { updateSearchCollectionName } from './scripts/updateSearchCollectionNames';
+import { fstrCnstnts } from './constants';
 
 /**
- * an entry point for calling scripts
+ * An entry point for calling scripts
  *
  * Run with `npm run script`
  *
@@ -15,9 +17,11 @@ import { updateSearchCollectionName } from './scripts/updateSearchCollectionName
  *
  */
 async function main() {
-  // const icyTools = new IcyToolsApi();
-  // await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
-  await updateSearchCollectionName(200);
+  // Const icyTools = new IcyToolsApi();
+  // Await icyTools.trendingCollections('', 50, ContractsOrderBy.Sales, OrderDirection.Descending);
+  // Await updateSearchCollectionName(200);
+
+  console.log(fstrCnstnts.ASSETS_COLL);
 }
 
 void main();

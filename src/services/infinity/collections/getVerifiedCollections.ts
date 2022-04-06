@@ -1,10 +1,10 @@
-import { firestore } from '@base/container';
-import { OrderDirection } from '@base/types/Queries';
-import { fstrCnstnts } from '@base/constants';
+import { firestore } from 'container';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 
 export async function getVerifiedCollections(limit: number, startAfterName?: string) {
   let query = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+    .collection(firestoreConstants.COLLECTIONS_COLL)
     .where('hasBlueCheck', '==', true)
     .orderBy('name', OrderDirection.Ascending);
 

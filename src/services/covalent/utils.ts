@@ -1,8 +1,8 @@
-import { COVALENT_API_KEY } from '@base/constants';
-import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
-import { getSearchFriendlyString } from '@utils/formatters';
+import { COVALENT_API_KEY } from '../../constants';
+import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
 import axios from 'axios';
-import { CovalentWalletBalanceItem } from './types/CovalentNFTMetadata';
+import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
+import { getSearchFriendlyString } from '@infinityxyz/lib/utils';
 
 export const covalentClient = axios.create({
   baseURL: 'https://api.covalenthq.com/v1/',
@@ -51,7 +51,7 @@ export async function covalentAssetDataToListing(chainId: string, data: Covalent
   }
   const listing = {
     isListing: false,
-    hasBlueCheck: await isTokenVerified(address),
+    hasBlueCheck: await isTokenVerified({ collectionAddress: address, chainId }),
     schema,
     chainId,
     asset: {

@@ -1,19 +1,17 @@
-import { OrderDirection } from '@base/types/Queries';
-import { StatusCode } from '@base/types/StatusCode';
-import { error } from '@utils/logger';
-import { parseQueryFields } from '@utils/parsers';
+import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/lib/types/core';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { ListingType } from '@base/types/NftInterface';
-import { getFilteredUserListings } from '@services/infinity/listings/getUserListing';
-import { validateInputs, trimLowerCase } from '@utils/index';
+} from '../../../constants';
+import { getFilteredUserListings } from 'services/infinity/listings/getUserListing';
+import { validateInputs } from 'utils';
 
-// fetch listings of user
+// Fetch listings of user
 export const getUserListings = async (
   req: Request<
     { user: string },
@@ -38,11 +36,12 @@ export const getUserListings = async (
   const { listType, traitType, traitValue, collectionIds, startAfterBlueCheck } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
 
   let priceMin = +(req.query.priceMin ?? 0);
   let priceMax = +(req.query.priceMax ?? 0);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
   const sortByPriceDirection = (req.query.sortByPrice ?? '').trim().toLowerCase() || DEFAULT_PRICE_SORT_DIRECTION;
   const queries = parseQueryFields(

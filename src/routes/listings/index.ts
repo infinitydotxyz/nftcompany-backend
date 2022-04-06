@@ -1,26 +1,24 @@
-import { ListingType } from '@base/types/NftInterface';
-import { StatusCode } from '@base/types/StatusCode';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/lib/types/core';
 import {
   DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
-} from '@base/constants';
-import { parseQueryFields } from '@utils/parsers';
+} from '../../constants';
+import { parseQueryFields } from 'utils/parsers';
 import { Router } from 'express';
-import importListings from './import';
 import {
   getListingsByCollectionNameAndPrice,
   getListingsStartingWithText
-} from '@services/infinity/listings/getListings';
-import { getListingsByCollection } from '@services/infinity/listings/getListingsByCollection';
-import { getListingByTokenAddressAndId } from '@services/infinity/listings/getListingsByTokenAddressAndId';
-import { OrderDirection } from '@base/types/Queries';
-import { validateInputs } from '@utils/index';
+} from 'services/infinity/listings/getListings';
+import { getListingsByCollection } from 'services/infinity/listings/getListingsByCollection';
+import { getListingByTokenAddressAndId } from 'services/infinity/listings/getListingsByTokenAddressAndId';
+import { validateInputs } from 'utils/index';
 
 const router = Router();
 
-router.use('/import', importListings);
+// Router.use('/import', importListings);
 
 /**
  * @typedef {Object} ListingsResponse
@@ -58,7 +56,7 @@ router.use('/import', importListings);
  * @param {string} startAfterSearchTitle.query
  * @param {boolean} startAfterBlueCheck.query
  * @param {string} startAfterSearchCollectionName.query
- * @param {number} startAterPrice.query
+ * @param {number} startAfterPrice.query
  * @param {number} startAfterMillis.query
  * @param {number} priceMin.query
  * @param {number} priceMax.query
@@ -72,14 +70,14 @@ router.get('/', async (req, res) => {
   const { tokenId, listType, traitType, traitValue, collectionIds } = req.query;
   let { chainId } = req.query;
   if (!chainId) {
-    chainId = '1'; // default eth mainnet
+    chainId = '1'; // Default eth mainnet
   }
   // @ts-expect-error
   const tokenAddress = (req.query.tokenAddress ?? '').trim().toLowerCase();
   // @ts-expect-error
-  const collectionName = (req.query.collectionName ?? '').trim(); // preserve case
+  const collectionName = (req.query.collectionName ?? '').trim(); // Preserve case
   // @ts-expect-error
-  const text = (req.query.text ?? '').trim(); // preserve case
+  const text = (req.query.text ?? '').trim(); // Preserve case
   // @ts-expect-error
   const startAfterSearchTitle = (req.query.startAfterSearchTitle ?? '').trim();
   const startAfterBlueCheck = req.query.startAfterBlueCheck;

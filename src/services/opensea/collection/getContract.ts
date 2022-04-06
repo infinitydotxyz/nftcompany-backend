@@ -1,6 +1,5 @@
-import { CollectionInfo, Links } from '@base/types/NftInterface';
-import { getSearchFriendlyString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { CollectionInfo, Links } from '@infinityxyz/lib/types/core';
+import { error, getSearchFriendlyString } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 
@@ -99,7 +98,7 @@ export async function getCollectionInfoFromOpensea(
     );
     const data = collectionRespone?.data?.collection;
     return {
-      chain: '', // does not return the chain
+      chain: '', // Does not return the chain
       searchCollectionName: getSearchFriendlyString(data?.slug ?? ''),
       description: data?.description,
       bannerImage: data?.banner_image_url,

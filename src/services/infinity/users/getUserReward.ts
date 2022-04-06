@@ -1,11 +1,11 @@
-import { firestore } from '@base/container';
-import { UsPersonAnswer } from '@base/types/Rewards';
-import { fstrCnstnts } from '@base/constants';
-import { bn } from '@utils/index';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { UsPersonAnswer } from '@infinityxyz/lib/types/core';
+import { fstrCnstnts } from '../../../constants';
+import { bn } from 'utils';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getEmptyUserInfo, getUserRewardTier } from '../utils';
-import { getUserInfoRef } from './getUser';
 import { refreshUserPendingTxns } from './refreshUserPendingTxns';
+import { getUserInfoRef } from './getUser';
 
 /**
  *
@@ -56,7 +56,7 @@ export async function getReward(userAddress: string) {
 
   const doneSoFar = +salesTotalNumeric + +purchasesTotalNumeric;
 
-  // initiate refresh pending txns
+  // Initiate refresh pending txns
   void refreshUserPendingTxns(userAddress);
 
   const resp = {
@@ -81,7 +81,7 @@ export async function getReward(userAddress: string) {
     usPerson
   };
 
-  // write net reward to firestore async for leaderboard purpose
+  // Write net reward to firestore async for leaderboard purpose
   getUserInfoRef(userAddress)
     .set(
       {

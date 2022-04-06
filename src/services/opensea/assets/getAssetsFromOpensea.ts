@@ -1,7 +1,7 @@
-import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
-import { OrderDirection } from '@base/types/Queries';
-import { OPENSEA_API } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { OPENSEA_API } from '../../../constants';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { convertOpenseaListingsToInfinityListings, openseaClient } from '../utils';
 
@@ -46,7 +46,7 @@ export async function getAssetsFromOpensea(
   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
 
   const isValidOrderDirection = [OrderDirection.Ascending, OrderDirection.Descending].includes(
-    orderDirection as OrderDirection
+    orderDirection 
   );
   const defaultOrderDirection = OrderDirection.Descending;
   if (orderDirection && !isValidOrderDirection) {
@@ -59,7 +59,7 @@ export async function getAssetsFromOpensea(
     : { order_direction: defaultOrderDirection };
 
   const offsetQuery = offset ? { offset } : { offset: 0 };
-  // limit is capped at 50
+  // Limit is capped at 50
   const limitQuery = limit && limit <= 50 ? { limit } : { limit: 50 };
   const collectionQuery = collection ? { collection } : {};
 

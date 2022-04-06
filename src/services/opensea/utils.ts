@@ -1,20 +1,24 @@
-import { firestore } from '@base/container';
-import { Asset } from '@base/types/Asset';
-import { InfinityOrderData } from '@base/types/InfinityOrderData';
-import { Listing, ListingWithOrder, ListingWithoutOrder } from '@base/types/Listing';
-import { ListingMetadata } from '@base/types/ListingMetadata';
-import { ListingResponse } from '@base/types/ListingResponse';
+import { firestore } from 'container';
+import {
+  OpenSeaAsset,
+  InfinityOrderData,
+  Listing,
+  ListingWithOrder,
+  ListingWithoutOrder,
+  ListingMetadata,
+  ListingResponse,
+  ListingType,
+  Order,
+  Trait
+} from '@infinityxyz/lib/types/core';
 
-import { ListingType } from '@base/types/NftInterface';
-import { Order } from '@base/types/Order';
-import { Trait } from '@base/types/Trait';
-import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@base/types/wyvern/WyvernOrder';
-import { fstrCnstnts, OPENSEA_API_KEY } from '@base/constants';
-import { isTokenVerified } from '@services/infinity/collections/isTokenVerified';
-import { getAssetAsListing } from '@services/infinity/utils';
-import { getSearchFriendlyString, openseaParamSerializer } from '@utils/formatters';
-import { error } from '@utils/logger';
-import { getFulfilledPromiseSettledResults } from '@utils/promises';
+import { WyvernAssetData, WyvernSellOrder, WyvernTrait } from '@infinityxyz/lib/types/protocols/wyvern';
+import { fstrCnstnts, OPENSEA_API_KEY } from '../../constants';
+import { isTokenVerified } from 'services/infinity/collections/isTokenVerified';
+import { getAssetAsListing } from 'services/infinity/utils';
+import { openseaParamSerializer } from 'utils/formatters';
+import { error, getDocIdHash, getSearchFriendlyString } from '@infinityxyz/lib/utils';
+import { getFulfilledPromiseSettledResults } from 'utils/promises';
 import axios from 'axios';
 import { ethers } from 'ethers';
 
@@ -40,13 +44,14 @@ export function getOrderTypeFromRawSellOrder(order: WyvernSellOrder) {
 }
 
 /**
- *  converts listings
+ *  Converts listings
  *
  * @param rawAssetDataArray to be converted to infinity listings
  * @returns an array of listings following the infinity schema
  */
 export async function convertOpenseaListingsToInfinityListings(
-  rawAssetDataArray: WyvernAssetData[], areListings: boolean
+  rawAssetDataArray: WyvernAssetData[],
+  areListings: boolean
 ): Promise<ListingResponse> {
   if (!rawAssetDataArray || rawAssetDataArray.length === 0) {
     return {
@@ -65,60 +70,66 @@ export async function convertOpenseaListingsToInfinityListings(
   const listingMetadataArray: ListingMetadata[] = getFulfilledPromiseSettledResults(listingMetadataPromiseResults);
 
   const assetListings = listingMetadataArray.reduce((assetListings, listingMetadata) => {
-    const tokenAddress = listingMetadata.asset.address.toLowerCase();
-    const tokenId = listingMetadata.asset.id;
-    const docId = firestore.getDocId({
-      tokenId,
-      tokenAddress,
-      basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
-    });
-    try {
-      const assetListing = getAssetAsListing(docId, { id: docId, metadata: listingMetadata });
-      return [...assetListings, assetListing];
-    } catch {
-      return assetListings;
+    const tokenAddress = listingMetadata.asset?.address?.toLowerCase();
+    const tokenId = listingMetadata.asset.id ?? '';
+    if (tokenAddress && tokenId) {
+      const docId = firestore.getDocId({
+        tokenId,
+        tokenAddress,
+        basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
+      });
+      try {
+        const assetListing = getAssetAsListing(docId, { id: docId, metadata: listingMetadata });
+        return [...assetListings, assetListing];
+      } catch {
+        return assetListings;
+      }
     }
+    return assetListings;
   }, []);
 
-  // async store in db
+  // Async store in db
   void saveRawOpenseaAssetBatchInDatabase(assetListings);
 
   const listings: Listing[] = listingMetadataArray.reduce((listings, listingMetadata) => {
-    const rawSellOrders: WyvernSellOrder[] = listingMetadata.asset.rawData?.sell_orders;
-    const tokenAddress = listingMetadata.asset.address.toLowerCase();
+    const rawSellOrders: WyvernSellOrder[] = listingMetadata.asset.rawData?.sell_orders ?? [];
+    const tokenAddress = listingMetadata.asset?.address?.toLowerCase() ?? '';
     const tokenId = listingMetadata.asset.id;
-    const id = firestore.getDocId({
-      tokenId,
-      tokenAddress,
-      basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
-    });
+    if (tokenAddress && tokenId) {
+      const id = firestore.getDocId({
+        tokenId,
+        tokenAddress,
+        basePrice: listingMetadata.basePriceInEth?.toString?.() ?? ''
+      });
 
-    const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
-    if (rawSellOrders?.length > 0) {
-      const infinityListingsWithOrders: ListingWithOrder[] = rawSellOrders.reduce((listings, rawSellOrder) => {
-        const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
-        if (baseOrder) {
-          const infinityListing: ListingWithOrder = {
-            id,
-            metadata: listingMetadata,
-            order: baseOrder,
-            ...baseOrder,
-            ...infinityOrderData
-          };
-          return [...listings, infinityListing];
-        }
-        return listings;
-      }, []);
+      const infinityOrderData = getInfinityOrderData(listingMetadata.asset, listingMetadata.hasBlueCheck);
+      if (rawSellOrders?.length > 0) {
+        const infinityListingsWithOrders: ListingWithOrder[] = rawSellOrders.reduce((listings, rawSellOrder) => {
+          const baseOrder = rawSellOrderToBaseOrder(rawSellOrder);
+          if (baseOrder) {
+            const infinityListing: ListingWithOrder = {
+              id,
+              metadata: listingMetadata,
+              order: baseOrder,
+              ...baseOrder,
+              ...infinityOrderData
+            };
+            return [...listings, infinityListing];
+          }
+          return listings;
+        }, []);
 
-      return [...listings, ...infinityListingsWithOrders];
-    } else {
-      const listing: ListingWithoutOrder = {
-        metadata: listingMetadata,
-        id,
-        ...infinityOrderData
-      };
-      return [...listings, listing];
+        return [...listings, ...infinityListingsWithOrders];
+      } else {
+        const listing: ListingWithoutOrder = {
+          metadata: listingMetadata,
+          id,
+          ...infinityOrderData
+        };
+        return [...listings, listing];
+      }
     }
+    return listings;
   }, []);
 
   return {
@@ -166,24 +177,26 @@ export function rawSellOrderToBaseOrder(order: WyvernSellOrder): Order | undefin
       makerReferrerFee: order.maker_referrer_fee
     };
     return baseOrder;
-  } catch {}
+  } catch (err) {
+    console.log(err);
+  }
 }
 
-export function getInfinityOrderData(asset: Asset, hasBlueCheck: boolean) {
+export function getInfinityOrderData(asset: OpenSeaAsset, hasBlueCheck: boolean) {
   const chainId = '1';
   const infinityOrder: InfinityOrderData = {
-    source: 1, // opensea
-    tokenId: asset.id,
-    tokenAddress: asset.address,
+    source: 1, // Opensea
+    tokenId: asset.id ?? '',
+    tokenAddress: asset.address ?? '',
     hasBlueCheck: hasBlueCheck,
-    title: asset.title,
+    title: asset.title ?? '',
     chainId,
     hasBonusReward: false
   };
   return infinityOrder;
 }
 
-export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
+export function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   try {
     const batch = firestore.db.batch();
 
@@ -204,12 +217,12 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
         .collection(fstrCnstnts.ASSETS_COLL)
-        .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+        .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
 
       batch.set(newDoc, listing, { merge: true });
     }
 
-    // commit batch
+    // Commit batch
     batch.commit().catch((err) => {
       error('Error occured while batch saving asset data in database');
       error(err);
@@ -220,7 +233,10 @@ export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   }
 }
 
-export async function rawAssetDataToListingMetadata(data: WyvernAssetData, isListing: boolean): Promise<ListingMetadata> {
+export async function rawAssetDataToListingMetadata(
+  data: WyvernAssetData,
+  isListing: boolean
+): Promise<ListingMetadata> {
   const assetContract = data.asset_contract;
   let tokenAddress = '';
   let schema = '';
@@ -234,14 +250,16 @@ export async function rawAssetDataToListingMetadata(data: WyvernAssetData, isLis
       description = assetContract.description;
     }
   }
-  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const hasBlueCheck = await isTokenVerified({ collectionAddress: tokenAddress, chainId: '1' });
   const traits = convertRawTraitsToInfinityTraits(data.traits);
   const rawSellOrder = data.sell_orders?.[0];
   const basePriceInWei = rawSellOrder?.base_price;
 
-  const basePriceInEthObj = basePriceInWei ? { basePriceInEth: Number(ethers.utils.formatEther(basePriceInWei)) } : {};
+  const basePriceInEthObj = basePriceInWei
+    ? { basePriceInEth: Number(ethers.utils.formatEther(basePriceInWei)) }
+    : { basePriceInEth: 0 };
   const listingType = getOrderTypeFromRawSellOrder(rawSellOrder);
-  const listingTypeObj = listingType ? { listingType } : {};
+  const listingTypeObj = listingType ? { listingType } : { listingType: '' };
 
   const listing: ListingMetadata = {
     hasBonusReward: false,
@@ -267,7 +285,11 @@ export async function rawAssetDataToListingMetadata(data: WyvernAssetData, isLis
       searchCollectionName: getSearchFriendlyString(collectionName),
       address: tokenAddress,
       imagePreview: data.image_preview_url,
-      traitTypes: traits?.map(({ traitType }) => traitType)
+      traitTypes: traits?.map(({ traitType }) => traitType),
+      tokenId: '',
+      collectionAddress: '',
+      chainId: '',
+      owner: ''
     }
   };
 
@@ -275,7 +297,6 @@ export async function rawAssetDataToListingMetadata(data: WyvernAssetData, isLis
 }
 
 export function convertRawTraitsToInfinityTraits(traits: WyvernTrait[]): Trait[] {
-  // eslint-disable-next-line camelcase
   return traits?.map(({ trait_type, value }) => {
     return {
       traitType: trait_type,
@@ -297,7 +318,7 @@ export async function saveRawOpenseaAssetInDatabase(chainId: string, rawAssetDat
       .collection(fstrCnstnts.ROOT_COLL)
       .doc(fstrCnstnts.INFO_DOC)
       .collection(fstrCnstnts.ASSETS_COLL)
-      .doc(firestore.getAssetDocId({ tokenAddress, tokenId, chainId }));
+      .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
     newDoc.set(assetData).catch((err) => {
       error('Error saving asset in firestore');
       error(err);
@@ -331,7 +352,7 @@ export async function openseaAssetDataToListing(chainId: string, data: WyvernAss
       description = assetContract.description;
     }
   }
-  const hasBlueCheck = await isTokenVerified(tokenAddress);
+  const hasBlueCheck = await isTokenVerified({ collectionAddress: tokenAddress, chainId });
   const listing = {
     isListing: false,
     hasBlueCheck,

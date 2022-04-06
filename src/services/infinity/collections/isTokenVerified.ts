@@ -1,14 +1,13 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { normalizeAddress } from '@utils/formatters';
+import { firestore } from 'container';
+import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 
 /**
  * @param address of the token to query
  * @returns whether the token is verified
  */
-export async function isTokenVerified(address: string): Promise<boolean> {
-  const tokenAddress = normalizeAddress(address);
-  const doc = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(tokenAddress).get();
+export async function isTokenVerified(collection: { collectionAddress: string; chainId: string }): Promise<boolean> {
+  const docId = getCollectionDocId(collection);
+  const doc = await firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId).get();
   if (doc.exists) {
     const hasBlueCheck = doc.get('hasBlueCheck');
     if (hasBlueCheck) {

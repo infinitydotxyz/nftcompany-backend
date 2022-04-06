@@ -4,14 +4,13 @@ import { Doge, Bows, Hearts, Hats, Backgrounds, Glasses, Stars, Diamonds, Lasers
 import { combineImages } from './imageMaker';
 import streamBuffers from 'stream-buffers';
 import Canvas from 'canvas';
-import { DogeMetadata, generateDoge2048NftMetadata, getDoge2048NftLevelId } from '@routes/nfts/metadataUtils';
+import { DogeMetadata, generateDoge2048NftMetadata, getDoge2048NftLevelId } from 'routes/nfts/metadataUtils';
 
 import { Readable } from 'stream';
 
-import { firestore } from '@base/container';
+import { firestore } from 'container';
 import { NftMetadata } from '../types/NftMetadata';
-import { fstrCnstnts } from '@base/constants';
-import { error } from '@utils/logger';
+import { error, firestoreConstants, getDocIdHash } from '@infinityxyz/lib/utils';
 const { loadImage } = Canvas;
 const bucket = firestore.bucket;
 const kStartDir = './src/nfts/doge_builder/images';
@@ -38,18 +37,14 @@ export const metadataForDoge2048Nft = async (
   numPlays: number,
   dogBalance: number
 ): Promise<NftMetadata> => {
-  // check if already generated
+  // Check if already generated
   const tokenAddr = tokenAddress.trim().toLowerCase();
   const levelId = getDoge2048NftLevelId(score, numPlays, dogBalance);
   let levelIdExists = false;
   const levelValues = new DogeMetadata();
 
-  const docId = firestore.getAssetDocId({ chainId, tokenId: String(tokenId), tokenAddress });
-  const assetDocRef = firestore
-    .collection(fstrCnstnts.ROOT_COLL)
-    .doc(fstrCnstnts.INFO_DOC)
-    .collection(fstrCnstnts.ASSETS_COLL)
-    .doc(docId);
+  const docId = getDocIdHash({ chainId, tokenId: String(tokenId), collectionAddress: tokenAddress });
+  const assetDocRef = firestore.collection(firestoreConstants.ASSETS_COLL).doc(docId);
 
   const assetDoc = await assetDocRef.get();
 
@@ -81,10 +76,10 @@ export const metadataForDoge2048Nft = async (
     dogeMetadata.tokenAddress = tokenAddress;
   } else {
     dogeMetadata = generateDoge2048NftMetadata(chainId, tokenAddr, tokenId, score, numPlays, dogBalance);
-    // store in firestore
+    // Store in firestore
     const obj = {
       metadata: {
-        // vagaries of firestore
+        // Vagaries of firestore
         gameData: JSON.parse(JSON.stringify(dogeMetadata))
       }
     };
@@ -125,12 +120,13 @@ export const metadataForDoge2048Nft = async (
 };
 
 // =================================================
-// private
+// Private
 
 const filesInDir = (path: string): Dirent[] => {
   let list = readdirSync(path, { withFileTypes: true });
 
   list = list.filter((entry) => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     return entry.isFile;
   });
 
@@ -145,18 +141,18 @@ function mapToObj<V>(map: Map<string, V>): { [key: string]: V } {
 }
 
 const downloadImage = async (file: File): Promise<Canvas.Image> => {
-  // check cache
+  // Check cache
   const result: Canvas.Image | undefined = imageCache.get(file.name);
   if (result) {
     return result;
   }
 
   const memStream = new streamBuffers.WritableStreamBuffer({
-    initialSize: 100 * 1024, // start at 100 kilobytes.
-    incrementAmount: 10 * 1024 // grow by 10 kilobytes each time buffer overflows.
+    initialSize: 100 * 1024, // Start at 100 kilobytes.
+    incrementAmount: 10 * 1024 // Grow by 10 kilobytes each time buffer overflows.
   });
 
-  return await new Promise((resolve, reject) => {
+  return await new Promise((resolve) => {
     file
       .createReadStream()
       .pipe(memStream)
@@ -166,7 +162,7 @@ const downloadImage = async (file: File): Promise<Canvas.Image> => {
         if (buffer) {
           const img = await loadImage(buffer);
 
-          // add to cache
+          // Add to cache
           imageCache.set(file.name, img);
 
           resolve(img);
@@ -179,7 +175,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
   const images: Canvas.Image[] = [];
   let file: File;
   let image: Canvas.Image;
-  let imagePath: string = '';
+  let imagePath = '';
 
   // ---------------
   // Background
@@ -198,7 +194,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
           imagePath = Backgrounds.green;
           break;
         case 'Orange':
-          imagePath = Backgrounds.gradient; // no orange?
+          imagePath = Backgrounds.gradient; // No orange?
           break;
         case 'Pink Stripes':
           imagePath = Backgrounds.pink;
@@ -207,10 +203,10 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
           imagePath = Backgrounds.blue;
           break;
         case 'Moon':
-          imagePath = Backgrounds.stars; // no moon?
+          imagePath = Backgrounds.stars; // No moon?
           break;
         case 'Nyan':
-          imagePath = Backgrounds.rainbow; // no nylan?
+          imagePath = Backgrounds.rainbow; // No nylan?
           break;
         case 'Tacos':
           imagePath = Backgrounds.tacos;
@@ -249,7 +245,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
   // Doge
   // ---------------
 
-  // doge
+  // Doge
   file = await bucket.file(Doge.doge);
   image = await downloadImage(file);
   images.push(image);
@@ -642,7 +638,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
       break;
   }
 
-  const buffer = await combineImages({ images });
+  const buffer = combineImages({ images });
 
   return buffer;
 };
@@ -695,7 +691,7 @@ const uploadDirectory = async (dir: string, result: Map<string, string[]>) => {
 export const uploadBuffer = async (buffer: Buffer, path: string, contentType: string): Promise<File> => {
   const remoteFile: File = bucket.file(path);
 
-  // no idea why exists() returns an array [boolean]
+  // No idea why exists() returns an array [boolean]
   const existsArray = await remoteFile.exists();
   if (existsArray && existsArray.length > 0 && !existsArray[0]) {
     return await new Promise((resolve, reject) => {

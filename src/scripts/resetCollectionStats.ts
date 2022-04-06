@@ -1,10 +1,9 @@
-import { fstrCnstnts } from '@base/constants';
-import { firestore } from '@base/container';
-import { error } from '@utils/logger';
+import { firestore } from 'container';
+import { error } from '@infinityxyz/lib/utils';
 
 export async function resetCollectionStats() {
   try {
-    const docs = firestore.db.collectionGroup(fstrCnstnts.COLLECTION_STATS_COLL).orderBy(`averagePrice`, 'asc');
+    const docs = firestore.db.collectionGroup('collectionStats').orderBy(`averagePrice`, 'asc');
 
     const batch = firestore.db.batch();
 

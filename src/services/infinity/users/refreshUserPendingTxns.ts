@@ -1,5 +1,5 @@
-import { OrderDirection } from '@base/types/Queries';
-import { error } from '@utils/logger';
+import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { error } from '@infinityxyz/lib/utils';
 import { getUserMissedTxnsRef, getUserTxnsRef } from '../orders/getUserTxn';
 import { waitForMissedTxn } from '../orders/waitForMissedTxn';
 import { waitForTxn } from '../orders/waitForTxn';
@@ -20,7 +20,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
 
     for (const doc of snapshot.docs) {
       const txn = doc.data();
-      // check status
+      // Check status
       if (txn.status === 'pending') {
         void waitForTxn(userAddress, txn);
       }
@@ -28,7 +28,7 @@ export async function refreshUserPendingTxns(userAddress: string) {
 
     for (const doc of missedTxnSnapshot.docs) {
       const txn = doc.data();
-      // check status
+      // Check status
       if (txn.status === 'pending') {
         void waitForMissedTxn(userAddress, txn);
       }

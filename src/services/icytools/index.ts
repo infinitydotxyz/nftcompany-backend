@@ -1,11 +1,11 @@
-import { ICY_TOOLS_API_KEY } from '@base/constants';
-import { OrderDirection } from '@base/types/Queries';
+import { ICY_TOOLS_API_KEY } from '../../constants';
+import { OrderDirection, TokenStandard } from '@infinityxyz/lib/types/core';
 import { AxiosInstance, AxiosResponse } from 'axios';
-import { ContractConnection, ContractsOrderBy, TokenStandard } from './types';
+import { ContractConnection, ContractsOrderBy } from '@infinityxyz/lib/types/services/icytools';
 import { icyToolsClient } from './utils';
 
 /**
- * docs: https://graphql.icy.tools/playground
+ * Docs: https://graphql.icy.tools/playground
  */
 export class IcyToolsApi {
   private readonly _client: AxiosInstance;

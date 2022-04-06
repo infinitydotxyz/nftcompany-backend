@@ -1,0 +1,125 @@
+{
+  "fields": [
+    {
+      "name": "type",
+      "type": "string"
+    },
+    {
+      "name": "likes",
+      "type": "number"
+    },
+    {
+      "name": "comments",
+      "type": "number"
+    },
+    {
+      "name": "timestamp",
+      "type": "number",
+      "column_name": "eventTimestamp"
+    },
+    {
+      "name": "title",
+      "type": "string"
+    },
+    {
+      "name": "chainId",
+      "type": "string"
+    },
+    {
+      "name": "collectionAddress",
+      "type": "string"
+    },
+    {
+      "name": "collectionName",
+      "type": "string"
+    },
+    {
+      "name": "slug",
+      "type": "string"
+    },
+    {
+      "name": "tokenStandard",
+      "type": "string"
+    },
+    {
+      "name": "tokenId",
+      "type": "string"
+    },
+    {
+      "name": "nftName",
+      "type": "string"
+    },
+    {
+      "name": "nftSlug",
+      "type": "string"
+    },
+    {
+      "name": "internalUrl",
+      "type": "string"
+    },
+    {
+      "name": "externalUrl",
+      "type": "string"
+    },
+    {
+      "name": "change",
+      "type": "number"
+    },
+    {
+      "name": "total",
+      "type": "number"
+    },
+    {
+      "name": "imageUrl",
+      "type": "string"
+    },
+    {
+      "name": "userAddress",
+      "type": "string"
+    },
+    {
+      "name": "userDisplayName",
+      "type": "string"
+    },
+    {
+      "name": "userTwitter",
+      "type": "string"
+    },
+    {
+      "name": "price",
+      "type": "number"
+    },
+    {
+      "name": "quantity",
+      "type": "number"
+    },
+    {
+      "name": "paymentToken",
+      "type": "string"
+    },
+    {
+      "name": "source",
+      "type": "string"
+    },
+    {
+      "name": "buyer",
+      "type": "string"
+    },
+    {
+      "name": "buyerDisplayName",
+      "type": "string"
+    },
+    {
+      "name": "seller",
+      "type": "string"
+    },
+    {
+      "name": "sellerDisplayName",
+      "type": "string"
+    },
+    {
+      "name": "txHash",
+      "type": "string"
+    }
+  ]
+}

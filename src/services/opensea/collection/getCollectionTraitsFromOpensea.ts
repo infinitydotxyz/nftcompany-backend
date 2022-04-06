@@ -1,5 +1,5 @@
-import { WyvernAssetData, WyvernTrait, WyvernTraitWithValues } from '@base/types/wyvern/WyvernOrder';
-import { OPENSEA_API } from '@base/constants';
+import { WyvernAssetData, WyvernTrait, WyvernTraitWithValues } from '@infinityxyz/lib/types/protocols/wyvern';
+import { OPENSEA_API } from '../../../constants';
 import { AxiosResponse } from 'axios';
 import { ethers } from 'ethers';
 import { openseaClient } from '../utils';
@@ -24,7 +24,7 @@ export async function getCollectionTraitsFromOpensea(contractAddress: string) {
   if (data?.assets) {
     data.assets.forEach((item: any) => {
       item.traits.forEach((trait: WyvernTrait) => {
-        traitMap[trait.trait_type] = traitMap[trait.trait_type] || trait;
+        (traitMap as any)[trait.trait_type] = traitMap[trait.trait_type] || trait;
         traitMap[trait.trait_type].values = traitMap[trait.trait_type].values || [];
         if (!traitMap[trait.trait_type].values.includes(trait.value)) {
           traitMap[trait.trait_type].values.push(trait.value);

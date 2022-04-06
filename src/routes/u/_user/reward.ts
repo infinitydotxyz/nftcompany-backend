@@ -1,12 +1,11 @@
-import { firestore } from '@base/container';
-import { StatusCode } from '@base/types/StatusCode';
-import { jsonString } from '@utils/formatters';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { error, log, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 
-// fetch user reward
+// Fetch user reward
 export const getUserReward = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   if (!user) {
     error('Invalid input');
     res.sendStatus(StatusCode.InternalServerError);
@@ -20,7 +19,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
     if (resp != null) {
       respStr = jsonString(resp);
     }
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

@@ -1,7 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { log } from '@utils/logger';
-import { setupAllCollectionsListener } from '@utils/dblisteners';
+import { firestore } from 'container';
+import { firestoreConstants, log } from '@infinityxyz/lib/utils';
+import { setupAllCollectionsListener } from 'utils/dblisteners';
 
 export let verifiedCollectionIds;
 let isFetching = false;
@@ -14,12 +13,12 @@ export async function getVerifiedCollectionIds() {
 
   try {
     if (verifiedCollectionIds && verifiedCollectionIds.length > 0) {
-      return verifiedCollectionIds; // return cached data if any.
+      return verifiedCollectionIds; // Return cached data if any.
     }
     isFetching = true;
     log('getVerifiedCollectionIds: fetching verified collection ids');
     const query = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
+      .collection(firestoreConstants.COLLECTIONS_COLL)
       .select('hasBlueCheck')
       .where('hasBlueCheck', '==', true);
 
@@ -29,7 +28,7 @@ export async function getVerifiedCollectionIds() {
       return doc.id;
     });
 
-    setupAllCollectionsListener(); // listen to db changes to update cache.
+    setupAllCollectionsListener(); // Listen to db changes to update cache.
   } catch (err) {
     throw new Error(`error in getVerifiedCollectionIds ${err}`);
   }

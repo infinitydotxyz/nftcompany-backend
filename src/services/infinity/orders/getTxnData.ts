@@ -1,8 +1,8 @@
-import openseaAbi from '@base/abi/openseaExchangeContract.json';
-import { bn } from '@utils/index';
-import { getExchangeAddress, getProvider } from '@utils/ethers';
+import openseaAbi from 'abi/openseaExchangeContract.json';
+import { bn } from 'utils';
+import { getExchangeAddress, getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
-import { NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '@base/constants';
+import { NFTC_FEE_ADDRESS, WYVERN_ATOMIC_MATCH_FUNCTION, WYVERN_CANCEL_ORDER_FUNCTION } from '../../../constants';
 
 export async function getTxnData(txnHash: string, chainId: string, actionType: 'fulfill' | 'cancel') {
   let isValid = true;
@@ -23,7 +23,7 @@ export async function getTxnData(txnHash: string, chainId: string, actionType: '
     const functionName = decodedData.name;
     const args = decodedData.args;
 
-    // checks
+    // Checks
     const exchangeAddress = getExchangeAddress(chainId);
     if (to?.toLowerCase() !== exchangeAddress?.toLowerCase()) {
       isValid = false;

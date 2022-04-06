@@ -1,7 +1,7 @@
-import { firestore } from '@base/container';
-import { OrderSide } from '@base/types/NftInterface';
-import { fstrCnstnts } from '@base/constants';
-import { log } from '@utils/logger';
+import { firestore } from 'container';
+import { OrderSide } from '@infinityxyz/lib/types/core';
+import { fstrCnstnts } from '../../../constants';
+import { log } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 
 export function updateNumOrders(batch: any, user: string, numOrders: number, hasBonus: boolean, side: OrderSide) {
@@ -13,13 +13,13 @@ export function updateNumOrders(batch: any, user: string, numOrders: number, has
     .collection(fstrCnstnts.USERS_COLL)
     .doc(user);
   if (side === 0) {
-    // offers
+    // Offers
     batch.set(ref, { numOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
       batch.set(ref, { numBonusOffers: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     }
   } else if (side === 1) {
-    // listings
+    // Listings
     batch.set(ref, { numListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });
     if (hasBonus) {
       batch.set(ref, { numBonusListings: firebaseAdmin.firestore.FieldValue.increment(numOrders) }, { merge: true });

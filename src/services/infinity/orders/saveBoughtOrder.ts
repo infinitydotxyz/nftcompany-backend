@@ -1,7 +1,7 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts, SALE_FEES_TO_PURCHASE_FEES_RATIO } from '@base/constants';
-import { bn, toFixed5 } from '@utils/index';
-import { log, trace } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts, SALE_FEES_TO_PURCHASE_FEES_RATIO } from '../../../constants';
+import { bn, toFixed5 } from 'utils';
+import { trace, log } from '@infinityxyz/lib/utils';
 import firebaseAdmin from 'firebase-admin';
 import { getEmptyUserInfo } from '../utils';
 
@@ -29,12 +29,12 @@ export async function saveBoughtOrder(user: any, order: any, batch: any, numOrde
     .get();
   const userInfo = { ...getEmptyUserInfo(), ...userInfoRef.data() };
 
-  // update user txn stats
+  // Update user txn stats
   const purchasesTotal = bn(userInfo.purchasesTotal).plus(salePriceInEth).toString();
   const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
-  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
+  const salesAndPurchasesTotalNumeric = (userInfo.salesAndPurchasesTotalNumeric as number) + purchasesTotalNumeric;
 
   trace(
     'User',

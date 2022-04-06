@@ -1,8 +1,7 @@
-import { firestore } from '@base/container';
-import { DEFAULT_MAX_ETH, fstrCnstnts } from '@base/constants';
-import { OrderDirection } from '@base/types/Queries';
-import { ListingType } from '@base/types/NftInterface';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { DEFAULT_MAX_ETH, fstrCnstnts } from '../../../constants';
+import { OrderDirection, ListingType } from '@infinityxyz/lib/types/core';
+import { error, log } from '@infinityxyz/lib/utils';
 import { getOrdersResponseFromArray } from '../utils';
 
 export function getUserListingsRef(userAddress: string) {
@@ -83,19 +82,19 @@ export async function getFilteredUserListings(
         if (collectionIdsArr.length > 1) {
           queryRef = queryRef.where('metadata.asset.address', 'in', collectionIdsArr);
         } else {
-          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // match 1 id only.
+          queryRef = queryRef.where('metadata.asset.address', '==', collectionIds); // Match 1 id only.
         }
       }
 
       if (traitType && traitValue) {
         const traitQueryArr: any[] = [];
         if (traitType.indexOf(',') > 0) {
-          // multi-trait query
+          // Multi-trait query
           const typesArr = traitType.split(',');
           const valuesArr = traitValue.split(',');
           if (typesArr.length === valuesArr.length) {
             for (let j = 0; j < typesArr.length; j++) {
-              const valArr = valuesArr[j].split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+              const valArr = valuesArr[j].split('|'); // ValuesArr[j] may contain multiple values like: Blue|White
               for (let v = 0; v < typesArr.length; v++) {
                 traitQueryArr.push({
                   traitType: typesArr[j],
@@ -105,8 +104,8 @@ export async function getFilteredUserListings(
             }
           }
         } else {
-          // single-trait query
-          const valArr = traitValue.split('|'); // valuesArr[j] may contain multiple values like: Blue|White
+          // Single-trait query
+          const valArr = traitValue.split('|'); // ValuesArr[j] may contain multiple values like: Blue|White
           for (let v = 0; v < valArr.length; v++) {
             traitQueryArr.push({
               traitType,

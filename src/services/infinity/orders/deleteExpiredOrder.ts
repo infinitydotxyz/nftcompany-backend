@@ -1,5 +1,5 @@
-import { firestore } from '@base/container';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { error, log } from '@infinityxyz/lib/utils';
 import { deleteListing } from '../listings/deleteListing';
 import { deleteOffer } from '../offers/deleteOffer';
 
@@ -9,20 +9,20 @@ export async function deleteExpiredOrder(doc: any) {
   const side = +order.side;
   const batch = firestore.db.batch();
   if (side === 1) {
-    // listing
+    // Listing
     await deleteListing(batch, doc.ref);
   } else if (side === 0) {
-    // offer
+    // Offer
     await deleteOffer(batch, doc.ref);
   } else {
     error('Unknown order type', doc.id);
   }
-  // commit batch
+  // Commit batch
   log('Committing delete expired order batch');
   batch
     .commit()
-    .then((resp) => {
-      // no op
+    .then(() => {
+      // No op
     })
     .catch((err) => {
       error('Failed to commit delete expired order batch');

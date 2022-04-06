@@ -1,10 +1,14 @@
-import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '@base/constants';
-import { ListingType } from '@base/types/NftInterface';
-import { StatusCode } from '@base/types/StatusCode';
+import { getChainId, getProvider } from './ethers';
+import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
+import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error } from './logger';
+import { error } from '@infinityxyz/lib/utils';
+
+export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
+
+export const base64Decode = (data?: string) => Buffer.from(data ?? '', 'base64').toString();
 
 export async function sleep(ms: number) {
   return await new Promise<void>((resolve) => {
@@ -19,18 +23,18 @@ export function deepCopy(object: any) {
 }
 
 export function bn(num: BigNumber.Value) {
-  // @ts-expect-error
+  // @ts-expect-error not sure
   const bigNum = BigNumber(num);
-  // console.log(num + '   ====== bigNUm ' + bigNum);
-  // console.log(__line);
+  // Console.log(num + '   ====== bigNUm ' + bigNum);
+  // Console.log(__line);
   return bigNum;
 }
 
 export function toFixed5(num: BigNumber.Value) {
   // eslint-disable-next-line no-undef
-  // console.log(__line);
+  // Console.log(__line);
   return +bn(num).toFixed(5);
-  // return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
+  // Return +num.toString().match(/^-?\d+(?:\.\d{0,5})?/)[0];
 }
 
 export function getUniqueItemsByProperties<T>(items: List<T> | null | undefined, property: string) {
@@ -56,22 +60,21 @@ export function getNextWeek(weekNumber: number, year: number) {
   return nextWeek === 0 ? [year + 1, nextWeek + 1] : [year, nextWeek];
 }
 
-export function trimLowerCase(str: string) {
-  return (str || '').trim().toLowerCase();
-}
-
-// validate api inputs; return a StatusCode if error;
-// example: validateInputs({ user, listType }, ['user']) // require 'user'
+// Validate api inputs; return a StatusCode if error;
+// Example: validateInputs({ user, listType }, ['user']) // require 'user'
 interface validateInputsProps {
   listType?: string | ParsedQs | string[] | ParsedQs[] | undefined;
-  ids?: string; // comma separated string of ids.
+  ids?: string; // Comma separated string of ids.
   user?: string | undefined;
   sourceName?: string | undefined;
+  chain?: string | undefined;
   chainId?: string | undefined;
+  tokenAddress?: string | undefined;
+  tokenId?: string | undefined;
 }
 
 export function validateInputs(props: validateInputsProps, requiredProps: string[] = []): number {
-  const { listType } = props;
+  const { listType, chain, user, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
     if (!props[requiredProp]) {
@@ -87,8 +90,28 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
     listType !== ListingType.EnglishAuction
   ) {
     error(`Input error - invalid list type: ${listType as string}`);
-    return StatusCode.InternalServerError;
+    return StatusCode.BadRequest;
   }
+
+  if (chain) {
+    const chainId = getChainId(chain);
+    const provider = getProvider(chainId);
+    if (!provider) {
+      error('Invalid chainId ', chain);
+      return StatusCode.BadRequest;
+    }
+  }
+
+  if (user && !user.startsWith('0x')) {
+    error(`Invalid user address`, user);
+    return StatusCode.BadRequest;
+  }
+
+  if (tokenAddress && !tokenAddress.startsWith('0x')) {
+    error(`Invalid tokenAddress`, tokenAddress);
+    return StatusCode.BadRequest;
+  }
+
   return 0;
 }
 
@@ -98,4 +121,23 @@ export function getPaymentTokenAddress(listingType?: string, chainId?: string): 
   } else if (chainId === '137') {
     return POLYGON_WETH_ADDRESS;
   }
+}
+
+export function hexToDecimalTokenId(tokenId: string): string {
+  if (tokenId?.startsWith('0x')) {
+    tokenId = String(parseInt(tokenId, 16));
+  }
+  return tokenId;
+}
+
+export function calcPercentChange(prev = NaN, current: number) {
+  const change = prev - current;
+  const decimal = change / Math.abs(prev);
+  const percent = decimal * 100;
+
+  if (Number.isNaN(percent)) {
+    return current;
+  }
+
+  return percent;
 }

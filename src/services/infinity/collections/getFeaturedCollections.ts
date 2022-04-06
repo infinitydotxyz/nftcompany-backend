@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestore } from 'container';
 
 export function getFeaturedCollectionsRef(limit: number) {
-  return firestore.collection(fstrCnstnts.FEATURED_COLL).limit(limit);
+  return firestore.collection(firestoreConstants.FEATURED_COLL).limit(limit);
 }

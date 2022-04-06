@@ -1,6 +1,6 @@
-import { error, log } from '@utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
-import { AlchemyUserAssetResponse } from './types/AlchemyUserAsset';
+import { AlchemyUserAssetResponse } from '@infinityxyz/lib/types/services/alchemy';
 import { getAlchemyClient } from './utils';
 
 /**
@@ -12,7 +12,7 @@ export async function getUserAssetsFromAlchemy(
   chainId: string,
   pageKey?: string,
   collectionIds?: string
-) {
+): Promise<Partial<AlchemyUserAssetResponse>> {
   log('Fetching assets from alchemy for user', userAddress, 'chainId', chainId, 'contracts', collectionIds);
   try {
     const path = `/getNFTs/`;
@@ -37,4 +37,5 @@ export async function getUserAssetsFromAlchemy(
     error('Error occured while fetching assets from alchemy');
     error(err);
   }
+  return {};
 }

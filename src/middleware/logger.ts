@@ -1,4 +1,4 @@
-import { log } from '@utils/logger';
+import { log } from '@infinityxyz/lib/utils';
 import { NextFunction, Request, Response } from 'express';
 
 export function getRequestLogPrefix(req: Request) {

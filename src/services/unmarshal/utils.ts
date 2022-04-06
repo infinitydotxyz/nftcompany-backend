@@ -1,4 +1,4 @@
-import { UNMARSHALL_API_KEY } from '@base/constants';
+import { UNMARSHALL_API_KEY } from '../../constants';
 import axios from 'axios';
 
 export const unmarshalClient = axios.create({

@@ -1,19 +1,23 @@
-import { TWITTER_BEARER_TOKEN } from '@base/constants';
-import { Concrete } from '@base/types/UtilityTypes';
+import { TWITTER_BEARER_TOKEN } from '../../constants';
+import { Concrete } from '@infinityxyz/lib/types/core';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { SearchResponse } from './types/SearchResponse';
-import { Tweet } from './types/Tweet';
-import { User } from './types/User';
-import { TwitterUserResponse } from './types/UserResponse';
+import {
+  SearchResponse,
+  InfinityTweet,
+  InfinityTwitterAccount,
+  Tweet,
+  User,
+  TwitterUserResponse
+} from '@infinityxyz/lib/types/services/twitter';
 
 /**
- * access level is Elevated
+ * Access level is Elevated
  * provides queries up to 512 chars
  */
 
 enum Endpoint {
   /**
-   * docs
+   * Docs
    * https://developer.twitter.com/en/docs/twitter-api/tweets/search/introduction
    */
   SearchTweets = 'tweets/search/recent',
@@ -37,24 +41,6 @@ type CollectionTweetsUser = Concrete<Pick<User, 'id' | 'name' | 'username' | 'pu
 
 type CollectionTweetsIncludes = Record<'users', CollectionTweetsUser[]>;
 
-export interface InfinityTwitterAccount {
-  id: string;
-  name: string;
-  username: string;
-  followersCount: number;
-  followingCount: number;
-  tweetCount?: number;
-  listedCount?: number;
-}
-
-export interface InfinityTweet {
-  author: InfinityTwitterAccount;
-  createdAt: number;
-  tweetId: string;
-  text: string;
-  url: string;
-}
-
 export class Twitter {
   private readonly client: AxiosInstance;
   constructor() {
@@ -67,7 +53,7 @@ export class Twitter {
   }
 
   /**
-   * getVerifiedAccountMentions first attempts to get mentions of the specified username
+   * GetVerifiedAccountMentions first attempts to get mentions of the specified username
    * by verified users along with an account object for the passed user. If this fails (no recent verified mentions)
    * we attempt to get the account object and return an empty array for the tweets
    */
@@ -76,7 +62,7 @@ export class Twitter {
     tweets: InfinityTweet[];
   }> {
     /**
-     * match any tweet that mentions the given username
+     * Match any tweet that mentions the given username
      * and where the tweeter is verified
      */
     const query = `@${username} is:verified`;
@@ -93,7 +79,7 @@ export class Twitter {
     );
     const jsonBody = response.data;
     if ('data' in jsonBody && jsonBody.data.length > 0) {
-      const tweets = jsonBody.data ?? []; // ordered in reverse chronological order
+      const tweets = jsonBody.data ?? []; // Ordered in reverse chronological order
       const users = jsonBody.includes?.users ?? [];
 
       const formattedTweets = tweets
@@ -138,7 +124,7 @@ export class Twitter {
         tweets: formattedTweets
       };
     } else if (jsonBody.meta.result_count === 0) {
-      // no recent tweets,
+      // No recent tweets,
       const response: AxiosResponse<
         TwitterUserResponse<Concrete<Pick<User, 'id' | 'public_metrics' | 'name' | 'username'>>>
       > = await this.client.get(Endpoint.Users, {

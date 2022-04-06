@@ -1,11 +1,10 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error, trimLowerCase, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 
 export const getUserEmail = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
 
   if (!user) {
     error('Invalid input');
@@ -18,7 +17,7 @@ export const getUserEmail = async (req: Request<{ user: string }>, res: Response
   const data = userDoc.data();
   if (data?.profileInfo?.email?.address) {
     const resp = jsonString(data.profileInfo.email);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=30',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

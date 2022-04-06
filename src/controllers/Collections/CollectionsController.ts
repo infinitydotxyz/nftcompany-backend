@@ -1,39 +1,26 @@
-import { InfinityTwitterAccount, Twitter } from '@services/twitter/Twitter';
+import { Twitter } from 'services/twitter/Twitter';
+import { InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { ethers } from 'ethers';
 import { Request, Response } from 'express';
-import { error, log } from '@utils/logger';
-import { jsonString } from '@utils/formatters';
-import { StatusCode } from '@base/types/StatusCode';
-import { firestore } from '@base/container';
+import { firestore } from 'container';
+import { fstrCnstnts, MIN_DISCORD_UPDATE_INTERVAL, MIN_TWITTER_UPDATE_INTERVAL, ONE_DAY } from '../../constants';
 import {
-  fstrCnstnts,
-  MIN_COLLECTION_STATS_UPDATE_INTERVAL,
-  MIN_DISCORD_UPDATE_INTERVAL,
-  MIN_LINK_UPDATE_INTERVAL,
-  MIN_TWITTER_UPDATE_INTERVAL,
-  ONE_DAY
-} from '@base/constants';
-import {
-  CollectionInfo,
   DiscordSnippet,
-  Links,
-  CollectionStats,
   TwitterSnippet,
-  CollectionData,
-  EditableCollectionData,
-  UpdateCollectionDataRequest
-} from '@base/types/NftInterface';
-import { getWeekNumber } from '@utils/index';
-import { Keys, Optional } from '@base/types/UtilityTypes';
+  UpdateCollectionDataRequest,
+  Keys,
+  Links,
+  WithTimestamp,
+  StatusCode,
+  Collection,
+  BaseCollection
+} from '@infinityxyz/lib/types/core';
+import { getWeekNumber } from 'utils';
 import { aggregateHistoricalData, averageHistoricalData } from '../../services/infinity/aggregateHistoricalData';
-import { getCollectionInfoFromOpensea, getCollectionLinks } from '@services/opensea/collection/getContract';
-import { getCollectionStats } from '@services/opensea/collection/getCollectionStats';
-import { DiscordAPI } from '@services/discord/DiscordAPI';
-import { WithTimestamp } from '@base/types/Historical';
-import { CollectionAuthType } from '@base/middleware/auth';
+import { DiscordAPI } from 'services/discord/DiscordAPI';
+import { CollectionAuthType } from 'middleware/auth';
 import { UploadedFile } from 'express-fileupload';
-import { getCollectionFromOpensea } from '@services/opensea/collection/getCollection';
-import { getChainId } from '@utils/ethers';
+import { error, firestoreConstants, jsonString, log, trimLowerCase, getCollectionDocId } from '@infinityxyz/lib/utils';
 
 interface FollowerData {
   followersCount: number;
@@ -67,78 +54,45 @@ interface TwitterHistoricalData {
   followers: number;
 }
 
-export async function updateCollectionInfoFromOpensea(address: string): Promise<CollectionInfo | undefined> {
-  let collectionInfo = await getCollectionInfoFromOpensea(address);
-  if (!collectionInfo) {
-    return;
-  }
-
-  try {
-    if (collectionInfo.slug) {
-      const collection = await getCollectionFromOpensea(collectionInfo.slug);
-      const chain =
-        (collection?.payment_tokens ?? []).findIndex((item) => item.symbol === 'ETH') >= 0 ? 'Ethereum' : 'Polygon';
-
-      collectionInfo = {
-        ...collectionInfo,
-        chain,
-        chainId: getChainId(chain)
-      };
-
-      try {
-        await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address).set(collectionInfo, { merge: true });
-      } catch (err) {
-        error('Error occurred while setting collection info in firestore');
-        error(err);
-      }
-
-      return collectionInfo;
-    }
-  } catch (err) {
-    error('Error occurred while getting traits from opensea');
-    error(err);
-  }
-}
-
 /**
- * getCollectionInfo handles a request for collection info by slug or collection address
+ * GetCollectionInfo handles a request for collection info by slug or collection address
  */
-export async function getCollectionInfo(req: Request<{ slug: string }>, res: Response) {
+export async function getCollectionInfo(req: Request<{ slug: string; chainId: string }>, res: Response) {
   const slugOrAddress = req.params.slug;
+  let chainId = req.params.chainId;
+
+  if (!chainId) {
+    chainId = '1';
+  }
+
   try {
     log('Fetching collection info for', slugOrAddress);
 
-    let collectionInfo: CollectionInfo | undefined;
+    let collectionInfo: BaseCollection | undefined;
     /**
-     * get base collection info
+     * Get base collection info
      */
     if (ethers.utils.isAddress(slugOrAddress)) {
-      const address = slugOrAddress.trim().toLowerCase();
-      collectionInfo = await getCollectionInfoByAddress(address);
+      const address = trimLowerCase(slugOrAddress);
 
-      /**
-       * if we do not have collection info, get it from opensea
-       */
-      if (!collectionInfo?.name) {
-        collectionInfo = await updateCollectionInfoFromOpensea(address);
-      }
+      collectionInfo = await getCollectionInfoByAddress({ chainId, address });
     } else {
       const data = await getCollectionInfoByName(slugOrAddress, 1);
       collectionInfo = data?.[0];
     }
 
-    if (!collectionInfo) {
+    if (!collectionInfo?.address) {
       res.sendStatus(StatusCode.NotFound);
       return;
     }
 
-    let collectionData: CollectionData | undefined;
+    let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
-      collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
+      collectionData = getCollectionDataFromCollectionInfo(collectionInfo);
     }
 
     const respStr = jsonString(collectionData ?? {});
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -153,19 +107,20 @@ export async function getCollectionInfo(req: Request<{ slug: string }>, res: Res
 }
 
 /**
- * getCollectionInfo handles a request for collection info by slug or collection address
+ * GetCollectionInfo handles a request for collection info by slug or collection address
  */
 export async function getCollectionInformationForEditor(
-  req: Request<{ collection: string; user: string }>,
+  req: Request<{ collection: string; user: string; chainId: string }>,
   res: Response<any, { authType: CollectionAuthType }>
 ) {
-  const address = req.params.collection.trim().toLowerCase();
-
-  const editorType = res.locals.authType;
-  const isCreator = editorType === CollectionAuthType.Creator;
+  const address = trimLowerCase(req.params.collection);
+  const chainId = req.params.chainId;
+  // TODO: editorType and isCreator are still being used?
+  // Const editorType = res.locals.authType;
+  // Const isCreator = editorType === CollectionAuthType.Creator;
 
   /**
-   * this can be used for controlling permissions based on if the
+   * This can be used for controlling permissions based on if the
    * user is a contract creator, editor or infinity admin
    */
 
@@ -178,24 +133,26 @@ export async function getCollectionInformationForEditor(
     log('Fetching collection info for', address);
 
     /**
-     * get base collection info
+     * Get base collection info
      */
-    const collectionInfo = await getCollectionInfoByAddress(address);
-    let collectionData: CollectionData | undefined;
+    const collectionInfo = await getCollectionInfoByAddress({ chainId, address });
+    let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
-      collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
+      collectionData = getCollectionDataFromCollectionInfo(collectionInfo);
     }
 
     /**
-     * creator clicked edit button for the first time
+     * Creator clicked edit button for the first time
      */
-    if (!collectionData?.isClaimed && isCreator) {
-      const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address);
-      await collectionInfoRef.set({ isClaimed: true }, { merge: true });
-    }
+    // TODO: .isClaimed is still being used?
+    // If (!collectionData?.isClaimed && isCreator) {
+    //   Const collectionDocId = `${chainId}:${address}`;
+    //   Const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(collectionDocId);
+    //   Await collectionInfoRef.set({ isClaimed: true }, { merge: true });
+    // }
 
     const respStr = jsonString(collectionData ?? {});
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -210,19 +167,20 @@ export async function getCollectionInformationForEditor(
 }
 
 export async function postCollectionInformation(
-  req: Request<{ collection: string; user: string }, any, { data: string }>,
+  req: Request<{ collection: string; user: string; chainId: string }, any, { data: string }>,
   res: Response<any, { authType: CollectionAuthType }>
 ) {
-  const collectionAddress = req.params.collection.trim().toLowerCase();
-  // const editor = req.params.user.trim().toLowerCase();
-  // const editorType = res.locals.authType;
+  const chainId = req.params.chainId ?? '1';
+  const collectionAddress = trimLowerCase(req.params.collection);
+  // Const editor = trimLowerCase(req.params.user);
+  // Const editorType = res.locals.authType;
 
   try {
     const data: UpdateCollectionDataRequest = JSON.parse(req.body.data);
     const profileImageFile: UploadedFile = req?.files?.profileImage as UploadedFile;
-    let profileImageUpdate = {};
+    let profileImageUpdate: { profileImage: string } = {} as any;
     /**
-     * upload profile image to google cloud storage bucket
+     * Upload profile image to google cloud storage bucket
      */
     if (profileImageFile) {
       const hash = profileImageFile.md5;
@@ -249,17 +207,6 @@ export async function postCollectionInformation(
       profileImageUpdate = { profileImage: '' };
     }
 
-    const collectionInfoUpdate: Optional<
-      Pick<EditableCollectionData, 'profileImage' | 'name' | 'description' | 'benefits' | 'partnerships'>,
-      'profileImage'
-    > = {
-      name: data.name ?? '',
-      description: data.description ?? '',
-      benefits: data.benefits ?? [],
-      partnerships: data.partnerships ?? [],
-      ...profileImageUpdate
-    };
-
     const collectionLinkUpdate: Links = {
       timestamp: Date.now(),
       twitter: data.twitter ?? '',
@@ -272,15 +219,23 @@ export async function postCollectionInformation(
       facebook: data.facebook ?? ''
     };
 
+    const collectionInfo: Pick<
+      Collection['metadata'],
+      'name' | 'description' | 'profileImage' | 'links' | 'benefits' | 'partnerships'
+    > = {
+      name: data.name ?? '',
+      description: data.description ?? '',
+      links: collectionLinkUpdate,
+      benefits: data.benefits ?? [],
+      partnerships: data.partnerships ?? [],
+      ...profileImageUpdate
+    };
+
+    const docId = getCollectionDocId({ collectionAddress, chainId });
     const batch = firestore.db.batch();
-    const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
-    const collectionLinksRef = collectionInfoRef
-      .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-      .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
+    const collectionInfoRef = firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId);
 
-    batch.set(collectionInfoRef, collectionInfoUpdate, { merge: true });
-
-    batch.set(collectionLinksRef, collectionLinkUpdate, { merge: true });
+    batch.set(collectionInfoRef, collectionInfo, { merge: true });
 
     await batch.commit();
 
@@ -288,9 +243,9 @@ export async function postCollectionInformation(
 
     const forceUpdate = true;
     /**
-     * handles updating twitter data
+     * Handles updating twitter data
      */
-    getTwitterSnippet(collectionAddress, data.twitter, forceUpdate)
+    getTwitterSnippet({ collectionAddress, chainId }, data.twitter, forceUpdate)
       .then(() => {
         log(`Updated twitter stats for new twitter link`);
       })
@@ -300,9 +255,9 @@ export async function postCollectionInformation(
       });
 
     /**
-     * handles updating discord data
+     * Handles updating discord data
      */
-    getDiscordSnippet(collectionAddress, data.discord, forceUpdate)
+    getDiscordSnippet({ collectionAddress, chainId }, data.discord, forceUpdate)
       .then(() => {
         log(`Updated discord stats for new discord link`);
       })
@@ -319,63 +274,47 @@ export async function postCollectionInformation(
   }
 }
 
-async function getCollectionDataFromCollectionInfo(collectionInfo: CollectionInfo) {
-  const collectionData: CollectionData = {
+function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollection) {
+  const collectionData: BaseCollection = {
     ...collectionInfo
   };
-  /**
-   * get links and stats
-   * links are required for updating discord and twitter snippets
-   */
-  if (collectionInfo?.address) {
-    const isClaimed = collectionInfo.isClaimed ?? false;
-    const linksAndStats = await getLinksAndStats(
-      collectionInfo.address,
-      isClaimed,
-      collectionData?.profileImage,
-      collectionData?.searchCollectionName,
-      collectionData?.name
-    );
-    if (linksAndStats?.links) {
-      collectionData.links = linksAndStats.links;
-    }
-    if (linksAndStats?.stats) {
-      collectionData.stats = linksAndStats.stats;
-    }
-  }
+  const collection = {
+    collectionAddress: collectionInfo.address,
+    chainId: collectionInfo.chainId
+  };
 
   const promises: Array<Promise<DiscordSnippet | TwitterSnippet | undefined>> = [];
   let discordSnippetPromise: Promise<DiscordSnippet | undefined>;
-  if (collectionData?.links?.discord) {
-    discordSnippetPromise = getDiscordSnippet(collectionData.address, collectionData.links.discord);
+  if (collectionData?.metadata?.links?.discord) {
+    discordSnippetPromise = getDiscordSnippet(collection, collectionData.metadata?.links.discord);
     promises.push(discordSnippetPromise);
   }
 
   let twitterSnippetPromise: Promise<TwitterSnippet | undefined>;
-  if (collectionData?.links?.twitter) {
-    twitterSnippetPromise = getTwitterSnippet(collectionData.address, collectionData.links.twitter);
+  if (collectionData?.metadata?.links?.twitter) {
+    twitterSnippetPromise = getTwitterSnippet(collection, collectionData.metadata?.links.twitter);
     promises.push(twitterSnippetPromise);
   }
   /**
-   * pulled/updated concurrently
+   * Pulled/updated concurrently
    */
-  const results = await Promise.all(promises);
-
-  for (const result of results) {
-    if (result && collectionData) {
-      if ('membersCount' in result) {
-        collectionData.discordSnippet = result;
-      } else if (result) {
-        collectionData.twitterSnippet = result;
-      }
-    }
-  }
+  // TODO: .discordSnippet is still being used?
+  // Const results = await Promise.all(promises);
+  // For (const result of results) {
+  //   If (result && collectionData) {
+  //     If ('membersCount' in result) {
+  //       CollectionData.discordSnippet = result;
+  //     } else if (result) {
+  //       CollectionData.twitterSnippet = result;
+  //     }
+  //   }
+  // }
 
   return collectionData;
 }
 
 /**
- * getCollectionVotes is a proxy for getting votes for a collection
+ * GetCollectionVotes is a proxy for getting votes for a collection
  *
  * **NOTE** votes should only be available to those that are authenticated, therefore requesting votes
  * for a collection is handled by the votes endpoint under the authenticated user path
@@ -383,18 +322,18 @@ async function getCollectionDataFromCollectionInfo(collectionInfo: CollectionInf
  * @param collectionAddress of the votes to get
  * @returns a promise of an object containing the number of votes for or against the collection
  */
-export async function getCollectionVotes(
-  collectionAddress: string
-): Promise<{ votesFor: number; votesAgainst: number }> {
-  const votes = await countVotes(collectionAddress);
+export async function getCollectionVotes(collection: {
+  collectionAddress: string;
+  chainId: string;
+}): Promise<{ votesFor: number; votesAgainst: number }> {
+  const votes = await countVotes(collection);
   return votes;
 }
 
-async function countVotes(collectionAddress: string) {
-  const address = collectionAddress.toLowerCase();
+async function countVotes(collection: { collectionAddress: string; chainId: string }) {
   const votesRef = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(address)
+    .collection(firestoreConstants.COLLECTIONS_COLL)
+    .doc(getCollectionDocId(collection))
     .collection(fstrCnstnts.VOTES_COLL);
 
   const stream = votesRef.stream();
@@ -424,7 +363,7 @@ async function countVotes(collectionAddress: string) {
 export function getHistoricalData(source: 'discord' | 'twitter') {
   return async (
     req: Request<
-      { id: string },
+      { id: string; chainId: string },
       any,
       any,
       { from?: number; to?: number; interval?: 'hourly' | 'daily' | 'weekly'; startAt?: number }
@@ -433,7 +372,9 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
   ) => {
     const interval = req.query.interval ?? 'hourly';
     const ONE_WEEK = ONE_DAY * 7;
-    const address = req.params.id.toLowerCase();
+    const address = trimLowerCase(req.params.id);
+    const chainId = req.params.chainId;
+    const collection = { collectionAddress: address, chainId };
 
     let to: number;
     let from: number;
@@ -455,7 +396,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
           if (to - startAt > maxRange) {
             to = startAt + maxRange;
           }
-          historicalData = await fetchHistoricalData<Data>(source, address, startAt, to, limit, 'hourly');
+          historicalData = await fetchHistoricalData<Data>(source, collection, startAt, to, limit, 'hourly');
           break;
         case 'daily':
           from = Number(req.query.from ?? Date.now() - FOUR_WEEKS);
@@ -464,7 +405,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
           if (to - startAt > maxRange) {
             to = startAt + maxRange;
           }
-          historicalData = await fetchHistoricalData<Data>(source, address, startAt, to, limit, 'daily');
+          historicalData = await fetchHistoricalData<Data>(source, collection, startAt, to, limit, 'daily');
           break;
         case 'weekly':
           from = Number(req.query.from ?? Date.now() - EIGHT_WEEKS);
@@ -473,7 +414,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
           if (to - startAt > maxRange) {
             to = startAt + maxRange;
           }
-          historicalData = await fetchHistoricalData<Data>(source, address, startAt, to, limit, 'weekly');
+          historicalData = await fetchHistoricalData<Data>(source, collection, startAt, to, limit, 'weekly');
           break;
         default:
           res.sendStatus(StatusCode.BadRequest);
@@ -483,7 +424,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
       historicalData.sort((itemA, itemB) => itemA.timestamp - itemB.timestamp);
 
       const respStr = jsonString(historicalData ?? {});
-      // to enable cdn cache
+      // To enable cdn cache
       res.set({
         'Cache-Control': 'must-revalidate, max-age=60',
         'Content-Length': Buffer.byteLength(respStr, 'utf8')
@@ -500,7 +441,7 @@ export function getHistoricalData(source: 'discord' | 'twitter') {
 
 async function fetchHistoricalData<Data extends WithTimestamp>(
   source: 'twitter' | 'discord',
-  address: string,
+  collection: { collectionAddress: string; chainId: string },
   startAt: number,
   to: number,
   limit: number,
@@ -508,12 +449,12 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
 ) {
   const historicalDocId = source;
   const historicalCollectionRef = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(address)
-    .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
+    .collection(firestoreConstants.COLLECTIONS_COLL)
+    .doc(getCollectionDocId(collection))
+    .collection(firestoreConstants.DATA_SUB_COLL)
     .doc(historicalDocId)
-    .collection(fstrCnstnts.HISTORICAL_COLL);
-  let timestamp: number = Number(startAt);
+    .collection(firestoreConstants.HISTORICAL_COLL);
+  let timestamp = Number(startAt);
 
   let dataPoints: Array<Record<keyof Data, number>> = [];
   let dataPointLimit = limit;
@@ -544,235 +485,70 @@ async function fetchHistoricalData<Data extends WithTimestamp>(
   return dataPoints;
 }
 
-async function getLinksAndStats(
-  collectionAddress?: string,
-  isClaimed?: boolean,
-  profileImage?: string,
-  searchCollectionName?: string,
-  collectionName?: string
-) {
-  if (!collectionAddress) {
-    return { links: undefined, stats: undefined };
-  }
-
-  const linkRef = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(collectionAddress)
-    .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-    .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
-
-  let links: Links | undefined = (await linkRef.get())?.data() as Links;
-
-  if (!isClaimed) {
-    // once claimed the editors must update their collection info
-    links = await updateLinks(links, collectionAddress, false);
-  }
-
-  const statsRef = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(collectionAddress)
-    .collection(fstrCnstnts.COLLECTION_STATS_COLL)
-    .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
-
-  let stats: CollectionStats | undefined = (await statsRef.get())?.data() as CollectionStats;
-
-  if (links?.slug) {
-    stats = await updateStats(
-      stats,
-      collectionAddress,
-      links.slug,
-      profileImage,
-      searchCollectionName,
-      collectionName,
-      false
-    );
-  }
-
-  try {
-    return {
-      links,
-      stats
-    };
-  } catch (err) {
-    error('error occurred while getting collection links and stats');
-    error(err);
-  }
-}
-
-async function updateStats(
-  stats: CollectionStats,
-  collectionAddress: string,
-  openseaSlug: string,
-  profileImage?: string,
-  searchCollectionName?: string,
-  collectionName?: string,
-  force = false
-) {
-  const now = new Date().getTime();
-
-  const updatedAt = stats?.timestamp ? stats?.timestamp : 0;
-  const shouldUpdate = now - updatedAt > MIN_COLLECTION_STATS_UPDATE_INTERVAL;
-
-  try {
-    if ((shouldUpdate || force) && openseaSlug) {
-      const updatedStats = await getCollectionStats(openseaSlug);
-      const votes = await getCollectionVotes(collectionAddress);
-
-      if (updatedStats) {
-        const statsRef = firestore
-          .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-          .doc(collectionAddress)
-          .collection(fstrCnstnts.COLLECTION_STATS_COLL)
-          .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
-
-        void (await statsRef.set(
-          {
-            ...updatedStats,
-            collectionAddress,
-            profileImage: profileImage ?? '',
-            searchCollectionName: searchCollectionName ?? '',
-            name: collectionName ?? '',
-            ...votes
-          },
-          {
-            mergeFields: [
-              'averagePrice',
-              'collectionAddress',
-              'profileImage',
-              'searchCollectionName',
-              'count',
-              'floorPrice',
-              'marketCap',
-              'owners',
-              'oneDay.averagePrice',
-              'oneDay.change',
-              'oneDay.sales',
-              'oneDay.volume',
-              'sevenDay.averagePrice',
-              'sevenDay.change',
-              'sevenDay.sales',
-              'sevenDay.volume',
-              'thirtyDay.averagePrice',
-              'thirtyDay.change',
-              'thirtyDay.sales',
-              'thirtyDay.volume',
-              'total.sales',
-              'total.volume',
-              'total.supply',
-              'votesFor',
-              'votesAgainst',
-              'name'
-            ]
-          }
-        ));
-
-        return updatedStats;
-      }
-    }
-  } catch (err) {
-    error('error occurred while updating stats');
-    error(err);
-  }
-
-  return stats;
-}
-
-async function updateLinks(links: Links, collectionAddress: string, force = false) {
-  const now = new Date().getTime();
-
-  const updatedAt = links?.timestamp ? links?.timestamp : 0;
-  const shouldUpdate = now - updatedAt > MIN_LINK_UPDATE_INTERVAL;
-
-  try {
-    if (shouldUpdate || force) {
-      const updatedLinks = await getCollectionLinks(collectionAddress);
-      if (updatedLinks) {
-        const artBlocksContracts = [
-          '0x059edd72cd353df5106d2b9cc5ab83a52287ac3a',
-          '0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270'
-        ];
-        if (artBlocksContracts.includes(collectionAddress?.toLowerCase())) {
-          updatedLinks.slug = 'art-blocks';
-        }
-        const linkRef = firestore
-          .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-          .doc(collectionAddress)
-          .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-          .doc(fstrCnstnts.COLLECTION_LINKS_DOC);
-        await linkRef.set(
-          {
-            ...updatedLinks
-          },
-          { merge: true }
-        );
-
-        return updatedLinks;
-      }
-    }
-  } catch (err) {
-    error('error occurred while updating links');
-    error(err);
-  }
-
-  return links;
-}
-
 /**
- * getCollectionInfoByAddress takes an address and returns the matching collection
+ * GetCollectionInfoByAddress takes an address and returns the matching collection
  * info object if it exists
  *
  */
-async function getCollectionInfoByAddress(address: string): Promise<CollectionInfo | undefined> {
-  const doc = await firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(address).get();
+async function getCollectionInfoByAddress(data: {
+  chainId: string;
+  address: string;
+}): Promise<BaseCollection | undefined> {
+  const docId = `${data.chainId}:${trimLowerCase(data.address)}`;
+  const doc = await firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId).get();
 
   if (doc.exists) {
-    const data = doc.data() as CollectionInfo;
+    const data = doc.data() as BaseCollection;
     return data;
   }
 }
 
 /**
- * getCollectionInfoByName takes a collection name/slug and a limit then returns an
+ * GetCollectionInfoByName takes a collection name/slug and a limit then returns an
  * array of the corresponding collection info objects
  *
  */
-async function getCollectionInfoByName(searchCollectionName: string, limit: number): Promise<CollectionInfo[]> {
+async function getCollectionInfoByName(searchCollectionName: string, limit: number): Promise<BaseCollection[]> {
   const res = await firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .where('searchCollectionName', '==', searchCollectionName)
+    .collection(firestoreConstants.COLLECTIONS_COLL)
+    .where('slug', '==', searchCollectionName)
     .limit(limit)
     .get();
-  const data: CollectionInfo[] = res.docs.map((doc) => {
-    return doc.data() as CollectionInfo;
+  const data: BaseCollection[] = res.docs.map((doc) => {
+    return doc.data() as BaseCollection;
   });
-
   return data;
 }
 
-async function getTwitterSnippet(collectionAddress: string, twitterLink: string, forceUpdate = false) {
-  if (!collectionAddress || !twitterLink) {
+async function getTwitterSnippet(
+  collection: { collectionAddress: string; chainId: string },
+  twitterLink: string,
+  forceUpdate = false
+) {
+  if (!collection.collectionAddress || !twitterLink) {
     return;
   }
-  // get snippet
+  const docId = getCollectionDocId(collection);
+  // Get snippet
   const twitterRef = firestore
-    .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-    .doc(collectionAddress)
-    .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-    .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
+    .collection(firestoreConstants.COLLECTIONS_COLL)
+    .doc(docId)
+    .collection(firestoreConstants.DATA_SUB_COLL)
+    .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
   const twitterSnippet: TwitterSnippet = (await twitterRef.get()).data()?.twitterSnippet;
 
-  const updatedTwitterSnippet = await updateTwitterData(twitterSnippet, collectionAddress, twitterLink, forceUpdate);
+  const updatedTwitterSnippet = await updateTwitterData(twitterSnippet, collection, twitterLink, forceUpdate);
 
   return updatedTwitterSnippet;
 }
 
 /**
- * updateTwitterData requests recent tweets from twitter (if it should be updated), saves the data to the database and
+ * UpdateTwitterData requests recent tweets from twitter (if it should be updated), saves the data to the database and
  * returns the updated collection info
  */
 async function updateTwitterData(
   twitterSnippet: TwitterSnippet,
-  collectionAddress: string,
+  collection: { collectionAddress: string; chainId: string },
   twitterLink: string,
   force = false
 ): Promise<TwitterSnippet> {
@@ -784,7 +560,7 @@ async function updateTwitterData(
       const username = twitterLink.match(twitterUsernameRegex)?.[1];
 
       if (username) {
-        // get twitter data
+        // Get twitter data
         const twitterClient = new Twitter();
         const twitterData = await twitterClient.getVerifiedAccountMentions(username);
 
@@ -816,13 +592,15 @@ async function updateTwitterData(
 
         const batch = firestore.db.batch();
 
-        const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
+        const collectionInfoRef = firestore
+          .collection(firestoreConstants.COLLECTIONS_COLL)
+          .doc(getCollectionDocId(collection));
         const twitterRef = collectionInfoRef
-          .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-          .doc(fstrCnstnts.COLLECTION_TWITTER_DOC);
+          .collection(firestoreConstants.DATA_SUB_COLL)
+          .doc(firestoreConstants.COLLECTION_TWITTER_DOC);
 
         /**
-         * update collection info tweet snippet
+         * Update collection info tweet snippet
          */
         batch.set(
           twitterRef,
@@ -834,13 +612,11 @@ async function updateTwitterData(
 
         const [year, week] = getWeekNumber(date);
         const docId = firestore.getHistoricalDocId(year, week);
-
         const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
-
-        const weekDocRef = twitterRef.collection('historical').doc(docId);
+        const weekDocRef = twitterRef.collection(firestoreConstants.HISTORICAL_COLL).doc(docId);
 
         /**
-         * update historical data
+         * Update historical data
          */
         batch.set(
           weekDocRef,
@@ -851,12 +627,12 @@ async function updateTwitterData(
           { merge: true }
         );
 
-        // commit this batch so the updated data is available to aggregate the historical data
+        // Commit this batch so the updated data is available to aggregate the historical data
         await batch.commit();
 
         const batch2 = firestore.db.batch();
 
-        const historicalRef = twitterRef.collection('historical');
+        const historicalRef = twitterRef.collection(firestoreConstants.HISTORICAL_COLL);
 
         const aggregated = await aggregateHistoricalData<FollowerData, AggregatedFollowerData>(
           historicalRef,
@@ -865,7 +641,7 @@ async function updateTwitterData(
         );
 
         /**
-         *  update snippet with aggregated data
+         *  Update snippet with aggregated data
          */
         batch2.set(
           twitterRef,
@@ -878,38 +654,6 @@ async function updateTwitterData(
           { merge: true }
         );
 
-        const currentFollowers = aggregated?.current?.followersCount ?? 0;
-        const oneDayAgo = currentFollowers - (aggregated?.oneDayAgo?.followersCount ?? 0);
-        const sevenDaysAgo = currentFollowers - (aggregated?.weekly?.[0].weekStart?.followersCount ?? 0);
-        const thirtyDaysAgo = currentFollowers - (aggregated?.weekly?.[5]?.weekEnd?.followersCount ?? 0);
-
-        const statsRef = collectionInfoRef
-          .collection(fstrCnstnts.COLLECTION_STATS_COLL)
-          .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
-        batch2.set(
-          statsRef,
-          {
-            oneDay: {
-              twitterFollowers: oneDayAgo
-            },
-            sevenDay: {
-              twitterFollowers: sevenDaysAgo
-            },
-            thirtyDay: {
-              twitterFollowers: thirtyDaysAgo
-            },
-            twitterFollowers: currentFollowers
-          },
-          {
-            mergeFields: [
-              'oneDay.twitterFollowers',
-              'sevenDay.twitterFollowers',
-              'thirtyDay.twitterFollowers',
-              'twitterFollowers'
-            ]
-          }
-        );
-
         await batch2.commit();
 
         return {
@@ -918,25 +662,26 @@ async function updateTwitterData(
       }
     }
   } catch (err) {
-    error(`error while updating twitter data for ${collectionAddress}`);
+    error(`error while updating twitter data for ${collection.collectionAddress}`);
     error(err);
   }
   return twitterSnippet;
 }
 
-async function getDiscordSnippet(collectionAddress: string, inviteLink: string, forceUpdate = false) {
-  if (!collectionAddress) {
-    return;
-  }
+async function getDiscordSnippet(
+  collection: { collectionAddress: string; chainId: string },
+  inviteLink: string,
+  forceUpdate = false
+) {
   try {
     const discordRef = firestore
-      .collection(fstrCnstnts.ALL_COLLECTIONS_COLL)
-      .doc(collectionAddress)
-      .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-      .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .doc(getCollectionDocId(collection))
+      .collection(firestoreConstants.DATA_SUB_COLL)
+      .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
     let discordSnippet: DiscordSnippet = (await discordRef.get())?.data()?.discordSnippet;
 
-    discordSnippet = await updateDiscordSnippet(discordSnippet, collectionAddress, inviteLink, forceUpdate);
+    discordSnippet = await updateDiscordSnippet(discordSnippet, collection, inviteLink, forceUpdate);
 
     return discordSnippet;
   } catch (err) {
@@ -947,7 +692,7 @@ async function getDiscordSnippet(collectionAddress: string, inviteLink: string, 
 
 export async function updateDiscordSnippet(
   discordSnippet: DiscordSnippet,
-  collectionAddress: string,
+  collection: { collectionAddress: string; chainId: string },
   inviteLink: string,
   force = false
 ) {
@@ -969,13 +714,15 @@ export async function updateDiscordSnippet(
 
         const batch = firestore.db.batch();
 
-        const collectionInfoRef = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL).doc(collectionAddress);
+        const collectionInfoRef = firestore
+          .collection(firestoreConstants.COLLECTIONS_COLL)
+          .doc(getCollectionDocId(collection));
         const discordRef = collectionInfoRef
-          .collection(fstrCnstnts.COLLECTION_SOCIALS_COLL)
-          .doc(fstrCnstnts.COLLECTION_DISCORD_DOC);
+          .collection(firestoreConstants.DATA_SUB_COLL)
+          .doc(firestoreConstants.COLLECTION_DISCORD_DOC);
 
         /**
-         * update collection info tweet snippet
+         * Update collection info tweet snippet
          */
         batch.set(
           discordRef,
@@ -991,10 +738,10 @@ export async function updateDiscordSnippet(
 
         const hourOfTheWeek = `${date.getUTCDay() * 24 + date.getUTCHours()}`;
 
-        const weekDocRef = discordRef.collection('historical').doc(docId);
+        const weekDocRef = discordRef.collection(firestoreConstants.HISTORICAL_COLL).doc(docId);
 
         /**
-         * update historical data
+         * Update historical data
          */
         batch.set(
           weekDocRef,
@@ -1005,12 +752,12 @@ export async function updateDiscordSnippet(
           { merge: true }
         );
 
-        // commit this batch so the updated data is available to aggregate the historical data
+        // Commit this batch so the updated data is available to aggregate the historical data
         await batch.commit();
 
         const batch2 = firestore.db.batch();
 
-        const historicalRef = discordRef.collection('historical');
+        const historicalRef = discordRef.collection(firestoreConstants.HISTORICAL_COLL);
 
         const aggregated = await aggregateHistoricalData<DiscordSnippet, AggregatedDiscordData>(
           historicalRef,
@@ -1019,7 +766,7 @@ export async function updateDiscordSnippet(
         );
 
         /**
-         *  update snippet with aggregated data
+         *  Update snippet with aggregated data
          */
         batch2.set(
           discordRef,
@@ -1030,51 +777,6 @@ export async function updateDiscordSnippet(
             }
           },
           { merge: true }
-        );
-
-        const currentMembers = aggregated?.current?.membersCount ?? 0;
-        const oneDayAgoMembers = currentMembers - (aggregated?.oneDayAgo?.membersCount ?? 0);
-        const sevenDaysAgoMembers = currentMembers - (aggregated?.weekly?.[0].weekStart?.membersCount ?? 0);
-        const thirtyDaysAgoMembers = currentMembers - (aggregated?.weekly?.[5]?.weekEnd?.membersCount ?? 0);
-
-        const currentPresence = aggregated?.current?.presenceCount ?? 0;
-        const oneDayAgoPresence = currentMembers - (aggregated?.oneDayAgo?.presenceCount ?? 0);
-        const sevenDaysAgoPresence = currentMembers - (aggregated?.weekly?.[0].weekStart?.presenceCount ?? 0);
-        const thirtyDaysAgoPresence = currentMembers - (aggregated?.weekly?.[5]?.weekEnd?.presenceCount ?? 0);
-
-        const statsRef = collectionInfoRef
-          .collection(fstrCnstnts.COLLECTION_STATS_COLL)
-          .doc(fstrCnstnts.COLLECTION_OPENSEA_STATS_DOC);
-        batch2.set(
-          statsRef,
-          {
-            oneDay: {
-              discordMembers: oneDayAgoMembers,
-              discordPresence: oneDayAgoPresence
-            },
-            sevenDay: {
-              discordMembers: sevenDaysAgoMembers,
-              discordPresence: sevenDaysAgoPresence
-            },
-            thirtyDay: {
-              discordMembers: thirtyDaysAgoMembers,
-              discordPresence: thirtyDaysAgoPresence
-            },
-            discordMembers: currentMembers,
-            discordPresence: currentPresence
-          },
-          {
-            mergeFields: [
-              'oneDay.discordMembers',
-              'oneDay.discordPresence',
-              'sevenDay.discordMembers',
-              'sevenDay.discordPresence',
-              'thirtyDay.discordMembers',
-              'thirtyDay.discordPresence',
-              'discordMembers',
-              'discordPresence'
-            ]
-          }
         );
 
         await batch2.commit();

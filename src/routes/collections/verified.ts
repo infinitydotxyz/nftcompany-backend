@@ -1,7 +1,6 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getVerifiedCollections } from '@services/infinity/collections/getVerifiedCollections';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getVerifiedCollections } from 'services/infinity/collections/getVerifiedCollections';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { Request, Router, Response } from 'express';
 const router = Router();
 
@@ -50,7 +49,7 @@ router.get('/', async (req: Request<any, any, any, { startAfterName?: string; li
     };
 
     const resp = jsonString(dataObj);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=600',
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')

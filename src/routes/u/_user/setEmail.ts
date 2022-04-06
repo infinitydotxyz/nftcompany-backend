@@ -1,13 +1,13 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { API_BASE } from '@base/constants';
-import { sendEmail } from '@services/infinity/email/sendEmail';
-import { getUserInfoRef } from '@services/infinity/users/getUser';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { API_BASE } from '../../..//constants';
+import { sendEmail } from 'services/infinity/email/sendEmail';
+import { getUserInfoRef } from 'services/infinity/users/getUser';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
 
 export const postSetUserEmail = async (req: Request<{ user: string }>, res: Response) => {
-  const user = (`${req.params.user}` || '').trim().toLowerCase();
+  const user = trimLowerCase(req.params.user);
   const email = (req.body.email || '').trim().toLowerCase();
   if (!user || !email) {
     error('Invalid input');
@@ -15,10 +15,10 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
     return;
   }
 
-  // generate guid
+  // Generate guid
   const guid = crypto.randomBytes(30).toString('hex');
 
-  // store
+  // Store
   try {
     await getUserInfoRef(user).set(
       {
@@ -34,7 +34,7 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
       { merge: true }
     );
 
-    // send email
+    // Send email
     const subject = 'Verify your email for Infinity';
     const link = `${API_BASE}/verifyEmail?email=${email}&user=${user}&guid=${guid}`;
     const html =

@@ -1,6 +1,6 @@
-import { WyvernAssetData } from '@base/types/wyvern/WyvernOrder';
-import { OPENSEA_API } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
+import { OPENSEA_API } from '../../../constants';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
 import { openseaClient } from '../utils';
 
@@ -9,10 +9,9 @@ export async function getUserAssetsFromOpenSea(
   offset: number,
   limit: number,
   collectionIds?: string
-) {
+): Promise<WyvernAssetData[]> {
   log('Fetching assets from opensea');
   const url = OPENSEA_API + 'assets/';
-
   const options = {
     params: {
       limit,
@@ -39,4 +38,5 @@ export async function getUserAssetsFromOpenSea(
     error('Error occured while fetching assets from opensea');
     error(err);
   }
+  return [];
 }

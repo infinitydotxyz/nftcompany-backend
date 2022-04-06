@@ -1,14 +1,13 @@
-import { firestore } from '@base/container';
-import { OrderSide } from '@base/types/NftInterface';
-import { StatusCode } from '@base/types/StatusCode';
-import { NFTC_FEE_ADDRESS } from '@base/constants';
-import { hasBonusReward } from '@services/infinity/collections/hasBonusReward';
-import { postListing } from '@services/infinity/listings/postListing';
-import { postOffer } from '@services/infinity/offers/postOffer';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { OrderSide, StatusCode } from '@infinityxyz/lib/types/core';
+import { NFTC_FEE_ADDRESS } from '../../../../../constants';
+import { hasBonusReward } from 'services/infinity/collections/hasBonusReward';
+import { postListing } from 'services/infinity/listings/postListing';
+import { postOffer } from 'services/infinity/offers/postOffer';
+import { error, log, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 
-// post a listing or make offer
+// Post a listing or make offer
 export const postUserOrders = async (req: Request<{ user: string }>, res: Response) => {
   const payload = req.body;
 
@@ -50,18 +49,18 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
 
   const tokenAddress = payload.metadata.asset.address.trim().toLowerCase();
 
-  const maker = (`${req.params.user}` || '').trim().toLowerCase();
+  const maker = trimLowerCase(req.params.user);
   if (!maker) {
     error('Invalid input');
     res.sendStatus(StatusCode.BadRequest);
     return;
   }
-  // default one order per post call
+  // Default one order per post call
   const numOrders = 1;
   const batch = firestore.db.batch();
-  log('Making an order for user: ' + maker);
+  log(`Making an order for user: ${maker}`);
   try {
-    // check if token has bonus if payload instructs so
+    // Check if token has bonus if payload instructs so
     let hasBonus = payload.metadata.hasBonusReward;
     if (payload.metadata.checkBonusReward) {
       hasBonus = await hasBonusReward(tokenAddress);
@@ -69,10 +68,10 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
     payload.metadata.hasBonusReward = hasBonus;
 
     if (payload.side === OrderSide.Sell) {
-      // listing
+      // Listing
       await postListing(maker, payload, batch, numOrders, hasBonus);
     } else if (payload.side === OrderSide.Buy) {
-      // offer
+      // Offer
       await postOffer(maker, payload, batch, numOrders, hasBonus);
     } else {
       error('Unknown order type');
@@ -80,7 +79,7 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
       return;
     }
 
-    // commit batch
+    // Commit batch
     log('Committing post order batch to firestore');
     await batch.commit();
     res.send(payload);

@@ -1,6 +1,6 @@
-import { error, log } from '@utils/logger';
+import { error, log } from '@infinityxyz/lib/utils';
 import { AxiosResponse } from 'axios';
-import { UnmarshalUserAssetResponse } from './types/UnmarshalUserAsset';
+import { UnmarshalUserAssetResponse } from '@infinityxyz/lib/types/services/unmarshal';
 import { unmarshalClient } from './utils';
 
 /**
@@ -12,7 +12,7 @@ export async function getUserAssetsFromUnmarshal(
   page?: number,
   pageSize?: number,
   contract?: string
-) {
+): Promise<Partial<UnmarshalUserAssetResponse>> {
   log(
     'Fetching assets from unmarshal for user',
     userAddress,
@@ -35,11 +35,12 @@ export async function getUserAssetsFromUnmarshal(
         pageSize
       }
     });
-    return data.nft_assets;
+    return data;
   } catch (err) {
     error('Error occured while fetching assets from unmarshal');
     error(err);
   }
+  return {};
 }
 
 export function getUnmarshalChainName(chainId: string): string {

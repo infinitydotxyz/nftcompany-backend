@@ -1,12 +1,11 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getPurchaseLeaders } from '@services/infinity/users/purchases/getPurchaseLeaders';
-import { getSaleLeaders } from '@services/infinity/users/sales/getSaleLeaders';
-import { jsonString } from '@utils/formatters';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getPurchaseLeaders } from 'services/infinity/users/purchases/getPurchaseLeaders';
+import { getSaleLeaders } from 'services/infinity/users/sales/getSaleLeaders';
+import { error, jsonString } from '@infinityxyz/lib/utils';
 import { Router } from 'express';
 const router = Router();
 
-// fetch rewards leaderboard
+// Fetch rewards leaderboard
 router.get('/', async (req, res) => {
   try {
     const [saleLeaders, purchaseLeaders] = await Promise.all([getSaleLeaders(10), getPurchaseLeaders(10)]);
@@ -16,7 +15,7 @@ router.get('/', async (req, res) => {
       results: { saleLeaders, buyLeaders: purchaseLeaders }
     };
     const respStr = jsonString(resp);
-    // to enable cdn cache
+    // To enable cdn cache
     res.set({
       'Cache-Control': 'must-revalidate, max-age=60',
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')

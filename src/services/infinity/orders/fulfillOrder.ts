@@ -1,17 +1,17 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { error, log } from '@infinityxyz/lib/utils';
 import { prepareEmail } from '../email/prepareEmail';
 import { deleteListingWithId } from '../listings/deleteListingWithId';
 import { deleteOfferMadeWithId } from '../offers/deleteOfferMadeWithId';
 import { saveBoughtOrder } from './saveBoughtOrder';
 import { saveSoldOrder } from './saveSoldOrder';
 
-// order fulfill
+// Order fulfill
 export async function fulfillOrder(user: string, batch: any, payload: any) {
-  // user is the taker of the order - either bought now or accepted offer
-  // write to bought and sold and delete from listing, offer made, offer recvd
-  /* cases in which order is fulfilled:
+  // User is the taker of the order - either bought now or accepted offer
+  // Write to bought and sold and delete from listing, offer made, offer recvd
+  /* Cases in which order is fulfilled:
           1) listed an item and a buy now is made on it; order is the listing
           2) listed an item, offer received on it, offer is accepted; order is the offerReceived
           3) no listing made, but offer is received on it, offer is accepted; order is the offerReceived
@@ -20,7 +20,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
     const taker = user.trim().toLowerCase();
     const salePriceInEth = +payload.salePriceInEth;
     const side = +payload.side;
-    const docId = payload.orderId.trim(); // preserve case
+    const docId = payload.orderId.trim(); // Preserve case
     const feesInEth = +payload.feesInEth;
     const txnHash = payload.txnHash;
     const maker = payload.maker.trim().toLowerCase();
@@ -44,7 +44,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       return;
     }
 
-    // record txn for maker
+    // Record txn for maker
     const txnPayload = {
       txnHash,
       status: 'confirmed',
@@ -64,9 +64,9 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
     batch.set(makerTxnRef, txnPayload, { merge: true });
 
     if (side === 0) {
-      // taker accepted offerReceived, maker is the buyer
+      // Taker accepted offerReceived, maker is the buyer
 
-      // check if order exists
+      // Check if order exists
       const docSnap = await firestore
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
@@ -89,24 +89,24 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
 
       log(`Item bought by ${maker} sold by ${taker}`);
 
-      // write to bought by maker; multiple items possible
+      // Write to bought by maker; multiple items possible
       await saveBoughtOrder(maker, doc, batch, numOrders);
 
-      // write to sold by taker; multiple items possible
+      // Write to sold by taker; multiple items possible
       await saveSoldOrder(taker, doc, batch, numOrders);
 
-      // delete offerMade by maker
+      // Delete offerMade by maker
       await deleteOfferMadeWithId(docId, maker, batch);
 
-      // delete listing by taker if it exists
+      // Delete listing by taker if it exists
       await deleteListingWithId(docId, taker, batch);
 
-      // send email to maker that the offer is accepted
+      // Send email to maker that the offer is accepted
       void prepareEmail(maker, doc, 'offerAccepted');
     } else if (side === 1) {
-      // taker bought a listing, maker is the seller
+      // Taker bought a listing, maker is the seller
 
-      // check if order exists
+      // Check if order exists
       const docSnap = await firestore
         .collection(fstrCnstnts.ROOT_COLL)
         .doc(fstrCnstnts.INFO_DOC)
@@ -128,16 +128,16 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
 
       log(`Item bought by ${taker} sold by ${maker}`);
 
-      // write to bought by taker; multiple items possible
+      // Write to bought by taker; multiple items possible
       await saveBoughtOrder(taker, doc, batch, numOrders);
 
-      // write to sold by maker; multiple items possible
+      // Write to sold by maker; multiple items possible
       await saveSoldOrder(maker, doc, batch, numOrders);
 
-      // delete listing from maker
+      // Delete listing from maker
       await deleteListingWithId(docId, maker, batch);
 
-      // send email to maker that the item is purchased
+      // Send email to maker that the item is purchased
       void prepareEmail(maker, doc, 'itemPurchased');
     }
   } catch (err) {

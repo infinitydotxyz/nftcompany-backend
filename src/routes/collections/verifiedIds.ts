@@ -1,7 +1,7 @@
-import { StatusCode } from '@base/types/StatusCode';
-import { getVerifiedCollectionIds } from '@services/infinity/collections/getVerifiedCollectionIds';
-import { validateInputs } from '@utils/index';
-import { error } from '@utils/logger';
+import { StatusCode } from '@infinityxyz/lib/types/core';
+import { getVerifiedCollectionIds } from 'services/infinity/collections/getVerifiedCollectionIds';
+import { validateInputs } from 'utils/index';
+import { error } from '@infinityxyz/lib/utils';
 import { Request, Router, Response } from 'express';
 
 const router = Router();

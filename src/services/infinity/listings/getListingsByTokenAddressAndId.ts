@@ -1,6 +1,6 @@
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
-import { error, log } from '@utils/logger';
+import { firestore } from 'container';
+import { fstrCnstnts } from '../../../constants';
+import { error, log } from '@infinityxyz/lib/utils';
 import { fetchAssetAsListingFromDb } from '../assets/getAssetsAsListings';
 import { getOrdersResponse } from '../utils';
 
@@ -21,7 +21,7 @@ export async function getListingByTokenAddressAndId(
       .get();
 
     if (snapshot.docs.length === 0) {
-      // get from db
+      // Get from db
       const listing = await fetchAssetAsListingFromDb(chainId, tokenId, tokenAddress, limit);
       resp = listing ?? '';
     } else {
@@ -29,7 +29,7 @@ export async function getListingByTokenAddressAndId(
     }
     return resp;
   } catch (err) {
-    error('Failed to get listing by tokend address and id', tokenAddress, tokenId);
+    error('Failed to get listing by token address and id', tokenAddress, tokenId);
     error(err);
   }
 }

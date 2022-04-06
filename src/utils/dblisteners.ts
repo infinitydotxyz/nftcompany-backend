@@ -1,28 +1,28 @@
-import { log } from '@utils/logger';
-import { firestore } from '@base/container';
-import { fstrCnstnts } from '@base/constants';
+import { firestoreConstants, log } from '@infinityxyz/lib/utils';
+import { firestore } from 'container';
 import {
   addVerifiedCollectionId,
   removeVerifiedCollectionId
-} from '@services/infinity/collections/getVerifiedCollectionIds';
+} from 'services/infinity/collections/getVerifiedCollectionIds';
 
 let setupAllCollectionsListenerDone = false;
 
 /*
- * set up DB Listener on 'ALL_COLLECTIONS_COLL' to update the cache.
+ * Set up DB Listener on 'ALL_COLLECTIONS_COLL' to update the cache.
+ * todo: this needs to change to a listener on the `collections` collection.
  */
 export function setupAllCollectionsListener() {
   if (setupAllCollectionsListenerDone) {
     return;
   }
-  const coll = firestore.collection(fstrCnstnts.ALL_COLLECTIONS_COLL);
+  const coll = firestore.collection(firestoreConstants.COLLECTIONS_COLL);
 
-  // listening to collection changes
+  // Listening to collection changes
   coll.onSnapshot(
-    async (snapshot) => {
-      log(`Collection changed: ${fstrCnstnts.ALL_COLLECTIONS_COLL}`);
+    (snapshot) => {
+      log(`Collection changed: ${firestoreConstants.COLLECTIONS_COLL}`);
 
-      // from the 2nd+ callback run: (skip the 1st one, which is for full changes)
+      // From the 2nd+ callback run: (skip the 1st one, which is for full changes)
       if (setupAllCollectionsListenerDone) {
         snapshot.docChanges().forEach((change) => {
           const data = change.doc.data();
