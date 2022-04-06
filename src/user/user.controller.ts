@@ -48,9 +48,7 @@ import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param
 import CollectionsService from 'collections/collections.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from 'storage/storage.service';
-import { DiscordService } from 'discord/discord.service';
-import { TwitterService } from 'twitter/twitter.service';
-import { CollectionMetadata, Links } from '@infinityxyz/lib/types/core';
+import { CollectionMetadata } from '@infinityxyz/lib/types/core';
 import { instanceToPlain } from 'class-transformer';
 import { StatsService } from 'stats/stats.service';
 

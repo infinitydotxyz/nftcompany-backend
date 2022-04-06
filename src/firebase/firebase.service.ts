@@ -1,8 +1,7 @@
 import { Collection } from '@infinityxyz/lib/types/core/Collection';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import firebaseAdmin from 'firebase-admin';
-import { storage } from 'firebase-admin/lib/storage';
+import firebaseAdmin, { storage } from 'firebase-admin';
 import { CollectionRefDto } from './dto/collection-ref.dto';
 import { FIREBASE_OPTIONS } from './firebase.constants';
 import { FirebaseModuleOptions } from './firebase.types';

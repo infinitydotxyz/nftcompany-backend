@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChainId, OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FirebaseService } from '../firebase/firebase.service';
@@ -7,6 +8,7 @@ import { TwitterService } from 'twitter/twitter.service';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { StatType } from './stats.types';
 import { TestModule } from 'test.module';
+import serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 
 describe('StatsService', () => {
   let service: StatsService;
