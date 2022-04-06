@@ -177,7 +177,9 @@ export function rawSellOrderToBaseOrder(order: WyvernSellOrder): Order | undefin
       makerReferrerFee: order.maker_referrer_fee
     };
     return baseOrder;
-  } catch {}
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 export function getInfinityOrderData(asset: OpenSeaAsset, hasBlueCheck: boolean) {

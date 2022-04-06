@@ -70,7 +70,9 @@ export class TwitterService {
     if (query.cursor) {
       try {
         startAfterCursor = JSON.parse(base64Decode(query.cursor));
-      } catch (e) {}
+      } catch (e) {
+        console.log(e);
+      }
     }
 
     let topMentionsQuery = mentionsRef.orderBy('author.followersCount', 'desc').orderBy('author.id');
@@ -118,7 +120,9 @@ export class TwitterService {
       const accountUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
       const account = this.transformAccount(accountUser);
       return { account, tweets: formattedTweets };
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
 
     try {
       const accountUser = await this.getUser(username);
