@@ -1,6 +1,5 @@
-import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { join } from 'path';
+import { TestModule } from 'test.module';
 import { TwitterService } from './twitter.service';
 
 describe('TwitterService', () => {
@@ -8,12 +7,7 @@ describe('TwitterService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          envFilePath: join(__dirname, '../../.env'),
-          isGlobal: true
-        })
-      ],
+      imports: [TestModule],
       providers: [TwitterService]
     }).compile();
 

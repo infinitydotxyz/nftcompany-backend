@@ -1,7 +1,7 @@
 import { Collection } from '@infinityxyz/lib/types/core/Collection';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import firebaseAdmin from 'firebase-admin';
+import firebaseAdmin, { storage } from 'firebase-admin';
 import { CollectionRefDto } from './dto/collection-ref.dto';
 import { FIREBASE_OPTIONS } from './firebase.constants';
 import { FirebaseModuleOptions } from './firebase.types';
@@ -17,13 +17,19 @@ export class FirebaseService {
     return this._firestore;
   }
 
+  public get bucket() {
+    return storage().bucket();
+  }
+
   constructor(@Inject(FIREBASE_OPTIONS) private options: FirebaseModuleOptions) {
-    firebaseAdmin.initializeApp(
-      {
-        credential: firebaseAdmin.credential.cert(options.cert)
-      },
-      options.certName
-    );
+    if ((options.isTest && firebaseAdmin.apps.length == 0) || !options.isTest) {
+      firebaseAdmin.initializeApp(
+        {
+          credential: firebaseAdmin.credential.cert(options.cert)
+        },
+        options.certName
+      );
+    }
     this._firestore = firebaseAdmin.firestore();
   }
 

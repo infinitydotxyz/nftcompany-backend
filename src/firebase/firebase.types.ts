@@ -8,4 +8,6 @@ export type FirebaseModuleOptions = {
    * Unique name to identify the service account.
    */
   certName?: string;
+
+  isTest?: boolean;
 };

@@ -10,6 +10,7 @@ import { NftsService } from './nfts/nfts.service';
 @Module({
   imports: [StatsModule, VotesModule, TwitterModule],
   providers: [CollectionsService, NftsService],
-  controllers: [CollectionsController, NftsController]
+  controllers: [CollectionsController, NftsController],
+  exports: [CollectionsService]
 })
 export class CollectionsModule {}
