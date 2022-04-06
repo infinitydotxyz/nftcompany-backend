@@ -60,7 +60,13 @@ const post = async (req: Request<any, any, MarketListingsBody>, res: Response<Ma
     }
 
     // Set result
-    const resp = { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
+    const resp: MarketListingsResponse = {
+      buyOrders: buyOrds,
+      sellOrders: sellOrds,
+      error: '',
+      success: success,
+      matches: matches
+    };
     res.send(resp);
     return;
   } catch (err) {
