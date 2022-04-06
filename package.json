@@ -51,7 +51,7 @@
     "express-fileupload": "^1.2.1",
     "express-jsdoc-swagger": "^1.6.7",
     "express-rate-limit": "5.5.1",
-    "firebase-admin": "9.11.1",
+    "firebase-admin": "^10.0.2",
     "helmet": "^4.6.0",
     "lodash": "^4.17.21",
     "md5": "^2.3.0",

@@ -221,12 +221,25 @@ export class StatsService {
 
     const ref = await this.firebaseService.getCollectionRef(collection);
 
+    const collectionData = (await ref.get()).data();
+
+    const name = collectionData?.metadata?.name ?? 'Unknown';
+    const profileImage = collectionData?.metadata?.profileImage ?? '';
+    const numOwners = collectionData?.numOwners ?? NaN;
+    const numNfts = collectionData?.numNfts ?? NaN;
+    const hasBlueCheck = collectionData?.hasBlueCheck ?? false;
+
     const votes = await this.votesService.getCollectionVotes({
       ...collection,
       ref
     });
 
     const mergedStats: CollectionStatsDto = {
+      name,
+      profileImage,
+      numOwners,
+      numNfts,
+      hasBlueCheck,
       chainId: collection.chainId,
       collectionAddress: collection.address,
       floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
