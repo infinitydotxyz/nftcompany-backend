@@ -125,7 +125,6 @@ thresholdUsers
 nonErc721Addresses**
 
 src/nfts/doge_builder/images
-package-lock.json
 
 
 # scripts
