@@ -11,6 +11,7 @@ import { marketOrders } from './marketOrders';
 import { buyOrders, deleteBuyOrder, deleteSellOrder, sellOrders } from './marketFirebase';
 
 const post = async (req: Request<any, any, MarketListingsBody>, res: Response<MarketListingsResponse>) => {
+  console.log(req.body);
   try {
     if (badRequest(req)) {
       res.sendStatus(StatusCode.BadRequest);

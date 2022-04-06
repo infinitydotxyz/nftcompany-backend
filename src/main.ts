@@ -7,6 +7,7 @@ import { auth, INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import listingsRouter from './routes/listings';
+import marketListings from 'routes/marketListings';
 
 function setup(app: INestApplication) {
   app.enableCors({
@@ -22,7 +23,6 @@ function setup(app: INestApplication) {
       transform: true
     })
   );
-
   /**
    * Unconverted routes needed for FE development
    *
