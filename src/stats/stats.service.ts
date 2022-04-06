@@ -6,6 +6,7 @@ import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
 import { CollectionStatsByPeriodDto } from 'collections/dto/collection-stats-by-period.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { VotesService } from 'votes/votes.service';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -31,7 +32,8 @@ export class StatsService {
   constructor(
     private discordService: DiscordService,
     private twitterService: TwitterService,
-    private firebaseService: FirebaseService
+    private firebaseService: FirebaseService,
+    private votesService: VotesService
   ) {}
 
   async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
@@ -51,14 +53,16 @@ export class StatsService {
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
 
-    const combinedStats = primaryStats.data.map((primary, index) => {
-      const secondaryPromiseResult = secondaryStats[index];
+    const combinedStats = await Promise.all(
+      primaryStats.data.map(async (primary, index) => {
+        const secondaryPromiseResult = secondaryStats[index];
 
-      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
-      const merged = this.mergeStats(primary, secondary, collection);
-      return merged;
-    });
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const merged = await this.mergeStats(primary, secondary, collection);
+        return merged;
+      })
+    );
 
     const hasNextPage = combinedStats.length > query.limit;
     if (hasNextPage) {
@@ -137,17 +141,19 @@ export class StatsService {
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
 
-    const combinedStats = stats.map((primary, index) => {
-      const secondaryPromiseResult = secondaryStats[index];
+    const combinedStats = await Promise.all(
+      stats.map(async (primary, index) => {
+        const secondaryPromiseResult = secondaryStats[index];
 
-      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
-      const merged = this.mergeStats(primary, secondary, {
-        chainId: collection.chainId as ChainId,
-        address: collection.address
-      });
-      return merged;
-    });
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const merged = await this.mergeStats(primary, secondary, {
+          chainId: collection.chainId as ChainId,
+          address: collection.address
+        });
+        return merged;
+      })
+    );
 
     const hasNextPage = combinedStats.length > limit;
     if (hasNextPage) {
@@ -175,7 +181,8 @@ export class StatsService {
       options.period,
       options.date
     );
-    const collectionStats = this.mergeStats(stats, socialStats, collection);
+
+    const collectionStats = await this.mergeStats(stats, socialStats, collection);
     return collectionStats;
   }
 
@@ -197,11 +204,11 @@ export class StatsService {
     return mostRecentStats;
   }
 
-  private mergeStats(
+  private async mergeStats(
     primary: Partial<SocialsStats> & Partial<Stats>,
     secondary: Partial<SocialsStats> & Partial<Stats>,
     collection: { chainId: ChainId; address: string }
-  ): CollectionStatsDto {
+  ): Promise<CollectionStatsDto> {
     const mergeStat = (primary?: number, secondary?: number) => {
       if (typeof primary === 'number' && !Number.isNaN(primary)) {
         return primary;
@@ -211,6 +218,13 @@ export class StatsService {
 
       return NaN;
     };
+
+    const ref = await this.firebaseService.getCollectionRef(collection);
+
+    const votes = await this.votesService.getCollectionVotes({
+      ...collection,
+      ref
+    });
 
     const mergedStats: CollectionStatsDto = {
       chainId: collection.chainId,
@@ -261,7 +275,9 @@ export class StatsService {
       twitterLink: primary?.twitterLink ?? secondary?.twitterLink ?? '',
       updatedAt: primary?.updatedAt ?? NaN,
       timestamp: primary?.timestamp ?? secondary?.timestamp ?? NaN,
-      period: primary?.period ?? secondary?.period
+      period: primary?.period ?? secondary?.period,
+      votesFor: votes.votesFor ?? NaN,
+      votesAgainst: votes.votesAgainst ?? NaN
     };
 
     return mergedStats;
@@ -335,7 +351,7 @@ export class StatsService {
         if (this.areStatsStale(stats)) {
           const updated = await this.updateSocialsStats(collectionRef);
           if (updated) {
-            return updated ;
+            return updated;
           }
         }
       }
