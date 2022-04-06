@@ -64,7 +64,7 @@ export class StatsService {
       })
     );
 
-    const hasNextPage = combinedStats.length > query.limit;
+    const hasNextPage = combinedStats.length > queryOptions.limit;
     if (hasNextPage) {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
