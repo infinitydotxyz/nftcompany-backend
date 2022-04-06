@@ -44,7 +44,6 @@ export class StatsService {
     };
 
     const primaryStats = await this.getPrimaryStats(query, primaryStatsCollectionName);
-
     const timestamp = getStatsDocInfo(queryOptions.date, queryOptions.period).timestamp;
     const secondaryStatsPromises = primaryStats.data.map(async (primaryStat) => {
       return this.getSecondaryStats(primaryStat, secondaryStatsCollectionName, query.period, timestamp);
@@ -116,21 +115,15 @@ export class StatsService {
   ): Promise<CollectionStatsArrayResponseDto> {
     const startAfterCursorStr = base64Decode(query.cursor);
     const startAfterCursor = startAfterCursorStr ? parseInt(startAfterCursorStr, 10) : '';
-
-    const minDate = query.minDate;
-    const maxDate = query.maxDate;
     const orderDirection = query.orderDirection;
     const limit = query.limit;
     const period = query.period;
 
-    const minTimestamp = getStatsDocInfo(minDate, period).timestamp;
-    const maxTimestamp = getStatsDocInfo(maxDate, period).timestamp;
-
     let statsQuery = collection.ref
       .collection(this.statsGroup)
       .where('period', '==', period)
-      .where('timestamp', '<=', maxTimestamp)
-      .where('timestamp', '>=', minTimestamp)
+      .where('timestamp', '<=', query.maxDate)
+      .where('timestamp', '>=', query.minDate)
       .orderBy('timestamp', orderDirection);
     if (typeof startAfterCursor === 'number' && !Number.isNaN(startAfterCursor)) {
       statsQuery = statsQuery.startAfter(startAfterCursor);
@@ -138,7 +131,6 @@ export class StatsService {
     statsQuery = statsQuery.limit(limit + 1); // +1 to check if there are more results
 
     const stats = (await statsQuery.get()).docs.map((item) => item.data()) as Stats[];
-
     const secondaryStatsPromises = stats.map(async (primaryStat) => {
       return this.getSecondaryStats(primaryStat, this.socialsGroup, query.period, primaryStat.timestamp);
     });
@@ -322,10 +314,9 @@ export class StatsService {
     collectionRef: FirebaseFirestore.DocumentReference,
     statsCollectionName: string,
     period: StatsPeriod,
-    date: number
+    timestamp: number
   ) {
     try {
-      const timestamp = getStatsDocInfo(date, period).timestamp;
       const statsQuery = collectionRef
         .collection(statsCollectionName)
         .where('period', '==', period)
@@ -334,8 +325,9 @@ export class StatsService {
         .limit(1);
       const snapshot = await statsQuery.get();
       const stats = snapshot.docs?.[0]?.data();
+      const requestedTimestamp = getStatsDocInfo(timestamp, period).timestamp;
       const currentTimestamp = getStatsDocInfo(Date.now(), period).timestamp;
-      const isMostRecent = timestamp === currentTimestamp;
+      const isMostRecent = requestedTimestamp === currentTimestamp;
       /**
        * Attempt to update socials stats if they're out of date
        */
@@ -343,7 +335,7 @@ export class StatsService {
         if (this.areStatsStale(stats)) {
           const updated = await this.updateSocialsStats(collectionRef);
           if (updated) {
-            return updated as SocialsStats;
+            return updated ;
           }
         }
       }
@@ -462,7 +454,6 @@ export class StatsService {
   ): Promise<SocialsStats> {
     const socialsCollection = collectionRef.collection(firestoreConstants.COLLECTION_SOCIALS_STATS_COLL);
     const aggregatedStats = await this.aggregateSocialsStats(collectionRef, preAggregatedStats);
-
     const batch = this.firebaseService.firestore.batch();
     for (const [, stats] of Object.entries(aggregatedStats)) {
       const { docId } = getStatsDocInfo(stats.timestamp, stats.period);
@@ -501,13 +492,13 @@ export class StatsService {
     const aggregatedStats: Record<StatsPeriod, SocialsStats> = {} as any;
     for (const [period, prevStats] of Object.entries(socialsStatsMap)) {
       const info = getStatsDocInfo(currentStats.updatedAt, period as StatsPeriod);
-      const prevDiscordFollowers = prevStats?.discordFollowers ?? currentStats.discordFollowers;
+      const prevDiscordFollowers = prevStats?.discordFollowers || currentStats.discordFollowers;
       const discordFollowersPercentChange = calcPercentChange(prevDiscordFollowers, currentStats.discordFollowers);
-      const prevDiscordPresence = prevStats?.discordPresence ?? currentStats.discordPresence;
+      const prevDiscordPresence = prevStats?.discordPresence || currentStats.discordPresence;
       const discordPresencePercentChange = calcPercentChange(prevDiscordPresence, currentStats.discordPresence);
-      const prevTwitterFollowers = prevStats?.twitterFollowers ?? currentStats.twitterFollowers;
+      const prevTwitterFollowers = prevStats?.twitterFollowers || currentStats.twitterFollowers;
       const twitterFollowersPercentChange = calcPercentChange(prevTwitterFollowers, currentStats.twitterFollowers);
-      const prevTwitterFollowing = prevStats?.twitterFollowing ?? currentStats.twitterFollowing;
+      const prevTwitterFollowing = prevStats?.twitterFollowing || currentStats.twitterFollowing;
       const twitterFollowingPercentChange = calcPercentChange(prevTwitterFollowing, currentStats.twitterFollowing);
 
       const stats: SocialsStats = {

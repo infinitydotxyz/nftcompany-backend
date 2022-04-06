@@ -46,7 +46,7 @@ export async function getAssetsFromOpensea(
   const orderByQuery = orderBy ? { order_by: orderBy } : { order_by: defaultOrderBy };
 
   const isValidOrderDirection = [OrderDirection.Ascending, OrderDirection.Descending].includes(
-    orderDirection as OrderDirection
+    orderDirection 
   );
   const defaultOrderDirection = OrderDirection.Descending;
   if (orderDirection && !isValidOrderDirection) {

@@ -11,6 +11,13 @@ import { TestModule } from 'test.module';
 describe('StatsService', () => {
   let service: StatsService;
   let firebaseService: FirebaseService;
+  let firebaseProvider;
+  beforeAll(() => {
+    firebaseProvider = {
+      provide: FirebaseService,
+      useValue: new FirebaseService({ cert: serviceAccount })
+    };
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

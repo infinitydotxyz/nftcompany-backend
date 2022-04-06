@@ -19,7 +19,7 @@ export function setupAllCollectionsListener() {
 
   // Listening to collection changes
   coll.onSnapshot(
-    async (snapshot) => {
+    (snapshot) => {
       log(`Collection changed: ${firestoreConstants.COLLECTIONS_COLL}`);
 
       // From the 2nd+ callback run: (skip the 1st one, which is for full changes)

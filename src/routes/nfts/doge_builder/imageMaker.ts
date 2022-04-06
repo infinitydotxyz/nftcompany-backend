@@ -8,7 +8,7 @@ interface Props {
   images: Canvas.Image[];
 }
 
-export const combineImages = async ({ images }: Props): Promise<Buffer | undefined> => {
+export const combineImages = ({ images }: Props): Buffer | undefined => {
   try {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, 800, 800);

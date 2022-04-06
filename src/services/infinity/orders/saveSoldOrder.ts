@@ -33,7 +33,7 @@ export async function saveSoldOrder(user: any, order: any, batch: any, numOrders
   const salesFeesTotal = bn(userInfo.salesFeesTotal).plus(feesInEth).toString();
   const salesTotalNumeric = toFixed5(salesTotal);
   const salesFeesTotalNumeric = toFixed5(salesFeesTotal);
-  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + salesTotalNumeric;
+  const salesAndPurchasesTotalNumeric = (userInfo.salesAndPurchasesTotalNumeric as number) + salesTotalNumeric;
 
   trace(
     'User',

@@ -19,8 +19,7 @@ export const metadataKey = 'params';
  * In this example, `AuthGuard` will know to look for the `userId` in the query params and check if it matches the signing address.
  * If you were to omit the `MatchSigner` decorator, it would just check whether the signature is valid.
  *
- * You can also specify multiple params to validate, if that would ever be necessary.
- * @param params Names of the url query parameters.
+ * @param param Name of the url query parameter.
  * @returns
  */
-export const MatchSigner = (...params: string[]) => SetMetadata(metadataKey, params);
+export const MatchSigner = (param: string) => SetMetadata(metadataKey, param);

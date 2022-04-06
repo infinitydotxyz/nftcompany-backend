@@ -126,6 +126,7 @@ const filesInDir = (path: string): Dirent[] => {
   let list = readdirSync(path, { withFileTypes: true });
 
   list = list.filter((entry) => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     return entry.isFile;
   });
 
@@ -637,7 +638,7 @@ const buildImage = async (metadata: DogeMetadata): Promise<Buffer | undefined> =
       break;
   }
 
-  const buffer = await combineImages({ images });
+  const buffer = combineImages({ images });
 
   return buffer;
 };
