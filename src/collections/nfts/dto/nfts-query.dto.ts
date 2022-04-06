@@ -39,16 +39,16 @@ export class NftsQueryDto {
   cursor?: string;
 
   @ApiPropertyOptional({
-    description: 'Trait types to filter by'
+    description: 'Comma separated trait types to filter by'
   })
   @IsOptional()
   @IsString()
   traitTypes?: string;
 
   @ApiPropertyOptional({
-    description: 'Trait values to filter by'
+    description: 'Comma separated trait values to filter by'
   })
   @IsOptional()
   @IsString()
-  traitValues: string;
+  traitValues?: string;
 }
