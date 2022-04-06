@@ -197,6 +197,6 @@ export class UserController {
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
 
     // Update stats in the background (do NOT await this call).
-    this.statsService.getCurrentSocialsStats(collection.ref).catch(this.logger.error);
+    this.statsService.getCurrentSocialsStats(collection.ref).catch((err) => this.logger.error(err));
   }
 }
