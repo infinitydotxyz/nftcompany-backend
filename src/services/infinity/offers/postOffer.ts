@@ -26,7 +26,9 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
         taker = await contract.ownerOf(tokenId);
         payload.metadata.asset.owner = taker?.toLowerCase?.();
       }
-    } catch {}
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   if (payload.metadata.schema === 'ERC721' && !payload.metadata.asset.owner) {

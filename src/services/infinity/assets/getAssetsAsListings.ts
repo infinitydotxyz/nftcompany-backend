@@ -46,7 +46,9 @@ export async function fetchAssetAsListingFromDb(
             });
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.log(err);
+      }
 
       listings = getAssetAsListing(docId, order);
     }

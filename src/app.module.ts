@@ -12,6 +12,7 @@ import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
 import { VotesModule } from './votes/votes.module';
+import { MarketListingsModule } from './market-listings/market-listings.module';
 
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
@@ -32,6 +33,7 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
     UserModule,
     VotesModule,
     StorageModule
+    MarketListingsModule
   ],
   controllers: [AppController],
   providers: [AppService]

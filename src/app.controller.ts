@@ -1,4 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { ApiSignatureAuth } from 'api-signature.decorator';
+import { MatchSigner } from 'common/decorators/match-signer.decorator';
+import { AuthGuard } from 'common/guards/auth.guard';
+import { market } from 'routes/u/_user/market';
 import { AppService } from './app.service';
 
 @Controller()
@@ -8,5 +12,13 @@ export class AppController {
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('user')
+  @Post('u/:user/market') // TODO migrate this route to follow nest standards
+  market(@Req() req, @Res() res) {
+    void market(req, res);
   }
 }
