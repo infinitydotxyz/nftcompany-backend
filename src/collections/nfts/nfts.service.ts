@@ -64,22 +64,25 @@ export class NftsService {
       let activity: NftActivity;
       switch (item.type) {
         case FeedEventType.NftSale:
-          const sale: NftSaleEvent = item as any;
-          activity = {
-            address: sale.collectionAddress,
-            tokenId: sale.tokenId,
-            chainId: sale.chainId as ChainId,
-            type: ActivityType.Sale,
-            from: sale.seller,
-            fromDisplayName: sale.sellerDisplayName,
-            to: sale.buyer,
-            toDisplayName: sale.buyerDisplayName,
-            price: sale.price,
-            paymentToken: sale.paymentToken,
-            internalUrl: sale.internalUrl,
-            externalUrl: sale.externalUrl,
-            timestamp: sale.timestamp
-          };
+          {
+            const sale: NftSaleEvent = item as any;
+            activity = {
+              address: sale.collectionAddress,
+              tokenId: sale.tokenId,
+              chainId: sale.chainId as ChainId,
+              type: ActivityType.Sale,
+              from: sale.seller,
+              fromDisplayName: sale.sellerDisplayName,
+              to: sale.buyer,
+              toDisplayName: sale.buyerDisplayName,
+              price: sale.price,
+              paymentToken: sale.paymentToken,
+              internalUrl: sale.internalUrl,
+              externalUrl: sale.externalUrl,
+              timestamp: sale.timestamp
+            };
+          }
+
           break;
         default:
           throw new Error(`Activity transformation not implemented type: ${item.type}`);

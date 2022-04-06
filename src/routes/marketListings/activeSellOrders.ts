@@ -49,7 +49,7 @@ export class ActiveSellOrders {
 
     const sortedOrders = result.sort((a, b) => {
       const aCurrPrice = getCurrentOrderPrice(a);
-      const bCurrPrice = getCurrentOrderPrice(a); // TODO this doesn't seem right, should this be b?
+      const bCurrPrice = getCurrentOrderPrice(b);
       // Todo: might need to convert to ETH first to prevent overflow
       return aCurrPrice.sub(bCurrPrice).toNumber();
     });
