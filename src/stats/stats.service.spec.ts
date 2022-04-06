@@ -14,7 +14,7 @@ describe('StatsService', () => {
   let service: StatsService;
   let firebaseService: FirebaseService;
   let firebaseProvider;
-  beforeAll(async () => {
+  beforeAll(() => {
     firebaseProvider = {
       provide: FirebaseService,
       useValue: new FirebaseService({ cert: serviceAccount })

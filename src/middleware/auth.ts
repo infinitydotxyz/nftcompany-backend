@@ -5,7 +5,7 @@ import { StatusCode } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { error, firestoreConstants, getCollectionDocId, trimLowerCase } from '@infinityxyz/lib/utils';
 
-export async function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
+export function authenticateUser(req: Request<{ user: string }>, res: Response, next: NextFunction) {
   // Return true;
 
   const userId = trimLowerCase(req.params.user);
@@ -60,7 +60,7 @@ export function authorizeCollectionEditor(
       .collection(firestoreConstants.AUTH_COLL)
       .doc(firestoreConstants.CREATOR_DOC);
 
-    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any;
+    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data();
 
     if (!creatorObj?.creator) {
       const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);

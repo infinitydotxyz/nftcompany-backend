@@ -194,7 +194,7 @@ export function getInfinityOrderData(asset: OpenSeaAsset, hasBlueCheck: boolean)
   return infinityOrder;
 }
 
-export async function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
+export function saveRawOpenseaAssetBatchInDatabase(assetListings: any[]) {
   try {
     const batch = firestore.db.batch();
 

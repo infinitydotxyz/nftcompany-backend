@@ -335,7 +335,7 @@ export class StatsService {
         if (this.areStatsStale(stats)) {
           const updated = await this.updateSocialsStats(collectionRef);
           if (updated) {
-            return updated as SocialsStats;
+            return updated ;
           }
         }
       }

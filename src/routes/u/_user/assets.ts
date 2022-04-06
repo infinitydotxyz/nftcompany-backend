@@ -46,7 +46,7 @@ export const getUserAssets = async (
       sourceName,
       pageKey,
       contract,
-      collectionIds as string
+      collectionIds
     );
 
     if (!data) {
@@ -120,7 +120,7 @@ export async function getAssets(
 
 function storeAlchemyAssetsInFirestore(user: string, chainId: string, data: AlchemyUserAssetResponse) {
   const assets: Asset[] = [];
-  for (const datum of data?.ownedNfts) {
+  for (const datum of data?.ownedNfts ?? []) {
     const tokenId = hexToDecimalTokenId(datum.id.tokenId);
     const asset: Asset = {
       owner: user,
@@ -135,7 +135,7 @@ function storeAlchemyAssetsInFirestore(user: string, chainId: string, data: Alch
 
 function storeUnmarshalAssetsInFirestore(user: string, chainId: string, data: UnmarshalUserAssetResponse) {
   const assets: Asset[] = [];
-  for (const datum of data?.nft_assets) {
+  for (const datum of data?.nft_assets ?? []) {
     const tokenId = hexToDecimalTokenId(datum.token_id);
     const asset: Asset = {
       owner: user,
