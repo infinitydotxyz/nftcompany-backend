@@ -22,7 +22,6 @@ function setup(app: INestApplication) {
       transform: true
     })
   );
-
   /**
    * Unconverted routes needed for FE development
    *
