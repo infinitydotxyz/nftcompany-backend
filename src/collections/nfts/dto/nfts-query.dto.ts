@@ -37,4 +37,18 @@ export class NftsQueryDto {
   @IsString()
   @IsOptional()
   cursor?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trait types to filter by'
+  })
+  @IsOptional()
+  @IsString()
+  traitTypes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trait values to filter by'
+  })
+  @IsOptional()
+  @IsString()
+  traitValues: string;
 }
