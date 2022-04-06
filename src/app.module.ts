@@ -32,7 +32,7 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
     StatsModule,
     UserModule,
     VotesModule,
-    StorageModule
+    StorageModule,
     MarketListingsModule
   ],
   controllers: [AppController],
