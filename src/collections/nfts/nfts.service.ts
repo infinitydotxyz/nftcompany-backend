@@ -50,7 +50,30 @@ export class NftsService {
       decodedCursor = {};
     }
 
-    let nftsQuery = nftsCollection.orderBy(query.orderBy, query.orderDirection);
+    let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
+
+    if (query.traitType) {
+      const traitTypes = query.traitType ?? [];
+      const traitTypesValues = query?.traitValue?.map((item) => item.split('|')) ?? [];
+
+      const traits = [];
+      for (let index = 0; index < traitTypes.length; index++) {
+        const traitType = traitTypes[index];
+        const traitValues = traitTypesValues[index];
+        for (const traitValue of traitValues) {
+          if (traitValue) {
+            const traitTypeObj = traitType ? { trait_type: traitType } : {};
+            traits.push({
+              value: traitValue,
+              ...traitTypeObj
+            });
+          }
+        }
+      }
+      nftsQuery = nftsCollection.where('metadata.attributes', 'array-contains-any', traits);
+    }
+
+    nftsQuery = nftsQuery.orderBy(query.orderBy, query.orderDirection);
 
     if (decodedCursor?.[query.orderBy]) {
       nftsQuery = nftsQuery.startAfter(decodedCursor[query.orderBy]);
