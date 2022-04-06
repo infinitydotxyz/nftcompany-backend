@@ -174,12 +174,19 @@ export class StatsService {
     options: { period: StatsPeriod; date: number }
   ) {
     const collectionRef = await this.firebaseService.getCollectionRef(collection);
-    const stats = await this.getCollectionStatsForPeriod(collectionRef, this.statsGroup, options.period, options.date);
+    const stats = await this.getCollectionStatsForPeriod(
+      collectionRef,
+      this.statsGroup,
+      options.period,
+      options.date,
+      true
+    );
     const socialStats = await this.getCollectionStatsForPeriod(
       collectionRef,
       this.socialsGroup,
       options.period,
-      options.date
+      options.date,
+      true
     );
 
     const collectionStats = await this.mergeStats(stats, socialStats, collection);
@@ -199,7 +206,8 @@ export class StatsService {
       collectionRef,
       secondaryStatsCollectionName,
       period,
-      timestamp
+      timestamp,
+      false
     );
     return mostRecentStats;
   }
@@ -221,18 +229,21 @@ export class StatsService {
 
     const ref = await this.firebaseService.getCollectionRef(collection);
 
-    const collectionData = (await ref.get()).data();
+    const votesPromise = this.votesService.getCollectionVotes({
+      ...collection,
+      ref
+    });
+    const collectionPromise = ref.get();
+
+    const [collectionResult, votesResult] = await Promise.allSettled([collectionPromise, votesPromise]);
+    const collectionData = collectionResult.status === 'fulfilled' ? collectionResult.value.data() : {};
+    const votes = votesResult.status === 'fulfilled' ? votesResult.value : { votesFor: NaN, votesAgainst: NaN };
 
     const name = collectionData?.metadata?.name ?? 'Unknown';
     const profileImage = collectionData?.metadata?.profileImage ?? '';
     const numOwners = collectionData?.numOwners ?? NaN;
     const numNfts = collectionData?.numNfts ?? NaN;
     const hasBlueCheck = collectionData?.hasBlueCheck ?? false;
-
-    const votes = await this.votesService.getCollectionVotes({
-      ...collection,
-      ref
-    });
 
     const mergedStats: CollectionStatsDto = {
       name,
@@ -289,8 +300,8 @@ export class StatsService {
       updatedAt: primary?.updatedAt ?? NaN,
       timestamp: primary?.timestamp ?? secondary?.timestamp ?? NaN,
       period: primary?.period ?? secondary?.period,
-      votesFor: votes.votesFor ?? NaN,
-      votesAgainst: votes.votesAgainst ?? NaN
+      votesFor: votes?.votesFor ?? NaN,
+      votesAgainst: votes?.votesAgainst ?? NaN
     };
 
     return mergedStats;
@@ -343,7 +354,8 @@ export class StatsService {
     collectionRef: FirebaseFirestore.DocumentReference,
     statsCollectionName: string,
     period: StatsPeriod,
-    timestamp: number
+    timestamp: number,
+    waitForUpdate = false
   ) {
     try {
       const statsQuery = collectionRef
@@ -362,9 +374,13 @@ export class StatsService {
        */
       if (isMostRecent && statsCollectionName === this.socialsGroup) {
         if (this.areStatsStale(stats)) {
-          const updated = await this.updateSocialsStats(collectionRef);
-          if (updated) {
-            return updated;
+          if (waitForUpdate) {
+            const updated = await this.updateSocialsStats(collectionRef);
+            if (updated) {
+              return updated;
+            }
+          } else {
+            void this.updateSocialsStats(collectionRef);
           }
         }
       }
@@ -379,12 +395,16 @@ export class StatsService {
   /**
    * Get the current stats and update them if they are stale
    */
-  async getCurrentSocialsStats(collectionRef: FirebaseFirestore.DocumentReference) {
+  async getCurrentSocialsStats(collectionRef: FirebaseFirestore.DocumentReference, waitForUpdate = false) {
     const mostRecentSocialStats = await this.getMostRecentSocialsStats(collectionRef, StatsPeriod.All);
     if (this.areStatsStale(mostRecentSocialStats)) {
-      const updated = await this.updateSocialsStats(collectionRef);
-      if (updated) {
-        return updated;
+      if (waitForUpdate) {
+        const updated = await this.updateSocialsStats(collectionRef);
+        if (updated) {
+          return updated;
+        }
+      } else {
+        void this.updateSocialsStats(collectionRef);
       }
     }
 
