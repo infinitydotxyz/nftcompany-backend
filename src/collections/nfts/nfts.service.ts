@@ -52,17 +52,24 @@ export class NftsService {
 
     let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
 
-    if (query.traitValues) {
-      const traitTypes = query.traitTypes ? query.traitTypes.split(',') : [];
-      const traitValues = query.traitValues ? query.traitValues.split(',') : [];
-      const traits = traitValues.map((traitValue, index) => {
+    if (query.traitType) {
+      const traitTypes = query.traitType ? query.traitType : [];
+      const traitTypesValues = query.traitValue ? query.traitValue.map((item) => item.split('|')) : [];
+
+      const traits = [];
+      for (let index = 0; index < traitTypes.length; index++) {
         const traitType = traitTypes[index];
-        const traitTypeObj = traitType ? { trait_type: traitType } : {};
-        return {
-          value: traitValue,
-          ...traitTypeObj
-        };
-      });
+        const traitValues = traitTypesValues[index];
+        for (const traitValue of traitValues) {
+          if (traitValue) {
+            const traitTypeObj = traitType ? { trait_type: traitType } : {};
+            traits.push({
+              value: traitValue,
+              ...traitTypeObj
+            });
+          }
+        }
+      }
       nftsQuery = nftsCollection.where('metadata.attributes', 'array-contains-any', traits);
     }
 

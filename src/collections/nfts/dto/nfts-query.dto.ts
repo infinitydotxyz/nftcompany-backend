@@ -1,7 +1,8 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { arrayTransformer } from 'common/transformers/array-query.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export enum NftsOrderBy {
@@ -39,16 +40,20 @@ export class NftsQueryDto {
   cursor?: string;
 
   @ApiPropertyOptional({
-    description: 'Comma separated trait types to filter by'
+    description: 'Trait types to filter by',
+    type: [String]
   })
   @IsOptional()
-  @IsString()
-  traitTypes?: string;
+  @IsArray()
+  @Transform(arrayTransformer)
+  traitType?: string[];
 
   @ApiPropertyOptional({
-    description: 'Comma separated trait values to filter by'
+    description: 'Trait values to filter by, supply multiple values for a single trait by separating with a |',
+    type: [String]
   })
   @IsOptional()
-  @IsString()
-  traitValues?: string;
+  @IsArray()
+  @Transform(arrayTransformer)
+  traitValue?: string[];
 }
