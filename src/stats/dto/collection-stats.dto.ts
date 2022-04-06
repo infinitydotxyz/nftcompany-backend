@@ -110,6 +110,14 @@ export class CollectionStatsDto implements SocialsStats, Stats {
   @ApiProperty({ description: 'Period of the current stats' })
   period: StatsPeriod;
 
+  @ApiProperty({ description: 'The number of votes for the collection' })
+  votesFor: number;
+
+  @ApiProperty({
+    description: 'Number of votes against the collection'
+  })
+  votesAgainst: number;
+
   @ApiProperty({ description: 'Timestamp that the stats were updated at' })
   updatedAt: number;
 }
