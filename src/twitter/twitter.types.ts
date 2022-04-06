@@ -1,4 +1,4 @@
-import { Concrete } from '@infinityxyz/lib/types/core';
+import { Concrete, Keys } from '@infinityxyz/lib/types/core';
 import { Tweet } from '@infinityxyz/lib/types/services/twitter';
 import { User } from '@infinityxyz/lib/types/services/twitter';
 

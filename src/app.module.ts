@@ -1,3 +1,4 @@
+import { StorageModule } from './storage/storage.module';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { LoggerMiddleware } from 'logger.middleware';
 import { AppController } from './app.controller';
@@ -31,6 +32,7 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
     StatsModule,
     UserModule,
     VotesModule,
+    StorageModule,
     MarketListingsModule
   ],
   controllers: [AppController],

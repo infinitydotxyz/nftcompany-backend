@@ -1,11 +1,8 @@
-import {
-  ChainId,
-  Collection,
-  CollectionAttributes,
-  CollectionMetadata,
-  TokenStandard
-} from '@infinityxyz/lib/types/core';
-import { ApiProperty } from '@nestjs/swagger';
+import { ChainId, Collection, CollectionAttributes, TokenStandard } from '@infinityxyz/lib/types/core';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsObject, ValidateNested } from 'class-validator';
+import { CollectionMetaDataDto, PartialCollectionMetadataDto } from './collection-metadata.dto';
 import { CollectionStateDto } from './collection-state.dto';
 
 type CollectionType = Omit<Collection, 'tokenStandard'> & { tokenStandard: TokenStandard };
@@ -66,7 +63,10 @@ export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Metadata about the collection'
   })
-  metadata: CollectionMetadata;
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CollectionMetaDataDto)
+  metadata: CollectionMetaDataDto;
 
   @ApiProperty({
     description: 'Slug of the collection'
@@ -96,5 +96,29 @@ export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Current state of the collection indexing process'
   })
+  @ValidateNested()
+  @Type(() => CollectionStateDto)
   state: CollectionStateDto;
+}
+
+export class UpdateCollectionDto {
+  @ApiPropertyOptional({
+    description: 'Whether to remove the current profile image'
+  })
+  deleteProfileImage?: boolean;
+
+  @ApiPropertyOptional({
+    name: 'profileImage',
+    description: 'Profile picture',
+    required: false,
+    type: 'file'
+  })
+  profileImage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Metadata about the collection'
+  })
+  @ValidateNested()
+  @Type(() => CollectionMetaDataDto)
+  metadata?: PartialCollectionMetadataDto;
 }
