@@ -88,7 +88,7 @@ export async function getCollectionInfo(req: Request<{ slug: string; chainId: st
 
     let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
-      collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
+      collectionData = getCollectionDataFromCollectionInfo(collectionInfo);
     }
 
     const respStr = jsonString(collectionData ?? {});
@@ -138,7 +138,7 @@ export async function getCollectionInformationForEditor(
     const collectionInfo = await getCollectionInfoByAddress({ chainId, address });
     let collectionData: BaseCollection | undefined;
     if (collectionInfo) {
-      collectionData = await getCollectionDataFromCollectionInfo(collectionInfo);
+      collectionData = getCollectionDataFromCollectionInfo(collectionInfo);
     }
 
     /**
@@ -274,7 +274,7 @@ export async function postCollectionInformation(
   }
 }
 
-async function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollection) {
+function getCollectionDataFromCollectionInfo(collectionInfo: BaseCollection) {
   const collectionData: BaseCollection = {
     ...collectionInfo
   };

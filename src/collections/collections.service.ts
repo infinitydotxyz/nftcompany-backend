@@ -30,7 +30,7 @@ export default class CollectionsService {
 
     const endCode = getEndCode(startsWith);
 
-    let firestoreQuery = await this.firebaseService.firestore
+    let firestoreQuery = this.firebaseService.firestore
       .collection(firestoreConstants.COLLECTIONS_COLL)
       .where('slug', '>=', startsWith)
       .where('slug', '<', endCode)
