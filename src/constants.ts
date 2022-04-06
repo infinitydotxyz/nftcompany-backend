@@ -92,8 +92,8 @@ export const auth = {
   message: 'x-auth-message'
 };
 
-export const API_BASE = 'http://localhost:9090';
-export const SITE_BASE = 'http://localhost:3000';
+export const API_BASE = 'https://sv-dev.nftcompany.com';
+export const SITE_BASE = 'https://dev.nftcompany.com';
 
 export const SALE_FEES_TO_PURCHASE_FEES_RATIO = 5;
 
