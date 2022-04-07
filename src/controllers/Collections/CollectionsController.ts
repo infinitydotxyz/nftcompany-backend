@@ -177,7 +177,7 @@ export async function postCollectionInformation(
 
   try {
     const data: UpdateCollectionDataRequest = JSON.parse(req.body.data);
-    const profileImageFile: UploadedFile = req?.files?.profileImage as UploadedFile;
+    const profileImageFile: UploadedFile = (req?.files as any)?.profileImage as UploadedFile;
     let profileImageUpdate: { profileImage: string } = {} as any;
     /**
      * Upload profile image to google cloud storage bucket

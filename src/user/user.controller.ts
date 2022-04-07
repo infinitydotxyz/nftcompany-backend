@@ -51,6 +51,9 @@ import { StorageService } from 'storage/storage.service';
 import { CollectionMetadata } from '@infinityxyz/lib/types/core';
 import { instanceToPlain } from 'class-transformer';
 import { StatsService } from 'stats/stats.service';
+// This is a hack to make Multer available in the Express namespace
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Multer } from 'multer';
 
 @Controller('user')
 export class UserController {
