@@ -52,9 +52,9 @@ export class NftsService {
 
     let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
 
-    if (query.traitType) {
-      const traitTypes = query.traitType ?? [];
-      const traitTypesValues = query?.traitValue?.map((item) => item.split('|')) ?? [];
+    if (query.traitTypes) {
+      const traitTypes = query.traitTypes ?? [];
+      const traitTypesValues = query?.traitValues?.map((item) => item.split('|')) ?? [];
 
       const traits = [];
       for (let index = 0; index < traitTypes.length; index++) {
