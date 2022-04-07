@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
 import { FileBlob, SaveFileOptions } from './storage.types';
-import md5 from 'md5';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class StorageService {
   constructor(private firebaseService: FirebaseService) {}
 
+  private md5(data: Buffer) {
+    return createHash('md5').update(data).digest('hex');
+  }
+
   private getPath(file: FileBlob, root = 'images') {
-    const hash = md5(file.data);
+    const hash = this.md5(file.data);
     return `${root}/collections/${file.fileName}/${hash}.${file.extension}`;
   }
 
