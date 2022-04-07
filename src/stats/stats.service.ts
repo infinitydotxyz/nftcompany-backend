@@ -6,6 +6,7 @@ import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { CollectionHistoricalStatsQueryDto } from 'collections/dto/collection-historical-stats-query.dto';
 import { CollectionStatsByPeriodDto } from 'collections/dto/collection-stats-by-period.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { VotesService } from 'votes/votes.service';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
@@ -31,7 +32,8 @@ export class StatsService {
   constructor(
     private discordService: DiscordService,
     private twitterService: TwitterService,
-    private firebaseService: FirebaseService
+    private firebaseService: FirebaseService,
+    private votesService: VotesService
   ) {}
 
   async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
@@ -51,16 +53,18 @@ export class StatsService {
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
 
-    const combinedStats = primaryStats.data.map((primary, index) => {
-      const secondaryPromiseResult = secondaryStats[index];
+    const combinedStats = await Promise.all(
+      primaryStats.data.map(async (primary, index) => {
+        const secondaryPromiseResult = secondaryStats[index];
 
-      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
-      const merged = this.mergeStats(primary, secondary, collection);
-      return merged;
-    });
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const merged = await this.mergeStats(primary, secondary, collection);
+        return merged;
+      })
+    );
 
-    const hasNextPage = combinedStats.length > query.limit;
+    const hasNextPage = combinedStats.length > queryOptions.limit;
     if (hasNextPage) {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
@@ -137,17 +141,19 @@ export class StatsService {
 
     const secondaryStats = await Promise.allSettled(secondaryStatsPromises);
 
-    const combinedStats = stats.map((primary, index) => {
-      const secondaryPromiseResult = secondaryStats[index];
+    const combinedStats = await Promise.all(
+      stats.map(async (primary, index) => {
+        const secondaryPromiseResult = secondaryStats[index];
 
-      const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-      const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
-      const merged = this.mergeStats(primary, secondary, {
-        chainId: collection.chainId as ChainId,
-        address: collection.address
-      });
-      return merged;
-    });
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const merged = await this.mergeStats(primary, secondary, {
+          chainId: collection.chainId as ChainId,
+          address: collection.address
+        });
+        return merged;
+      })
+    );
 
     const hasNextPage = combinedStats.length > limit;
     if (hasNextPage) {
@@ -168,14 +174,22 @@ export class StatsService {
     options: { period: StatsPeriod; date: number }
   ) {
     const collectionRef = await this.firebaseService.getCollectionRef(collection);
-    const stats = await this.getCollectionStatsForPeriod(collectionRef, this.statsGroup, options.period, options.date);
+    const stats = await this.getCollectionStatsForPeriod(
+      collectionRef,
+      this.statsGroup,
+      options.period,
+      options.date,
+      true
+    );
     const socialStats = await this.getCollectionStatsForPeriod(
       collectionRef,
       this.socialsGroup,
       options.period,
-      options.date
+      options.date,
+      true
     );
-    const collectionStats = this.mergeStats(stats, socialStats, collection);
+
+    const collectionStats = await this.mergeStats(stats, socialStats, collection);
     return collectionStats;
   }
 
@@ -192,16 +206,17 @@ export class StatsService {
       collectionRef,
       secondaryStatsCollectionName,
       period,
-      timestamp
+      timestamp,
+      false
     );
     return mostRecentStats;
   }
 
-  private mergeStats(
+  private async mergeStats(
     primary: Partial<SocialsStats> & Partial<Stats>,
     secondary: Partial<SocialsStats> & Partial<Stats>,
     collection: { chainId: ChainId; address: string }
-  ): CollectionStatsDto {
+  ): Promise<CollectionStatsDto> {
     const mergeStat = (primary?: number, secondary?: number) => {
       if (typeof primary === 'number' && !Number.isNaN(primary)) {
         return primary;
@@ -212,7 +227,30 @@ export class StatsService {
       return NaN;
     };
 
+    const ref = await this.firebaseService.getCollectionRef(collection);
+
+    const votesPromise = this.votesService.getCollectionVotes({
+      ...collection,
+      ref
+    });
+    const collectionPromise = ref.get();
+
+    const [collectionResult, votesResult] = await Promise.allSettled([collectionPromise, votesPromise]);
+    const collectionData = collectionResult.status === 'fulfilled' ? collectionResult.value.data() : {};
+    const votes = votesResult.status === 'fulfilled' ? votesResult.value : { votesFor: NaN, votesAgainst: NaN };
+
+    const name = collectionData?.metadata?.name ?? 'Unknown';
+    const profileImage = collectionData?.metadata?.profileImage ?? '';
+    const numOwners = collectionData?.numOwners ?? NaN;
+    const numNfts = collectionData?.numNfts ?? NaN;
+    const hasBlueCheck = collectionData?.hasBlueCheck ?? false;
+
     const mergedStats: CollectionStatsDto = {
+      name,
+      profileImage,
+      numOwners,
+      numNfts,
+      hasBlueCheck,
       chainId: collection.chainId,
       collectionAddress: collection.address,
       floorPrice: mergeStat(primary?.floorPrice, secondary?.floorPrice),
@@ -261,7 +299,9 @@ export class StatsService {
       twitterLink: primary?.twitterLink ?? secondary?.twitterLink ?? '',
       updatedAt: primary?.updatedAt ?? NaN,
       timestamp: primary?.timestamp ?? secondary?.timestamp ?? NaN,
-      period: primary?.period ?? secondary?.period
+      period: primary?.period ?? secondary?.period,
+      votesFor: votes?.votesFor ?? NaN,
+      votesAgainst: votes?.votesAgainst ?? NaN
     };
 
     return mergedStats;
@@ -314,7 +354,8 @@ export class StatsService {
     collectionRef: FirebaseFirestore.DocumentReference,
     statsCollectionName: string,
     period: StatsPeriod,
-    timestamp: number
+    timestamp: number,
+    waitForUpdate = false
   ) {
     try {
       const statsQuery = collectionRef
@@ -333,9 +374,13 @@ export class StatsService {
        */
       if (isMostRecent && statsCollectionName === this.socialsGroup) {
         if (this.areStatsStale(stats)) {
-          const updated = await this.updateSocialsStats(collectionRef);
-          if (updated) {
-            return updated ;
+          if (waitForUpdate) {
+            const updated = await this.updateSocialsStats(collectionRef);
+            if (updated) {
+              return updated;
+            }
+          } else {
+            void this.updateSocialsStats(collectionRef);
           }
         }
       }
@@ -350,12 +395,16 @@ export class StatsService {
   /**
    * Get the current stats and update them if they are stale
    */
-  async getCurrentSocialsStats(collectionRef: FirebaseFirestore.DocumentReference) {
+  async getCurrentSocialsStats(collectionRef: FirebaseFirestore.DocumentReference, waitForUpdate = false) {
     const mostRecentSocialStats = await this.getMostRecentSocialsStats(collectionRef, StatsPeriod.All);
     if (this.areStatsStale(mostRecentSocialStats)) {
-      const updated = await this.updateSocialsStats(collectionRef);
-      if (updated) {
-        return updated;
+      if (waitForUpdate) {
+        const updated = await this.updateSocialsStats(collectionRef);
+        if (updated) {
+          return updated;
+        }
+      } else {
+        void this.updateSocialsStats(collectionRef);
       }
     }
 

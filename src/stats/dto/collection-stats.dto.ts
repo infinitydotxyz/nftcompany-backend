@@ -3,11 +3,34 @@ import { ApiProperty } from '@nestjs/swagger';
 import { SocialsStats } from 'stats/stats.types';
 
 export class CollectionStatsDto implements SocialsStats, Stats {
+  @ApiProperty({ description: 'Name of the collection' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Profile image of the collection'
+  })
+  profileImage: string;
+
+  @ApiProperty({
+    description: 'Whether the collection is verified'
+  })
+  hasBlueCheck: boolean;
+
   @ApiProperty({ description: 'Chain id' })
   chainId: ChainId;
 
   @ApiProperty({ description: 'Corresponding collection address' })
   collectionAddress: string;
+
+  @ApiProperty({
+    description: 'Number of owners of nfts in the collection'
+  })
+  numOwners: number;
+
+  @ApiProperty({
+    description: 'Number of nfts in the collection'
+  })
+  numNfts: number;
 
   @ApiProperty({ description: 'Floor price' })
   floorPrice: number;
@@ -109,6 +132,14 @@ export class CollectionStatsDto implements SocialsStats, Stats {
 
   @ApiProperty({ description: 'Period of the current stats' })
   period: StatsPeriod;
+
+  @ApiProperty({ description: 'The number of votes for the collection' })
+  votesFor: number;
+
+  @ApiProperty({
+    description: 'Number of votes against the collection'
+  })
+  votesAgainst: number;
 
   @ApiProperty({ description: 'Timestamp that the stats were updated at' })
   updatedAt: number;

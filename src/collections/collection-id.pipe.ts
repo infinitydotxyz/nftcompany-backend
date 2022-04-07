@@ -7,7 +7,7 @@ import { FirebaseService } from 'firebase/firebase.service';
 export type ParsedCollectionId = {
   address: string;
   chainId: ChainId;
-  ref: FirebaseFirestore.DocumentReference<Collection>;
+  ref: FirebaseFirestore.DocumentReference<Partial<Collection>>;
 };
 
 @Injectable()

@@ -2,6 +2,7 @@ import { ChainId, CreationFlow } from '@infinityxyz/lib/types/core';
 import { FeedEventType, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
+import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import CollectionsService from 'collections/collections.service';
 import { CollectionDto } from 'collections/dto/collection.dto';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -10,6 +11,8 @@ import { NftActivityFilters } from './dto/nft-activity-filters';
 import { NftActivity } from './dto/nft-activity.dto';
 import { NftQueryDto } from './dto/nft-query.dto';
 import { NftDto } from './dto/nft.dto';
+import { NftArrayDto } from './dto/nft-array.dto';
+import { NftsOrderBy, NftsQueryDto } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
 
 @Injectable()
@@ -36,6 +39,73 @@ export class NftsService {
     const nft = nftSnapshot.data() as NftDto | undefined;
 
     return nft;
+  }
+
+  async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {
+    const nftsCollection = collection.ref.collection(firestoreConstants.COLLECTION_NFTS_COLL);
+    let decodedCursor;
+    try {
+      decodedCursor = JSON.parse(base64Decode(query.cursor));
+    } catch (err) {
+      decodedCursor = {};
+    }
+
+    let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
+
+    if (query.traitType) {
+      const traitTypes = query.traitType ?? [];
+      const traitTypesValues = query?.traitValue?.map((item) => item.split('|')) ?? [];
+
+      const traits = [];
+      for (let index = 0; index < traitTypes.length; index++) {
+        const traitType = traitTypes[index];
+        const traitValues = traitTypesValues[index];
+        for (const traitValue of traitValues) {
+          if (traitValue) {
+            const traitTypeObj = traitType ? { trait_type: traitType } : {};
+            traits.push({
+              value: traitValue,
+              ...traitTypeObj
+            });
+          }
+        }
+      }
+      nftsQuery = nftsCollection.where('metadata.attributes', 'array-contains-any', traits);
+    }
+
+    nftsQuery = nftsQuery.orderBy(query.orderBy, query.orderDirection);
+
+    if (decodedCursor?.[query.orderBy]) {
+      nftsQuery = nftsQuery.startAfter(decodedCursor[query.orderBy]);
+    }
+
+    nftsQuery = nftsQuery.limit(query.limit + 1); // +1 to check if there are more events
+
+    const results = await nftsQuery.get();
+
+    const data = results.docs.map((item) => item.data() as NftDto);
+
+    const hasNextPage = data.length > query.limit;
+
+    if (hasNextPage) {
+      data.pop();
+    }
+
+    const cursor = {};
+    const lastItem = data[data.length - 1];
+    for (const key of Object.values(NftsOrderBy)) {
+      if (lastItem?.[key]) {
+        cursor[key] = lastItem[key];
+      }
+    }
+
+    const encodedCursor = base64Encode(JSON.stringify(cursor));
+
+    return {
+      data,
+      cursor: encodedCursor,
+      hasNextPage
+    };
   }
 
   async getNftActivity(nftQuery: NftQueryDto, filter: NftActivityFilters) {

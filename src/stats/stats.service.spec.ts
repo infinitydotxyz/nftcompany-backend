@@ -1,14 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ChainId, OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FirebaseService } from '../firebase/firebase.service';
 import { StatsService } from './stats.service';
 import { DiscordService } from 'discord/discord.service';
 import { TwitterService } from 'twitter/twitter.service';
-import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
-import { ConfigModule } from '@nestjs/config';
-import { join } from 'path';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { StatType } from './stats.types';
+import { TestModule } from 'test.module';
+import serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 
 describe('StatsService', () => {
   let service: StatsService;
@@ -23,13 +23,8 @@ describe('StatsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          envFilePath: join(__dirname, '../../.env'),
-          isGlobal: true
-        })
-      ],
-      providers: [firebaseProvider, StatsService, DiscordService, TwitterService]
+      imports: [TestModule],
+      providers: [StatsService, DiscordService, TwitterService]
     }).compile();
 
     service = module.get<StatsService>(StatsService);
@@ -46,7 +41,7 @@ describe('StatsService', () => {
       chainId: ChainId.Mainnet
     });
     const stats = await service.getCurrentSocialsStats(bayc);
-    console.log(stats);
+    // Console.log(stats);
     expect(stats).toBeDefined();
   });
 
@@ -60,7 +55,7 @@ describe('StatsService', () => {
     };
     try {
       const stats = await service.getCollectionRankings(query);
-      console.log(stats);
+      // Console.log(stats);
       expect(stats).toBeDefined();
     } catch (err) {
       console.error(err);
