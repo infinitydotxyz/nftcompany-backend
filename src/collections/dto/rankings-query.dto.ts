@@ -1,9 +1,8 @@
-import { OrderDirection, StatsPeriod } from '@infinityxyz/lib/types/core';
+import { OrderDirection, StatsPeriod, StatType } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
-import { StatType } from 'stats/stats.types';
 
 export default class RankingQueryDto {
   @ApiProperty({
