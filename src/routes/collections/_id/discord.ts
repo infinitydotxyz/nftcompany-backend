@@ -1,3 +1,1 @@
-import { getHistoricalData } from 'controllers/Collections/CollectionsController';
-
-export const getHistoricalDiscordData = getHistoricalData('discord');
+export const getHistoricalDiscordData: any = {};

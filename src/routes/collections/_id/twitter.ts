@@ -1,3 +1,1 @@
-import { getHistoricalData } from 'controllers/Collections/CollectionsController';
-
-export const getHistoricalTwitterData = getHistoricalData('twitter');
+export const getHistoricalTwitterData: any = {};

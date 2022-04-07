@@ -1,3 +1,2 @@
-import { getCollectionInfo } from 'controllers/Collections/CollectionsController';
-
+const getCollectionInfo: any = {};
 export { getCollectionInfo };
