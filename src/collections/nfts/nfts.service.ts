@@ -70,7 +70,9 @@ export class NftsService {
           }
         }
       }
-      nftsQuery = nftsCollection.where('metadata.attributes', 'array-contains-any', traits);
+      if (traits.length > 0) {
+        nftsQuery = nftsCollection.where('metadata.attributes', 'array-contains-any', traits);
+      }
     }
 
     nftsQuery = nftsQuery.orderBy(query.orderBy, query.orderDirection);
