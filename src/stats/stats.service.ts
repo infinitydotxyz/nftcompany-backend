@@ -1,4 +1,13 @@
-import { ChainId, Collection, OrderDirection, Stats, StatsPeriod } from '@infinityxyz/lib/types/core';
+import {
+  ChainId,
+  Collection,
+  OrderDirection,
+  PreAggregatedSocialsStats,
+  SocialsStats,
+  Stats,
+  StatsPeriod,
+  StatType
+} from '@infinityxyz/lib/types/core';
 import { InfinityTweet, InfinityTwitterAccount } from '@infinityxyz/lib/types/services/twitter';
 import { firestoreConstants, getStatsDocInfo } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
@@ -13,7 +22,6 @@ import { TwitterService } from '../twitter/twitter.service';
 import { base64Decode, base64Encode, calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection-stats.dto';
-import { PreAggregatedSocialsStats, SocialsStats, StatType } from './stats.types';
 
 @Injectable()
 export class StatsService {

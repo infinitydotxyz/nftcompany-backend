@@ -10,15 +10,15 @@ const getEnvironmentVariable = (name: string, required = true) => {
 };
 
 export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? 'testRoot';
-export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey') ;
-export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey') ;
-export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet') ;
-export const ALCHEMY_NFT_BASE_URL_ETH_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlEth') ;
-export const ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlPolygon') ;
-export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey') ;
-export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken') ;
-export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey') ;
-export const ICY_TOOLS_API_KEY = getEnvironmentVariable('icyToolsApiKey') ;
+export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey');
+export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey');
+export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet');
+export const ALCHEMY_NFT_BASE_URL_ETH_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlEth');
+export const ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlPolygon');
+export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey');
+export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken');
+export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey');
+export const ICY_TOOLS_API_KEY = getEnvironmentVariable('icyToolsApiKey');
 
 export const TRACE_LOG = getEnvironmentVariable('TRACE_LOG', false) === 'true';
 export const INFO_LOG = getEnvironmentVariable('INFO_LOG', false) === 'true';

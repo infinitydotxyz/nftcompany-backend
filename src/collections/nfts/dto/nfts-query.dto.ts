@@ -40,20 +40,21 @@ export class NftsQueryDto {
   cursor?: string;
 
   @ApiPropertyOptional({
-    description: 'Trait types to filter by',
+    description: 'Trait types to filter by. Use commas for multiple types.',
     type: [String]
   })
   @IsOptional()
   @IsArray()
   @Transform(arrayTransformer)
-  traitType?: string[];
+  traitTypes?: string[];
 
   @ApiPropertyOptional({
-    description: 'Trait values to filter by, supply multiple values for a single trait by separating with a |',
+    description:
+      'Trait values to filter by. Use commas for multiple values. Supply multiple values for a single trait by separating with a |',
     type: [String]
   })
   @IsOptional()
   @IsArray()
   @Transform(arrayTransformer)
-  traitValue?: string[];
+  traitValues?: string[];
 }
