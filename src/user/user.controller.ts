@@ -208,7 +208,7 @@ export class UserController {
   @MatchSigner('userId')
   @ApiOperation({
     description: "Get a user's following collections",
-    tags: [ApiTag.User, ApiTag.Votes]
+    tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
