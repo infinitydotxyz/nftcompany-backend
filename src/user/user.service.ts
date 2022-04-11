@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
-import { UserFollowingCollection } from 'votes/dto/user-following-collection.dto';
+import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
 import { UserDto } from './dto/user.dto';
 
 @Injectable()

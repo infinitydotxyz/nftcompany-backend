@@ -54,7 +54,7 @@ import { StatsService } from 'stats/stats.service';
 // This is a hack to make Multer available in the Express namespace
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
-import { UserFollowingCollectionsArrayDto } from 'votes/dto/user-following-collections-array.dto';
+import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
 
 @Controller('user')
 export class UserController {
