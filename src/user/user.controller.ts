@@ -54,6 +54,7 @@ import { StatsService } from 'stats/stats.service';
 // This is a hack to make Multer available in the Express namespace
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
+import { UserFollowingCollectionsArrayDto } from 'votes/dto/user-following-collections-array.dto';
 
 @Controller('user')
 export class UserController {
@@ -199,5 +200,32 @@ export class UserController {
 
     // Update stats in the background (do NOT await this call).
     this.statsService.getCurrentSocialsStats(collection.ref).catch((err) => this.logger.error(err));
+  }
+
+  @Get(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Get a user's following collections",
+    tags: [ApiTag.User, ApiTag.Votes]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getUserFollowingCollections(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  ): Promise<UserFollowingCollectionsArrayDto | []> {
+    const collections = await this.userService.getUserFollowingCollections();
+
+    const response: UserFollowingCollectionsArrayDto = {
+      data: collections,
+      hasNextPage: false,
+      cursor: ''
+    };
+
+    return response;
   }
 }

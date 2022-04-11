@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
+import { UserFollowingCollection } from 'votes/dto/user-following-collection.dto';
 import { UserDto } from './dto/user.dto';
 
 @Injectable()
@@ -36,5 +37,16 @@ export class UserService {
     });
 
     return orderedStats;
+  }
+
+  async getUserFollowingCollections() {
+    const collectionFollows = this.firebaseService.firestore
+      .collection(firestoreConstants.USER_FOLLOWS_COLL);
+
+    const snap = await collectionFollows.get();
+    const followingCollections: UserFollowingCollection[] = snap.docs.map((doc: any) => {
+      return { userAddress: '', collectionAddress: doc.collectionAddress, collectionChainId: doc.collectionChainId };
+    });
+    return followingCollections;
   }
 }
