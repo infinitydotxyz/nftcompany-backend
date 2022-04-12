@@ -5,7 +5,6 @@ import { FirebaseService } from 'firebase/firebase.service';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { base64Encode, base64Decode } from 'utils';
 import { ParsedCollectionId } from './collection-id.pipe';
-import { endsWith } from 'lodash';
 
 interface CollectionQueryOptions {
   /**
