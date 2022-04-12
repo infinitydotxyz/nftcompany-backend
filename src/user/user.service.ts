@@ -2,9 +2,11 @@ import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserFollowingCollectionBody } from './dto/user-following-collection-body.dto';
 import { UserDto } from './dto/user.dto';
 
 @Injectable()
@@ -51,5 +53,31 @@ export class UserService {
       return docData;
     });
     return followingCollections;
+  }
+
+  async addUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionBody) {
+    const collectionRef = await this.firebaseService.getCollectionRef({
+      chainId: payload.collectionChainId,
+      address: payload.collectionAddress
+    });
+
+    const collection = (await collectionRef.get()).data();
+    if (!collection) {
+      throw new InvalidCollectionError(payload.collectionAddress, payload.collectionChainId, 'Collection not found');
+    }
+
+    await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
+      .doc(payload.collectionChainId + ':' + payload.collectionAddress)
+      .set({
+        address: payload.collectionAddress,
+        chainId: payload.collectionChainId,
+        name: collection.metadata.name,
+        slug: collection.slug,
+        userAddress: user.userAddress
+      });
+    return {};
   }
 }

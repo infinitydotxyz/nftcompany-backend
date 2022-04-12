@@ -55,6 +55,7 @@ import { StatsService } from 'stats/stats.service';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
 import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
+import { UserFollowingCollectionBody } from './dto/user-following-collection-body.dto';
 
 @Controller('user')
 export class UserController {
@@ -227,5 +228,26 @@ export class UserController {
     };
 
     return response;
+  }
+
+  @Post(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "add user's following collection",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async addUserFollowingCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingCollectionBody
+  ): Promise<{}> {
+    await this.userService.addUserFollowingCollection(user, payload);
+    return {};
   }
 }
