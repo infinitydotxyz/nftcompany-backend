@@ -1,4 +1,4 @@
-import { Item, OBOrder } from '@infinityxyz/lib/types/core';
+import { Item, MarketListId, OBOrder } from '@infinityxyz/lib/types/core';
 import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
 import { sellOrdersWithParams } from './marketFirebase';
 
@@ -13,7 +13,7 @@ export class ActiveSellOrders {
       this.collectionAddresses.push(...diff);
 
       // NOTE: addresses is limited to 10, handle that later?
-      const orders = await sellOrdersWithParams('validActive', diff);
+      const orders = await sellOrdersWithParams(MarketListId.ValidActive, diff);
 
       for (const sellOrder of orders) {
         if (!isOrderExpired(sellOrder)) {

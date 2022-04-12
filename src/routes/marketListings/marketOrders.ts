@@ -1,5 +1,5 @@
 import { singleton, container } from 'tsyringe';
-import { OBOrder, BuyOrderMatch, MarketListIdType } from '@infinityxyz/lib/types/core';
+import { OBOrder, BuyOrderMatch, MarketListId } from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, buyOrderMap, buyOrders, moveOrder } from './marketFirebase';
@@ -12,7 +12,7 @@ export class MarketOrders {
   task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
-    const c = await buyOrderMap('validActive');
+    const c = await buyOrderMap(MarketListId.ValidActive);
 
     if (c.has(orderId)) {
       const buyOrder = c.get(orderId);
@@ -25,17 +25,17 @@ export class MarketOrders {
 
         if (result) {
           // Move order to validInactive
-          await moveOrder(result.buyOrder, 'validActive', 'validInactive');
+          await moveOrder(result.buyOrder, MarketListId.ValidActive, MarketListId.ValidInactive);
 
           for (const sellOrder of result.sellOrders) {
-            await moveOrder(sellOrder, 'validActive', 'validInactive');
+            await moveOrder(sellOrder, MarketListId.ValidActive, MarketListId.ValidInactive);
           }
         }
       }
     }
   }
 
-  async buy(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async buy(order: OBOrder, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addBuyOrder(listId, order);
 
     const aso = new ActiveSellOrders();
@@ -48,7 +48,7 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async sell(order: OBOrder, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addSellOrder(listId, order);
 
     const result = await this.marketMatches();
@@ -60,7 +60,7 @@ export class MarketOrders {
     const result: BuyOrderMatch[] = [];
     const aso = new ActiveSellOrders();
 
-    const orders = await buyOrders('validActive');
+    const orders = await buyOrders(MarketListId.ValidActive);
     for (const buyOrder of orders) {
       if (!isOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder, aso);
