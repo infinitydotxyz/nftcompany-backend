@@ -26,8 +26,9 @@ export default class CollectionsService {
   }
 
   async searchByName(search: CollectionSearchQueryDto) {
-    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
-      this.firebaseService.firestore.collection(firestoreConstants.COLLECTIONS_COLL);
+    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.firebaseService.firestore
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .where('state.create.step', '==', CreationFlow.Complete);
 
     if (search.query) {
       const startsWith = getSearchFriendlyString(search.query);
