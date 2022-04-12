@@ -46,7 +46,15 @@ export default class CollectionsService {
     }
 
     const snapshot = await firestoreQuery
-      .select('address', 'chainId', 'slug', 'metadata.name', 'metadata.profileImage', 'hasBlueCheck')
+      .select(
+        'address',
+        'chainId',
+        'slug',
+        'metadata.name',
+        'metadata.profileImage',
+        'metadata.description',
+        'hasBlueCheck'
+      )
       .limit(search.limit + 1) // +1 to check if there are more results
       .get();
 
@@ -55,10 +63,11 @@ export default class CollectionsService {
       return {
         address: data.address as string,
         chainId: data.chainId as string,
-        profileImage: data.metadata.profileImage as string,
         slug: data.slug as string,
         name: data.metadata.name as string,
-        hasBlueCheck: data.hasBlueCheck as boolean
+        hasBlueCheck: data.hasBlueCheck as boolean,
+        profileImage: data.metadata.profileImage as string,
+        description: data.metadata.description as string
       };
     });
 
