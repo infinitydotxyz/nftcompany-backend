@@ -26,26 +26,36 @@ export default class CollectionsService {
   }
 
   async searchByName(search: CollectionSearchQueryDto) {
-    const startsWith = getSearchFriendlyString(search.query);
-    const decodedCursor = search.cursor ? base64Decode(search.cursor) : '';
+    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.firebaseService.firestore
+      .collection(firestoreConstants.COLLECTIONS_COLL)
+      .where('state.create.step', '==', CreationFlow.Complete);
 
-    const endCode = getEndCode(startsWith);
+    if (search.query) {
+      const startsWith = getSearchFriendlyString(search.query);
+      const endCode = getEndCode(startsWith);
 
-    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
-      this.firebaseService.firestore.collection(firestoreConstants.COLLECTIONS_COLL);
-
-    if (startsWith && endCode) {
-      firestoreQuery = firestoreQuery.where('slug', '>=', startsWith).where('slug', '<', endCode);
+      if (startsWith && endCode) {
+        firestoreQuery = firestoreQuery.where('slug', '>=', startsWith).where('slug', '<', endCode);
+      }
     }
 
     firestoreQuery = firestoreQuery.orderBy('slug');
 
+    const decodedCursor = search.cursor ? base64Decode(search.cursor) : '';
     if (decodedCursor) {
       firestoreQuery = firestoreQuery.startAfter(decodedCursor);
     }
 
     const snapshot = await firestoreQuery
-      .select('address', 'chainId', 'slug', 'metadata.name', 'hasBlueCheck')
+      .select(
+        'address',
+        'chainId',
+        'slug',
+        'metadata.name',
+        'metadata.profileImage',
+        'metadata.description',
+        'hasBlueCheck'
+      )
       .limit(search.limit + 1) // +1 to check if there are more results
       .get();
 
@@ -56,7 +66,9 @@ export default class CollectionsService {
         chainId: data.chainId as string,
         slug: data.slug as string,
         name: data.metadata.name as string,
-        hasBlueCheck: data.hasBlueCheck as boolean
+        hasBlueCheck: data.hasBlueCheck as boolean,
+        profileImage: data.metadata.profileImage as string,
+        description: data.metadata.description as string
       };
     });
 

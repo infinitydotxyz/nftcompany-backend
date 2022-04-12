@@ -8,13 +8,14 @@ export class CollectionSearchQueryDto {
     description: 'The value to be searched for'
   })
   @IsString()
-  query: string;
+  @IsOptional()
+  query?: string;
 
   @ApiProperty({
-    description: 'Number of results to get. Max of 15'
+    description: 'Number of results to get. Max of 100'
   })
   @IsNumber()
-  @Transform(parseIntTransformer({ max: 15 }))
+  @Transform(parseIntTransformer({ max: 100 }))
   limit: number;
 
   @ApiPropertyOptional({
