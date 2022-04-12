@@ -54,6 +54,7 @@ export default class CollectionsService {
         'metadata.name',
         'metadata.profileImage',
         'metadata.description',
+        'metadata.bannerImage',
         'hasBlueCheck'
       )
       .limit(search.limit + 1) // +1 to check if there are more results
@@ -68,6 +69,7 @@ export default class CollectionsService {
         name: data.metadata.name as string,
         hasBlueCheck: data.hasBlueCheck as boolean,
         profileImage: data.metadata.profileImage as string,
+        bannerImage: data.metadata.bannerImage as string,
         description: data.metadata.description as string
       };
     });
