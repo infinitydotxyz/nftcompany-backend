@@ -1,4 +1,4 @@
-import { OBOrder, BuyOrderMatch, MarketListingsResponse } from '@infinityxyz/lib/types/core';
+import { OBOrder, BuyOrderMatch, MarketListingsResponse, MarketListId } from '@infinityxyz/lib/types/core';
 import { error } from '@infinityxyz/lib/utils';
 import { Body, Controller, Post } from '@nestjs/common';
 import { sellOrders, buyOrders, deleteSellOrder, deleteBuyOrder } from 'routes/marketListings/marketFirebase';
@@ -20,17 +20,14 @@ export class MarketListingsController {
       let matches: BuyOrderMatch[] = [];
       let success = '';
 
-      // Not working?
-      console.log(body);
-
       switch (body.action) {
         case 'list':
           switch (body.orderType) {
             case 'sellOrders':
-              sellOrds = await sellOrders(body.listId ?? 'validActive');
+              sellOrds = await sellOrders(body.listId ?? MarketListId.ValidActive);
               break;
             case 'buyOrders':
-              buyOrds = await buyOrders(body.listId ?? 'validActive');
+              buyOrds = await buyOrders(body.listId ?? MarketListId.ValidActive);
               break;
           }
 
@@ -38,12 +35,12 @@ export class MarketListingsController {
         case 'delete':
           switch (body.orderType) {
             case 'sellOrders':
-              await deleteSellOrder(body.listId ?? 'validActive', body.orderId ?? '');
+              await deleteSellOrder(body.listId ?? MarketListId.ValidActive, body.orderId ?? '');
 
               success = `deleted sell: ${body.orderId}`;
               break;
             case 'buyOrders':
-              await deleteBuyOrder(body.listId ?? 'validActive', body.orderId ?? '');
+              await deleteBuyOrder(body.listId ?? MarketListId.ValidActive, body.orderId ?? '');
               success = `deleted buy: ${body.orderId}`;
               break;
           }
@@ -66,7 +63,7 @@ export class MarketListingsController {
         error: '',
         success: success,
         matches: matches
-      };
+      } as any; // TODO: fix these types, I'm getting build errors
     } catch (err) {
       error('Failed', err);
     }
