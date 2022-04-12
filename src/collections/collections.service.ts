@@ -5,6 +5,7 @@ import { FirebaseService } from 'firebase/firebase.service';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { base64Encode, base64Decode } from 'utils';
 import { ParsedCollectionId } from './collection-id.pipe';
+import { endsWith } from 'lodash';
 
 interface CollectionQueryOptions {
   /**
@@ -31,11 +32,14 @@ export default class CollectionsService {
 
     const endCode = getEndCode(startsWith);
 
-    let firestoreQuery = this.firebaseService.firestore
-      .collection(firestoreConstants.COLLECTIONS_COLL)
-      .where('slug', '>=', startsWith)
-      .where('slug', '<', endCode)
-      .orderBy('slug');
+    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
+      this.firebaseService.firestore.collection(firestoreConstants.COLLECTIONS_COLL);
+
+    if (startsWith && endCode) {
+      firestoreQuery = firestoreQuery.where('slug', '>=', startsWith).where('slug', '<', endCode);
+    }
+
+    firestoreQuery = firestoreQuery.orderBy('slug');
 
     if (decodedCursor) {
       firestoreQuery = firestoreQuery.startAfter(decodedCursor);
