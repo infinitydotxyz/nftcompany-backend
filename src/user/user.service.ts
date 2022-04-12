@@ -39,13 +39,16 @@ export class UserService {
     return orderedStats;
   }
 
-  async getUserFollowingCollections() {
+  async getUserFollowingCollections(user: UserDto) {
     const collectionFollows = this.firebaseService.firestore
-      .collection(firestoreConstants.USER_FOLLOWS_COLL);
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
 
     const snap = await collectionFollows.get();
-    const followingCollections: UserFollowingCollection[] = snap.docs.map((doc: any) => {
-      return { userAddress: '', collectionAddress: doc.collectionAddress, collectionChainId: doc.collectionChainId };
+    const followingCollections: UserFollowingCollection[] = snap.docs.map((doc) => {
+      const docData = doc.data() as UserFollowingCollection;
+      return docData;
     });
     return followingCollections;
   }

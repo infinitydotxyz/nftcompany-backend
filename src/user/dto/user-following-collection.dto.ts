@@ -1,13 +1,8 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsEthereumAddress, IsNumber } from 'class-validator';
+import { IsEnum, IsEthereumAddress } from 'class-validator';
 
 export class UserFollowingCollection {
-  @ApiProperty({
-    description: "User's wallet address"
-  })
-  @IsEthereumAddress()
-  userAddress: string;
 
   @ApiProperty({
     description: 'Address of the following collection'
