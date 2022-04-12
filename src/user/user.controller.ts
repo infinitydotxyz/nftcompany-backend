@@ -246,8 +246,8 @@ export class UserController {
   async addUserFollowingCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
     @Body() payload: UserFollowingCollectionBody
-  ): Promise<{}> {
+  ): Promise<string> {
     await this.userService.addUserFollowingCollection(user, payload);
-    return {};
+    return '';
   }
 }
