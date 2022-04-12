@@ -27,4 +27,9 @@ export class CollectionSearchDto {
     description: 'Name of the collection'
   })
   name: string;
+
+  @ApiProperty({
+    description: 'Profile Image of the collection'
+  })
+  profileImage: string;
 }
