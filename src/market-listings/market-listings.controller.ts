@@ -1,47 +1,47 @@
-import { StatusCode, OBOrder, BuyOrderMatch, MarketListingsBody } from '@infinityxyz/lib/types/core';
+import { OBOrder, BuyOrderMatch, MarketListingsResponse } from '@infinityxyz/lib/types/core';
 import { error } from '@infinityxyz/lib/utils';
-import { Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { sellOrders, buyOrders, deleteSellOrder, deleteBuyOrder } from 'routes/marketListings/marketFirebase';
 import { marketOrders } from 'routes/marketListings/marketOrders';
-import { Request } from 'express';
+import { ApiBadRequestResponse, ApiOkResponse } from '@nestjs/swagger';
+import { ResponseDescription } from 'common/response-description';
+import { MarketListingsBodyDto } from './market-listings.dto';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 
-@Controller('marketListings') // TODO should not be camelcase
+@Controller('market-listings')
 export class MarketListingsController {
   @Post()
-  async market(@Req() req, @Res() res) {
+  @ApiOkResponse({ description: ResponseDescription.Success, type: MarketListingsBodyDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  async market(@Body() listingDto: MarketListingsBodyDto): Promise<MarketListingsResponse> {
     try {
-      if (badRequest(req)) {
-        res.sendStatus(StatusCode.BadRequest);
-        return;
-      }
-
       let sellOrds: OBOrder[] = [];
       let buyOrds: OBOrder[] = [];
       let matches: BuyOrderMatch[] = [];
       let success = '';
 
-      switch (req.body.action) {
+      switch (listingDto.action) {
         case 'list':
-          switch (req.body.orderType) {
+          switch (listingDto.orderType) {
             case 'sellOrders':
-              sellOrds = await sellOrders(req.body.listId ?? 'validActive');
+              sellOrds = await sellOrders(listingDto.listId ?? 'validActive');
               break;
             case 'buyOrders':
-              buyOrds = await buyOrders(req.body.listId ?? 'validActive');
+              buyOrds = await buyOrders(listingDto.listId ?? 'validActive');
               break;
           }
 
           break;
         case 'delete':
-          switch (req.body.orderType) {
+          switch (listingDto.orderType) {
             case 'sellOrders':
-              await deleteSellOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+              await deleteSellOrder(listingDto.listId ?? 'validActive', listingDto.orderId ?? '');
 
-              success = `deleted sell: ${req.body.orderId}`;
+              success = `deleted sell: ${listingDto.orderId}`;
               break;
             case 'buyOrders':
-              await deleteBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
-              success = `deleted buy: ${req.body.orderId}`;
+              await deleteBuyOrder(listingDto.listId ?? 'validActive', listingDto.orderId ?? '');
+              success = `deleted buy: ${listingDto.orderId}`;
               break;
           }
 
@@ -49,30 +49,17 @@ export class MarketListingsController {
         case 'move':
           break;
         case 'buy':
-          await marketOrders.executeBuyOrder(req.body.orderId ?? '');
-          success = `buy: ${req.body.orderId}`;
+          await marketOrders.executeBuyOrder(listingDto.orderId ?? '');
+          success = `buy: ${listingDto.orderId}`;
           break;
         case 'match':
           matches = await marketOrders.marketMatches();
           break;
       }
 
-      // Set result
-      const resp = { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
-      res.send(resp);
-      return;
+      return { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
     } catch (err) {
       error('Failed', err);
-      res.sendStatus(StatusCode.InternalServerError);
     }
   }
 }
-
-const badRequest = (req: Request<any, any, MarketListingsBody>): boolean => {
-  if (Object.keys(req.body).length === 0) {
-    error('Invalid input - body empty');
-    return true;
-  }
-
-  return false;
-};
