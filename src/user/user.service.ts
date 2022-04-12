@@ -1,4 +1,4 @@
-import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
@@ -6,7 +6,7 @@ import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
-import { UserFollowingCollectionBody } from './dto/user-following-collection-body.dto';
+import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserDto } from './dto/user.dto';
 
 @Injectable()
@@ -55,7 +55,7 @@ export class UserService {
     return followingCollections;
   }
 
-  async addUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionBody) {
+  async addUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionPostPayload) {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: payload.collectionChainId,
       address: payload.collectionAddress
@@ -64,6 +64,13 @@ export class UserService {
     const collection = (await collectionRef.get()).data();
     if (!collection) {
       throw new InvalidCollectionError(payload.collectionAddress, payload.collectionChainId, 'Collection not found');
+    }
+    if (collection?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(
+        payload.collectionAddress,
+        payload.collectionChainId,
+        'Collection is not fully indexed'
+      );
     }
 
     await this.firebaseService.firestore

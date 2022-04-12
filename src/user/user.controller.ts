@@ -23,6 +23,7 @@ import {
   ApiCreatedResponse,
   ApiHeader,
   ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse
@@ -55,7 +56,7 @@ import { StatsService } from 'stats/stats.service';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
 import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
-import { UserFollowingCollectionBody } from './dto/user-following-collection-body.dto';
+import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 
 @Controller('user')
 export class UserController {
@@ -218,7 +219,7 @@ export class UserController {
   @UseInterceptors(new CacheControlInterceptor())
   async getUserFollowingCollections(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
-  ): Promise<UserFollowingCollectionsArrayDto | []> {
+  ): Promise<UserFollowingCollectionsArrayDto> {
     const collections = await this.userService.getUserFollowingCollections(user);
 
     const response: UserFollowingCollectionsArrayDto = {
@@ -226,7 +227,6 @@ export class UserController {
       hasNextPage: false,
       cursor: ''
     };
-
     return response;
   }
 
@@ -242,12 +242,20 @@ export class UserController {
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @UseInterceptors(new CacheControlInterceptor())
   async addUserFollowingCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
-    @Body() payload: UserFollowingCollectionBody
+    @Body() payload: UserFollowingCollectionPostPayload
   ): Promise<string> {
-    await this.userService.addUserFollowingCollection(user, payload);
+    try {
+      await this.userService.addUserFollowingCollection(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
     return '';
   }
 }
