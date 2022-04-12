@@ -8,4 +8,7 @@ export class MarketListingsBodyDto {
   listId?: MarketListIdType;
   orderId?: string; // Delete and move
   moveListId?: MarketListIdType;
+
+  cursor?: string;
+  limit?: number;
 }
