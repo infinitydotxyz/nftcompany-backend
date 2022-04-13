@@ -12,43 +12,43 @@ export class CollectionDto implements CollectionType {
     description: 'Collection token standard',
     enum: TokenStandard
   })
-  tokenStandard: TokenStandard;
+  tokenStandard!: TokenStandard;
 
   @ApiProperty({
     description: 'Collection chain id',
     enum: ChainId
   })
-  chainId: string;
+  chainId!: string;
 
   @ApiProperty({
     description: 'Collection address'
   })
-  address: string;
+  address!: string;
 
   @ApiProperty({
     description: 'Indicates whether the collection is verified'
   })
-  hasBlueCheck: boolean;
+  hasBlueCheck!: boolean;
 
   @ApiProperty({
     description: 'Address that deployed the contract'
   })
-  deployer: string;
+  deployer!: string;
 
   @ApiProperty({
     description: 'Epoch timestamp (ms) that the contract was deployed at'
   })
-  deployedAt: number;
+  deployedAt!: number;
 
   @ApiProperty({
     description: 'Block that the contract was deployed at'
   })
-  deployedAtBlock: number;
+  deployedAtBlock!: number;
 
   @ApiProperty({
     description: 'Owner of the contract'
   })
-  owner: string;
+  owner!: string;
 
   @ApiProperty({
     description: 'Number of owners of nfts in the collection'
@@ -58,7 +58,7 @@ export class CollectionDto implements CollectionType {
   @ApiProperty({
     description: 'Epoch  timestamp (ms) that numOwners was updated at'
   })
-  numOwnersUpdatedAt: number;
+  numOwnersUpdatedAt!: number;
 
   @ApiProperty({
     description: 'Metadata about the collection'
@@ -66,39 +66,39 @@ export class CollectionDto implements CollectionType {
   @IsObject()
   @ValidateNested()
   @Type(() => CollectionMetaDataDto)
-  metadata: CollectionMetaDataDto;
+  metadata!: CollectionMetaDataDto;
 
   @ApiProperty({
     description: 'Slug of the collection'
   })
-  slug: string;
+  slug!: string;
 
   @ApiProperty({
     description: 'Total supply'
   })
-  numNfts: number;
+  numNfts!: number;
 
   @ApiProperty({
     description: 'Attributes (i.e. traits) for the collection'
   })
-  attributes: CollectionAttributes;
+  attributes!: CollectionAttributes;
 
   @ApiProperty({
     description: 'Total number of trait types'
   })
-  numTraitTypes: number;
+  numTraitTypes!: number;
 
   @ApiProperty({
     description: 'Address of the user that initiated indexing'
   })
-  indexInitiator: string;
+  indexInitiator!: string;
 
   @ApiProperty({
     description: 'Current state of the collection indexing process'
   })
   @ValidateNested()
   @Type(() => CollectionStateDto)
-  state: CollectionStateDto;
+  state!: CollectionStateDto;
 }
 
 export class UpdateCollectionDto {

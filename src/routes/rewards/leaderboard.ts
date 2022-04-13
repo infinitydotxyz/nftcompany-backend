@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get leaderboard');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

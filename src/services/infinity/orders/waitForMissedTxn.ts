@@ -198,11 +198,11 @@ export async function waitForMissedTxn(user: any, payload: any) {
             });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       error('Error updating missed txn status in firestore');
       error(err);
     }
-  } catch (err) {
+  } catch (err: any) {
     error('Error waiting for missed txn');
     error(err);
   }

@@ -87,7 +87,7 @@ export class UserController {
     const watchlist = await this.userService.getUserWatchlist(user, query);
 
     const response: CollectionStatsArrayResponseDto = {
-      data: watchlist,
+      data: watchlist ?? [],
       hasNextPage: false,
       cursor: ''
     };
@@ -142,7 +142,7 @@ export class UserController {
 
     try {
       await this.votesService.saveUserCollectionVote(userVote);
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof InvalidCollectionError) {
         throw new NotFoundException(err.message);
       }
@@ -192,7 +192,10 @@ export class UserController {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
-      metadata.profileImage = image.publicUrl();
+
+      if (image) {
+        metadata.profileImage = image.publicUrl();
+      }
     }
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);

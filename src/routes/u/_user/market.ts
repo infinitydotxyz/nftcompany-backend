@@ -32,7 +32,7 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
     const resp = { matches: matches, error: '', success: 'OK' };
     res.send(resp);
     return;
-  } catch (err) {
+  } catch (err: any) {
     error('Failed', err);
     res.sendStatus(StatusCode.InternalServerError);
   }

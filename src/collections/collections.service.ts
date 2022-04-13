@@ -120,7 +120,7 @@ export default class CollectionsService {
   async isDeployer(userAddress: string, { ref }: ParsedCollectionId) {
     const document = await ref.get();
     const data = document.data();
-    return userAddress === data.deployer;
+    return userAddress === data?.deployer;
   }
 
   /**

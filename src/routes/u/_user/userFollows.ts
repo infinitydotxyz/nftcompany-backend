@@ -65,7 +65,7 @@ export const setUserFollow = async (req: Request<{ user: string }>, res: Respons
     }
 
     res.sendStatus(StatusCode.Ok);
-  } catch (err) {
+  } catch (err: any) {
     error('Error setting watchlist for user', user);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

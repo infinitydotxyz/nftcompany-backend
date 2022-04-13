@@ -18,7 +18,7 @@ export function parseQueryFields<K extends string>(
         throw Error(`Invalid query param: ${name} = ${q}`);
       }
     });
-  } catch (err) {
+  } catch (err: any) {
     error('Invalid query params: ' + fieldArr.join(', '));
     error(err);
     res.sendStatus(StatusCode.BadRequest);

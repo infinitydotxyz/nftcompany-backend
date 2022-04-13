@@ -16,7 +16,7 @@ export class CollectionSearchQueryDto {
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 100 }))
-  limit: number;
+  limit!: number;
 
   @ApiPropertyOptional({
     description: 'Cursor to start after'

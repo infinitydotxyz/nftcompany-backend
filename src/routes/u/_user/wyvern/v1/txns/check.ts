@@ -76,7 +76,7 @@ export const postTxnCheck = async (req: Request<{ user: string }>, res: Response
     await writeTxn(actionType, { isValid, from, buyer, seller, value, txnHash, chainId });
     res.sendStatus(StatusCode.Ok);
     return;
-  } catch (err) {
+  } catch (err: any) {
     error('Error saving pending txn');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

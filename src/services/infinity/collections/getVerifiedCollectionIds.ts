@@ -29,7 +29,7 @@ export async function getVerifiedCollectionIds() {
     });
 
     setupAllCollectionsListener(); // Listen to db changes to update cache.
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`error in getVerifiedCollectionIds ${err}`);
   }
   isFetching = false;

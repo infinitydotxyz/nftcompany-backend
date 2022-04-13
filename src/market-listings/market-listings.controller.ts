@@ -63,9 +63,17 @@ export class MarketListingsController {
         error: '',
         success: success,
         matches: matches
-      } as any; // TODO: fix these types, I'm getting build errors
-    } catch (err) {
+      };
+    } catch (err: any) {
       error('Failed', err);
     }
+
+    return {
+      buyOrders: { orders: [], cursor: '' },
+      sellOrders: { orders: [], cursor: '' },
+      error: 'failed',
+      success: '',
+      matches: []
+    };
   }
 }

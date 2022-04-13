@@ -37,7 +37,7 @@ export const getVerifiedBonusReward = async (
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
-  } catch (err) {
+  } catch (err: any) {
     error('Error in checking whether token: ' + tokenAddress + ' is verified or has bonus');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

@@ -23,7 +23,7 @@ export async function getListingsByCollection(
       .get();
 
     return getOrdersResponse(snapshot);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get listings by collection from firestore');
     error(err);
   }

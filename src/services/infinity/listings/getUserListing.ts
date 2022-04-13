@@ -140,7 +140,7 @@ export async function getFilteredUserListings(
     }
 
     return getOrdersResponseFromArray(results);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get filtered user listings for', user);
     error(err);
   }

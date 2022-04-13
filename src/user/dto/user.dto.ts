@@ -13,7 +13,7 @@ export class UserDto {
     message: 'Invalid address'
   })
   @Transform(normalizeAddressTransformer)
-  readonly userAddress: string;
+  readonly userAddress!: string;
 
   @ApiProperty({
     description: 'Wallet chain id',
@@ -22,5 +22,5 @@ export class UserDto {
   @IsSupportedChainId({
     message: 'Invalid chainId'
   })
-  readonly userChainId: ChainId;
+  readonly userChainId!: ChainId;
 }

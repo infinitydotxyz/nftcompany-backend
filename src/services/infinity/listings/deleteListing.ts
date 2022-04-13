@@ -25,7 +25,7 @@ export async function deleteListing(batch: any, docRef: any) {
       .collection(firestoreConstants.LISTINGS_COLL)
       .doc(tokenAddress)
       .set({ numListings: firebaseAdmin.firestore.FieldValue.increment(-1 * numOrders) }, { merge: true });
-  } catch (err) {
+  } catch (err: any) {
     error('Error updating root collection data on delete listing');
     error(err);
   }

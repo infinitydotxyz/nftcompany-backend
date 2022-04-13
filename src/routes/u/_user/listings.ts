@@ -94,7 +94,7 @@ export const getUserListings = async (
       });
     }
     res.send(resp);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get user listings for user ' + user);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
