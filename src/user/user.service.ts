@@ -87,4 +87,31 @@ export class UserService {
       });
     return {};
   }
+
+  async removeUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionPostPayload) {
+    const collectionRef = await this.firebaseService.getCollectionRef({
+      chainId: payload.collectionChainId,
+      address: payload.collectionAddress
+    });
+
+    const collection = (await collectionRef.get()).data();
+    if (!collection) {
+      throw new InvalidCollectionError(payload.collectionAddress, payload.collectionChainId, 'Collection not found');
+    }
+    if (collection?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(
+        payload.collectionAddress,
+        payload.collectionChainId,
+        'Collection is not fully indexed'
+      );
+    }
+
+    await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
+      .doc(payload.collectionChainId + ':' + payload.collectionAddress)
+      .delete();
+    return {};
+  }
 }

@@ -13,7 +13,8 @@ import {
   UseGuards,
   UseInterceptors,
   HttpStatus,
-  Headers
+  Headers,
+  Delete
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
@@ -235,7 +236,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "add user's following collection",
+    description: "Add user's following collection",
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -250,6 +251,35 @@ export class UserController {
   ): Promise<string> {
     try {
       await this.userService.addUserFollowingCollection(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
+    return '';
+  }
+
+  @Delete(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Delete a user's following collection",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @UseInterceptors(new CacheControlInterceptor())
+  async removeUserFollowingCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingCollectionPostPayload
+  ): Promise<string> {
+    try {
+      await this.userService.removeUserFollowingCollection(user, payload);
     } catch (err) {
       if (err instanceof InvalidCollectionError) {
         throw new NotFoundException(err.message);
