@@ -4,13 +4,11 @@ import { error, log, trimLowerCase, jsonString, getDocIdHash, firestoreConstants
 import { StatusCode, NFTDataSource, nftDataSources, AssetResponse, Asset } from '@infinityxyz/lib/types/core';
 import { getUserAssetsFromCovalent } from 'services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFromUnmarshal';
-import { getUserAssetsFromOpenSea } from 'services/opensea/assets/getUserAssetsFromOpensea';
 import { getUserAssetsFromAlchemy } from 'services/alchemy/getUserAssetsFromAlchemy';
 import { AlchemyUserAssetResponse } from '@infinityxyz/lib/types/services/alchemy';
 import { validateInputs, hexToDecimalTokenId } from 'utils/index';
 import { UnmarshalUserAssetResponse } from '@infinityxyz/lib/types/services/unmarshal';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
-import { WyvernAssetData } from '@infinityxyz/lib/types/protocols/wyvern';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { firestore } from 'container';
 
@@ -61,7 +59,7 @@ export const getUserAssets = async (
       'Content-Length': Buffer.byteLength(resp ?? '', 'utf8')
     });
     res.send(resp);
-  } catch (err) {
+  } catch (err: any) {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }
@@ -100,10 +98,6 @@ export async function getAssets(
       storeUnmarshalAssetsInFirestore(address, chainId, resp as UnmarshalUserAssetResponse);
       break;
     case NFTDataSource.OpenSea:
-      resp.assets = await getUserAssetsFromOpenSea(address, offset, limit, collectionIds);
-      resp.count = resp.assets?.length;
-      // Store in firestore
-      storeOpenSeaAssetsInFirestore(address, chainId, resp.assets);
       break;
     case NFTDataSource.Covalent:
       resp.assets = await getUserAssetsFromCovalent(address);
@@ -140,21 +134,6 @@ function storeUnmarshalAssetsInFirestore(user: string, chainId: string, data: Un
     const asset: Asset = {
       owner: user,
       collectionAddress: datum.asset_contract,
-      tokenId,
-      chainId
-    };
-    assets.push(asset);
-  }
-  saveAssetsToFirestore(assets);
-}
-
-function storeOpenSeaAssetsInFirestore(user: string, chainId: string, data: WyvernAssetData[]) {
-  const assets: Asset[] = [];
-  for (const datum of data) {
-    const tokenId = hexToDecimalTokenId(datum.token_id);
-    const asset: Asset = {
-      owner: user,
-      collectionAddress: datum.asset_contract.address,
       tokenId,
       chainId
     };

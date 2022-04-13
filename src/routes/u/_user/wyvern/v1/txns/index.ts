@@ -68,7 +68,7 @@ export const getUserTxns = async (req: Request<{ user: string }>, res: Response)
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
-  } catch (err) {
+  } catch (err: any) {
     error(`Failed to get pending txns of user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
@@ -172,7 +172,7 @@ export const postUserTxn = async (req: Request<{ user: string }>, res: Response)
         error(err);
         res.sendStatus(StatusCode.InternalServerError);
       });
-  } catch (err) {
+  } catch (err: any) {
     error('Error saving pending txn');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

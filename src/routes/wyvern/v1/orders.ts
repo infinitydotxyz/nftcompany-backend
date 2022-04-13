@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
 
     log('Invalid orders');
     res.sendStatus(StatusCode.BadRequest);
-  } catch (err) {
+  } catch (err: any) {
     log('Error while fetching orders');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

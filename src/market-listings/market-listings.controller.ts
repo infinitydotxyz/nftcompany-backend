@@ -1,47 +1,47 @@
-import { StatusCode, OBOrder, BuyOrderMatch, MarketListingsBody } from '@infinityxyz/lib/types/core';
+import { OBOrder, BuyOrderMatch, MarketListingsResponse, MarketListId } from '@infinityxyz/lib/types/core';
 import { error } from '@infinityxyz/lib/utils';
-import { Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { sellOrders, buyOrders, deleteSellOrder, deleteBuyOrder } from 'routes/marketListings/marketFirebase';
 import { marketOrders } from 'routes/marketListings/marketOrders';
-import { Request } from 'express';
+import { ApiBadRequestResponse, ApiOkResponse } from '@nestjs/swagger';
+import { ResponseDescription } from 'common/response-description';
+import { MarketListingsBodyDto } from './market-listings.dto';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 
-@Controller('marketListings') // TODO should not be camelcase
+@Controller('market-listings')
 export class MarketListingsController {
   @Post()
-  async market(@Req() req, @Res() res) {
+  @ApiOkResponse({ description: ResponseDescription.Success, type: MarketListingsBodyDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  async create(@Body() body: MarketListingsBodyDto): Promise<MarketListingsResponse> {
     try {
-      if (badRequest(req)) {
-        res.sendStatus(StatusCode.BadRequest);
-        return;
-      }
-
       let sellOrds: OBOrder[] = [];
       let buyOrds: OBOrder[] = [];
       let matches: BuyOrderMatch[] = [];
       let success = '';
 
-      switch (req.body.action) {
+      switch (body.action) {
         case 'list':
-          switch (req.body.orderType) {
+          switch (body.orderType) {
             case 'sellOrders':
-              sellOrds = await sellOrders(req.body.listId ?? 'validActive');
+              sellOrds = await sellOrders(body.listId ?? MarketListId.ValidActive, body.cursor, body.limit);
               break;
             case 'buyOrders':
-              buyOrds = await buyOrders(req.body.listId ?? 'validActive');
+              buyOrds = await buyOrders(body.listId ?? MarketListId.ValidActive, body.cursor, body.limit);
               break;
           }
 
           break;
         case 'delete':
-          switch (req.body.orderType) {
+          switch (body.orderType) {
             case 'sellOrders':
-              await deleteSellOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
+              await deleteSellOrder(body.listId ?? MarketListId.ValidActive, body.orderId ?? '');
 
-              success = `deleted sell: ${req.body.orderId}`;
+              success = `deleted sell: ${body.orderId}`;
               break;
             case 'buyOrders':
-              await deleteBuyOrder(req.body.listId ?? 'validActive', req.body.orderId ?? '');
-              success = `deleted buy: ${req.body.orderId}`;
+              await deleteBuyOrder(body.listId ?? MarketListId.ValidActive, body.orderId ?? '');
+              success = `deleted buy: ${body.orderId}`;
               break;
           }
 
@@ -49,30 +49,34 @@ export class MarketListingsController {
         case 'move':
           break;
         case 'buy':
-          await marketOrders.executeBuyOrder(req.body.orderId ?? '');
-          success = `buy: ${req.body.orderId}`;
+          await marketOrders.executeBuyOrder(body.orderId ?? '');
+          success = `buy: ${body.orderId}`;
           break;
         case 'match':
           matches = await marketOrders.marketMatches();
           break;
       }
 
-      // Set result
-      const resp = { buyOrders: buyOrds, sellOrders: sellOrds, error: '', success: success, matches: matches };
-      res.send(resp);
-      return;
-    } catch (err) {
+      const buyCursor = buyOrds.length > 0 ? buyOrds[buyOrds.length - 1].id : '';
+      const sellCursor = sellOrds.length > 0 ? sellOrds[sellOrds.length - 1].id : '';
+
+      return {
+        buyOrders: { orders: buyOrds, cursor: buyCursor },
+        sellOrders: { orders: sellOrds, cursor: sellCursor },
+        error: '',
+        success: success,
+        matches: matches
+      };
+    } catch (err: any) {
       error('Failed', err);
-      res.sendStatus(StatusCode.InternalServerError);
     }
+
+    return {
+      buyOrders: { orders: [], cursor: '' },
+      sellOrders: { orders: [], cursor: '' },
+      error: 'error',
+      success: '',
+      matches: []
+    };
   }
 }
-
-const badRequest = (req: Request<any, any, MarketListingsBody>): boolean => {
-  if (Object.keys(req.body).length === 0) {
-    error('Invalid input - body empty');
-    return true;
-  }
-
-  return false;
-};

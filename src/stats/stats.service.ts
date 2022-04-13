@@ -65,7 +65,11 @@ export class StatsService {
       primaryStats.data.map(async (primary, index) => {
         const secondaryPromiseResult = secondaryStats[index];
 
-        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        let secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        if (!secondary) {
+          secondary = {} as SocialsStats;
+        }
+
         const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
         const merged = await this.mergeStats(primary, secondary, collection);
         return merged;
@@ -153,7 +157,11 @@ export class StatsService {
       stats.map(async (primary, index) => {
         const secondaryPromiseResult = secondaryStats[index];
 
-        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        let secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
+        if (!secondary) {
+          secondary = {} as SocialsStats;
+        }
+
         const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
         const merged = await this.mergeStats(primary, secondary, {
           chainId: collection.chainId as ChainId,
@@ -197,8 +205,12 @@ export class StatsService {
       true
     );
 
-    const collectionStats = await this.mergeStats(stats, socialStats, collection);
-    return collectionStats;
+    if (stats && socialStats) {
+      const collectionStats = await this.mergeStats(stats, socialStats, collection);
+      return collectionStats;
+    }
+
+    return new CollectionStatsDto();
   }
 
   private async getSecondaryStats(
@@ -307,7 +319,7 @@ export class StatsService {
       twitterLink: primary?.twitterLink ?? secondary?.twitterLink ?? '',
       updatedAt: primary?.updatedAt ?? NaN,
       timestamp: primary?.timestamp ?? secondary?.timestamp ?? NaN,
-      period: primary?.period ?? secondary?.period,
+      period: primary?.period ?? secondary?.period ?? StatsPeriod.All,
       votesFor: votes?.votesFor ?? NaN,
       votesAgainst: votes?.votesAgainst ?? NaN
     };
@@ -394,7 +406,7 @@ export class StatsService {
       }
 
       return stats as Stats | SocialsStats | undefined;
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       return undefined;
     }
@@ -419,7 +431,9 @@ export class StatsService {
     return mostRecentSocialStats;
   }
 
-  private async updateSocialsStats(collectionRef: FirebaseFirestore.DocumentReference): Promise<SocialsStats> {
+  private async updateSocialsStats(
+    collectionRef: FirebaseFirestore.DocumentReference
+  ): Promise<SocialsStats | undefined> {
     const collectionData = await collectionRef.get();
     const collection = collectionData?.data() ?? ({} as Partial<Collection>);
 

@@ -58,7 +58,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
         },
         { merge: true }
       );
-  } catch (err) {
+  } catch (err: any) {
     error('Error updating root collection data on post listing');
     error(err);
   }

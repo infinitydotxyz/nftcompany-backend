@@ -7,43 +7,43 @@ import { CollectionLinksDto } from './collection-links.dto';
 
 export class CollectionPartnershipDto {
   @ApiProperty()
-  name: string;
+  name!: string;
 
   @ApiProperty()
-  link: string;
+  link!: string;
 }
 
 export class CollectionMetaDataDto implements CollectionMetadata {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  name: string;
+  name!: string;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
-  description: string;
+  description!: string;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
-  symbol: string;
+  symbol!: string;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
-  profileImage: string;
+  profileImage!: string;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
-  bannerImage: string;
+  bannerImage!: string;
 
   @ApiProperty()
   @ValidateNested()
   @Type(() => CollectionLinksDto)
   @IsOptional()
-  links: CollectionLinksDto;
+  links!: CollectionLinksDto;
 
   @ApiProperty()
   @IsArray()

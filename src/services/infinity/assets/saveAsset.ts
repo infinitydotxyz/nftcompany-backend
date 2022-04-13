@@ -19,7 +19,7 @@ export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadat
       .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while saving asset data in database');
     error(err);
   }

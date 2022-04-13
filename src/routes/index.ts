@@ -8,7 +8,6 @@ import wyvernV1 from './wyvern/v1';
 import events from './events';
 import titles from './titles';
 import verifyEmail from './verifyEmail';
-import marketListings from './marketListings';
 
 const router = Router();
 
@@ -20,7 +19,6 @@ router.use('/wyvern/v1', wyvernV1);
 router.use('/events', events);
 router.use('/titles', titles);
 router.use('/verifyEmail', verifyEmail);
-router.use('/marketListings', marketListings);
 
 /**
  * Require auth

@@ -6,11 +6,11 @@ export class CollectionStateCreateDto {
     description: 'Current step of the collection creation process',
     enum: CreationFlow
   })
-  step: CreationFlow;
+  step!: CreationFlow;
   @ApiProperty({
     description: 'Epoch timestamp (ms) that the collection creation process was last updated at'
   })
-  updatedAt: number;
+  updatedAt!: number;
   @ApiPropertyOptional({
     description: 'Error that occurred during the collection creation process, if any'
   })
@@ -18,5 +18,5 @@ export class CollectionStateCreateDto {
   @ApiProperty({
     description: 'Progress of the collection creation process'
   })
-  progress: number;
+  progress!: number;
 }

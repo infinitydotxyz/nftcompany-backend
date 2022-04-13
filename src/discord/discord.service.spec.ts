@@ -23,7 +23,7 @@ describe('DiscordService', () => {
     try {
       const stats = await service.getGuildStats(baycInvite);
       expect(stats).toBeDefined();
-    } catch (err) {
+    } catch (err: any) {
       expect(err).toBeUndefined();
     }
   });

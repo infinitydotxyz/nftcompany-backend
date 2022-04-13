@@ -32,7 +32,6 @@
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "eslint-comments/disable-enable-pair": "off",
-    "capitalized-comments": 1,
     "curly": 1
   }
 }

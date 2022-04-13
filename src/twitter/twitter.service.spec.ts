@@ -23,7 +23,7 @@ describe('TwitterService', () => {
       const { account, tweets } = await service.getAccountAndMentions('BoredApeYC');
       expect(tweets.length).toBeGreaterThan(0);
       expect(account.followersCount).toBeGreaterThan(100_000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       expect(err).toBeUndefined();
     }
@@ -35,7 +35,7 @@ describe('TwitterService', () => {
       const { account, tweets } = await service.getAccountAndMentions(username);
       expect(tweets.length).toBe(0);
       expect(account).toBeDefined();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       expect(err).toBeUndefined();
     }

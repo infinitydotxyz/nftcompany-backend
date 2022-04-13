@@ -1,3 +1,4 @@
+import { MarketListId } from '@infinityxyz/lib/types/core';
 import { isOrderExpired } from '@infinityxyz/lib/utils';
 import { expiredOrders, moveOrder } from './marketFirebase';
 import { marketOrders } from './marketOrders';
@@ -33,7 +34,7 @@ export class MarketOrderTask {
         for (const order of orders) {
           if (isOrderExpired(order.order)) {
             // Move order to invalid list
-            await moveOrder(order.order, order.listId, 'invalid');
+            await moveOrder(order.order, order.listId, MarketListId.Invalid);
           }
         }
 

@@ -41,7 +41,7 @@ export const postSetUserEmail = async (req: Request<{ user: string }>, res: Resp
       '<p>Click the below link to verify your email</p> ' + '<a href=' + link + ' target="_blank">' + link + '</a>';
     sendEmail(email, subject, html);
     res.sendStatus(StatusCode.Ok);
-  } catch (err) {
+  } catch (err: any) {
     error('Error setting user email for user', user);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
