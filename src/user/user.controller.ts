@@ -58,6 +58,7 @@ import { StatsService } from 'stats/stats.service';
 import { Multer } from 'multer';
 import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
+import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 
 @Controller('user')
 export class UserController {
@@ -276,7 +277,7 @@ export class UserController {
   @UseInterceptors(new CacheControlInterceptor())
   async removeUserFollowingCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
-    @Body() payload: UserFollowingCollectionPostPayload
+    @Body() payload: UserFollowingCollectionDeletePayload
   ): Promise<string> {
     try {
       await this.userService.removeUserFollowingCollection(user, payload);

@@ -6,6 +6,7 @@ import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserDto } from './dto/user.dto';
 
@@ -88,7 +89,7 @@ export class UserService {
     return {};
   }
 
-  async removeUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionPostPayload) {
+  async removeUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionDeletePayload) {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: payload.collectionChainId,
       address: payload.collectionAddress
