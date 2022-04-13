@@ -46,7 +46,7 @@ export async function getListingsStartingWithText(
 
     // Combine both results:
     return getOrdersResponse({ docs: [...resultByCollectionName.docs, ...resultByTitle.docs] });
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get listings by text, limit, startAfterMillis', text, limit, startAfterMillis);
     error(err);
   }
@@ -162,7 +162,7 @@ export async function getListingsByCollectionNameAndPrice(
     }
 
     return getOrdersResponseFromArray(results);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get listings by collection name, priceMin and priceMax', collectionName, priceMin, priceMax);
     error(err);
   }

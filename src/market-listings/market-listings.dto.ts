@@ -12,14 +12,14 @@ export class MarketListingsBodyDto {
     enum: MarketOrder
   })
   @IsEnum(MarketOrder)
-  orderType: MarketOrder;
+  orderType!: MarketOrder;
 
   @ApiProperty({
     description: 'Market action',
     enum: MarketAction
   })
   @IsEnum(MarketAction)
-  action: MarketAction;
+  action!: MarketAction;
 
   @ApiPropertyOptional({
     description: 'Market list id',

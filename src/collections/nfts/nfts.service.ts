@@ -4,7 +4,6 @@ import { firestoreConstants, getCollectionDocId } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import CollectionsService from 'collections/collections.service';
-import { CollectionDto } from 'collections/dto/collection.dto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { base64Decode, base64Encode } from 'utils';
 import { NftActivityFilters } from './dto/nft-activity-filters';
@@ -20,25 +19,30 @@ export class NftsService {
   constructor(private firebaseService: FirebaseService, private collectionsService: CollectionsService) {}
 
   async getNft(nftQuery: NftQueryDto): Promise<NftDto | undefined> {
-    const collection: CollectionDto = await this.collectionsService.getCollectionByAddress(nftQuery);
+    const collection = await this.collectionsService.getCollectionByAddress(nftQuery);
 
-    const collectionDocId = getCollectionDocId({ collectionAddress: collection.address, chainId: collection.chainId });
+    if (collection) {
+      const collectionDocId = getCollectionDocId({
+        collectionAddress: collection.address,
+        chainId: collection.chainId
+      });
 
-    if (collection?.state?.create?.step !== CreationFlow.Complete || !collectionDocId) {
-      return undefined;
+      if (collection?.state?.create?.step !== CreationFlow.Complete || !collectionDocId) {
+        return undefined;
+      }
+
+      const nftDocRef = this.firebaseService.firestore
+        .collection(firestoreConstants.COLLECTIONS_COLL)
+        .doc(collectionDocId)
+        .collection(firestoreConstants.COLLECTION_NFTS_COLL)
+        .doc(nftQuery.tokenId);
+
+      const nftSnapshot = await nftDocRef.get();
+
+      const nft = nftSnapshot.data() as NftDto | undefined;
+
+      return nft;
     }
-
-    const nftDocRef = this.firebaseService.firestore
-      .collection(firestoreConstants.COLLECTIONS_COLL)
-      .doc(collectionDocId)
-      .collection(firestoreConstants.COLLECTION_NFTS_COLL)
-      .doc(nftQuery.tokenId);
-
-    const nftSnapshot = await nftDocRef.get();
-
-    const nft = nftSnapshot.data() as NftDto | undefined;
-
-    return nft;
   }
 
   async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {
@@ -46,7 +50,7 @@ export class NftsService {
     let decodedCursor;
     try {
       decodedCursor = JSON.parse(base64Decode(query.cursor));
-    } catch (err) {
+    } catch (err: any) {
       decodedCursor = {};
     }
 
@@ -56,7 +60,7 @@ export class NftsService {
       const traitTypes = query.traitTypes ?? [];
       const traitTypesValues = query?.traitValues?.map((item) => item.split('|')) ?? [];
 
-      const traits = [];
+      const traits: object[] = [];
       for (let index = 0; index < traitTypes.length; index++) {
         const traitType = traitTypes[index];
         const traitValues = traitTypesValues[index];

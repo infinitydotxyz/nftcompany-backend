@@ -12,8 +12,10 @@ export class StorageService {
   }
 
   private getPath(file: FileBlob, root = 'images') {
-    const hash = this.md5(file.data);
-    return `${root}/collections/${file.fileName}/${hash}.${file.extension}`;
+    if (file.data) {
+      const hash = this.md5(file.data);
+      return `${root}/collections/${file.fileName}/${hash}.${file.extension}`;
+    }
   }
 
   private fromFilePath(filePath: string): FileBlob {
@@ -28,9 +30,13 @@ export class StorageService {
     if (typeof file === 'string') {
       file = this.fromFilePath(file);
     }
-    const remoteFile = this.firebaseService.bucket.file(this.getPath(file, root));
-    const existingFiles = await remoteFile.exists();
-    return existingFiles && existingFiles.length > 0;
+    const path = this.getPath(file, root);
+
+    if (path) {
+      const remoteFile = this.firebaseService.bucket.file(path);
+      const existingFiles = await remoteFile.exists();
+      return existingFiles && existingFiles.length > 0;
+    }
   }
 
   /**
@@ -44,10 +50,16 @@ export class StorageService {
         ...this.fromFilePath(file)
       };
     }
-    const path = this.getPath(file, options.root);
-    const remoteFile = this.firebaseService.bucket.file(path);
-    await remoteFile.save(file.data, { contentType: file.contentType });
-    return remoteFile;
+
+    if (file.data) {
+      const path = this.getPath(file, options?.root);
+
+      if (path) {
+        const remoteFile = this.firebaseService.bucket.file(path);
+        await remoteFile.save(file.data, { contentType: file.contentType });
+        return remoteFile;
+      }
+    }
   }
 
   /**

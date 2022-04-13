@@ -118,9 +118,12 @@ export class TwitterService {
       const { tweets, users } = await this.getVerifiedMentions(username);
       const formattedTweets = this.transformTweets(tweets, users);
       const accountUser = users.find((user) => user.username.toLowerCase() === username.toLowerCase());
-      const account = this.transformAccount(accountUser);
-      return { account, tweets: formattedTweets };
-    } catch (err) {
+
+      if (accountUser) {
+        const account = this.transformAccount(accountUser);
+        return { account, tweets: formattedTweets };
+      }
+    } catch (err: any) {
       console.log(err);
     }
 
@@ -128,7 +131,7 @@ export class TwitterService {
       const accountUser = await this.getUser(username);
       const account = this.transformAccount(accountUser);
       return { account, tweets: [] };
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
     }
 

@@ -11,7 +11,7 @@ export class CollectionHistoricalStatsQueryDto {
     enum: StatsPeriod
   })
   @IsEnum(StatsPeriod)
-  period: StatsPeriod;
+  period!: StatsPeriod;
 
   @ApiProperty({
     description:
@@ -19,14 +19,14 @@ export class CollectionHistoricalStatsQueryDto {
     enum: OrderDirection
   })
   @IsEnum(OrderDirection)
-  orderDirection: OrderDirection;
+  orderDirection!: OrderDirection;
 
   @ApiProperty({
     description: 'Number of data points to get. Max of 20'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 20 }))
-  limit: number;
+  limit!: number;
 
   @ApiPropertyOptional({
     description: 'Cursor to start after'
@@ -40,12 +40,12 @@ export class CollectionHistoricalStatsQueryDto {
   })
   @IsNumber()
   @Transform(parseIntTransformer())
-  minDate: number;
+  minDate!: number;
 
   @ApiProperty({
     description: 'Maximum timestamp to get stats of (inclusive). Epoch timestamp (ms)'
   })
   @IsNumber()
   @Transform(parseIntTransformer())
-  maxDate: number;
+  maxDate!: number;
 }

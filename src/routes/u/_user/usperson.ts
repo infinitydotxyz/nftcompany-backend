@@ -32,7 +32,7 @@ export const postUsPerson = async (req: Request<{ user: string }>, res: Response
     );
 
     res.send({ usPerson: usPersonValue });
-  } catch (err) {
+  } catch (err: any) {
     error('Setting US person status failed');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

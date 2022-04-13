@@ -21,7 +21,7 @@ export function getAssetAsListing(docId: string, data: any) {
       listings
     };
     return resp;
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to convert asset to listing');
     error(err);
   }
@@ -73,7 +73,7 @@ export function getOrdersResponseFromArray(docs: any) {
           error('error occurred while checking if order is valid');
           error(err);
         });
-    } catch (err) {
+    } catch (err: any) {
       error('Error checking ownership change info', err);
     }
     if (!isExpired) {
@@ -226,7 +226,7 @@ export async function validateOrder(doc: any): Promise<boolean> {
     );
 
     return isValid;
-  } catch (err) {
+  } catch (err: any) {
     error('error while checking if order is valid ');
     error(err);
     return true;
@@ -273,7 +273,7 @@ async function handleStaleListing(doc: any): Promise<void> {
 
     await batch.commit();
     log(`purged stale listing: Maker ${user}`);
-  } catch (err) {
+  } catch (err: any) {
     error('error occurred while handling stale listing ');
     error(err);
   }

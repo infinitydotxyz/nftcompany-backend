@@ -36,7 +36,7 @@ export async function getUserAssetsFromUnmarshal(
       }
     });
     return data;
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while fetching assets from unmarshal');
     error(err);
   }

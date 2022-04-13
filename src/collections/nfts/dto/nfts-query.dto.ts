@@ -16,21 +16,21 @@ export class NftsQueryDto {
     enum: NftsOrderBy
   })
   @IsEnum(NftsOrderBy)
-  orderBy: NftsOrderBy;
+  orderBy!: NftsOrderBy;
 
   @ApiProperty({
     description: 'Direction to order by',
     enum: OrderDirection
   })
   @IsEnum(OrderDirection)
-  orderDirection: OrderDirection;
+  orderDirection!: OrderDirection;
 
   @ApiProperty({
     description: 'Number of results to get. Max of 50'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 50 }))
-  limit: number;
+  limit!: number;
 
   @ApiPropertyOptional({
     description: 'Cursor to start after'

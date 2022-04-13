@@ -39,7 +39,7 @@ export class AuthGuard implements CanActivate {
 
       // Address
       return address === signingAddress;
-    } catch (err) {
+    } catch (err: any) {
       return false;
     }
   }

@@ -5,27 +5,27 @@ export class TwitterAccountDto implements InfinityTwitterAccount {
   @ApiProperty({
     description: 'Twitter id of the account'
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: "User's display name on Twitter"
   })
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Twitter username of the account'
   })
-  username: string;
+  username!: string;
 
   @ApiProperty({
     description: 'Number of followers the account has'
   })
-  followersCount: number;
+  followersCount!: number;
 
   @ApiProperty({
     description: 'Number of accounts the account is following'
   })
-  followingCount: number;
+  followingCount!: number;
 
   @ApiPropertyOptional({
     description: 'Number of tweets the account has posted'

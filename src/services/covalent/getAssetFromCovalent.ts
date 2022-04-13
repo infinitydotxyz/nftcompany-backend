@@ -25,7 +25,7 @@ export async function getAssetFromCovalent(chainId: string, tokenId: string, tok
         listings: []
       };
     }
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while fetching assets from covalent');
     error(err);
   }

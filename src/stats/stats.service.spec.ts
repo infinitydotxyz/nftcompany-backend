@@ -56,7 +56,7 @@ describe('StatsService', () => {
       const stats = await service.getCollectionRankings(query);
       // Console.log(stats);
       expect(stats).toBeDefined();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       expect(err).toBeUndefined();
     }

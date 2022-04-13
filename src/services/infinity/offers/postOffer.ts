@@ -26,7 +26,7 @@ export async function postOffer(maker: string, payload: any, batch: any, numOrde
         taker = await contract.ownerOf(tokenId);
         payload.metadata.asset.owner = taker?.toLowerCase?.();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
     }
   }

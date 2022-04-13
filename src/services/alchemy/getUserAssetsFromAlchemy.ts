@@ -33,7 +33,7 @@ export async function getUserAssetsFromAlchemy(
       params
     });
     return data;
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while fetching assets from alchemy');
     error(err);
   }

@@ -23,7 +23,7 @@ export function authenticateUser(req: Request<{ user: string }>, res: Response, 
       next();
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
     error(`Cannot authenticate user ${userId}`);
     error(err);
   }

@@ -13,7 +13,7 @@ export class CollectionViaSlugDto {
     message: 'Invalid slug'
   })
   @IsOptional()
-  readonly slug: string;
+  readonly slug!: string;
 }
 
 export class CollectionViaAddressDto {
@@ -24,7 +24,7 @@ export class CollectionViaAddressDto {
     message: 'Invalid address'
   })
   @Transform(normalizeAddressTransformer)
-  readonly address: string;
+  readonly address!: string;
 
   @ApiProperty({
     description: 'Collection chain id',
@@ -33,7 +33,7 @@ export class CollectionViaAddressDto {
   @IsSupportedChainId({
     message: 'Invalid chainId'
   })
-  readonly chainId: ChainId;
+  readonly chainId!: ChainId;
 }
 
 export type CollectionRefDto = CollectionViaAddressDto | CollectionViaSlugDto;

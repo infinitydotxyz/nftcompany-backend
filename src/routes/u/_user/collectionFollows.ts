@@ -74,7 +74,7 @@ export const setCollectionFollow = async (req: Request<{ user: string }>, res: R
     }
 
     res.sendStatus(StatusCode.Ok);
-  } catch (err) {
+  } catch (err: any) {
     error('Error setting watchlist for user', user);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

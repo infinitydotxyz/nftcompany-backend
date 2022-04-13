@@ -47,7 +47,7 @@ export default class FirestoreBatchHandler {
         try {
           await batch.commit();
           return;
-        } catch (err) {
+        } catch (err: any) {
           // Logger.error('Failed to commit batch', err);
           if (attempt > maxAttempts) {
             error(`Failed to commit batch`);

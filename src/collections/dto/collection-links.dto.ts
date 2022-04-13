@@ -6,7 +6,7 @@ export class CollectionLinksDto implements Links {
   @ApiProperty()
   @IsNumber()
   @IsOptional()
-  timestamp: number;
+  timestamp!: number;
 
   @ApiProperty()
   @IsString()

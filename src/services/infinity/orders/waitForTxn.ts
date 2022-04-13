@@ -71,11 +71,11 @@ export async function waitForTxn(user: any, payload: any) {
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       error('Error updating txn status in firestore');
       error(err);
     }
-  } catch (err) {
+  } catch (err: any) {
     error(`Txn: ${origTxnHash} was rejected`);
     // If the txn failed, err.receipt.status = 0
     if (err.receipt && err.receipt.status === 0) {

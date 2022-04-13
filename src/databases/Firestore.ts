@@ -11,8 +11,6 @@ import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 export default class Firestore {
   db: FirebaseFirestore.Firestore;
 
-  firebaseAdmin: firebaseAdmin.app.App;
-
   bucket: Bucket;
 
   constructor() {

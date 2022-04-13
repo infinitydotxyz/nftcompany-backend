@@ -91,7 +91,7 @@ export const getUserOffersReceived = async (
       });
     }
     res.send(resp);
-  } catch (err) {
+  } catch (err: any) {
     error(`Failed to get offers received by user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
