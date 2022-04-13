@@ -82,7 +82,7 @@ export class UserService {
       .set({
         address: payload.collectionAddress,
         chainId: payload.collectionChainId,
-        name: collection.metadata.name,
+        name: collection?.metadata?.name,
         slug: collection.slug,
         userAddress: user.userAddress
       });
