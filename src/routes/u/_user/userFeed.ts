@@ -7,7 +7,7 @@ import { firestore } from 'container';
 
 const QUERY_ARRAY_IN_LIMIT = 10; // Limit of Firestore where-in-array items.
 
-const flattenArray = (array) => array.reduce((x, y) => x.concat(y.docs), []);
+const flattenArray = (array: any[]) => array.reduce((x: any, y: any) => x.concat(y.docs), []);
 
 export const getUserFeed = async (
   req: Request<

@@ -70,7 +70,7 @@ export class StatsService {
           secondary = {} as SocialsStats;
         }
 
-        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId as ChainId };
         const merged = await this.mergeStats(primary, secondary, collection);
         return merged;
       })
@@ -561,8 +561,8 @@ export class StatsService {
     });
 
     const aggregatedStats: Record<StatsPeriod, SocialsStats> = {} as any;
-    for (const [period, prevStats] of Object.entries(socialsStatsMap)) {
-      const info = getStatsDocInfo(currentStats.updatedAt, period as StatsPeriod);
+    for (const [period, prevStats] of Object.entries(socialsStatsMap) as [StatsPeriod, SocialsStats | undefined][]) {
+      const info = getStatsDocInfo(currentStats.updatedAt, period );
       const prevDiscordFollowers = prevStats?.discordFollowers || currentStats.discordFollowers;
       const discordFollowersPercentChange = calcPercentChange(prevDiscordFollowers, currentStats.discordFollowers);
       const prevDiscordPresence = prevStats?.discordPresence || currentStats.discordPresence;
@@ -583,7 +583,7 @@ export class StatsService {
         twitterFollowersPercentChange,
         prevTwitterFollowing,
         twitterFollowingPercentChange,
-        period: period as StatsPeriod
+        period: period 
       };
 
       aggregatedStats[period] = stats;

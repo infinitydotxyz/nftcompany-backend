@@ -77,7 +77,7 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
   const { listType, chain, user, tokenAddress } = props;
 
   for (const requiredProp of requiredProps) {
-    if (!props[requiredProp]) {
+    if (!(props as any)[requiredProp]) {
       error(`Required input: ${requiredProp}`);
       return StatusCode.BadRequest;
     }

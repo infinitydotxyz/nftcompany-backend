@@ -17,21 +17,24 @@ export class ParseCollectionIdPipe implements PipeTransform<string, Promise<Pars
   async transform(value: string): Promise<ParsedCollectionId> {
     const [chainIdOrSlug, address] = value.split(':').map((item) => trimLowerCase(item));
     let chainId, slug;
+    let collectionRef: FirebaseFirestore.DocumentReference<Collection>;
     if (address) {
       chainId = chainIdOrSlug;
+      collectionRef = (await this.firebaseService.getCollectionRef({
+        chainId: chainId as ChainId,
+        address
+      })) as FirebaseFirestore.DocumentReference<Collection>;
     } else {
       slug = chainIdOrSlug;
 
       if (!slug) {
         throw new BadRequestException('Invalid slug');
       }
-    }
 
-    const collectionRef = (await this.firebaseService.getCollectionRef({
-      chainId,
-      slug,
-      address
-    })) as FirebaseFirestore.DocumentReference<Collection>;
+      collectionRef = (await this.firebaseService.getCollectionRef({
+        slug
+      })) as FirebaseFirestore.DocumentReference<Collection>;
+    }
 
     const [chainIdFromRef, addressFromRef] = collectionRef.id.split(':');
 

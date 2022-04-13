@@ -97,7 +97,7 @@ export class NftsService {
       data.pop();
     }
 
-    const cursor = {};
+    const cursor: any = {};
     const lastItem = data[data.length - 1];
     for (const key of Object.values(NftsOrderBy)) {
       if (lastItem?.[key]) {

@@ -16,7 +16,7 @@ export async function getUserAssetsFromAlchemy(
   log('Fetching assets from alchemy for user', userAddress, 'chainId', chainId, 'contracts', collectionIds);
   try {
     const path = `/getNFTs/`;
-    const params = {
+    const params: any = {
       owner: userAddress,
       withMetadata: true
     };
