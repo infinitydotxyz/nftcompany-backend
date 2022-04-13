@@ -47,8 +47,8 @@ export const moveOrder = async (order: OBOrder, fromListId: MarketListId, toList
 // ===============================================================
 // Buy orders
 
-export const buyOrders = async (listId: MarketListId): Promise<OBOrder[]> => {
-  const orders = await orderMap(true, listId);
+export const buyOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrder[]> => {
+  const orders = await orderMap(true, listId, cursor, limit);
 
   return Array.from(orders.values());
 };
@@ -88,35 +88,47 @@ export const saveBuyOrder = async (listId: MarketListId, buyOrder: OBOrder): Pro
 // ===============================================================
 // Sell orders
 
-export const sellOrders = async (listId: MarketListId): Promise<OBOrder[]> => {
-  const orders = await orderMap(false, listId);
+export const sellOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrder[]> => {
+  const orders = await orderMap(false, listId, cursor, limit);
 
   return Array.from(orders.values());
 };
 
-export const orderMap = async (
-  buyOrders: boolean,
-  listId: MarketListId
-  // cursor?: string,
-  // limit?: number
-): Promise<Map<string, OBOrder>> => {
-  const collection = firestore.db
-    .collection(buyOrders ? fstrCnstnts.BUY_ORDERS_COLL : fstrCnstnts.SELL_ORDERS_COLL)
+const getCollection = (buyOrder: boolean, listId: MarketListId): FirebaseFirestore.CollectionReference => {
+  return firestore.db
+    .collection(buyOrder ? fstrCnstnts.BUY_ORDERS_COLL : fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
     .collection('orders');
+};
 
-  // let query: FirebaseFirestore.Query;
-  // if (limit > 0) {
-  //   query = query.limit(limit);
-  // }
+export const getOrder = async (buyOrder: boolean, listId: MarketListId, id: string) => {
+  const collection = getCollection(buyOrder, listId);
 
-  // if (cursor) {
-  //   const doc = await collection.doc(cursor).get();
+  return await collection.doc(id).get();
+};
 
-  //   query = query.startAfter(doc);
-  // }
+export const orderMap = async (
+  buyOrder: boolean,
+  listId: MarketListId,
+  cursor?: string,
+  limit?: number
+): Promise<Map<string, OBOrder>> => {
+  const collection = getCollection(buyOrder, listId);
 
-  const result = await collection.get();
+  let result: FirebaseFirestore.QuerySnapshot;
+  let query: FirebaseFirestore.Query;
+  if (limit && limit > 0) {
+    query = collection.limit(limit);
+
+    if (cursor) {
+      const doc = await getOrder(buyOrder, listId, cursor);
+      query = query.startAfter(doc);
+    }
+
+    result = await query.get();
+  } else {
+    result = await collection.get();
+  }
 
   if (result.docs) {
     const { results } = docsToArray(result.docs);

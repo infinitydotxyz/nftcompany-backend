@@ -24,10 +24,10 @@ export class MarketListingsController {
         case 'list':
           switch (body.orderType) {
             case 'sellOrders':
-              sellOrds = await sellOrders(body.listId ?? MarketListId.ValidActive);
+              sellOrds = await sellOrders(body.listId ?? MarketListId.ValidActive, body.cursor, body.limit);
               break;
             case 'buyOrders':
-              buyOrds = await buyOrders(body.listId ?? MarketListId.ValidActive);
+              buyOrds = await buyOrders(body.listId ?? MarketListId.ValidActive, body.cursor, body.limit);
               break;
           }
 
@@ -57,9 +57,12 @@ export class MarketListingsController {
           break;
       }
 
+      const buyCursor = buyOrds.length > 0 ? buyOrds[buyOrds.length - 1].id : '';
+      const sellCursor = sellOrds.length > 0 ? sellOrds[sellOrds.length - 1].id : '';
+
       return {
-        buyOrders: { orders: buyOrds, cursor: '' },
-        sellOrders: { orders: sellOrds, cursor: '' },
+        buyOrders: { orders: buyOrds, cursor: buyCursor },
+        sellOrders: { orders: sellOrds, cursor: sellCursor },
         error: '',
         success: success,
         matches: matches
@@ -71,7 +74,7 @@ export class MarketListingsController {
     return {
       buyOrders: { orders: [], cursor: '' },
       sellOrders: { orders: [], cursor: '' },
-      error: 'failed',
+      error: 'error',
       success: '',
       matches: []
     };
