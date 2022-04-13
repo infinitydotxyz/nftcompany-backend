@@ -34,7 +34,7 @@ export async function saveBoughtOrder(user: any, order: any, batch: any, numOrde
   const purchasesFeesTotal = bn(userInfo.purchasesFeesTotal).plus(purchaseFees).toString();
   const purchasesTotalNumeric = toFixed5(purchasesTotal);
   const purchasesFeesTotalNumeric = toFixed5(purchasesFeesTotal);
-  const salesAndPurchasesTotalNumeric = (userInfo.salesAndPurchasesTotalNumeric as number) + purchasesTotalNumeric;
+  const salesAndPurchasesTotalNumeric = userInfo.salesAndPurchasesTotalNumeric + purchasesTotalNumeric;
 
   trace(
     'User',

@@ -1,10 +1,10 @@
-// MarketListingsBody in lib
-
 import { MarketAction, MarketListId, MarketOrder } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
+
+// This should match MarketListingsBody in lib
 
 export class MarketListingsBodyDto {
   @ApiProperty({

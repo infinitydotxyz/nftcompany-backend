@@ -75,8 +75,8 @@ export async function waitForMissedTxn(user: any, payload: any) {
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
             const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-            await txn.update(buyerTxnRef, { status: updatedStatus, txnData });
-            await txn.update(sellerTxnRef, { status: updatedStatus, txnData });
+            txn.update(buyerTxnRef, { status: updatedStatus, txnData });
+            txn.update(sellerTxnRef, { status: updatedStatus, txnData });
             return txnSuceeded;
           } else {
             return false;
@@ -98,7 +98,7 @@ export async function waitForMissedTxn(user: any, payload: any) {
             const txnData = JSON.parse(jsonString(receipt));
             const txnSuceeded = txnData.status === 1;
             const updatedStatus = txnSuceeded ? 'confirmed' : 'failed';
-            await txn.update(docRef, { status: updatedStatus, txnData });
+            txn.update(docRef, { status: updatedStatus, txnData });
             return txnSuceeded;
           } else {
             return false;

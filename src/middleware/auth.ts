@@ -60,7 +60,7 @@ export function authorizeCollectionEditor(
       .collection(firestoreConstants.AUTH_COLL)
       .doc(firestoreConstants.CREATOR_DOC);
 
-    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data();
+    let creatorObj: { creator: string; hash: string } | undefined = (await creatorDocRef.get()).data() as any; // LINT added any
 
     if (!creatorObj?.creator) {
       const provider = new ethers.providers.EtherscanProvider(undefined, ETHERSCAN_API_KEY);

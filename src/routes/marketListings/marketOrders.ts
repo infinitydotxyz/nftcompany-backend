@@ -2,7 +2,7 @@ import { singleton, container } from 'tsyringe';
 import { OBOrder, BuyOrderMatch, MarketListId } from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
-import { addBuyOrder, addSellOrder, buyOrderMap, buyOrders, moveOrder } from './marketFirebase';
+import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
 import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
 import { BigNumber } from 'ethers';
 
@@ -12,7 +12,7 @@ export class MarketOrders {
   task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
-    const c = await buyOrderMap(MarketListId.ValidActive);
+    const c = await orderMap(true, MarketListId.ValidActive);
 
     if (c.has(orderId)) {
       const buyOrder = c.get(orderId);
