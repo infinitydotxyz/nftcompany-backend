@@ -13,7 +13,8 @@ import {
   UseGuards,
   UseInterceptors,
   HttpStatus,
-  Headers
+  Headers,
+  Delete
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
@@ -23,6 +24,7 @@ import {
   ApiCreatedResponse,
   ApiHeader,
   ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse
@@ -54,6 +56,9 @@ import { StatsService } from 'stats/stats.service';
 // This is a hack to make Multer available in the Express namespace
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Multer } from 'multer';
+import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
+import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
+import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 
 @Controller('user')
 export class UserController {
@@ -202,5 +207,89 @@ export class UserController {
 
     // Update stats in the background (do NOT await this call).
     this.statsService.getCurrentSocialsStats(collection.ref).catch((err) => this.logger.error(err));
+  }
+
+  @Get(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Get a user's following collections",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getUserFollowingCollections(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  ): Promise<UserFollowingCollectionsArrayDto> {
+    const collections = await this.userService.getUserFollowingCollections(user);
+
+    const response: UserFollowingCollectionsArrayDto = {
+      data: collections,
+      hasNextPage: false,
+      cursor: ''
+    };
+    return response;
+  }
+
+  @Post(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Add user's following collection",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @UseInterceptors(new CacheControlInterceptor())
+  async addUserFollowingCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingCollectionPostPayload
+  ): Promise<string> {
+    try {
+      await this.userService.addUserFollowingCollection(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
+    return '';
+  }
+
+  @Delete(':userId/followingCollections')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Delete a user's following collection",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @UseInterceptors(new CacheControlInterceptor())
+  async removeUserFollowingCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingCollectionDeletePayload
+  ): Promise<string> {
+    try {
+      await this.userService.removeUserFollowingCollection(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
+    return '';
   }
 }

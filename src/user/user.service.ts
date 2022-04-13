@@ -1,9 +1,13 @@
-import { OrderDirection } from '@infinityxyz/lib/types/core';
+import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
+import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
+import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserDto } from './dto/user.dto';
 
 @Injectable()
@@ -36,5 +40,79 @@ export class UserService {
     });
 
     return orderedStats;
+  }
+
+  async getUserFollowingCollections(user: UserDto) {
+    const collectionFollows = this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
+
+    const snap = await collectionFollows.get();
+    const followingCollections: UserFollowingCollection[] = snap.docs.map((doc) => {
+      const docData = doc.data() as UserFollowingCollection;
+      return docData;
+    });
+    return followingCollections;
+  }
+
+  async addUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionPostPayload) {
+    const collectionRef = await this.firebaseService.getCollectionRef({
+      chainId: payload.collectionChainId,
+      address: payload.collectionAddress
+    });
+
+    const collection = (await collectionRef.get()).data();
+    if (!collection) {
+      throw new InvalidCollectionError(payload.collectionAddress, payload.collectionChainId, 'Collection not found');
+    }
+    if (collection?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(
+        payload.collectionAddress,
+        payload.collectionChainId,
+        'Collection is not fully indexed'
+      );
+    }
+
+    await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
+      .doc(payload.collectionChainId + ':' + payload.collectionAddress)
+      .set({
+        address: payload.collectionAddress,
+        chainId: payload.collectionChainId,
+        name: collection.metadata.name,
+        slug: collection.slug,
+        userAddress: user.userAddress
+      });
+    return {};
+  }
+
+  async removeUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionDeletePayload) {
+    const collectionRef = await this.firebaseService.getCollectionRef({
+      chainId: payload.collectionChainId,
+      address: payload.collectionAddress
+    });
+
+    const collection = (await collectionRef.get()).data();
+    if (!collection) {
+      throw new InvalidCollectionError(payload.collectionAddress, payload.collectionChainId, 'Collection not found');
+    }
+    if (collection?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(
+        payload.collectionAddress,
+        payload.collectionChainId,
+        'Collection is not fully indexed'
+      );
+    }
+
+    await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(user.userChainId + ':' + user.userAddress)
+      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
+      .doc(payload.collectionChainId + ':' + payload.collectionAddress)
+      .delete();
+    return {};
   }
 }
