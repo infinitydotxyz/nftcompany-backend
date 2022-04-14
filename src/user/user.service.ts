@@ -84,8 +84,8 @@ export class UserService {
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .doc(payload.collectionChainId + ':' + payload.collectionAddress)
       .set({
-        address: payload.collectionAddress,
-        chainId: payload.collectionChainId,
+        collectionAddress: payload.collectionAddress,
+        collectionChainId: payload.collectionChainId,
         name: collection?.metadata?.name,
         slug: collection.slug,
         userAddress: user.userAddress
@@ -150,8 +150,8 @@ export class UserService {
       .collection(firestoreConstants.USER_FOLLOWS_COLL)
       .doc(payload.userChainId + ':' + payload.userAddress)
       .set({
-        address: payload.userAddress,
-        chainId: payload.userChainId
+        userAddress: payload.userAddress,
+        userChainId: payload.userChainId
       });
     return {};
   }
