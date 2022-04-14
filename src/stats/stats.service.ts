@@ -65,12 +65,9 @@ export class StatsService {
       primaryStats.data.map(async (primary, index) => {
         const secondaryPromiseResult = secondaryStats[index];
 
-        let secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-        if (!secondary) {
-          secondary = {} as SocialsStats;
-        }
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
 
-        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
+        const collection = { address: primary?.collectionAddress, chainId: primary?.chainId as ChainId };
         const merged = await this.mergeStats(primary, secondary, collection);
         return merged;
       })
@@ -157,10 +154,7 @@ export class StatsService {
       stats.map(async (primary, index) => {
         const secondaryPromiseResult = secondaryStats[index];
 
-        let secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
-        if (!secondary) {
-          secondary = {} as SocialsStats;
-        }
+        const secondary = secondaryPromiseResult.status === 'fulfilled' ? secondaryPromiseResult.value : undefined;
 
         const collection = { address: primary?.collectionAddress, chainId: primary?.chainId };
         const merged = await this.mergeStats(primary, secondary, {
@@ -233,8 +227,8 @@ export class StatsService {
   }
 
   private async mergeStats(
-    primary: Partial<SocialsStats> & Partial<Stats>,
-    secondary: Partial<SocialsStats> & Partial<Stats>,
+    primary: (Partial<SocialsStats> & Partial<Stats>) | undefined,
+    secondary: (Partial<SocialsStats> & Partial<Stats>) | undefined,
     collection: { chainId: ChainId; address: string }
   ): Promise<CollectionStatsDto> {
     const mergeStat = (primary?: number, secondary?: number) => {
@@ -561,8 +555,8 @@ export class StatsService {
     });
 
     const aggregatedStats: Record<StatsPeriod, SocialsStats> = {} as any;
-    for (const [period, prevStats] of Object.entries(socialsStatsMap)) {
-      const info = getStatsDocInfo(currentStats.updatedAt, period as StatsPeriod);
+    for (const [period, prevStats] of Object.entries(socialsStatsMap) as [StatsPeriod, SocialsStats | undefined][]) {
+      const info = getStatsDocInfo(currentStats.updatedAt, period);
       const prevDiscordFollowers = prevStats?.discordFollowers || currentStats.discordFollowers;
       const discordFollowersPercentChange = calcPercentChange(prevDiscordFollowers, currentStats.discordFollowers);
       const prevDiscordPresence = prevStats?.discordPresence || currentStats.discordPresence;
@@ -583,7 +577,7 @@ export class StatsService {
         twitterFollowersPercentChange,
         prevTwitterFollowing,
         twitterFollowingPercentChange,
-        period: period as StatsPeriod
+        period: period
       };
 
       aggregatedStats[period] = stats;

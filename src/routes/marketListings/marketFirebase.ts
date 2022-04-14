@@ -121,6 +121,7 @@ export const orderMap = async (
     query = collection.limit(limit);
 
     if (cursor) {
+      // cursor is the order.id (last item of previous result)
       const doc = await getOrder(buyOrder, listId, cursor);
       query = query.startAfter(doc);
     }

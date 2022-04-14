@@ -2,7 +2,7 @@ import { firestore } from 'container';
 import { firestoreConstants, log } from '@infinityxyz/lib/utils';
 import { setupAllCollectionsListener } from 'utils/dblisteners';
 
-export let verifiedCollectionIds;
+export let verifiedCollectionIds: any;
 let isFetching = false;
 
 // Get verified collection IDs. Return an array of ids.

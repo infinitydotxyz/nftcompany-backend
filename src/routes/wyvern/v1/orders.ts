@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    if (docId?.length > 0) {
+    if (docId) {
       orders = await getUserOrdersFromDocId(normalizedMaker, docId, orderSide);
     } else {
       if (!normalizedTokenAddress || !ethers.utils.isAddress(normalizedTokenAddress)) {

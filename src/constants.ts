@@ -73,7 +73,7 @@ const fstr = {
  */
 export function deprecateObject<T extends object>(obj: T, message: string): T {
   const handler = {
-    get(target, prop) {
+    get(target: T, prop: string) {
       warn(message);
       return Reflect.get(target, prop);
     }
