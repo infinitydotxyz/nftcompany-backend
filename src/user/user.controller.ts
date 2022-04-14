@@ -59,6 +59,10 @@ import { Multer } from 'multer';
 import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
+import { UserFollowingUsersArrayDto } from './dto/user-following-users-array.dto';
+import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
+import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
+import { InvalidUserError } from 'common/errors/invalid-user.error';
 
 @Controller('user')
 export class UserController {
@@ -223,7 +227,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getUserFollowingCollections(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto
   ): Promise<UserFollowingCollectionsArrayDto> {
     const collections = await this.userService.getUserFollowingCollections(user);
 
@@ -286,6 +290,90 @@ export class UserController {
       await this.userService.removeUserFollowingCollection(user, payload);
     } catch (err) {
       if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
+    return '';
+  }
+
+  @Get(':userId/followingUsers')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Get a user's following users",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingUsersArrayDto })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getUserFollowingUsers(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto
+  ): Promise<UserFollowingUsersArrayDto> {
+    const users = await this.userService.getUserFollowingUsers(user);
+
+    const response: UserFollowingUsersArrayDto = {
+      data: users,
+      hasNextPage: false,
+      cursor: ''
+    };
+    return response;
+  }
+
+  @Post(':userId/followingUsers')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Add user's following users",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @UseInterceptors(new CacheControlInterceptor())
+  async addUserFollowingUser(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingUserPostPayload
+  ): Promise<string> {
+    try {
+      await this.userService.addUserFollowingUser(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidUserError) {
+        throw new NotFoundException(err.message);
+      }
+      throw err;
+    }
+    return '';
+  }
+
+  @Delete(':userId/followingUsers')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Delete a user's following user",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiCreatedResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @UseInterceptors(new CacheControlInterceptor())
+  async removeUserFollowingUser(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @Body() payload: UserFollowingUserDeletePayload
+  ): Promise<string> {
+    try {
+      await this.userService.removeUserFollowingUser(user, payload);
+    } catch (err) {
+      if (err instanceof InvalidUserError) {
         throw new NotFoundException(err.message);
       }
       throw err;
