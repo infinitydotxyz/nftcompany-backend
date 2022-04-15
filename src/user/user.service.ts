@@ -1,5 +1,5 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants, getEndCode } from '@infinityxyz/lib/utils';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
@@ -13,6 +13,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserDto } from './dto/user.dto';
+import { ParsedUserId } from './user-id.pipe';
 
 @Injectable()
 export class UserService {
@@ -44,6 +45,17 @@ export class UserService {
     });
 
     return orderedStats;
+  }
+
+  async getUserProfile(user: ParsedUserId) {
+    const profileSnapshot = await user.ref.get();
+    const profile = profileSnapshot.data();
+
+    if (!profile) {
+      return null;
+    }
+
+    return profile;
   }
 
   async getUserFollowingCollections(user: UserDto) {

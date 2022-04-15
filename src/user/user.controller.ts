@@ -39,7 +39,7 @@ import { CacheControlInterceptor } from 'common/interceptors/cache-control.inter
 import { VotesService } from 'votes/votes.service';
 import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
 import { ApiParamUserId, ParamUserId } from 'common/decorators/param-user-id.decorator';
-import { ParseUserIdPipe } from './user-id.pipe';
+import { ParsedUserId, ParseUserIdPipe } from './user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
@@ -66,6 +66,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UsernameService } from './username.service';
+import { UserProfileDto } from './dto/user-profile.dto';
 
 @Controller('user')
 export class UserController {
@@ -79,6 +80,23 @@ export class UserController {
     private storageService: StorageService,
     private statsService: StatsService
   ) {}
+
+  @Get('/:userId')
+  @ApiOperation({
+    description: 'Get a user by their id',
+    tags: [ApiTag.User]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserProfileDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async getUserProfile(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserProfileDto> {
+    const userProfile = await this.userService.getUserProfile(user);
+    if (userProfile === null) {
+      throw new NotFoundException('User not found');
+    }
+
+    return userProfile;
+  }
 
   @Get('checkUsername')
   @ApiOperation({
@@ -297,8 +315,8 @@ export class UserController {
   @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
-  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async addUserFollowingCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
