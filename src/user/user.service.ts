@@ -1,5 +1,5 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestoreConstants, getEndCode } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';

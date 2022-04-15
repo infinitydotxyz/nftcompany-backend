@@ -64,6 +64,8 @@ import { UserFollowingUsersArrayDto } from './dto/user-following-users-array.dto
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
+import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
+import { UsernameService } from './username.service';
 
 @Controller('user')
 export class UserController {
@@ -71,11 +73,50 @@ export class UserController {
 
   constructor(
     private userService: UserService,
+    private usernameService: UsernameService,
     private votesService: VotesService,
     private collectionsService: CollectionsService,
     private storageService: StorageService,
     private statsService: StatsService
   ) {}
+
+  @Get('checkUsername')
+  @ApiOperation({
+    description: 'Check if a username if valid and available',
+    tags: [ApiTag.User]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async checkUsername(@Query('username') username: string): Promise<ValidateUsernameResponseDto> {
+    // eslint-disable-next-line prefer-const
+    let { isValid, reason } = this.usernameService.validateUsername(username);
+    let isAvailable = true;
+
+    if (isValid) {
+      isAvailable = await this.usernameService.checkUsernameAvailability(username);
+      if (!isAvailable) {
+        reason = 'Username is already taken';
+      }
+    }
+
+    const canClaim = isValid && isAvailable;
+
+    if (canClaim) {
+      return {
+        username,
+        valid: true
+      };
+    }
+
+    const suggestions = await this.usernameService.getSuggestions(username);
+
+    return {
+      username,
+      valid: false,
+      reason,
+      suggestions
+    };
+  }
 
   @Get(':userId/watchlist')
   @ApiOperation({
