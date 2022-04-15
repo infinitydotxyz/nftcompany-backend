@@ -7,9 +7,11 @@ import { CollectionLinksDto } from './collection-links.dto';
 
 export class CollectionPartnershipDto {
   @ApiProperty()
+  @IsString()
   name!: string;
 
   @ApiProperty()
+  @IsString()
   link!: string;
 }
 
@@ -51,7 +53,7 @@ export class CollectionMetaDataDto implements CollectionMetadata {
   benefits?: string[];
 
   @ApiProperty()
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @Type(() => CollectionPartnershipDto)
   @IsOptional()
   @IsArray()
