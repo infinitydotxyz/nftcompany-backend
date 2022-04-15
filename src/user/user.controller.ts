@@ -162,6 +162,7 @@ export class UserController {
   @Put(':userId/collections/:collectionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AuthGuard)
+  @MatchSigner('userId')
   @UseInterceptors(new CacheControlInterceptor())
   @UseInterceptors(FileInterceptor('profileImage'))
   @ApiSignatureAuth()
