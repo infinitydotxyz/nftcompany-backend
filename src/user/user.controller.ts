@@ -14,7 +14,8 @@ import {
   UseInterceptors,
   HttpStatus,
   Headers,
-  Delete
+  Delete,
+  BadRequestException
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserDto } from './dto/user.dto';
@@ -183,11 +184,15 @@ export class UserController {
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Headers('Content-Type') contentType: string,
-    @Body() { metadata = {}, deleteProfileImage }: UpdateCollectionDto,
+    @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
+    }
+
+    if (!metadata) {
+      throw new BadRequestException();
     }
 
     if (deleteProfileImage) {
