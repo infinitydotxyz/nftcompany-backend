@@ -18,7 +18,6 @@ import {
   BadRequestException
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
-import { UserDto } from './dto/user.dto';
 import { UserService } from './user.service';
 import {
   ApiConsumes,
@@ -54,9 +53,6 @@ import { StorageService } from 'storage/storage.service';
 import { CollectionMetadata } from '@infinityxyz/lib/types/core';
 import { instanceToPlain } from 'class-transformer';
 import { StatsService } from 'stats/stats.service';
-// This is a hack to make Multer available in the Express namespace
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Multer } from 'multer';
 import { UserFollowingCollectionsArrayDto } from 'user/dto/user-following-collections-array.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
@@ -150,7 +146,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
   async getWatchlist(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() query: RankingsRequestDto
   ): Promise<CollectionStatsArrayResponseDto> {
     const watchlist = await this.userService.getUserWatchlist(user, query);
@@ -178,7 +174,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getUserCollectionVotes(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() query: UserCollectionVotesQuery
   ): Promise<UserCollectionVotesArrayDto> {
     const userVotes = await this.votesService.getUserVotes(user, query);
@@ -199,7 +195,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async saveUserCollectionVote(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() vote: UserCollectionVoteBodyDto
   ): Promise<void> {
     const userVote: UserCollectionVoteDto = {
@@ -240,7 +236,7 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(
-    @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
+    @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Headers('Content-Type') contentType: string,
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
@@ -283,7 +279,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Get a user's following collections",
+    description: 'Get the collections a user is following',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -292,7 +288,7 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getUserFollowingCollections(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingCollectionsArrayDto> {
     const collections = await this.userService.getUserFollowingCollections(user);
 
@@ -309,7 +305,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Add user's following collection",
+    description: 'Follow a collection for a user',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -318,12 +314,12 @@ export class UserController {
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
-  async addUserFollowingCollection(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  async followCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionPostPayload
   ): Promise<string> {
     try {
-      await this.userService.addUserFollowingCollection(user, payload);
+      await this.userService.followCollection(user, payload);
     } catch (err) {
       if (err instanceof InvalidCollectionError) {
         throw new NotFoundException(err.message);
@@ -338,7 +334,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Delete a user's following collection",
+    description: 'Unfollow a collection for a user',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -347,12 +343,12 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @UseInterceptors(new CacheControlInterceptor())
-  async removeUserFollowingCollection(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  async unfollowCollection(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionDeletePayload
   ): Promise<string> {
     try {
-      await this.userService.removeUserFollowingCollection(user, payload);
+      await this.userService.unfollowCollection(user, payload);
     } catch (err) {
       if (err instanceof InvalidCollectionError) {
         throw new NotFoundException(err.message);
@@ -367,7 +363,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Get a user's following users",
+    description: 'Get the users that the user is following',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -375,10 +371,8 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
-  async getUserFollowingUsers(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto
-  ): Promise<UserFollowingUsersArrayDto> {
-    const users = await this.userService.getUserFollowingUsers(user);
+  async getFriends(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserFollowingUsersArrayDto> {
+    const users = await this.userService.getFriends(user);
 
     const response: UserFollowingUsersArrayDto = {
       data: users,
@@ -393,7 +387,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Add user's following users",
+    description: 'Follow a user for a user',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -402,12 +396,12 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @UseInterceptors(new CacheControlInterceptor())
-  async addUserFollowingUser(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  async followUser(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserPostPayload
   ): Promise<string> {
     try {
-      await this.userService.addUserFollowingUser(user, payload);
+      await this.userService.followUser(user, payload);
     } catch (err) {
       if (err instanceof InvalidUserError) {
         throw new NotFoundException(err.message);
@@ -422,7 +416,7 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiOperation({
-    description: "Delete a user's following user",
+    description: 'Unfollow a user for a user',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -431,12 +425,12 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @UseInterceptors(new CacheControlInterceptor())
-  async removeUserFollowingUser(
-    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+  async unfollowUser(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserDeletePayload
   ): Promise<string> {
     try {
-      await this.userService.removeUserFollowingUser(user, payload);
+      await this.userService.unfollowUser(user, payload);
     } catch (err) {
       if (err instanceof InvalidUserError) {
         throw new NotFoundException(err.message);
