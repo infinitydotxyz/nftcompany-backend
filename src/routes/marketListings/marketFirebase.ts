@@ -1,15 +1,14 @@
-import { MarketListId, OBOrder } from '@infinityxyz/lib/types/core';
-import { isOrderExpired, orderHash } from '@infinityxyz/lib/utils';
+import { isOrderSpecExpired, MarketListId, OBOrderSpec, orderSpecHash } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
 
 export interface ExpiredCacheItem {
   listId: MarketListId;
-  order: OBOrder;
+  order: OBOrderSpec;
 }
 
-interface SellOrderSave extends OBOrder {
+interface SellOrderSave extends OBOrderSpec {
   collectionAddresses: string[];
 }
 
@@ -28,7 +27,11 @@ export const deleteOrder = async (isBuyOrder: boolean, listId: MarketListId, ord
   }
 };
 
-export const moveOrder = async (order: OBOrder, fromListId: MarketListId, toListId: MarketListId): Promise<void> => {
+export const moveOrder = async (
+  order: OBOrderSpec,
+  fromListId: MarketListId,
+  toListId: MarketListId
+): Promise<void> => {
   if (toListId && fromListId) {
     if (!order.isSellOrder) {
       await addBuyOrder(toListId, order);
@@ -47,19 +50,19 @@ export const moveOrder = async (order: OBOrder, fromListId: MarketListId, toList
 // ===============================================================
 // Buy orders
 
-export const buyOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrder[]> => {
+export const buyOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrderSpec[]> => {
   const orders = await orderMap(true, listId, cursor, limit);
 
   return Array.from(orders.values());
 };
 
-export const addBuyOrder = async (listId: MarketListId, buyOrder: OBOrder): Promise<void> => {
+export const addBuyOrder = async (listId: MarketListId, buyOrder: OBOrderSpec): Promise<void> => {
   const c = await orderMap(true, listId);
 
-  if (!c.has(orderHash(buyOrder))) {
+  if (!c.has(orderSpecHash(buyOrder))) {
     await saveBuyOrder(listId, buyOrder);
   } else {
-    console.log(`addBuyOrder already exists ${orderHash(buyOrder)} ${listId}`);
+    console.log(`addBuyOrder already exists ${orderSpecHash(buyOrder)} ${listId}`);
   }
 };
 
@@ -73,22 +76,22 @@ export const deleteBuyOrder = async (listId: MarketListId, orderId: string): Pro
   }
 };
 
-export const saveBuyOrder = async (listId: MarketListId, buyOrder: OBOrder): Promise<OBOrder> => {
+export const saveBuyOrder = async (listId: MarketListId, buyOrder: OBOrderSpec): Promise<OBOrderSpec> => {
   const collection = firestore.db.collection(fstrCnstnts.BUY_ORDERS_COLL).doc(listId).collection('orders');
 
   // Set id to hash
-  buyOrder.id = orderHash(buyOrder);
+  buyOrder.id = orderSpecHash(buyOrder);
 
   const doc = collection.doc(buyOrder.id);
   await doc.set(buyOrder);
 
-  return (await doc.get()).data() as OBOrder;
+  return (await doc.get()).data() as OBOrderSpec;
 };
 
 // ===============================================================
 // Sell orders
 
-export const sellOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrder[]> => {
+export const sellOrders = async (listId: MarketListId, cursor?: string, limit?: number): Promise<OBOrderSpec[]> => {
   const orders = await orderMap(false, listId, cursor, limit);
 
   return Array.from(orders.values());
@@ -112,7 +115,7 @@ export const orderMap = async (
   listId: MarketListId,
   cursor?: string,
   limit?: number
-): Promise<Map<string, OBOrder>> => {
+): Promise<Map<string, OBOrderSpec>> => {
   const collection = getCollection(buyOrder, listId);
 
   let result: FirebaseFirestore.QuerySnapshot;
@@ -134,7 +137,7 @@ export const orderMap = async (
   if (result.docs) {
     const { results } = docsToArray(result.docs);
 
-    const map: Map<string, OBOrder> = new Map();
+    const map: Map<string, OBOrderSpec> = new Map();
 
     for (const order of results) {
       map.set(order.id, order);
@@ -143,15 +146,18 @@ export const orderMap = async (
     return map;
   }
 
-  return new Map<string, OBOrder>();
+  return new Map<string, OBOrderSpec>();
 };
 
-export const sellOrdersWithParams = async (listId: MarketListId, collectionAddresses: string[]): Promise<OBOrder[]> => {
+export const sellOrdersWithParams = async (
+  listId: MarketListId,
+  collectionAddresses: string[]
+): Promise<OBOrderSpec[]> => {
   const result = await firestore.db
     .collection(fstrCnstnts.SELL_ORDERS_COLL)
     .doc(listId)
     .collection('orders')
-    // CollectionAddresses is added on save, it's not part of the OBOrder
+    // CollectionAddresses is added on save, it's not part of the OBOrderSpec
     .where('collectionAddresses', 'array-contains-any', collectionAddresses)
     .get();
 
@@ -164,13 +170,13 @@ export const sellOrdersWithParams = async (listId: MarketListId, collectionAddre
   return [];
 };
 
-export const addSellOrder = async (listId: MarketListId, sellOrder: OBOrder): Promise<void> => {
+export const addSellOrder = async (listId: MarketListId, sellOrder: OBOrderSpec): Promise<void> => {
   const c = await orderMap(false, listId);
 
-  if (!c.has(orderHash(sellOrder))) {
+  if (!c.has(orderSpecHash(sellOrder))) {
     await saveSellOrder(listId, sellOrder);
   } else {
-    console.log(`deleteBuyOrder order not found ${orderHash(sellOrder)} ${listId}`);
+    console.log(`deleteBuyOrder order not found ${orderSpecHash(sellOrder)} ${listId}`);
   }
 };
 
@@ -184,16 +190,16 @@ export const deleteSellOrder = async (listId: MarketListId, orderId: string): Pr
   }
 };
 
-export const saveSellOrder = async (listId: MarketListId, sellOrder: OBOrder): Promise<OBOrder> => {
+export const saveSellOrder = async (listId: MarketListId, sellOrder: OBOrderSpec): Promise<OBOrderSpec> => {
   const collection = firestore.db.collection(fstrCnstnts.SELL_ORDERS_COLL).doc(listId).collection('orders');
 
   // Set id to hash
-  sellOrder.id = orderHash(sellOrder);
+  sellOrder.id = orderSpecHash(sellOrder);
 
   // Add collectionAddresses which is used for queries
   const collectionAddresses: string[] = [];
   for (const nft of sellOrder.nfts) {
-    collectionAddresses.push(nft.collection);
+    collectionAddresses.push(nft.collectionAddress);
   }
   const saveOrder = sellOrder as SellOrderSave;
   saveOrder.collectionAddresses = collectionAddresses;
@@ -201,7 +207,7 @@ export const saveSellOrder = async (listId: MarketListId, sellOrder: OBOrder): P
   const doc = collection.doc(saveOrder.id);
   await doc.set(saveOrder);
 
-  return (await doc.get()).data() as OBOrder;
+  return (await doc.get()).data() as OBOrderSpec;
 };
 
 // ===============================================================
@@ -226,7 +232,7 @@ export const expiredBuyOrders = async (listId: MarketListId): Promise<ExpiredCac
 
   const orders = await buyOrders(listId);
   for (const order of orders) {
-    if (isOrderExpired(order)) {
+    if (isOrderSpecExpired(order)) {
       result.push({ listId: listId, order: order });
     }
   }
@@ -239,7 +245,7 @@ export const expiredSellOrders = async (listId: MarketListId): Promise<ExpiredCa
 
   const orders = await sellOrders(listId);
   for (const order of orders) {
-    if (isOrderExpired(order)) {
+    if (isOrderSpecExpired(order)) {
       result.push({ listId: listId, order: order });
     }
   }
