@@ -21,7 +21,7 @@ export class UserService {
   async getUserWatchlist(user: UserDto, query: RankingsRequestDto) {
     const collectionFollows = this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(`${user.userChainId}:${user.userAddress}`)
+      .doc(user.userAddress)
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .select('address', 'chainId');
     const snap = await collectionFollows.get();
@@ -49,7 +49,7 @@ export class UserService {
   async getUserFollowingCollections(user: UserDto) {
     const collectionFollows = this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
 
     const snap = await collectionFollows.get();
@@ -80,7 +80,7 @@ export class UserService {
 
     await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .doc(payload.collectionChainId + ':' + payload.collectionAddress)
       .set({
@@ -113,7 +113,7 @@ export class UserService {
 
     await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .doc(payload.collectionChainId + ':' + payload.collectionAddress)
       .delete();
@@ -123,7 +123,7 @@ export class UserService {
   async getUserFollowingUsers(user: UserDto) {
     const userFollows = this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.USER_FOLLOWS_COLL);
 
     const snap = await userFollows.get();
@@ -135,42 +135,37 @@ export class UserService {
   }
 
   async addUserFollowingUser(user: UserDto, payload: UserFollowingUserPostPayload) {
-    const userRef = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress);
+    const userRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(payload.userAddress);
 
     const followingUser = (await userRef.get()).data();
     if (!followingUser) {
-      throw new InvalidUserError(payload.userAddress, payload.userChainId, 'User not found');
+      throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
     await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress)
+      .doc(payload.userAddress)
       .set({
-        userAddress: payload.userAddress,
-        userChainId: payload.userChainId
+        userAddress: payload.userAddress
       });
     return {};
   }
 
   async removeUserFollowingUser(user: UserDto, payload: UserFollowingUserDeletePayload) {
-    const userRef = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress);
+    const userRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(payload.userAddress);
 
     const followingUser = (await userRef.get()).data();
     if (!followingUser) {
-      throw new InvalidUserError(payload.userAddress, payload.userChainId, 'User not found');
+      throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
     await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userChainId + ':' + user.userAddress)
+      .doc(user.userAddress)
       .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress)
+      .doc(payload.userAddress)
       .delete();
     return {};
   }
