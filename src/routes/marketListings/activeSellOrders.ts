@@ -40,31 +40,33 @@ export class ActiveSellOrders {
 
   async ordersInCollections(nfts: OBOrderSpecNFT[]): Promise<OBOrderSpec[]> {
     const result: OBOrderSpec[] = [];
+    if (nfts) {
+      const addresses = nfts.map((e) => e.collectionAddress);
+      await this.addCollectionAddresses(addresses);
 
-    const addresses = nfts.map((e) => e.collectionAddress);
-    await this.addCollectionAddresses(addresses);
+      for (const address of addresses) {
+        const orders = this.orderMap.get(address);
 
-    for (const address of addresses) {
-      const orders = this.orderMap.get(address);
-
-      if (orders) {
-        result.push(...orders);
+        if (orders) {
+          result.push(...orders);
+        }
       }
+
+      const sortedOrders = result.sort((a, b) => {
+        const aCurrPrice = getCurrentOrderSpecPrice(a);
+        const bCurrPrice = getCurrentOrderSpecPrice(b);
+        if (aCurrPrice.gt(bCurrPrice)) {
+          return 1;
+        } else if (aCurrPrice.lt(bCurrPrice)) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+
+      return sortedOrders;
     }
-
-    const sortedOrders = result.sort((a, b) => {
-      const aCurrPrice = getCurrentOrderSpecPrice(a);
-      const bCurrPrice = getCurrentOrderSpecPrice(b);
-      if (aCurrPrice.gt(bCurrPrice)) {
-        return 1;
-      } else if (aCurrPrice.lt(bCurrPrice)) {
-        return -1;
-      } else {
-        return 0;
-      }
-    });
-
-    return sortedOrders;
+    return result;
   }
 
   async ordersForBuyOrder(buyOrder: OBOrderSpec): Promise<OBOrderSpec[]> {
