@@ -22,7 +22,7 @@ export class ActiveSellOrders {
 
       for (const sellOrder of orders) {
         if (!isOrderSpecExpired(sellOrder)) {
-          const addrs = sellOrder.nfts.map((e) => e.collectionAddress);
+          const addrs = sellOrder.nftsWithMetadata.map((e) => e.collectionAddress);
           for (const addr of addrs) {
             let orderArray = this.orderMap.get(addr);
             const activeSellOrder: OBOrderSpec = { ...sellOrder };
@@ -70,7 +70,7 @@ export class ActiveSellOrders {
   async ordersForBuyOrder(buyOrder: OBOrderSpec): Promise<OBOrderSpec[]> {
     const result: OBOrderSpec[] = [];
 
-    const sellOrders = await this.ordersInCollections(buyOrder.nfts);
+    const sellOrders = await this.ordersInCollections(buyOrder.nftsWithMetadata);
     const buyCurrPrice = getCurrentOrderSpecPrice(buyOrder);
     for (const sellOrder of sellOrders) {
       const sellCurrPrice = getCurrentOrderSpecPrice(sellOrder);

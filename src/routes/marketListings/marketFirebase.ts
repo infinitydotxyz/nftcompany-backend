@@ -199,7 +199,7 @@ export const saveSellOrder = async (listId: MarketListId, sellOrder: OBOrderSpec
 
   // Add collectionAddresses which is used for queries
   const collectionAddresses: string[] = [];
-  for (const nft of sellOrder.nfts) {
+  for (const nft of sellOrder.nftsWithMetadata) {
     collectionAddresses.push(nft.collectionAddress);
   }
   const saveOrder = sellOrder as SellOrderSave;
@@ -279,7 +279,7 @@ export const orderSpecHash = (obj: OBOrderSpec): string => {
       const collectionAddresses = [];
       const ids = [];
 
-      for (const item of obj.nfts) {
+      for (const item of obj.nftsWithMetadata) {
         collectionAddresses.push(item.collectionAddress);
         ids.push(...item.tokens);
       }

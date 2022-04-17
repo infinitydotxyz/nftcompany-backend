@@ -9,6 +9,7 @@ import {
 import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
+import { BigNumber } from 'ethers';
 
 @singleton()
 export class MarketOrders {
@@ -83,7 +84,7 @@ export class MarketOrders {
 
     if (sellOrders.length > 0) {
       let cash = getCurrentOrderSpecPrice(buyOrder);
-      let numNFTs = buyOrder.numItems;
+      let numNFTs = BigNumber.from(buyOrder.numItems).toNumber();
       const result: OBOrderSpec[] = [];
 
       for (const sellOrder of sellOrders) {
