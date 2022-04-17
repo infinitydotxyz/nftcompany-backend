@@ -2,7 +2,7 @@ import { isOrderSpecExpired, MarketListId, OBOrderSpec } from '@infinityxyz/lib/
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 
 export interface ExpiredCacheItem {
   listId: MarketListId;
@@ -256,6 +256,7 @@ export const expiredSellOrders = async (listId: MarketListId): Promise<ExpiredCa
 
 // ============= utils =============
 
+// todo: this needs to change
 export const orderSpecHash = (obj: OBOrderSpec): string => {
   const copy = JSON.parse(JSON.stringify(obj));
 
@@ -275,7 +276,9 @@ export const orderSpecHash = (obj: OBOrderSpec): string => {
   // sort keys first
   const keys = Object.keys(copy).sort();
   for (const key of keys) {
-    if (key === 'nfts') {
+    if (key === 'extraParams' || key === 'execParams' || key === 'nfts') {
+      continue;
+    } else if (key === 'nftsWithMetadata') {
       const collectionAddresses = [];
       const ids = [];
 
@@ -298,7 +301,7 @@ export const orderSpecHash = (obj: OBOrderSpec): string => {
       }
     }
   }
-  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  return createHash('sha256').update(data).digest('hex').trim().toLowerCase();
 };
 
 export const isOrderSpecEqual = (a: OBOrderSpec, b: OBOrderSpec): boolean => {
