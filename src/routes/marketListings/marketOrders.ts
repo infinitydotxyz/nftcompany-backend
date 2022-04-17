@@ -99,7 +99,7 @@ export class MarketOrders {
         }
       }
 
-      if (result.length === buyOrder.numItems) {
+      if (result.length === numNFTs) {
         return { buyOrder: buyOrder, sellOrders: result };
       }
     }
