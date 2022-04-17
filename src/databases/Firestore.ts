@@ -53,13 +53,6 @@ export default class Firestore {
     return createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
-  // // NOTE: don't use this for new code; use getDocIdHash instead
-  // GetAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
-  //   Warn('Do not use this assetDocId');
-  //   Const data = tokenAddress.trim() + tokenId.trim() + chainId;
-  //   Return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  // }
-
   getHistoricalDocId(year: number, week: number) {
     return `${year}-${week}`;
   }
