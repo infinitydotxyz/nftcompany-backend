@@ -55,8 +55,13 @@ export class ActiveSellOrders {
     const sortedOrders = result.sort((a, b) => {
       const aCurrPrice = getCurrentOrderSpecPrice(a);
       const bCurrPrice = getCurrentOrderSpecPrice(b);
-      // Todo: might need to convert to ETH first to prevent overflow
-      return aCurrPrice - bCurrPrice;
+      if (aCurrPrice.gt(bCurrPrice)) {
+        return 1;
+      } else if (aCurrPrice.lt(bCurrPrice)) {
+        return -1;
+      } else {
+        return 0;
+      }
     });
 
     return sortedOrders;

@@ -91,7 +91,7 @@ export class MarketOrders {
 
         if (numNFTs > 0 && cash >= price) {
           result.push(sellOrder);
-          cash = cash - price;
+          cash = cash.sub(price);
           numNFTs = numNFTs - 1;
         } else {
           break;
