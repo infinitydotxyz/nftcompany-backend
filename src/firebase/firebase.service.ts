@@ -27,7 +27,7 @@ export class FirebaseService {
       firebaseAdmin.initializeApp(
         {
           credential: firebaseAdmin.credential.cert(options.cert),
-          storageBucket: FB_STORAGE_BUCKET
+          storageBucket: options.storageBucket
         },
         options.certName
       );

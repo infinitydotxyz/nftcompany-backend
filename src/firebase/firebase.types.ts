@@ -10,4 +10,9 @@ export type FirebaseModuleOptions = {
   certName?: string;
 
   isTest?: boolean;
+
+  /**
+   * Name of the cloud storage bucket to use.
+   */
+  storageBucket?: string;
 };
