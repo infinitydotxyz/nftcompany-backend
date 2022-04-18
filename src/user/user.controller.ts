@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   HttpStatus,
+  Headers,
   Delete,
   BadRequestException,
   UploadedFiles
@@ -307,6 +308,7 @@ export class UserController {
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Headers('Content-Type') contentType: string,
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
@@ -314,26 +316,26 @@ export class UserController {
       throw new UnauthorizedException();
     }
 
+    if (!metadata) {
+      throw new BadRequestException();
+    }
+
+    if (deleteProfileImage) {
+      metadata.profileImage = '';
+    }
+
     // Upload image if we're submitting a file.
     // Note that we can't both update the collection and update the image at the same time.
     // This is done intentionally to keep things simpler.
-    if (profileImage && profileImage.size > 0) {
-      const image = await this.storageService.saveImage(profileImage.originalname, {
+    if (contentType === 'multipart/form-data' && profileImage && profileImage.size > 0) {
+      const image = await this.storageService.saveImage(profileImage.filename, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
 
       if (image) {
-        metadata = { ...metadata, profileImage: image.publicUrl() };
+        metadata.profileImage = image.publicUrl();
       }
-    }
-
-    if (deleteProfileImage) {
-      metadata = { ...metadata, profileImage: '' };
-    }
-
-    if (!metadata) {
-      throw new BadRequestException();
     }
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
@@ -442,7 +444,7 @@ export class UserController {
   async getUsersBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingUsersArrayDto> {
-    const users = await this.userService.getFriends(user);
+    const users = await this.userService.getUsersBeingFollowed(user);
 
     const response: UserFollowingUsersArrayDto = {
       data: users,
