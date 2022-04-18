@@ -1,7 +1,7 @@
 import { ChainId, Collection, CollectionAttributes, TokenStandard } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsObject, ValidateNested } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { CollectionMetaDataDto, PartialCollectionMetadataDto } from './collection-metadata.dto';
 import { CollectionStateDto } from './collection-state.dto';
 
@@ -105,6 +105,7 @@ export class UpdateCollectionDto {
   @ApiPropertyOptional({
     description: 'Whether to remove the current profile image'
   })
+  @IsOptional()
   @IsBoolean()
   deleteProfileImage?: boolean;
 
