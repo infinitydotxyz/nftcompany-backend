@@ -4,7 +4,7 @@ import { PipeTransform, Injectable, BadRequestException, NotFoundException } fro
 import { ethers } from 'ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { UsernameService } from './username.service';
+import { ProfileService } from './profile.service';
 
 export type ParsedUserId = {
   userAddress: string;
@@ -40,7 +40,9 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
       throw new BadRequestException('Invalid address');
     }
 
-    const ref = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(`${chainId}:${address}`);
+    const ref = this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(`${chainId}:${address}`) as FirebaseFirestore.DocumentReference<UserProfileDto>;
 
     return {
       userAddress: address,
@@ -50,7 +52,7 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
   }
 
   private async getUserByUsername(username: string) {
-    const normalized = UsernameService.normalizeUsername(username);
+    const normalized = ProfileService.normalizeUsername(username);
 
     const snapshot = await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
@@ -66,6 +68,6 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
       throw new NotFoundException('Failed to find user via username');
     }
 
-    return { user, ref: doc.ref };
+    return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
   }
 }

@@ -15,7 +15,8 @@ import {
   HttpStatus,
   Headers,
   Delete,
-  BadRequestException
+  BadRequestException,
+  UploadedFiles
 } from '@nestjs/common';
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserService } from './user.service';
@@ -48,7 +49,7 @@ import { ParseCollectionIdPipe, ParsedCollectionId } from 'collections/collectio
 import { UpdateCollectionDto } from 'collections/dto/collection.dto';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import CollectionsService from 'collections/collections.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from 'storage/storage.service';
 import { CollectionMetadata } from '@infinityxyz/lib/types/core';
 import { instanceToPlain } from 'class-transformer';
@@ -61,8 +62,9 @@ import { UserFollowingUserPostPayload } from './dto/user-following-user-post-pay
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
-import { UsernameService } from './username.service';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { ProfileService } from './profile.service';
 
 @Controller('user')
 export class UserController {
@@ -70,11 +72,11 @@ export class UserController {
 
   constructor(
     private userService: UserService,
-    private usernameService: UsernameService,
     private votesService: VotesService,
     private collectionsService: CollectionsService,
     private storageService: StorageService,
-    private statsService: StatsService
+    private statsService: StatsService,
+    private profileService: ProfileService
   ) {}
 
   @Get('/:userId')
@@ -94,6 +96,74 @@ export class UserController {
     return userProfile;
   }
 
+  @Put('/:userId')
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'profileImage', maxCount: 1 },
+      { name: 'bannerImage', maxCount: 1 }
+    ])
+  )
+  @ApiOperation({
+    description: "Update a user's profile",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiHeader({
+    name: 'Content-Type',
+    required: false
+  })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async updateProfile(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Body() data: UpdateUserProfileDto,
+    @UploadedFiles()
+    files?: { profileImage?: Express.Multer.File[]; bannerImage?: Express.Multer.File[] }
+  ): Promise<void> {
+    const profile: Partial<UserProfileDto> & UpdateUserProfileDto = {
+      ...data
+    };
+
+    const profileImage = files?.profileImage?.[0];
+
+    if (profileImage) {
+      const image = await this.storageService.saveImage(profileImage.filename, {
+        contentType: profileImage.mimetype,
+        data: profileImage.buffer
+      });
+      if (!image) {
+        throw new Error('Failed to save profile image');
+      }
+      profile.profileImage = image.publicUrl();
+      if (profile.deleteProfileImage) {
+        profile.deleteProfileImage = false;
+      }
+    }
+
+    const bannerImage = files?.bannerImage?.[0];
+    if (bannerImage) {
+      const image = await this.storageService.saveImage(bannerImage.filename, {
+        contentType: bannerImage.mimetype,
+        data: bannerImage.buffer
+      });
+      if (!image) {
+        throw new Error('Failed to save banner image');
+      }
+      profile.bannerImage = image.publicUrl();
+      if (profile.deleteBannerImage) {
+        profile.deleteBannerImage = false;
+      }
+    }
+
+    await this.profileService.updateProfile(user, profile);
+
+    return;
+  }
+
   @Get('checkUsername')
   @ApiOperation({
     description: 'Check if a username if valid and available',
@@ -103,11 +173,11 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async checkUsername(@Query('username') username: string): Promise<ValidateUsernameResponseDto> {
     // eslint-disable-next-line prefer-const
-    let { isValid, reason } = this.usernameService.validateUsername(username);
+    let { isValid, reason } = this.profileService.validateUsername(username);
     let isAvailable = true;
 
     if (isValid) {
-      isAvailable = await this.usernameService.checkUsernameAvailability(username);
+      isAvailable = await this.profileService.isAvailable(username);
       if (!isAvailable) {
         reason = 'Username is already taken';
       }
@@ -122,7 +192,7 @@ export class UserController {
       };
     }
 
-    const suggestions = await this.usernameService.getSuggestions(username);
+    const suggestions = await this.profileService.getSuggestions(username);
 
     return {
       username,
@@ -219,7 +289,6 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
-  @UseInterceptors(new CacheControlInterceptor())
   @UseInterceptors(FileInterceptor('profileImage'))
   @ApiSignatureAuth()
   @ApiOperation({
