@@ -19,13 +19,24 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
   async transform(value: string): Promise<ParsedUserId> {
     const usernameOrAddress = trimLowerCase(value);
 
-    if (!usernameOrAddress.includes(':')) {
+    if (!usernameOrAddress.includes(':') && !ethers.utils.isAddress(usernameOrAddress)) {
       const { user, ref } = await this.getUserByUsername(usernameOrAddress);
       const userChainId = ChainId.Mainnet;
       const userAddress = user.address;
       return {
         userAddress,
         userChainId,
+        ref
+      };
+    }
+
+    if (ethers.utils.isAddress(usernameOrAddress)) {
+      const ref = this.firebaseService.firestore
+        .collection(firestoreConstants.USERS_COLL)
+        .doc(usernameOrAddress) as FirebaseFirestore.DocumentReference<UserProfileDto>;
+      return {
+        userAddress: usernameOrAddress,
+        userChainId: ChainId.Mainnet,
         ref
       };
     }
