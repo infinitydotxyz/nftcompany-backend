@@ -1,6 +1,6 @@
 import { ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsBooleanString, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 import { parseBoolTransformer } from 'common/transformers/parse-bool.transformer';
 import { UserProfileDto } from './user-profile.dto';
 

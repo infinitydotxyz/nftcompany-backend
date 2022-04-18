@@ -99,23 +99,6 @@ export class ProfileService {
     await user.ref.set(profile, { merge: true });
   }
 
-  private async canClaimUsername(newUsername: string, currentUser: Partial<UserProfileDto>): Promise<boolean> {
-    const normalizedUsername = ProfileService.normalizeUsername(newUsername);
-    if (normalizedUsername === currentUser.username) {
-      return true;
-    }
-
-    const isValid = this.validateUsername(normalizedUsername);
-
-    if (!isValid) {
-      return false;
-    }
-
-    const usernameAvailable = await this.isAvailable(normalizedUsername);
-
-    return usernameAvailable;
-  }
-
   validateUsername(username: string) {
     const MIN_USERNAME_CHARS = 5;
     const MAX_USERNAME_CHARS = 15;
@@ -195,5 +178,22 @@ export class ProfileService {
 
   private stripInvalidCharacters(username: string) {
     return username.replace(this.usernameCharRegex, '');
+  }
+
+  private async canClaimUsername(newUsername: string, currentUser: Partial<UserProfileDto>): Promise<boolean> {
+    const normalizedUsername = ProfileService.normalizeUsername(newUsername);
+    if (normalizedUsername === currentUser.username) {
+      return true;
+    }
+
+    const isValid = this.validateUsername(normalizedUsername);
+
+    if (!isValid) {
+      return false;
+    }
+
+    const usernameAvailable = await this.isAvailable(normalizedUsername);
+
+    return usernameAvailable;
   }
 }
