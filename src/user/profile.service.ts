@@ -5,6 +5,7 @@ import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { InvalidProfileError } from './errors/invalid-profile.error';
 import { ParsedUserId } from './user-id.pipe';
 
 @Injectable()
@@ -64,19 +65,19 @@ export class ProfileService {
 
     const { isValid: isBioValid, reason: bioInvalidReason } = ProfileService.validateBio(data.bio);
     if (!isBioValid) {
-      throw new Error(bioInvalidReason);
+      throw new InvalidProfileError(bioInvalidReason ?? '');
     }
 
     const { isValid: isDisplayNameValid, reason: displayNameInvalidReason } = ProfileService.validateDisplayName(
       data.displayName
     );
     if (!isDisplayNameValid) {
-      throw new Error(displayNameInvalidReason);
+      throw new InvalidProfileError(displayNameInvalidReason ?? '');
     }
 
     const canClaimUsername = await this.canClaimUsername(data.username, currentProfile ?? {});
     if (!canClaimUsername) {
-      throw new Error(`Username ${data.username} is invalid or already taken`);
+      throw new InvalidProfileError(`Username ${data.username} is invalid or already taken`);
     }
 
     const profile = {

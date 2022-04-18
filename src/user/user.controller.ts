@@ -65,6 +65,7 @@ import { ValidateUsernameResponseDto } from './dto/validate-username-response.dt
 import { UserProfileDto } from './dto/user-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile.service';
+import { InvalidProfileError } from './errors/invalid-profile.error';
 
 @Controller('user')
 export class UserController {
@@ -111,7 +112,7 @@ export class UserController {
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
-  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiConsumes('multipart/form-data')
   @ApiHeader({
     name: 'Content-Type',
     required: false
@@ -129,9 +130,8 @@ export class UserController {
     };
 
     const profileImage = files?.profileImage?.[0];
-
-    if (profileImage) {
-      const image = await this.storageService.saveImage(profileImage.filename, {
+    if (profileImage && profileImage.buffer.byteLength > 0) {
+      const image = await this.storageService.saveImage(profileImage.originalname, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
@@ -139,14 +139,11 @@ export class UserController {
         throw new Error('Failed to save profile image');
       }
       profile.profileImage = image.publicUrl();
-      if (profile.deleteProfileImage) {
-        profile.deleteProfileImage = false;
-      }
     }
 
     const bannerImage = files?.bannerImage?.[0];
-    if (bannerImage) {
-      const image = await this.storageService.saveImage(bannerImage.filename, {
+    if (bannerImage && bannerImage.buffer.byteLength > 0) {
+      const image = await this.storageService.saveImage(bannerImage.originalname, {
         contentType: bannerImage.mimetype,
         data: bannerImage.buffer
       });
@@ -154,12 +151,16 @@ export class UserController {
         throw new Error('Failed to save banner image');
       }
       profile.bannerImage = image.publicUrl();
-      if (profile.deleteBannerImage) {
-        profile.deleteBannerImage = false;
-      }
     }
 
-    await this.profileService.updateProfile(user, profile);
+    try {
+      await this.profileService.updateProfile(user, profile);
+    } catch (err) {
+      if (err instanceof InvalidProfileError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
 
     return;
   }

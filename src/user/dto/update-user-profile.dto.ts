@@ -1,5 +1,7 @@
 import { ApiPropertyOptional, PickType } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsBooleanString, IsOptional } from 'class-validator';
+import { parseBoolTransformer } from 'common/transformers/parse-bool.transformer';
 import { UserProfileDto } from './user-profile.dto';
 
 export class UpdateUserProfileDto extends PickType(UserProfileDto, [
@@ -14,6 +16,7 @@ export class UpdateUserProfileDto extends PickType(UserProfileDto, [
   @ApiPropertyOptional({
     description: 'Whether to remove the current profile image'
   })
+  @Transform(parseBoolTransformer({ optional: true }))
   @IsBoolean()
   @IsOptional()
   deleteProfileImage?: boolean;
@@ -21,6 +24,7 @@ export class UpdateUserProfileDto extends PickType(UserProfileDto, [
   @ApiPropertyOptional({
     description: 'Whether to remove the current banner image'
   })
+  @Transform(parseBoolTransformer({ optional: true }))
   @IsBoolean()
   @IsOptional()
   deleteBannerImage?: boolean;
