@@ -91,7 +91,6 @@ export class UserController {
     const userVote: UserCollectionVoteDto = {
       ...vote,
       userAddress: user.userAddress,
-      userChainId: user.userChainId,
       updatedAt: Date.now()
     };
 

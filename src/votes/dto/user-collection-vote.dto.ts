@@ -10,13 +10,6 @@ export class UserCollectionVoteDto {
   userAddress: string;
 
   @ApiProperty({
-    description: "Chain id of the user's wallet",
-    enum: ChainId
-  })
-  @IsEnum(ChainId)
-  userChainId: ChainId;
-
-  @ApiProperty({
     description: 'Address of the collection being voted on'
   })
   @IsEthereumAddress()

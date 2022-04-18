@@ -16,7 +16,7 @@ import { collectionVotesShards } from './votes.constants';
 @Injectable()
 export class VotesService {
   private static getVoteDocId(user: UserDto) {
-    return `${user.userChainId}:${user.userAddress}`;
+    return `${user.userAddress}`;
   }
 
   private static getShardDocId(shardNumber: number) {
@@ -108,10 +108,7 @@ export class VotesService {
   async getUserVotes(user: UserDto, options: UserCollectionVotesQuery): Promise<UserCollectionVotesArrayDto> {
     const votesGroup = this.firebaseService.firestore.collectionGroup(firestoreConstants.COLLECTION_VOTES_COLL);
     const orderDirection = options.orderDirection ?? OrderDirection.Descending;
-    let votesQuery = votesGroup
-      .where('userAddress', '==', user.userAddress)
-      .where('userChainId', '==', user.userChainId)
-      .orderBy('updatedAt', orderDirection);
+    let votesQuery = votesGroup.where('userAddress', '==', user.userAddress).orderBy('updatedAt', orderDirection);
 
     const decodedCursor = parseInt(base64Decode(options.cursor), 10);
     if (!Number.isNaN(decodedCursor)) {

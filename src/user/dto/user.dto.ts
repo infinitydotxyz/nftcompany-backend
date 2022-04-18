@@ -14,13 +14,4 @@ export class UserDto {
   })
   @Transform(normalizeAddressTransformer)
   readonly userAddress: string;
-
-  @ApiProperty({
-    description: 'Wallet chain id',
-    enum: ChainId
-  })
-  @IsSupportedChainId({
-    message: 'Invalid chainId'
-  })
-  readonly userChainId: ChainId;
 }
