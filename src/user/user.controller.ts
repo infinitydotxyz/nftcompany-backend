@@ -357,7 +357,7 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
-  async getUserFollowingCollections(
+  async getCollectionsBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingCollectionsArrayDto> {
     const collections = await this.userService.getCollectionsBeingFollowed(user);
@@ -441,7 +441,9 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
-  async getFriends(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserFollowingUsersArrayDto> {
+  async getUsersBeingFollowed(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
+  ): Promise<UserFollowingUsersArrayDto> {
     const users = await this.userService.getFriends(user);
 
     const response: UserFollowingUsersArrayDto = {

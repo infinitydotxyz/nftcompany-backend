@@ -122,7 +122,7 @@ export class UserService {
     return {};
   }
 
-  async getFriends(user: ParsedUserId) {
+  async getUsersBeingFollowed(user: ParsedUserId) {
     const userFollows = user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL);
 
     const snap = await userFollows.get();
