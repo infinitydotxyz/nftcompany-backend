@@ -25,7 +25,8 @@ export class FirebaseService {
     if ((options.isTest && firebaseAdmin.apps.length == 0) || !options.isTest) {
       firebaseAdmin.initializeApp(
         {
-          credential: firebaseAdmin.credential.cert(options.cert)
+          credential: firebaseAdmin.credential.cert(options.cert),
+          storageBucket: options.storageBucket
         },
         options.certName
       );

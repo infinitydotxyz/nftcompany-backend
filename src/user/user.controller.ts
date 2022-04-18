@@ -13,7 +13,6 @@ import {
   UseGuards,
   UseInterceptors,
   HttpStatus,
-  Headers,
   Delete,
   BadRequestException
 } from '@nestjs/common';
@@ -183,12 +182,26 @@ export class UserController {
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: UserDto,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Headers('Content-Type') contentType: string,
     @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
+    }
+
+    // Upload image if we're submitting a file.
+    // Note that we can't both update the collection and update the image at the same time.
+    // This is done intentionally to keep things simpler.
+    if (profileImage && profileImage.size > 0) {
+      const image = await this.storageService.saveImage(profileImage.originalname, {
+        contentType: profileImage.mimetype,
+        data: profileImage.buffer
+      });
+
+      if (image) {
+        metadata = {};
+        metadata.profileImage = image.publicUrl();
+      }
     }
 
     if (!metadata) {
@@ -197,20 +210,6 @@ export class UserController {
 
     if (deleteProfileImage) {
       metadata.profileImage = '';
-    }
-
-    // Upload image if we're submitting a file.
-    // Note that we can't both update the collection and update the image at the same time.
-    // This is done intentionally to keep things simpler.
-    if (contentType === 'multipart/form-data' && profileImage && profileImage.size > 0) {
-      const image = await this.storageService.saveImage(profileImage.filename, {
-        contentType: profileImage.mimetype,
-        data: profileImage.buffer
-      });
-
-      if (image) {
-        metadata.profileImage = image.publicUrl();
-      }
     }
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
