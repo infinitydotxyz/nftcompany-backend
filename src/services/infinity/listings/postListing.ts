@@ -1,6 +1,7 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { error, getDocIdHash, log } from '@infinityxyz/lib/utils';
+import { error, log } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { isTokenVerified } from '../collections/isTokenVerified';
 import { getUserListingRef } from './getUserListing';
 import firebaseAdmin from 'firebase-admin';
@@ -58,7 +59,7 @@ export async function postListing(maker: string, payload: any, batch: any, numOr
         },
         { merge: true }
       );
-  } catch (err) {
+  } catch (err: any) {
     error('Error updating root collection data on post listing');
     error(err);
   }

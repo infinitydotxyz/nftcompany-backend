@@ -5,26 +5,41 @@ export class CollectionSearchDto {
   @ApiProperty({
     description: 'Collection address'
   })
-  address: string;
+  address!: string;
 
   @ApiProperty({
     description: 'Collection chain id',
     enum: ChainId
   })
-  chainId: ChainId;
+  chainId!: ChainId;
 
   @ApiProperty({
     description: 'Indicates whether the collection is verified'
   })
-  hasBlueCheck: boolean;
+  hasBlueCheck!: boolean;
 
   @ApiProperty({
     description: 'Slug of the collection'
   })
-  slug: string;
+  slug!: string;
 
   @ApiProperty({
     description: 'Name of the collection'
   })
-  name: string;
+  name!: string;
+
+  @ApiProperty({
+    description: 'Profile Image of the collection'
+  })
+  profileImage!: string;
+
+  @ApiProperty({
+    description: 'Description of the collection'
+  })
+  description!: string;
+
+  @ApiProperty({
+    description: 'Banner Image of the collection'
+  })
+  bannerImage!: string;
 }

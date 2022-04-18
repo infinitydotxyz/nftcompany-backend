@@ -1,7 +1,8 @@
 import { firestore } from 'container';
 import { CovalentWalletBalanceItem } from '@infinityxyz/lib/types/services/covalent';
 import { covalentAssetDataToListing } from 'services/covalent/utils';
-import { error, firestoreConstants, getDocIdHash } from '@infinityxyz/lib/utils';
+import { error, firestoreConstants } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { getAssetAsListing } from '../utils';
 
 export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadata: CovalentWalletBalanceItem) {
@@ -19,7 +20,7 @@ export async function saveRawCovalentAssetInDatabase(chainId: string, nftMetadat
       .doc(getDocIdHash({ collectionAddress: tokenAddress, tokenId, chainId }));
     await newDoc.set(assetData);
     return getAssetAsListing(newDoc.id, assetData);
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while saving asset data in database');
     error(err);
   }

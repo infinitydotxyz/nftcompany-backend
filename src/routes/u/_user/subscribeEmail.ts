@@ -27,7 +27,7 @@ export const postSubscribeUserEmail = async (req: Request<{ user: string }>, res
     );
 
     res.send({ subscribed: isSubscribed });
-  } catch (err) {
+  } catch (err: any) {
     error('Subscribing email failed');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

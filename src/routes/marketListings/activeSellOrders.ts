@@ -1,9 +1,14 @@
-import { Item, OBOrder } from '@infinityxyz/lib/types/core';
-import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
+import {
+  isOrderSpecExpired,
+  getCurrentOrderSpecPrice,
+  MarketListId,
+  OBOrderSpec,
+  OBOrderSpecNFT
+} from '@infinityxyz/lib/types/core';
 import { sellOrdersWithParams } from './marketFirebase';
 
 export class ActiveSellOrders {
-  orderMap: Map<string, OBOrder[]> = new Map<string, OBOrder[]>();
+  orderMap: Map<string, OBOrderSpec[]> = new Map<string, OBOrderSpec[]>();
   collectionAddresses: string[] = [];
 
   async addCollectionAddresses(addresses: string[]) {
@@ -13,14 +18,14 @@ export class ActiveSellOrders {
       this.collectionAddresses.push(...diff);
 
       // NOTE: addresses is limited to 10, handle that later?
-      const orders = await sellOrdersWithParams('validActive', diff);
+      const orders = await sellOrdersWithParams(MarketListId.ValidActive, diff);
 
       for (const sellOrder of orders) {
-        if (!isOrderExpired(sellOrder)) {
-          const addrs = sellOrder.nfts.map((e) => e.collection);
+        if (!isOrderSpecExpired(sellOrder)) {
+          const addrs = sellOrder.nftsWithMetadata.map((e) => e.collectionAddress);
           for (const addr of addrs) {
             let orderArray = this.orderMap.get(addr);
-            const activeSellOrder: OBOrder = { ...sellOrder };
+            const activeSellOrder: OBOrderSpec = { ...sellOrder };
             if (!orderArray) {
               orderArray = [activeSellOrder];
             } else {
@@ -33,38 +38,45 @@ export class ActiveSellOrders {
     }
   }
 
-  async ordersInCollections(nfts: Item[]): Promise<OBOrder[]> {
-    const result: OBOrder[] = [];
+  async ordersInCollections(nfts: OBOrderSpecNFT[]): Promise<OBOrderSpec[]> {
+    const result: OBOrderSpec[] = [];
+    if (nfts) {
+      const addresses = nfts.map((e) => e.collectionAddress);
+      await this.addCollectionAddresses(addresses);
 
-    const addresses = nfts.map((e) => e.collection);
-    await this.addCollectionAddresses(addresses);
+      for (const address of addresses) {
+        const orders = this.orderMap.get(address);
 
-    for (const address of addresses) {
-      const orders = this.orderMap.get(address);
-
-      if (orders) {
-        result.push(...orders);
+        if (orders) {
+          result.push(...orders);
+        }
       }
+
+      const sortedOrders = result.sort((a, b) => {
+        const aCurrPrice = getCurrentOrderSpecPrice(a);
+        const bCurrPrice = getCurrentOrderSpecPrice(b);
+        if (aCurrPrice.gt(bCurrPrice)) {
+          return 1;
+        } else if (aCurrPrice.lt(bCurrPrice)) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+
+      return sortedOrders;
     }
-
-    const sortedOrders = result.sort((a, b) => {
-      const aCurrPrice = getCurrentOrderPrice(a);
-      const bCurrPrice = getCurrentOrderPrice(a); // TODO this doesn't seem right
-      // Todo: might need to convert to ETH first to prevent overflow
-      return aCurrPrice.sub(bCurrPrice).toNumber();
-    });
-
-    return sortedOrders;
+    return result;
   }
 
-  async ordersForBuyOrder(buyOrder: OBOrder): Promise<OBOrder[]> {
-    const result: OBOrder[] = [];
+  async ordersForBuyOrder(buyOrder: OBOrderSpec): Promise<OBOrderSpec[]> {
+    const result: OBOrderSpec[] = [];
 
-    const sellOrders = await this.ordersInCollections(buyOrder.nfts);
-    const buyCurrPrice = getCurrentOrderPrice(buyOrder);
+    const sellOrders = await this.ordersInCollections(buyOrder.nftsWithMetadata);
+    const buyCurrPrice = getCurrentOrderSpecPrice(buyOrder);
     for (const sellOrder of sellOrders) {
-      const sellCurrPrice = getCurrentOrderPrice(sellOrder);
-      if (sellCurrPrice.lte(buyCurrPrice)) {
+      const sellCurrPrice = getCurrentOrderSpecPrice(sellOrder);
+      if (sellCurrPrice <= buyCurrPrice) {
         result.push(sellOrder);
       }
     }

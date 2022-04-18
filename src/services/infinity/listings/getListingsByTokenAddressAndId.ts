@@ -28,7 +28,7 @@ export async function getListingByTokenAddressAndId(
       resp = getOrdersResponse(snapshot);
     }
     return resp;
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get listing by token address and id', tokenAddress, tokenId);
     error(err);
   }

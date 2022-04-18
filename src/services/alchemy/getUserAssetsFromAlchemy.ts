@@ -16,7 +16,7 @@ export async function getUserAssetsFromAlchemy(
   log('Fetching assets from alchemy for user', userAddress, 'chainId', chainId, 'contracts', collectionIds);
   try {
     const path = `/getNFTs/`;
-    const params = {
+    const params: any = {
       owner: userAddress,
       withMetadata: true
     };
@@ -33,7 +33,7 @@ export async function getUserAssetsFromAlchemy(
       params
     });
     return data;
-  } catch (err) {
+  } catch (err: any) {
     error('Error occured while fetching assets from alchemy');
     error(err);
   }

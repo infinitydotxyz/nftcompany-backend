@@ -25,7 +25,7 @@ export const getUserReward = async (req: Request<{ user: string }>, res: Respons
       'Content-Length': Buffer.byteLength(respStr ?? '', 'utf8')
     });
     res.send(respStr);
-  } catch (err) {
+  } catch (err: any) {
     error('Error fetching user rewards for', user, err);
     res.sendStatus(StatusCode.InternalServerError);
   }

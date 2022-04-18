@@ -89,7 +89,7 @@ export const getUserOffersMade = async (
       });
     }
     res.send(resp);
-  } catch (err) {
+  } catch (err: any) {
     error(`Failed to get offers made by user ${user}`);
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

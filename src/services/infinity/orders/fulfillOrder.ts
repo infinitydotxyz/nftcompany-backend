@@ -140,7 +140,7 @@ export async function fulfillOrder(user: string, batch: any, payload: any) {
       // Send email to maker that the item is purchased
       void prepareEmail(maker, doc, 'itemPurchased');
     }
-  } catch (err) {
+  } catch (err: any) {
     error('Error in fufilling order');
     error(err);
   }

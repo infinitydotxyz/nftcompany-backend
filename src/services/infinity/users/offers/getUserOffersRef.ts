@@ -82,7 +82,7 @@ export async function getFilteredUserOffersMade(
     }
 
     return getOrdersResponseFromArray(results);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get filtered user offers made for', user);
     error(err);
   }
@@ -153,7 +153,7 @@ export async function getFilteredUserOffersReceived(
     }
 
     return getOrdersResponseFromArray(results);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get filtered user offers received for', user);
     error(err);
   }

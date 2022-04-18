@@ -1,7 +1,7 @@
 import { firestore } from 'container';
 import { getAssetFromCovalent } from 'services/covalent/getAssetFromCovalent';
-import { getAssetFromOpensea } from 'services/opensea/assets/getAssetFromOpensea';
-import { error, log, jsonString, getDocIdHash, firestoreConstants } from '@infinityxyz/lib/utils';
+import { error, log, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { getAssetAsListing } from '../utils';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 
@@ -20,10 +20,9 @@ export async function fetchAssetAsListingFromDb(
     let listings;
 
     if (!doc.exists) {
-      // Todo: adi replace opensea and covalent
       if (chainId === '1') {
         // Get from opensea
-        listings = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
+        // listings = await getAssetFromOpensea(chainId, tokenId, tokenAddress);
       } else if (chainId === '137') {
         // Get from covalent
         listings = await getAssetFromCovalent(chainId, tokenId, tokenAddress);
@@ -47,12 +46,14 @@ export async function fetchAssetAsListingFromDb(
             });
           }
         }
-      } catch (err) {}
+      } catch (err: any) {
+        console.log(err);
+      }
 
       listings = getAssetAsListing(docId, order);
     }
     return jsonString(listings);
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get asset from db', tokenAddress, tokenId);
     error(err);
   }

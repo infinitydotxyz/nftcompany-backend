@@ -84,7 +84,7 @@ export const postUserOrders = async (req: Request<{ user: string }>, res: Respon
     await batch.commit();
     res.send(payload);
     return;
-  } catch (err) {
+  } catch (err: any) {
     error(err);
     res.sendStatus(StatusCode.InternalServerError);
   }

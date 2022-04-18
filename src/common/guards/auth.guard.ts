@@ -1,25 +1,46 @@
 import { trimLowerCase } from '@infinityxyz/lib/utils';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { auth } from '../../constants';
 import { ethers } from 'ethers';
+import { Reflector } from '@nestjs/core';
+import { toLower } from 'lodash';
+import { metadataKey } from 'common/decorators/match-signer.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    const message = request.headers?.['x-auth-message'];
-    let signature;
-    let userAddress, signingAddress;
-    if (request.headers?.['x-auth-signature']) {
-      try {
-        signature = JSON.parse(request.headers['x-auth-signature']);
-        signingAddress = trimLowerCase(ethers.utils.verifyMessage(message, signature));
-        const [, address] = request.params.userId.split(':').map((item) => trimLowerCase(item));
-        userAddress = address;
-      } catch (err) {
-        return false;
-      }
+    const paramName = this.reflector.get<string>(metadataKey, context.getHandler());
+    const messageHeader = request.headers?.[auth.message];
+    const signatureHeader = request.headers?.[auth.signature];
+
+    if (!messageHeader || !signatureHeader) {
+      return false;
     }
 
-    return userAddress && signingAddress && userAddress === signingAddress;
+    try {
+      const signingAddress = trimLowerCase(ethers.utils.verifyMessage(messageHeader, JSON.parse(signatureHeader)));
+
+      if (!signingAddress) {
+        return false;
+      }
+
+      const paramValue = request.params[paramName];
+
+      let address = paramValue;
+
+      // Chain:address
+      if (paramValue.includes(':')) {
+        const split = paramValue.split(':');
+        address = toLower(split[1]);
+      }
+
+      // Address
+      return address === signingAddress;
+    } catch (err: any) {
+      return false;
+    }
   }
 }

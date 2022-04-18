@@ -1,31 +1,29 @@
 import { singleton } from 'tsyringe';
-import firebaseAdmin from 'firebase-admin';
+import firebaseAdmin, { ServiceAccount } from 'firebase-admin';
 import { Bucket, File } from '@google-cloud/storage';
-import crypto from 'crypto';
-import { FB_STORAGE_BUCKET, FIREBASE_SERVICE_ACCOUNT } from '../constants';
+import { FB_STORAGE_BUCKET } from '../constants';
 import { Readable } from 'stream';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import { error, log, warn } from '@infinityxyz/lib/utils';
+import { createHash } from 'crypto';
+import * as serviceAccount from '../creds/nftc-dev-firebase-creds.json';
 
 @singleton()
 export default class Firestore {
   db: FirebaseFirestore.Firestore;
 
-  firebaseAdmin: firebaseAdmin.app.App;
-
   bucket: Bucket;
 
   constructor() {
-    const serviceAccountPath = resolve(__dirname, `../../creds/${FIREBASE_SERVICE_ACCOUNT}`);
-    const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
-    firebaseAdmin.initializeApp({
-      credential: firebaseAdmin.credential.cert(serviceAccount),
-      storageBucket: FB_STORAGE_BUCKET
-    });
-    this.db = firebaseAdmin.firestore();
+    const app = firebaseAdmin.initializeApp(
+      {
+        credential: firebaseAdmin.credential.cert(serviceAccount as ServiceAccount),
+        storageBucket: FB_STORAGE_BUCKET
+      },
+      'secondary'
+    );
+    this.db = app.firestore();
     this.db.settings({ ignoreUndefinedProperties: true });
-    this.bucket = firebaseAdmin.storage().bucket();
+    this.bucket = app.storage().bucket();
   }
 
   collection(collectionPath: string): FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData> {
@@ -37,7 +35,7 @@ export default class Firestore {
   getDocId({ tokenAddress, tokenId, basePrice }: { tokenAddress: string; tokenId: string; basePrice: string }) {
     warn('Do not use this docId');
     const data = tokenAddress.trim() + tokenId.trim() + basePrice;
-    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+    return createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
 
   getStaleListingDocId({
@@ -52,15 +50,8 @@ export default class Firestore {
     listingTime: number;
   }) {
     const data = `${tokenAddress.trim().toLowerCase()}${tokenId.trim()}${basePrice}${listingTime}`;
-    return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+    return createHash('sha256').update(data).digest('hex').trim().toLowerCase();
   }
-
-  // // NOTE: don't use this for new code; use getDocIdHash instead
-  // GetAssetDocId({ chainId, tokenId, tokenAddress }: { chainId: string; tokenId: string; tokenAddress: string }) {
-  //   Warn('Do not use this assetDocId');
-  //   Const data = tokenAddress.trim() + tokenId.trim() + chainId;
-  //   Return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
-  // }
 
   getHistoricalDocId(year: number, week: number) {
     return `${year}-${week}`;

@@ -15,7 +15,7 @@ export async function cancelOffer(userAddress: string, batch: any, docId: string
     }
     // Delete
     await deleteOffer(batch, offerRef);
-  } catch (err) {
+  } catch (err: any) {
     error('Error cancelling offer');
     error(err);
   }

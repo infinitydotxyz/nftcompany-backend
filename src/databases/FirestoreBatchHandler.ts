@@ -42,12 +42,12 @@ export default class FirestoreBatchHandler {
       let attempt = 0;
       const batch = this.currentBatch.batch;
       this.currentBatch = this.newBatch();
-      while (true) {
+      for (;;) {
         attempt += 1;
         try {
           await batch.commit();
           return;
-        } catch (err) {
+        } catch (err: any) {
           // Logger.error('Failed to commit batch', err);
           if (attempt > maxAttempts) {
             error(`Failed to commit batch`);

@@ -4,5 +4,5 @@ export class CollectionStateExportDto {
   @ApiProperty({
     description: 'Whether the collection has been exported'
   })
-  done: boolean;
+  done!: boolean;
 }

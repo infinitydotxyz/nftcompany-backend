@@ -62,7 +62,7 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    if (docId?.length > 0) {
+    if (docId) {
       orders = await getUserOrdersFromDocId(normalizedMaker, docId, orderSide);
     } else {
       if (!normalizedTokenAddress || !ethers.utils.isAddress(normalizedTokenAddress)) {
@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
 
     log('Invalid orders');
     res.sendStatus(StatusCode.BadRequest);
-  } catch (err) {
+  } catch (err: any) {
     log('Error while fetching orders');
     error(err);
     res.sendStatus(StatusCode.InternalServerError);

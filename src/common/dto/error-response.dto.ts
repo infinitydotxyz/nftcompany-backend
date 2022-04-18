@@ -4,25 +4,25 @@ export class ErrorResponseDto {
   @ApiProperty({
     description: 'Whether the request was successful'
   })
-  success: boolean;
+  success!: boolean;
 
   @ApiProperty({
     description: 'A message indicating what happened'
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     description: 'The the error occurred'
   })
-  timestamp: number;
+  timestamp!: number;
 
   @ApiProperty({
     description: 'The http status code'
   })
-  statusCode: number;
+  statusCode!: number;
 
   @ApiProperty({
     description: 'The path that was requested'
   })
-  path: string;
+  path!: string;
 }

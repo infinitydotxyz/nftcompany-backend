@@ -18,8 +18,7 @@ export class ParseUserIdPipe implements PipeTransform<string, UserDto> {
     }
 
     return {
-      userAddress: address,
-      userChainId: chainId as ChainId
+      userAddress: address
     };
   }
 }

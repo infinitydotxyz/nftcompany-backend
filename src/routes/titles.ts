@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 
     res.send(respStr);
     return;
-  } catch (err) {
+  } catch (err: any) {
     error('Failed to get titles', err);
     res.sendStatus(StatusCode.InternalServerError);
   }

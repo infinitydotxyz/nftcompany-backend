@@ -6,25 +6,25 @@ export class TweetDto implements InfinityTweet {
   @ApiProperty({
     description: 'Author of the tweet'
   })
-  author: TwitterAccountDto;
+  author!: TwitterAccountDto;
 
   @ApiProperty({
     description: 'Epoch timestamp (ms) of when the tweet was created'
   })
-  createdAt: number;
+  createdAt!: number;
 
   @ApiProperty({
     description: 'Unique identifier of the tweet'
   })
-  tweetId: string;
+  tweetId!: string;
 
   @ApiProperty({
     description: 'Content of the tweet'
   })
-  text: string;
+  text!: string;
 
   @ApiProperty({
     description: 'Link to the tweet'
   })
-  url: string;
+  url!: string;
 }

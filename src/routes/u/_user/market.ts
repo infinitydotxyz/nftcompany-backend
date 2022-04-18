@@ -1,4 +1,11 @@
-import { BuyOrderMatch, StatusCode, TradeBody, TradeReq, TradeResponse } from '@infinityxyz/lib/types/core';
+import {
+  BuyOrderMatch,
+  MarketListId,
+  StatusCode,
+  TradeBody,
+  TradeReq,
+  TradeResponse
+} from '@infinityxyz/lib/types/core';
 import { error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Request, Response } from 'express';
 import { marketOrders } from '../../marketListings/marketOrders';
@@ -16,16 +23,16 @@ export const market = async (req: Request<TradeReq, any, TradeBody>, res: Respon
     let matches: BuyOrderMatch[] = [];
 
     if (req.body.buyOrder) {
-      matches = await marketOrders.buy(req.body.buyOrder, 'validActive');
+      matches = await marketOrders.buy(req.body.buyOrder, MarketListId.ValidActive);
     } else if (req.body.sellOrder) {
-      matches = await marketOrders.sell(req.body.sellOrder, 'validActive');
+      matches = await marketOrders.sell(req.body.sellOrder, MarketListId.ValidActive);
     }
 
     // Set result
     const resp = { matches: matches, error: '', success: 'OK' };
     res.send(resp);
     return;
-  } catch (err) {
+  } catch (err: any) {
     error('Failed', err);
     res.sendStatus(StatusCode.InternalServerError);
   }

@@ -43,7 +43,7 @@ export async function getERC721Owner(address: string, tokenId: string, chainId: 
     let newOwner = await contract.ownerOf(tokenId);
     newOwner = newOwner.trim().toLowerCase();
     return newOwner;
-  } catch (err) {
+  } catch (err: any) {
     return '';
   }
 }
@@ -54,7 +54,7 @@ export async function checkERC721Ownership(doc: any, chainId: string, owner: str
     if (newOwner !== NULL_ADDRESS && newOwner !== owner) {
       return true;
     }
-  } catch (err) {
+  } catch (err: any) {
     error('Checking ERC721 Ownership failed', err);
     if (err?.message?.indexOf('nonexistent token') > 0) {
       return true;
@@ -76,7 +76,7 @@ export async function checkERC1155Ownership(doc: any, chainId: string, owner: st
     if (owner !== NULL_ADDRESS && balance === 0) {
       return true;
     }
-  } catch (err) {
+  } catch (err: any) {
     error('Checking ERC1155 Ownership failed', err);
   }
   return false;

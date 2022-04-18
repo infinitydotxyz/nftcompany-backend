@@ -1,9 +1,14 @@
 import { singleton, container } from 'tsyringe';
-import { OBOrder, BuyOrderMatch, MarketListIdType } from '@infinityxyz/lib/types/core';
+import {
+  getCurrentOrderSpecPrice,
+  isOrderSpecExpired,
+  OBOrderSpec,
+  BuyOrderMatch,
+  MarketListId
+} from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
-import { addBuyOrder, addSellOrder, buyOrderMap, buyOrders, moveOrder } from './marketFirebase';
-import { getCurrentOrderPrice, isOrderExpired } from '@infinityxyz/lib/utils';
+import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
 import { BigNumber } from 'ethers';
 
 @singleton()
@@ -12,7 +17,7 @@ export class MarketOrders {
   task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
-    const c = await buyOrderMap('validActive');
+    const c = await orderMap(true, MarketListId.ValidActive);
 
     if (c.has(orderId)) {
       const buyOrder = c.get(orderId);
@@ -25,17 +30,17 @@ export class MarketOrders {
 
         if (result) {
           // Move order to validInactive
-          await moveOrder(result.buyOrder, 'validActive', 'validInactive');
+          await moveOrder(result.buyOrder, MarketListId.ValidActive, MarketListId.ValidInactive);
 
           for (const sellOrder of result.sellOrders) {
-            await moveOrder(sellOrder, 'validActive', 'validInactive');
+            await moveOrder(sellOrder, MarketListId.ValidActive, MarketListId.ValidInactive);
           }
         }
       }
     }
   }
 
-  async buy(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async buy(order: OBOrderSpec, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addBuyOrder(listId, order);
 
     const aso = new ActiveSellOrders();
@@ -48,7 +53,7 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: OBOrder, listId: MarketListIdType): Promise<BuyOrderMatch[]> {
+  async sell(order: OBOrderSpec, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addSellOrder(listId, order);
 
     const result = await this.marketMatches();
@@ -60,9 +65,9 @@ export class MarketOrders {
     const result: BuyOrderMatch[] = [];
     const aso = new ActiveSellOrders();
 
-    const orders = await buyOrders('validActive');
+    const orders = await buyOrders(MarketListId.ValidActive);
     for (const buyOrder of orders) {
-      if (!isOrderExpired(buyOrder)) {
+      if (!isOrderSpecExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder, aso);
 
         if (order) {
@@ -74,27 +79,27 @@ export class MarketOrders {
     return result;
   }
 
-  async findMatchForBuy(buyOrder: OBOrder, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
+  async findMatchForBuy(buyOrder: OBOrderSpec, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
     const sellOrders = await aso.ordersForBuyOrder(buyOrder);
 
     if (sellOrders.length > 0) {
-      let cash = getCurrentOrderPrice(buyOrder);
-      let numNFTs = buyOrder.numItems;
-      const result: OBOrder[] = [];
+      let cash = getCurrentOrderSpecPrice(buyOrder);
+      let numNFTs = BigNumber.from(buyOrder.numItems).toNumber();
+      const result: OBOrderSpec[] = [];
 
       for (const sellOrder of sellOrders) {
-        const price = getCurrentOrderPrice(sellOrder);
+        const price = getCurrentOrderSpecPrice(sellOrder);
 
         if (numNFTs > 0 && cash >= price) {
           result.push(sellOrder);
-          cash = BigNumber.from(cash).sub(price);
-          numNFTs = BigNumber.from(numNFTs).sub(1);
+          cash = cash.sub(price);
+          numNFTs = numNFTs - 1;
         } else {
           break;
         }
       }
 
-      if (result.length === buyOrder.numItems) {
+      if (result.length === numNFTs) {
         return { buyOrder: buyOrder, sellOrders: result };
       }
     }

@@ -14,7 +14,7 @@ export async function cancelListing(userAddress: string, batch: any, docId: stri
     }
     // Delete
     await deleteListing(batch, listingRef);
-  } catch (err) {
+  } catch (err: any) {
     error('Error cancelling listing');
     error(err);
   }
