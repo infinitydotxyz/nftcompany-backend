@@ -199,17 +199,16 @@ export class UserController {
       });
 
       if (image) {
-        metadata = {};
-        metadata.profileImage = image.publicUrl();
+        metadata = { ...metadata, profileImage: image.publicUrl() };
       }
+    }
+
+    if (deleteProfileImage) {
+      metadata = { ...metadata, profileImage: '' };
     }
 
     if (!metadata) {
       throw new BadRequestException();
-    }
-
-    if (deleteProfileImage) {
-      metadata.profileImage = '';
     }
 
     await this.collectionsService.setCollectionMetadata(collection, instanceToPlain(metadata) as CollectionMetadata);
