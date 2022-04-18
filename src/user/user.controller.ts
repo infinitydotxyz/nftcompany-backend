@@ -359,7 +359,7 @@ export class UserController {
   async getUserFollowingCollections(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingCollectionsArrayDto> {
-    const collections = await this.userService.getUserFollowingCollections(user);
+    const collections = await this.userService.getCollectionsBeingFollowed(user);
 
     const response: UserFollowingCollectionsArrayDto = {
       data: collections,

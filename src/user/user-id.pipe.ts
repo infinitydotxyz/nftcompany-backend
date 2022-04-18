@@ -42,7 +42,7 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
 
     const ref = this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .doc(`${chainId}:${address}`) as FirebaseFirestore.DocumentReference<UserProfileDto>;
+      .doc(address) as FirebaseFirestore.DocumentReference<UserProfileDto>;
 
     return {
       userAddress: address,

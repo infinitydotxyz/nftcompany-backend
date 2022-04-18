@@ -55,7 +55,7 @@ export class UserService {
     return profile;
   }
 
-  async getUserFollowingCollections(user: ParsedUserId) {
+  async getCollectionsBeingFollowed(user: ParsedUserId) {
     const collectionFollows = user.ref.collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
 
     const snap = await collectionFollows.get();
@@ -134,37 +134,26 @@ export class UserService {
   }
 
   async followUser(user: ParsedUserId, payload: UserFollowingUserPostPayload) {
-    const userRef = user.ref;
+    const userRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(payload.userAddress);
 
     const followingUser = (await userRef.get()).data();
     if (!followingUser) {
-      throw new InvalidUserError(payload.userAddress, payload.userChainId, 'User not found');
+      throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
-    await user.ref
-      .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress)
-      .set({
-        userAddress: payload.userAddress,
-        userChainId: payload.userChainId
-      });
+    await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).set({
+      userAddress: payload.userAddress
+    });
     return {};
   }
 
   async unfollowUser(user: ParsedUserId, payload: UserFollowingUserDeletePayload) {
-    const userRef = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress);
-
-    const followingUser = (await userRef.get()).data();
+    const followingUser = (await user.ref.get()).data();
     if (!followingUser) {
-      throw new InvalidUserError(payload.userAddress, payload.userChainId, 'User not found');
+      throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
-    await user.ref
-      .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userChainId + ':' + payload.userAddress)
-      .delete();
+    await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).delete();
     return {};
   }
 }

@@ -1,4 +1,4 @@
-import { OBOrder, BuyOrderMatch, MarketListingsResponse, MarketListId } from '@infinityxyz/lib/types/core';
+import { BuyOrderMatch, MarketListingsResponse, MarketListId, OBOrderSpec } from '@infinityxyz/lib/types/core';
 import { error } from '@infinityxyz/lib/utils';
 import { Body, Controller, Post } from '@nestjs/common';
 import { sellOrders, buyOrders, deleteSellOrder, deleteBuyOrder } from 'routes/marketListings/marketFirebase';
@@ -15,8 +15,8 @@ export class MarketListingsController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   async create(@Body() body: MarketListingsBodyDto): Promise<MarketListingsResponse> {
     try {
-      let sellOrds: OBOrder[] = [];
-      let buyOrds: OBOrder[] = [];
+      let sellOrds: OBOrderSpec[] = [];
+      let buyOrds: OBOrderSpec[] = [];
       let matches: BuyOrderMatch[] = [];
       let success = '';
 
