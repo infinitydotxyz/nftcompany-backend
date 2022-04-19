@@ -16,6 +16,7 @@ import { MarketListingsModule } from './market-listings/market-listings.module';
 
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
+import { FB_STORAGE_BUCKET } from './constants';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
       isGlobal: true
     }),
     FirebaseModule.forRoot({
-      cert: serviceAccount
+      cert: serviceAccount,
+      storageBucket: FB_STORAGE_BUCKET
     }),
     CollectionsModule,
     TwitterModule,

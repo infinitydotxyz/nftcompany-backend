@@ -1,6 +1,7 @@
 import { firestore } from 'container';
 import { fstrCnstnts } from '../../../constants';
-import { error, getDocIdHash, log } from '@infinityxyz/lib/utils';
+import { error, log } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { isTokenVerified } from '../collections/isTokenVerified';
 import { getUserListingRef } from './getUserListing';
 import firebaseAdmin from 'firebase-admin';

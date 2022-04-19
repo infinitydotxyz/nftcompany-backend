@@ -1,6 +1,7 @@
 import { firestore } from 'container';
 import { getAssetFromCovalent } from 'services/covalent/getAssetFromCovalent';
-import { error, log, jsonString, getDocIdHash, firestoreConstants } from '@infinityxyz/lib/utils';
+import { error, log, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { getAssetAsListing } from '../utils';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 

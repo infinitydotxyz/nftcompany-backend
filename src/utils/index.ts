@@ -4,7 +4,8 @@ import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error } from '@infinityxyz/lib/utils';
+import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import crypto from 'crypto';
 
 export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
 
@@ -140,4 +141,17 @@ export function calcPercentChange(prev = NaN, current: number) {
   }
 
   return percent;
+}
+
+export function getDocIdHash({
+  collectionAddress,
+  tokenId,
+  chainId
+}: {
+  collectionAddress: string;
+  tokenId: string;
+  chainId: string;
+}) {
+  const data = chainId.trim() + '::' + trimLowerCase(collectionAddress) + '::' + tokenId.trim();
+  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
 }

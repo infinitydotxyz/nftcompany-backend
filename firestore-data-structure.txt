@@ -27,13 +27,13 @@
        |__{data}
 
 3. users
-    |__1:0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <chainId:userAddress in lowercase>
+    |__0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <userAddress in lowercase>
        |__{data}
        |__collectionFollows
           |__1:0x05844e9ae606f9867ae2047c93cac370d54ab2e1 <chainId:collectionAddress in lowercase>
              |__{data}
        |__userFollows
-          |__1:0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <chainId:userAddress in lowercase>
+          |__0xc844c8e1207b9d3c54878c849a431301ba9c23e0 <userAddress in lowercase>
              |__{data}
 
 4. sales

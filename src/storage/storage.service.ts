@@ -14,7 +14,7 @@ export class StorageService {
   private getPath(file: FileBlob, root = 'images') {
     if (file.data) {
       const hash = this.md5(file.data);
-      return `${root}/collections/${file.fileName}/${hash}.${file.extension}`;
+      return `${root}/collections/${hash}.${file.extension}`;
     }
   }
 

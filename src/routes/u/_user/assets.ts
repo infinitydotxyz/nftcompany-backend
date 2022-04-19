@@ -1,6 +1,7 @@
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
-import { error, log, trimLowerCase, jsonString, getDocIdHash, firestoreConstants } from '@infinityxyz/lib/utils';
+import { error, log, trimLowerCase, jsonString, firestoreConstants } from '@infinityxyz/lib/utils';
+import { getDocIdHash } from 'utils';
 import { StatusCode, NFTDataSource, nftDataSources, AssetResponse, Asset } from '@infinityxyz/lib/types/core';
 import { getUserAssetsFromCovalent } from 'services/covalent/getUserAssetsFromCovalent';
 import { getUserAssetsFromUnmarshal } from 'services/unmarshal/getUserAssetsFromUnmarshal';
