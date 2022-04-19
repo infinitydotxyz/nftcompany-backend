@@ -23,12 +23,16 @@ export class UserService {
       .collection(firestoreConstants.USERS_COLL)
       .doc(user.userAddress)
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
-      .select('address', 'chainId');
+      .select('collectionAddress', 'collectionChainId');
     const snap = await collectionFollows.get();
-    const collections = snap.docs.map((doc) => {
-      const { chainId, address } = doc.data();
-      return { chainId, address };
-    });
+    const collections = snap.docs
+      .map((doc) => {
+        const { collectionAddress, collectionChainId } = doc.data();
+        return { chainId: collectionChainId, address: collectionAddress };
+      })
+      .filter((item) => {
+        return item.chainId && item.address;
+      });
 
     const statsPromises = collections.map((collection) =>
       this.statsService.getCollectionStats(collection, { period: query.period, date: query.date })
