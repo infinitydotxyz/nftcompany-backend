@@ -29,7 +29,7 @@ export class AuthGuard implements CanActivate {
 
       const paramValue = request.params[paramName];
 
-      let address = paramValue;
+      let address = trimLowerCase(paramValue);
 
       // Chain:address
       if (paramValue.includes(':')) {

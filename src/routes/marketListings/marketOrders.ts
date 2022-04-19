@@ -69,7 +69,6 @@ export class MarketOrders {
     for (const buyOrder of orders) {
       if (!isOBOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder, aso);
-
         if (order) {
           result.push(order);
         }

@@ -5,5 +5,5 @@ export class OrdersDto {
   @ApiProperty({
     description: 'Orders to be saved'
   })
-  orders!: SignedOBOrder[];
+  orders: SignedOBOrder[];
 }
