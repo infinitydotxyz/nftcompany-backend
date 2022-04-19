@@ -104,7 +104,7 @@ export class UserController {
     return response;
   }
 
-  @Get(':userId/collections/votes')
+  @Get(':userId/collectionVotes')
   @ApiSignatureAuth()
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
@@ -125,7 +125,32 @@ export class UserController {
     return userVotes;
   }
 
-  @Post(':userId/collections/votes')
+  @Get(':userId/collectionVotes/:collectionId')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Get a user's votes for a specific collection",
+    tags: [ApiTag.User, ApiTag.Votes]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionVoteBodyDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getUserCollectionVote(
+    @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<UserCollectionVoteBodyDto> {
+    const userVote = await this.votesService.getUserVote(user, collection);
+    if (userVote === null) {
+      throw new NotFoundException('User vote not found');
+    }
+    return userVote;
+  }
+
+  @Post(':userId/collectionVotes/:collectionId')
   @ApiSignatureAuth()
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
@@ -140,10 +165,13 @@ export class UserController {
   @UseInterceptors(new CacheControlInterceptor())
   async saveUserCollectionVote(
     @ParamUserId('userId', ParseUserIdPipe) user: UserDto,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Body() vote: UserCollectionVoteBodyDto
   ): Promise<void> {
     const userVote: UserCollectionVoteDto = {
       ...vote,
+      collectionAddress: collection.address,
+      collectionChainId: collection.chainId,
       userAddress: user.userAddress,
       userChainId: user.userChainId,
       updatedAt: Date.now()
