@@ -17,6 +17,7 @@ import { MarketListingsModule } from './market-listings/market-listings.module';
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
+import { OrdersModule } from 'orders/orders.module';
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { FB_STORAGE_BUCKET } from './constants';
     UserModule,
     VotesModule,
     StorageModule,
-    MarketListingsModule
+    MarketListingsModule,
+    OrdersModule
   ],
   controllers: [AppController],
   providers: [AppService]
