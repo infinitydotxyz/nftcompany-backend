@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEthereumAddress, IsNumber, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEthereumAddress, IsNumber, IsString, MaxLength } from 'class-validator';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
-import { ProfileService } from 'user/profile.service';
+import { IsUsername } from 'user/profile/is-username.decorator';
+import { MAX_BIO_CHARS, MAX_DISPLAY_NAME_CHARS, usernameConstraints } from 'user/profile/profile.constants';
 
 export class UserProfileDto {
   @ApiProperty({
@@ -18,22 +19,20 @@ export class UserProfileDto {
     description: 'Non-unique name of the user'
   })
   @IsString()
-  @MaxLength(ProfileService.MAX_DISPLAY_NAME_CHARS)
+  @MaxLength(MAX_DISPLAY_NAME_CHARS)
   displayName: string;
 
   @ApiProperty({
-    description: 'Unique username for the user'
+    description: `Unique username for the user (${usernameConstraints})`
   })
-  @IsString()
-  @MinLength(ProfileService.MIN_USERNAME_CHARS)
-  @MaxLength(ProfileService.MAX_USERNAME_CHARS)
+  @IsUsername()
   username: string;
 
   @ApiProperty({
-    description: "User's bio"
+    description: `User's bio. Max ${MAX_BIO_CHARS} characters`
   })
   @IsString()
-  @MaxLength(ProfileService.MAX_BIO_CHARS)
+  @MaxLength(MAX_BIO_CHARS)
   bio: string;
 
   @ApiProperty({

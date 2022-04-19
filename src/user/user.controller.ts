@@ -64,7 +64,7 @@ import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { ProfileService } from './profile.service';
+import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 
 @Controller('user')
@@ -89,7 +89,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async getUserProfile(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserProfileDto> {
-    const userProfile = await this.userService.getUserProfile(user);
+    const userProfile = await this.userService.getProfile(user);
     if (userProfile === null) {
       throw new NotFoundException('User not found');
     }
@@ -220,7 +220,7 @@ export class UserController {
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() query: RankingsRequestDto
   ): Promise<CollectionStatsArrayResponseDto> {
-    const watchlist = await this.userService.getUserWatchlist(user, query);
+    const watchlist = await this.userService.getWatchlist(user, query);
 
     const response: CollectionStatsArrayResponseDto = {
       data: watchlist ?? [],

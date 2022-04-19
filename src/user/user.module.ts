@@ -7,11 +7,11 @@ import { CollectionsModule } from 'collections/collections.module';
 import { StorageModule } from 'storage/storage.module';
 import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
-import { ProfileService } from './profile.service';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
-  providers: [UserService, ProfileService],
-  imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule],
+  providers: [UserService],
+  imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
   controllers: [UserController]
 })
 export class UserModule {}

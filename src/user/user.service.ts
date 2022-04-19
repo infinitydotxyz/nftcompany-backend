@@ -18,7 +18,7 @@ import { ParsedUserId } from './user-id.pipe';
 export class UserService {
   constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
 
-  async getUserWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
+  async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .select('address', 'chainId');
@@ -44,7 +44,7 @@ export class UserService {
     return orderedStats;
   }
 
-  async getUserProfile(user: ParsedUserId) {
+  async getProfile(user: ParsedUserId) {
     const profileSnapshot = await user.ref.get();
     const profile = profileSnapshot.data();
 

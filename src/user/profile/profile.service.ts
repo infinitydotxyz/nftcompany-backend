@@ -3,23 +3,21 @@ import { trimLowerCase } from '@infinityxyz/lib/utils/formatters';
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { UserProfileDto } from './dto/user-profile.dto';
-import { InvalidProfileError } from './errors/invalid-profile.error';
-import { ParsedUserId } from './user-id.pipe';
+import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
+import { UserProfileDto } from '../dto/user-profile.dto';
+import { InvalidProfileError } from '../errors/invalid-profile.error';
+import { ParsedUserId } from '../user-id.pipe';
+import {
+  MAX_BIO_CHARS,
+  MAX_DISPLAY_NAME_CHARS,
+  MAX_USERNAME_CHARS,
+  MIN_USERNAME_CHARS,
+  usernameCharRegex,
+  usernameRegex
+} from './profile.constants';
 
 @Injectable()
 export class ProfileService {
-  public static readonly MIN_USERNAME_CHARS = 5;
-  public static readonly MAX_USERNAME_CHARS = 15;
-  public static readonly MAX_DISPLAY_NAME_CHARS = 50;
-  public static readonly MAX_BIO_CHARS = 160;
-  private readonly usernameChars = '[a-zA-Z0-9_]';
-  private readonly usernameCharRegex = new RegExp(`[^${this.usernameChars}]`, 'g');
-  private readonly usernameRegex = new RegExp(
-    `^${this.usernameChars}{${ProfileService.MIN_USERNAME_CHARS},${ProfileService.MAX_USERNAME_CHARS}}$`
-  );
-
   constructor(private firebaseService: FirebaseService) {}
 
   static normalizeUsername(username: string) {
@@ -27,11 +25,11 @@ export class ProfileService {
   }
 
   static validateDisplayName(displayName: string) {
-    if (displayName.length > ProfileService.MAX_DISPLAY_NAME_CHARS) {
+    if (displayName.length > MAX_DISPLAY_NAME_CHARS) {
       return {
         displayName,
         isValid: false,
-        reason: `Display name must be at most ${ProfileService.MAX_DISPLAY_NAME_CHARS} characters long`
+        reason: `Display name must be at most ${MAX_DISPLAY_NAME_CHARS} characters long`
       };
     }
 
@@ -42,11 +40,11 @@ export class ProfileService {
   }
 
   static validateBio(bio: string) {
-    if (bio.length > ProfileService.MAX_BIO_CHARS) {
+    if (bio.length > MAX_BIO_CHARS) {
       return {
         bio,
         isValid: false,
-        reason: `Bio must be at most ${ProfileService.MAX_BIO_CHARS} characters long`
+        reason: `Bio must be at most ${MAX_BIO_CHARS} characters long`
       };
     }
 
@@ -100,9 +98,6 @@ export class ProfileService {
   }
 
   validateUsername(username: string) {
-    const MIN_USERNAME_CHARS = 5;
-    const MAX_USERNAME_CHARS = 15;
-
     if (username.length < MIN_USERNAME_CHARS) {
       return {
         username,
@@ -119,7 +114,7 @@ export class ProfileService {
       };
     }
 
-    if (!this.usernameRegex.test(username)) {
+    if (!usernameRegex.test(username)) {
       return {
         username,
         isValid: false,
@@ -148,15 +143,13 @@ export class ProfileService {
 
     const randomCharLength = 3;
 
-    if (stripped.length < ProfileService.MIN_USERNAME_CHARS) {
-      const randomInts = Array.from({ length: ProfileService.MIN_USERNAME_CHARS - stripped.length }, () =>
-        randomInt(0, 9)
-      );
+    if (stripped.length < MIN_USERNAME_CHARS) {
+      const randomInts = Array.from({ length: MIN_USERNAME_CHARS - stripped.length }, () => randomInt(0, 9));
       stripped = `${stripped}${randomInts.join('')}`;
     }
 
-    if (stripped.length > ProfileService.MAX_USERNAME_CHARS - randomCharLength) {
-      stripped = stripped.slice(0, ProfileService.MAX_USERNAME_CHARS - randomCharLength);
+    if (stripped.length > MAX_USERNAME_CHARS - randomCharLength) {
+      stripped = stripped.slice(0, MAX_USERNAME_CHARS - randomCharLength);
     }
 
     const suggestions = [];
@@ -177,7 +170,7 @@ export class ProfileService {
   }
 
   private stripInvalidCharacters(username: string) {
-    return username.replace(this.usernameCharRegex, '');
+    return username.replace(usernameCharRegex, '');
   }
 
   private async canClaimUsername(newUsername: string, currentUser: Partial<UserProfileDto>): Promise<boolean> {
