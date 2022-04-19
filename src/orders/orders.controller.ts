@@ -36,7 +36,7 @@ export class OrdersController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   postOrders(@Body() body: any) { // todo: remove any
-    console.log('body', jsonString(body));
+    console.log('body', jsonString(body)); // todo: remove log
     this.ordersService.postOrders(body.orders);
   }
 }

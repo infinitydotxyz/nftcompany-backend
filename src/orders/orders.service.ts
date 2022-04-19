@@ -1,4 +1,4 @@
-import { SignedOBOrderSpec } from '@infinityxyz/lib/types/core';
+import { SignedOBOrder } from '@infinityxyz/lib/types/core';
 import { Injectable } from '@nestjs/common';
 import { error } from 'console';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
@@ -9,7 +9,7 @@ import { getDocIdHash } from 'utils';
 export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
-  postOrders(orders: SignedOBOrderSpec[]) {
+  postOrders(orders: SignedOBOrder[]) {
     const fsBatchHandler = new FirestoreBatchHandler();
     const ordersCollectionRef = this.firebaseService.firestore
       .collection('orders')
@@ -21,12 +21,12 @@ export default class OrdersService {
         chainId: order.chainId,
         isSellOrder: order.isSellOrder,
         numItems: order.numItems,
-        startPrice: order.startPrice,
+        startPrice: order.startPriceWei,
         startPriceEth: order.startPriceEth,
-        endPrice: order.endPrice,
+        endPrice: order.endPriceWei,
         endPriceEth: order.endPriceEth,
-        startTime: order.startTime,
-        endTime: order.endTime,
+        startTime: order.startTimeMs,
+        endTime: order.endTimeMs,
         minBpsToSeller: order.minBpsToSeller,
         nonce: order.nonce,
         complicationAddress: order.execParams.complicationAddress,
@@ -42,15 +42,14 @@ export default class OrdersService {
       fsBatchHandler.add(docRef, dataToStore, { merge: true });
       const orderItemsRef = docRef.collection('orderItems'); // todo: change to constants
       try {
-        for (const nft of order.nftsWithMetadata) {
+        for (const nft of order.nfts) {
           const collection = nft.collectionAddress;
           for (const token of nft.tokens) {
             const tokenId = token.tokenId.toString();
             const orderItemData = {
               collection: collection,
               tokenId: tokenId,
-              numTokens: 1
-              // numTokens: parseInt(token.numTokens.toString())
+              numTokens: token.numTokens
             };
             const orderItemDocRef = orderItemsRef.doc(
               getDocIdHash({ collectionAddress: collection, tokenId, chainId: order.chainId.toString() })
