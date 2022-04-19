@@ -5,7 +5,7 @@ import { TransformFnParams } from 'class-transformer';
 
 export function parseBoolTransformer(options: { optional?: boolean } = {}) {
   return (params: TransformFnParams): boolean | undefined => {
-    if (options.optional && params.value === undefined) {
+    if (options.optional && params.value == null) {
       return undefined;
     }
 
