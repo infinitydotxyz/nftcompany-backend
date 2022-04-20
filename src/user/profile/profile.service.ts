@@ -1,5 +1,4 @@
 import { firestoreConstants } from '@infinityxyz/lib/utils';
-import { trimLowerCase } from '@infinityxyz/lib/utils/formatters';
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -7,51 +6,18 @@ import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
 import { ParsedUserId } from '../user-id.pipe';
-import {
-  MAX_BIO_CHARS,
-  MAX_DISPLAY_NAME_CHARS,
-  MAX_USERNAME_CHARS,
-  MIN_USERNAME_CHARS,
-  usernameCharRegex,
-  usernameRegex
-} from './profile.constants';
+import { MAX_USERNAME_CHARS, MIN_USERNAME_CHARS, usernameCharRegex, usernameRegex } from './profile.constants';
 
 @Injectable()
 export class ProfileService {
   constructor(private firebaseService: FirebaseService) {}
 
-  static normalizeUsername(username: string) {
-    return trimLowerCase(username);
-  }
-
-  static validateDisplayName(displayName: string) {
-    if (displayName.length > MAX_DISPLAY_NAME_CHARS) {
-      return {
-        displayName,
-        isValid: false,
-        reason: `Display name must be at most ${MAX_DISPLAY_NAME_CHARS} characters long`
-      };
+  static isValidUsername(value: string) {
+    if (typeof value !== 'string') {
+      return false;
     }
-
-    return {
-      displayName,
-      isValid: true
-    };
-  }
-
-  static validateBio(bio: string) {
-    if (bio.length > MAX_BIO_CHARS) {
-      return {
-        bio,
-        isValid: false,
-        reason: `Bio must be at most ${MAX_BIO_CHARS} characters long`
-      };
-    }
-
-    return {
-      bio,
-      isValid: true
-    };
+    const isValid = usernameRegex.test(value);
+    return isValid;
   }
 
   async updateProfile(user: ParsedUserId, data: Partial<UserProfileDto> & UpdateUserProfileDto) {
@@ -60,18 +26,6 @@ export class ProfileService {
     const createdAt = currentProfile?.createdAt ?? Date.now();
     const updatedAt = Date.now();
     const { deleteProfileImage, deleteBannerImage, ...updatedProfile } = data;
-
-    const { isValid: isBioValid, reason: bioInvalidReason } = ProfileService.validateBio(data.bio);
-    if (!isBioValid) {
-      throw new InvalidProfileError(bioInvalidReason ?? '');
-    }
-
-    const { isValid: isDisplayNameValid, reason: displayNameInvalidReason } = ProfileService.validateDisplayName(
-      data.displayName
-    );
-    if (!isDisplayNameValid) {
-      throw new InvalidProfileError(displayNameInvalidReason ?? '');
-    }
 
     const canClaimUsername = await this.canClaimUsername(data.username, currentProfile ?? {});
     if (!canClaimUsername) {
@@ -97,37 +51,6 @@ export class ProfileService {
     await user.ref.set(profile, { merge: true });
   }
 
-  validateUsername(username: string) {
-    if (username.length < MIN_USERNAME_CHARS) {
-      return {
-        username,
-        isValid: false,
-        reason: `Username must be at least ${MIN_USERNAME_CHARS} characters long`
-      };
-    }
-
-    if (username.length > MAX_USERNAME_CHARS) {
-      return {
-        username,
-        isValid: false,
-        reason: `Username must be at most ${MAX_USERNAME_CHARS} characters long`
-      };
-    }
-
-    if (!usernameRegex.test(username)) {
-      return {
-        username,
-        isValid: false,
-        reason: `Username must only contain alphanumeric characters and underscores`
-      };
-    }
-
-    return {
-      username,
-      isValid: true
-    };
-  }
-
   async isAvailable(username: string): Promise<boolean> {
     const normalizedUsername = username.toLowerCase();
     const usersCollection = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL);
@@ -138,9 +61,7 @@ export class ProfileService {
   }
 
   async getSuggestions(username: string): Promise<string[]> {
-    const normalizedUsername = ProfileService.normalizeUsername(username);
-    let stripped = this.stripInvalidCharacters(normalizedUsername);
-
+    let stripped = this.stripInvalidCharacters(username);
     const randomCharLength = 3;
 
     if (stripped.length < MIN_USERNAME_CHARS) {
@@ -174,18 +95,11 @@ export class ProfileService {
   }
 
   private async canClaimUsername(newUsername: string, currentUser: Partial<UserProfileDto>): Promise<boolean> {
-    const normalizedUsername = ProfileService.normalizeUsername(newUsername);
-    if (normalizedUsername === currentUser.username) {
+    if (newUsername === currentUser.username) {
       return true;
     }
 
-    const isValid = this.validateUsername(normalizedUsername);
-
-    if (!isValid) {
-      return false;
-    }
-
-    const usernameAvailable = await this.isAvailable(normalizedUsername);
+    const usernameAvailable = await this.isAvailable(newUsername);
 
     return usernameAvailable;
   }

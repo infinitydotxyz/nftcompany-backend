@@ -23,9 +23,9 @@ export class UserProfileDto {
   displayName: string;
 
   @ApiProperty({
-    description: `Unique username for the user (${usernameConstraints})`
+    description: `Unique username for the user. ${usernameConstraints}`
   })
-  @IsUsername()
+  @IsUsername({ message: `Invalid username. ${usernameConstraints}` })
   username: string;
 
   @ApiProperty({

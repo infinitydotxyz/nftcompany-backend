@@ -63,11 +63,9 @@ export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUser
   }
 
   private async getUserByUsername(username: string) {
-    const normalized = ProfileService.normalizeUsername(username);
-
     const snapshot = await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .where('username', '==', normalized)
+      .where('username', '==', username)
       .limit(1)
       .get();
 

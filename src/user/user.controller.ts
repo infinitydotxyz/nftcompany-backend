@@ -66,6 +66,8 @@ import { UserProfileDto } from './dto/user-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
+import { QueryUsername } from './profile/query-username.decorator';
+import { UsernameType } from './profile/profile.types';
 
 @Controller('user')
 export class UserController {
@@ -79,6 +81,43 @@ export class UserController {
     private statsService: StatsService,
     private profileService: ProfileService
   ) {}
+
+  @Get('checkUsername')
+  @ApiOperation({
+    description: 'Check if a username if valid and available',
+    tags: [ApiTag.User]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async checkUsername(@QueryUsername('username') usernameObj: UsernameType): Promise<ValidateUsernameResponseDto> {
+    let reason = usernameObj.isValid ? '' : usernameObj.reason;
+    let isAvailable = true;
+
+    if (usernameObj.isValid) {
+      isAvailable = await this.profileService.isAvailable(usernameObj.username);
+      if (!isAvailable) {
+        reason = 'Username is already taken';
+      }
+    }
+
+    const canClaim = usernameObj.isValid && isAvailable;
+
+    if (canClaim) {
+      return {
+        username: usernameObj.username,
+        valid: true
+      };
+    }
+
+    const suggestions = await this.profileService.getSuggestions(usernameObj.username);
+
+    return {
+      username: usernameObj.username,
+      valid: false,
+      reason,
+      suggestions
+    };
+  }
 
   @Get('/:userId')
   @ApiOperation({
@@ -165,44 +204,6 @@ export class UserController {
     return;
   }
 
-  @Get('checkUsername')
-  @ApiOperation({
-    description: 'Check if a username if valid and available',
-    tags: [ApiTag.User]
-  })
-  @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
-  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async checkUsername(@Query('username') username: string): Promise<ValidateUsernameResponseDto> {
-    // eslint-disable-next-line prefer-const
-    let { isValid, reason } = this.profileService.validateUsername(username);
-    let isAvailable = true;
-
-    if (isValid) {
-      isAvailable = await this.profileService.isAvailable(username);
-      if (!isAvailable) {
-        reason = 'Username is already taken';
-      }
-    }
-
-    const canClaim = isValid && isAvailable;
-
-    if (canClaim) {
-      return {
-        username,
-        valid: true
-      };
-    }
-
-    const suggestions = await this.profileService.getSuggestions(username);
-
-    return {
-      username,
-      valid: false,
-      reason,
-      suggestions
-    };
-  }
-
   @Get(':userId/watchlist')
   @ApiOperation({
     description: "Get a user's watchlist",
@@ -231,7 +232,7 @@ export class UserController {
     return response;
   }
 
-  @Get(':userId/collections/votes')
+  @Get(':userId/collectionVotes')
   @ApiSignatureAuth()
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
@@ -252,7 +253,32 @@ export class UserController {
     return userVotes;
   }
 
-  @Post(':userId/collections/votes')
+  @Get(':userId/collectionVotes/:collectionId')
+  @ApiSignatureAuth()
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiOperation({
+    description: "Get a user's votes for a specific collection",
+    tags: [ApiTag.User, ApiTag.Votes]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionVoteBodyDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getUserCollectionVote(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<UserCollectionVoteBodyDto> {
+    const userVote = await this.votesService.getUserVote(user, collection);
+    if (userVote === null) {
+      throw new NotFoundException('User vote not found');
+    }
+    return userVote;
+  }
+
+  @Post(':userId/collectionVotes/:collectionId')
   @ApiSignatureAuth()
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
@@ -267,10 +293,13 @@ export class UserController {
   @UseInterceptors(new CacheControlInterceptor())
   async saveUserCollectionVote(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Body() vote: UserCollectionVoteBodyDto
   ): Promise<void> {
     const userVote: UserCollectionVoteDto = {
       ...vote,
+      collectionAddress: collection.address,
+      collectionChainId: collection.chainId,
       userAddress: user.userAddress,
       userChainId: user.userChainId,
       updatedAt: Date.now()

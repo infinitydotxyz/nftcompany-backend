@@ -1,5 +1,5 @@
 import { registerDecorator, ValidationOptions } from 'class-validator';
-import { usernameRegex } from './profile.constants';
+import { ProfileService } from './profile.service';
 
 export function IsUsername(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
@@ -10,11 +10,7 @@ export function IsUsername(validationOptions?: ValidationOptions) {
       options: validationOptions,
       validator: {
         validate(value: string) {
-          if (typeof value !== 'string') {
-            return false;
-          }
-          const isValid = usernameRegex.test(value);
-          return isValid;
+          return ProfileService.isValidUsername(value);
         }
       }
     });
