@@ -184,10 +184,6 @@ export class UserController {
   })
   @ApiParamUserId('userId')
   @ApiConsumes('multipart/form-data')
-  @ApiHeader({
-    name: 'Content-Type',
-    required: false
-  })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async uploadImages(
