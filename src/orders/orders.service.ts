@@ -52,7 +52,7 @@ export default class OrdersService {
               numTokens: token.numTokens
             };
             const orderItemDocRef = orderItemsRef.doc(
-              getDocIdHash({ collectionAddress: collection, tokenId, chainId: order.chainId.toString() })
+              getDocIdHash({ collectionAddress: collection, tokenId, chainId: order.chainId })
             );
             fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
           }
