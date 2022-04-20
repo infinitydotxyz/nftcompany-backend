@@ -1,11 +1,7 @@
 import { jsonString } from '@infinityxyz/lib/utils';
 import { Body, Controller, Post } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiInternalServerErrorResponse,
-  ApiOkResponse,
-  ApiUnauthorizedResponse
-} from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse } from '@nestjs/swagger';
+import { UserAuth } from 'auth/user-auth.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
 import { OrdersDto } from './orders.dto';
@@ -17,16 +13,12 @@ export class OrdersController {
 
   // todo: uncomment
   @Post(':userId/create')
-  // @ApiParamUserId('userId')
-  // @ApiSignatureAuth()
-  // @UseGuards(AuthGuard)
-  // @MatchSigner('userId')
+  @UserAuth('userId')
   // @ApiOperation({
   //   description: 'Post orders',
   //   tags: [ApiTag.Orders]
   // })
   @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   postOrders(@Body() body: any) {

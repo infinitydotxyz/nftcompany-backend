@@ -1,9 +1,9 @@
 import { trimLowerCase } from '@infinityxyz/lib/utils';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { auth } from '../../constants';
+import { auth } from '../constants';
 import { ethers } from 'ethers';
 import { Reflector } from '@nestjs/core';
-import { metadataKey } from 'common/decorators/match-signer.decorator';
+import { metadataKey } from 'auth/match-signer.decorator';
 import { ParseUserIdPipe } from 'user/user-id.pipe';
 
 @Injectable()
