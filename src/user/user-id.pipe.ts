@@ -4,7 +4,6 @@ import { PipeTransform, Injectable, BadRequestException, NotFoundException } fro
 import { ethers } from 'ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { ProfileService } from './profile/profile.service';
 
 export type ParsedUserId = {
   userAddress: string;
