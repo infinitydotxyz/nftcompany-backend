@@ -25,7 +25,8 @@ import {
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiOperation
+  ApiOperation,
+  ApiQuery
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
@@ -34,7 +35,7 @@ import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { VotesService } from 'votes/votes.service';
 import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
-import { ParamUserId } from 'auth/param-user-id.decorator';
+import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
 import { ParsedUserId, ParseUserIdPipe } from './user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
@@ -83,6 +84,7 @@ export class UserController {
     description: 'Check if a username if valid and available',
     tags: [ApiTag.User]
   })
+  @ApiQuery({ name: 'username', description: 'The username to check' })
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async checkUsername(@QueryUsername('username') usernameObj: UsernameType): Promise<ValidateUsernameResponseDto> {
@@ -120,6 +122,7 @@ export class UserController {
     description: 'Get a user by their id',
     tags: [ApiTag.User]
   })
+  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserProfileDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
