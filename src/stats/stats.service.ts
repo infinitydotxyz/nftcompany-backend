@@ -344,6 +344,7 @@ export class StatsService {
     let query = collectionGroup
       .where('timestamp', '==', timestamp)
       .where('period', '==', queryOptions.period)
+      .where(queryOptions.orderBy, '!=', Infinity)
       .orderBy(queryOptions.orderBy, queryOptions.orderDirection)
       .orderBy('collectionAddress', 'asc');
     if (startAfter) {
