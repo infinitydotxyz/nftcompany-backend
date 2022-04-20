@@ -63,7 +63,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { UpdateUserProfileDto, UpdateUserProfileImagesDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
@@ -140,6 +140,37 @@ export class UserController {
   @UseGuards(AuthGuard)
   @MatchSigner('userId')
   @ApiSignatureAuth()
+  @ApiOperation({
+    description: "Update a user's profile",
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async updateProfile(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Body() data: UpdateUserProfileDto
+  ): Promise<void> {
+    const profile: Partial<UserProfileDto> & UpdateUserProfileDto = {
+      ...data
+    };
+
+    try {
+      await this.profileService.updateProfile(user, profile);
+    } catch (err) {
+      if (err instanceof InvalidProfileError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
+
+    return;
+  }
+
+  @Put('/:userId/images')
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'profileImage', maxCount: 1 },
@@ -147,7 +178,7 @@ export class UserController {
     ])
   )
   @ApiOperation({
-    description: "Update a user's profile",
+    description: 'Update user images',
     tags: [ApiTag.User]
   })
   @ApiParamUserId('userId')
@@ -158,13 +189,13 @@ export class UserController {
   })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async updateProfile(
+  async uploadImages(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
-    @Body() data: UpdateUserProfileDto,
+    @Body() data: UpdateUserProfileImagesDto,
     @UploadedFiles()
     files?: { profileImage?: Express.Multer.File[]; bannerImage?: Express.Multer.File[] }
   ): Promise<void> {
-    const profile: Partial<UserProfileDto> & UpdateUserProfileDto = {
+    const profile: Partial<UserProfileDto> & UpdateUserProfileImagesDto = {
       ...data
     };
 
@@ -193,7 +224,7 @@ export class UserController {
     }
 
     try {
-      await this.profileService.updateProfile(user, profile);
+      await this.profileService.updateProfileImages(user, profile);
     } catch (err) {
       if (err instanceof InvalidProfileError) {
         throw new BadRequestException(err.message);

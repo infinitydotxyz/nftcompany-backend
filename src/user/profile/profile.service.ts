@@ -2,7 +2,7 @@ import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
-import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
+import { UpdateUserProfileDto, UpdateUserProfileImagesDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
 import { ParsedUserId } from '../user-id.pipe';
@@ -20,18 +20,12 @@ export class ProfileService {
     return isValid;
   }
 
-  async updateProfile(user: ParsedUserId, data: Partial<UserProfileDto> & UpdateUserProfileDto) {
+  async updateProfileImages(user: ParsedUserId, data: UpdateUserProfileImagesDto) {
     const profileSnap = await user.ref.get();
     const currentProfile = profileSnap.data();
     const createdAt = currentProfile?.createdAt ?? Date.now();
     const updatedAt = Date.now();
     const { deleteProfileImage, deleteBannerImage, ...updatedProfile } = data;
-
-    const canClaimUsername = await this.canClaimUsername(data.username, currentProfile ?? {});
-    if (!canClaimUsername) {
-      throw new InvalidProfileError(`Username ${data.username} is invalid or already taken`);
-    }
-
     const profile = {
       ...currentProfile,
       ...updatedProfile,
@@ -47,6 +41,28 @@ export class ProfileService {
     if (deleteBannerImage) {
       profile.bannerImage = '';
     }
+
+    await user.ref.set(profile, { merge: true });
+  }
+
+  async updateProfile(user: ParsedUserId, updatedProfile: Partial<UserProfileDto> & UpdateUserProfileDto) {
+    const profileSnap = await user.ref.get();
+    const currentProfile = profileSnap.data();
+    const createdAt = currentProfile?.createdAt ?? Date.now();
+    const updatedAt = Date.now();
+
+    const canClaimUsername = await this.canClaimUsername(updatedProfile.username, currentProfile ?? {});
+    if (!canClaimUsername) {
+      throw new InvalidProfileError(`Username ${updatedProfile.username} is invalid or already taken`);
+    }
+
+    const profile = {
+      ...currentProfile,
+      ...updatedProfile,
+      address: user.userAddress,
+      createdAt,
+      updatedAt
+    };
 
     await user.ref.set(profile, { merge: true });
   }

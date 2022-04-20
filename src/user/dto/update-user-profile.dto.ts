@@ -12,7 +12,9 @@ export class UpdateUserProfileDto extends PickType(UserProfileDto, [
   'twitterUsername',
   'instagramUsername',
   'facebookUsername'
-] as const) {
+] as const) {}
+
+export class UpdateUserProfileImagesDto {
   @ApiPropertyOptional({
     description: 'Whether to remove the current profile image'
   })
