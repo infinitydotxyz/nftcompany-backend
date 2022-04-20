@@ -3,5 +3,6 @@ export enum ApiTag {
   Nft = 'Nft',
   Stats = 'Stats',
   User = 'User',
-  Votes = 'Votes'
+  Votes = 'Votes',
+  Orders = 'Orders'
 }

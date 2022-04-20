@@ -49,15 +49,15 @@ function getFormattedStatsDate(timestamp: number, period: StatsPeriod): string {
 
   switch (period) {
     case StatsPeriod.Hourly:
-      return format(date, 'YYYY-MM-DD-HH');
+      return format(date, 'yyyy-MM-dd-HH');
     case StatsPeriod.Daily:
-      return format(date, 'YYYY-MM-DD');
+      return format(date, 'yyyy-MM-dd');
     case StatsPeriod.Weekly:
-      return format(date.setDate(firstDayOfWeek), 'YYYY-MM-DD');
+      return format(date.setDate(firstDayOfWeek), 'yyyy-MM-dd');
     case StatsPeriod.Monthly:
-      return format(date, 'YYYY-MM');
+      return format(date, 'yyyy-MM');
     case StatsPeriod.Yearly:
-      return format(date, 'YYYY');
+      return format(date, 'yyyy');
     case StatsPeriod.All:
       return '';
     default:

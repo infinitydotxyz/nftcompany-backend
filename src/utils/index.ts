@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
 import { error, trimLowerCase } from '@infinityxyz/lib/utils';
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 
 export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
 
@@ -153,5 +153,5 @@ export function getDocIdHash({
   chainId: string;
 }) {
   const data = chainId.trim() + '::' + trimLowerCase(collectionAddress) + '::' + tokenId.trim();
-  return crypto.createHash('sha256').update(data).digest('hex').trim().toLowerCase();
+  return createHash('sha256').update(data).digest('hex').trim().toLowerCase();
 }

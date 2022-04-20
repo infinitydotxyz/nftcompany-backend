@@ -1,8 +1,8 @@
 import { singleton, container } from 'tsyringe';
 import {
-  getCurrentOrderSpecPrice,
-  isOrderSpecExpired,
-  OBOrderSpec,
+  getCurrentOBOrderPrice,
+  isOBOrderExpired,
+  OBOrder,
   BuyOrderMatch,
   MarketListId
 } from '@infinityxyz/lib/types/core';
@@ -40,7 +40,7 @@ export class MarketOrders {
     }
   }
 
-  async buy(order: OBOrderSpec, listId: MarketListId): Promise<BuyOrderMatch[]> {
+  async buy(order: OBOrder, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addBuyOrder(listId, order);
 
     const aso = new ActiveSellOrders();
@@ -53,7 +53,7 @@ export class MarketOrders {
     return [];
   }
 
-  async sell(order: OBOrderSpec, listId: MarketListId): Promise<BuyOrderMatch[]> {
+  async sell(order: OBOrder, listId: MarketListId): Promise<BuyOrderMatch[]> {
     await addSellOrder(listId, order);
 
     const result = await this.marketMatches();
@@ -67,9 +67,8 @@ export class MarketOrders {
 
     const orders = await buyOrders(MarketListId.ValidActive);
     for (const buyOrder of orders) {
-      if (!isOrderSpecExpired(buyOrder)) {
+      if (!isOBOrderExpired(buyOrder)) {
         const order = await this.findMatchForBuy(buyOrder, aso);
-
         if (order) {
           result.push(order);
         }
@@ -79,16 +78,16 @@ export class MarketOrders {
     return result;
   }
 
-  async findMatchForBuy(buyOrder: OBOrderSpec, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
+  async findMatchForBuy(buyOrder: OBOrder, aso: ActiveSellOrders): Promise<BuyOrderMatch | null> {
     const sellOrders = await aso.ordersForBuyOrder(buyOrder);
 
     if (sellOrders.length > 0) {
-      let cash = getCurrentOrderSpecPrice(buyOrder);
+      let cash = getCurrentOBOrderPrice(buyOrder);
       let numNFTs = BigNumber.from(buyOrder.numItems).toNumber();
-      const result: OBOrderSpec[] = [];
+      const result: OBOrder[] = [];
 
       for (const sellOrder of sellOrders) {
-        const price = getCurrentOrderSpecPrice(sellOrder);
+        const price = getCurrentOBOrderPrice(sellOrder);
 
         if (numNFTs > 0 && cash >= price) {
           result.push(sellOrder);
