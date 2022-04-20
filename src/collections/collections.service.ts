@@ -61,7 +61,7 @@ export default class CollectionsService {
       const topOwner: TopOwnerDto = {
         ownerAddress: owner.address,
         ownedCount: owner.ownedCount,
-        percentOwned: owner.ownedCount / numNfts,
+        percentOwned: Math.floor((owner.ownedCount / numNfts) * 1_000_000) / 10_000,
         numNfts
       };
       return topOwner;
