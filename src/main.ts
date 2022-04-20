@@ -7,6 +7,9 @@ import { auth, INFINITY_EMAIL, INFINITY_URL, ORIGIN } from './constants';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import listingsRouter from './routes/listings';
+// This is a hack to make Multer available in the Express namespace
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Multer } from 'multer';
 
 function setup(app: INestApplication) {
   app.enableCors({
