@@ -63,11 +63,12 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { UpdateUserProfileDto, UpdateUserProfileImagesDto } from './dto/update-user-profile.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
+import { UpdateUserProfileImagesDto } from './dto/update-user-profile-images.dto';
 
 @Controller('user')
 export class UserController {
