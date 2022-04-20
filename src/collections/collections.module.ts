@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { MnemonicModule } from 'mnemonic/mnemonic.module';
 import { StatsModule } from 'stats/stats.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { VotesModule } from 'votes/votes.module';
@@ -8,7 +9,7 @@ import { NftsController } from './nfts/nfts.controller';
 import { NftsService } from './nfts/nfts.service';
 
 @Module({
-  imports: [StatsModule, VotesModule, TwitterModule],
+  imports: [StatsModule, VotesModule, TwitterModule, MnemonicModule],
   providers: [CollectionsService, NftsService],
   controllers: [CollectionsController, NftsController],
   exports: [CollectionsService]

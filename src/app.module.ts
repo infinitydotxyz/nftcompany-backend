@@ -18,6 +18,7 @@ import { MarketListingsModule } from './market-listings/market-listings.module';
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
 import { OrdersModule } from 'orders/orders.module';
+import { MnemonicModule } from './mnemonic/mnemonic.module';
 
 @Module({
   imports: [
@@ -37,7 +38,8 @@ import { OrdersModule } from 'orders/orders.module';
     VotesModule,
     StorageModule,
     MarketListingsModule,
-    OrdersModule
+    OrdersModule,
+    MnemonicModule
   ],
   controllers: [AppController],
   providers: [AppService]
