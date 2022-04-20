@@ -12,11 +12,9 @@ export default class OrdersService {
   postOrders(orders: SignedOBOrder[]) {
     const fsBatchHandler = new FirestoreBatchHandler();
     const ordersCollectionRef = this.firebaseService.firestore
-      .collection('orders')
-      .doc('all')
-      .collection('validActive'); // todo: change to constants
+      .collection('orders');
     for (const order of orders) {
-      const dataToStore = {
+      const dataToStore = { // todo: create a type for this
         id: order.id,
         chainId: order.chainId,
         isSellOrder: order.isSellOrder,
@@ -35,7 +33,8 @@ export default class OrdersService {
         makerUsername: order.makerUsername,
         takerAddress: order.takerAddress,
         takerUsername: order.takerUsername,
-        signedOrder: order.signedOrder
+        signedOrder: order.signedOrder,
+        orderStatus: 'validActive' // todo: move to constants
       };
       // save
       const docRef = ordersCollectionRef.doc(order.id);
@@ -47,6 +46,7 @@ export default class OrdersService {
           for (const token of nft.tokens) {
             const tokenId = token.tokenId.toString();
             const orderItemData = {
+              chainId: order.chainId,
               collection: collection,
               tokenId: tokenId,
               numTokens: token.numTokens
