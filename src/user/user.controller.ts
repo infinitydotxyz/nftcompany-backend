@@ -26,6 +26,7 @@ import {
   ApiCreatedResponse,
   ApiHeader,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -150,7 +151,9 @@ export class UserController {
     description: "Update a user's profile",
     tags: [ApiTag.User]
   })
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParamUserId('userId')
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateProfile(
@@ -187,11 +190,13 @@ export class UserController {
     description: 'Update user images',
     tags: [ApiTag.User]
   })
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParamUserId('userId')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     type: UpdateUserProfileImagesDto
   })
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async uploadImages(
@@ -368,6 +373,7 @@ export class UserController {
     name: 'Content-Type',
     required: false
   })
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(
