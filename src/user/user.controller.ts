@@ -38,7 +38,7 @@ import { CacheControlInterceptor } from 'common/interceptors/cache-control.inter
 import { VotesService } from 'votes/votes.service';
 import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
 import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
-import { ParseUserIdPipe } from './user-id.pipe';
+import { ParseUserIdPipe } from './parser/parse-user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';

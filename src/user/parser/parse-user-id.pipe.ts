@@ -1,6 +1,6 @@
 import { PipeTransform, Injectable } from '@nestjs/common';
-import { ParsedUserId } from './parser/parsed-user-id';
-import { UserParserService } from './parser/user-parser.service';
+import { ParsedUserId } from './parsed-user-id';
+import { UserParserService } from './parser.service';
 
 @Injectable()
 export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUserId>> {

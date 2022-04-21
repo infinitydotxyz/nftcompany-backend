@@ -1,7 +1,6 @@
 import { Global, Module } from '@nestjs/common';
-import { UserParserModule } from 'user/parser/user-parser.module';
-import { UserParserService } from 'user/parser/user-parser.service';
-
+import { UserParserModule } from 'user/parser/parser.module';
+import { UserParserService } from 'user/parser/parser.service';
 /**
  * Global authentication module.
  *

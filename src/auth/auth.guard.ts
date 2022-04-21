@@ -4,7 +4,7 @@ import { auth } from '../constants';
 import { ethers } from 'ethers';
 import { Reflector } from '@nestjs/core';
 import { metadataKey } from 'auth/match-signer.decorator';
-import { UserParserService } from 'user/parser/user-parser.service';
+import { UserParserService } from 'user/parser/parser.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
