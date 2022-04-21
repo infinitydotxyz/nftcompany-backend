@@ -21,6 +21,7 @@ import {
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserService } from './user.service';
 import {
+  ApiBadRequestResponse,
   ApiConsumes,
   ApiCreatedResponse,
   ApiHeader,
@@ -69,6 +70,9 @@ import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
 import { UpdateUserProfileImagesDto } from './dto/update-user-profile-images.dto';
+import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { sleep } from 'utils';
 
 @Controller('user')
 export class UserController {
@@ -135,6 +139,21 @@ export class UserController {
     }
 
     return userProfile;
+  }
+
+  @Get('/:userId/nfts')
+  @ApiOperation({
+    description: "Get a user's NFTs",
+    tags: [ApiTag.User, ApiTag.Nft]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getNfts(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<NftArrayDto> {
+    await sleep(200); // TODO
+    return {} as any;
   }
 
   @Put('/:userId')
