@@ -224,12 +224,12 @@ export class UserService {
     const continueFromCurrentPage = nfts.length > query.limit;
     const hasNextPage = continueFromCurrentPage || alchemyHasNextPage;
     const nftsToReturn = nfts.slice(0, query.limit);
-    const nftToStartAfter = nfts?.[query.limit]?.tokenId;
+    const nftToStartAt = nfts?.[query.limit]?.tokenId;
 
     const updatedCursor = base64Encode(
       JSON.stringify({
         pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
-        startAtToken: nftToStartAfter
+        startAtToken: nftToStartAt
       })
     );
 

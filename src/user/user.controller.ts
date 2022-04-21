@@ -156,7 +156,6 @@ export class UserController {
   @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
-  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
   async getNfts(

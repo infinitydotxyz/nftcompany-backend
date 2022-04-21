@@ -112,7 +112,7 @@ export interface AlchemyErc1155NftWithMetadata extends AlchemyNftWithMetadata {
 
     description: string;
 
-    attributes: any[]; // TODO
+    attributes: any[];
   };
 }
 
