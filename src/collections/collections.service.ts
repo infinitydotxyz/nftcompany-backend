@@ -44,7 +44,7 @@ export default class CollectionsService {
       offset
     });
 
-    if (topOwners === null) {
+    if (topOwners == null) {
       return null;
     }
 

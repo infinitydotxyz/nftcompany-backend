@@ -9,6 +9,7 @@ import { TopOwnersResponseBody } from './mnemonic.types';
 @Injectable()
 export class MnemonicService {
   private readonly client: AxiosInstance;
+
   constructor(private config: ConfigService) {
     const apiKey = this.config.get<string>('mnemonicApiKey');
 
