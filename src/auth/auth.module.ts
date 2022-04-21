@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
-import { UserModule } from 'user/user.module';
-import { UserService } from 'user/user.service';
+import { UserParserModule } from 'user/parser/user-parser.module';
+import { UserParserService } from 'user/parser/user-parser.service';
 
 /**
  * Global authentication module.
@@ -9,8 +9,8 @@ import { UserService } from 'user/user.service';
  */
 @Global()
 @Module({
-  providers: [UserService],
-  exports: [UserService],
-  imports: [UserModule]
+  providers: [UserParserService],
+  exports: [UserParserService],
+  imports: [UserParserModule]
 })
 export class AuthModule {}

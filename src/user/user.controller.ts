@@ -38,7 +38,7 @@ import { CacheControlInterceptor } from 'common/interceptors/cache-control.inter
 import { VotesService } from 'votes/votes.service';
 import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
 import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
-import { ParsedUserId, ParseUserIdPipe } from './user-id.pipe';
+import { ParseUserIdPipe } from './user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
@@ -72,6 +72,7 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { ParsedUserId } from './parser/parsed-user-id';
 
 @Controller('user')
 export class UserController {
