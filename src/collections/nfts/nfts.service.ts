@@ -12,14 +12,14 @@ import { NftDto } from './dto/nft.dto';
 import { NftArrayDto } from './dto/nft-array.dto';
 import { NftsOrderBy, NftsQueryDto } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
-import { PaginationService } from 'pagination/pagination.service';
+import { CursorService } from 'pagination/cursor.service';
 
 @Injectable()
 export class NftsService {
   constructor(
     private firebaseService: FirebaseService,
     private collectionsService: CollectionsService,
-    private paginationService: PaginationService
+    private paginationService: CursorService
   ) {}
 
   async getNft(nftQuery: NftQueryDto): Promise<NftDto | undefined> {

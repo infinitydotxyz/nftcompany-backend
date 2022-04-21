@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PaginationService } from './pagination.service';
+import { CursorService } from './cursor.service';
 
 describe('PaginationService', () => {
-  let service: PaginationService;
+  let service: CursorService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PaginationService]
+      providers: [CursorService]
     }).compile();
 
-    service = module.get<PaginationService>(PaginationService);
+    service = module.get<CursorService>(CursorService);
   });
 
   it('should be defined', () => {

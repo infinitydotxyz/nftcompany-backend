@@ -14,7 +14,7 @@ import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, Twi
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
 import { TweetDto } from './dto/tweet.dto';
 import { TweetArrayDto } from './dto/tweet-array.dto';
-import { PaginationService } from 'pagination/pagination.service';
+import { CursorService } from 'pagination/cursor.service';
 
 /**
  * Access level is Elevated
@@ -29,7 +29,7 @@ export class TwitterService {
   constructor(
     private config: ConfigService,
     private firebaseService: FirebaseService,
-    private paginationService: PaginationService
+    private paginationService: CursorService
   ) {
     const bearer = this.config.get<EnvironmentVariables>('twitterBearerToken');
 

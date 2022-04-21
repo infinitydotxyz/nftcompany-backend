@@ -8,7 +8,7 @@ import { MnemonicService } from 'mnemonic/mnemonic.service';
 import { TopOwnersQueryDto } from './dto/top-owners-query.dto';
 import { TopOwnerDto } from './dto/top-owner.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
-import { PaginationService } from 'pagination/pagination.service';
+import { CursorService } from 'pagination/cursor.service';
 
 interface CollectionQueryOptions {
   /**
@@ -24,7 +24,7 @@ export default class CollectionsService {
   constructor(
     private firebaseService: FirebaseService,
     private mnemonicService: MnemonicService,
-    private paginationService: PaginationService
+    private paginationService: CursorService
   ) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {

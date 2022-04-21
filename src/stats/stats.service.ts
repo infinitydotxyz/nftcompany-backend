@@ -23,7 +23,7 @@ import { TwitterService } from '../twitter/twitter.service';
 import { calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection-stats.dto';
-import { PaginationService } from 'pagination/pagination.service';
+import { CursorService } from 'pagination/cursor.service';
 
 @Injectable()
 export class StatsService {
@@ -44,7 +44,7 @@ export class StatsService {
     private twitterService: TwitterService,
     private firebaseService: FirebaseService,
     private votesService: VotesService,
-    private paginationService: PaginationService
+    private paginationService: CursorService
   ) {}
 
   async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {

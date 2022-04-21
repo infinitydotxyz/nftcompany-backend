@@ -9,7 +9,7 @@ import { base64Decode, base64Encode } from 'utils';
  * - cursor
  */
 @Injectable()
-export class PaginationService {
+export class CursorService {
   /**
    * Encodes a plaintext cursor.
    * @param cursor plaintext cursor

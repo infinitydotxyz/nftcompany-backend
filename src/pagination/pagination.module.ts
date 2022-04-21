@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PaginationService } from './pagination.service';
+import { CursorService } from './cursor.service';
 
 @Module({
-  providers: [PaginationService],
-  exports: [PaginationService]
+  providers: [CursorService],
+  exports: [CursorService]
 })
 export class PaginationModule {}

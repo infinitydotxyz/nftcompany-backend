@@ -5,7 +5,7 @@ import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
-import { PaginationService } from 'pagination/pagination.service';
+import { CursorService } from 'pagination/cursor.service';
 import { UserDto } from 'user/dto/user.dto';
 import { CollectionVotesDto } from './dto/collection-votes.dto';
 import { UserCollectionVoteDto } from './dto/user-collection-vote.dto';
@@ -23,7 +23,7 @@ export class VotesService {
     return `shard-${shardNumber}`;
   }
 
-  constructor(private firebaseService: FirebaseService, private paginationService: PaginationService) {}
+  constructor(private firebaseService: FirebaseService, private paginationService: CursorService) {}
 
   async getCollectionVotes(collection: ParsedCollectionId): Promise<CollectionVotesDto> {
     const shardsSnapshot = await collection.ref.collection(firestoreConstants.COLLECTION_VOTES_SHARDS_COLL).get();
