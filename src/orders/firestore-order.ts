@@ -1,4 +1,4 @@
-import { ChainOBOrder } from "@infinityxyz/lib/types/core";
+import { ChainOBOrder } from '@infinityxyz/lib/types/core';
 
 export interface FirestoreOrder {
   id: string;
