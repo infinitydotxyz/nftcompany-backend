@@ -1,6 +1,6 @@
 import { SignedOBOrder } from '@infinityxyz/lib/types/core';
+import { error } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
-import { error } from 'console';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
 import { getDocIdHash } from 'utils';
