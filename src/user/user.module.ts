@@ -9,9 +9,11 @@ import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
 import { ParseUserIdPipe } from './user-id.pipe';
+import { AlchemyService } from 'alchemy/alchemy.service';
+import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
 
 @Module({
-  providers: [UserService, ParseUserIdPipe],
+  providers: [UserService, ParseUserIdPipe, AlchemyService, AlchemyNftToInfinityNft],
   imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
   controllers: [UserController]
 })

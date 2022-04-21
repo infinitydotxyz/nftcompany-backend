@@ -41,6 +41,10 @@ export class NftsService {
 
       const nft = nftSnapshot.data() as NftDto | undefined;
 
+      if (nft) {
+        nft.address = collection.address;
+      }
+
       return nft;
     }
   }
@@ -89,7 +93,7 @@ export class NftsService {
 
     const results = await nftsQuery.get();
 
-    const data = results.docs.map((item) => item.data() as NftDto);
+    const data = results.docs.map((item) => ({ ...item.data(), address: collection.address } as NftDto));
 
     const hasNextPage = data.length > query.limit;
 

@@ -73,12 +73,12 @@ import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
 import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
-import { sleep } from 'utils';
 import {
   DeleteUserProfileImagesDto,
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
 
 @Controller('user')
 export class UserController {
@@ -135,6 +135,7 @@ export class UserController {
     description: 'Get a user by their id',
     tags: [ApiTag.User]
   })
+  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserProfileDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
@@ -152,14 +153,19 @@ export class UserController {
     description: "Get a user's NFTs",
     tags: [ApiTag.User, ApiTag.Nft]
   })
+  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
-  async getNfts(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<NftArrayDto> {
-    await sleep(200); // TODO
-    return {} as any;
+  async getNfts(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() filters: UserNftsQueryDto
+  ): Promise<NftArrayDto> {
+    const response = await this.userService.getNfts(user, filters);
+
+    return response;
   }
 
   @Put('/:userId')

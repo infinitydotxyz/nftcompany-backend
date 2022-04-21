@@ -2,7 +2,7 @@ import { ChainId } from '@infinityxyz/lib/types/core';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config/dist/config.service';
 import axios, { AxiosInstance } from 'axios';
-import { join, normalize } from 'path';
+import { normalize } from 'path';
 import qs from 'qs';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
 import { AlchemyUserNftsResponse } from './alchemy.types';
@@ -38,7 +38,6 @@ export class AlchemyService {
 
   async getUserNfts(owner: string, chainId: ChainId, cursor: string, contractAddresses?: string[]) {
     const url = this.getBaseUrl(chainId, '/getNFTs');
-    console.log(url);
     url.searchParams.set('owner', owner);
     url.searchParams.set('withMetadata', 'true');
     if (cursor) {

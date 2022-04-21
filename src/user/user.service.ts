@@ -1,22 +1,35 @@
-import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+/* eslint-disable no-empty */
+import { ChainId, CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
+import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
+import { AlchemyService } from 'alchemy/alchemy.service';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
+import { NftDto } from 'collections/nfts/dto/nft.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
+import { BigNumber } from 'ethers/lib/ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { base64Decode, base64Encode } from 'utils';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
+import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
 import { ParsedUserId } from './user-id.pipe';
 
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private statsService: StatsService,
+    private alchemyService: AlchemyService,
+    private alchemyNftToInfinityNft: AlchemyNftToInfinityNft
+  ) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -159,5 +172,71 @@ export class UserService {
 
     await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).delete();
     return {};
+  }
+
+  async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
+    const chainId = ChainId.Mainnet;
+    let cursor: { pageKey?: string; startAtToken?: string } = {};
+    try {
+      cursor = JSON.parse(base64Decode(query.cursor ?? ''));
+    } catch {}
+
+    const getPage = async (
+      pageKey: string,
+      startAtToken?: string
+    ): Promise<{ pageKey: string; nfts: NftDto[]; hasNextPage: boolean }> => {
+      const response = await this.alchemyService.getUserNfts(user.userAddress, ChainId.Mainnet, pageKey);
+      const nextPageKey = response?.pageKey ?? '';
+      let nfts = response?.ownedNfts ?? [];
+
+      if (startAtToken) {
+        const indexToStartAt = nfts.findIndex(
+          (item) => BigNumber.from(item.id.tokenId).toString() === cursor.startAtToken
+        );
+        nfts = nfts.slice(indexToStartAt);
+      }
+
+      const promises = nfts?.map((alchemyNft) => {
+        return this.alchemyNftToInfinityNft.transform({ alchemyNft, chainId });
+      });
+      const results = await Promise.all(promises);
+      const validNfts = results.filter((item) => !!item) as NftDto[];
+
+      return { pageKey: nextPageKey, nfts: validNfts, hasNextPage: !!nextPageKey };
+    };
+
+    const limit = query.limit + 1; // +1 to check if there is a next page
+    let nfts: NftDto[] = [];
+    let alchemyHasNextPage = true;
+    let pageKey = '';
+    let nextPageKey = cursor?.pageKey ?? '';
+    let pageNumber = 0;
+    while (nfts.length < limit && alchemyHasNextPage) {
+      pageKey = nextPageKey;
+      const startAtToken = pageNumber === 0 && cursor.startAtToken ? cursor.startAtToken : undefined;
+      const response = await getPage(pageKey, startAtToken);
+      nfts = [...nfts, ...response.nfts];
+      alchemyHasNextPage = response.hasNextPage;
+      nextPageKey = response.pageKey;
+      pageNumber += 1;
+    }
+
+    const continueFromCurrentPage = nfts.length > query.limit;
+    const hasNextPage = continueFromCurrentPage || alchemyHasNextPage;
+    const nftsToReturn = nfts.slice(0, query.limit);
+    const nftToStartAfter = nfts?.[query.limit]?.tokenId;
+
+    const updatedCursor = base64Encode(
+      JSON.stringify({
+        pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
+        startAtToken: nftToStartAfter
+      })
+    );
+
+    return {
+      data: nftsToReturn,
+      cursor: updatedCursor,
+      hasNextPage
+    };
   }
 }
