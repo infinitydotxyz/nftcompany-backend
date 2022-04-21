@@ -20,9 +20,10 @@ import { VotesService } from 'votes/votes.service';
 import { DiscordService } from '../discord/discord.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { TwitterService } from '../twitter/twitter.service';
-import { base64Decode, base64Encode, calcPercentChange } from '../utils';
+import { calcPercentChange } from '../utils';
 import { CollectionStatsArrayResponseDto } from './dto/collection-stats-array.dto';
 import { CollectionStatsDto } from './dto/collection-stats.dto';
+import { PaginationService } from 'pagination/pagination.service';
 
 @Injectable()
 export class StatsService {
@@ -42,7 +43,8 @@ export class StatsService {
     private discordService: DiscordService,
     private twitterService: TwitterService,
     private firebaseService: FirebaseService,
-    private votesService: VotesService
+    private votesService: VotesService,
+    private paginationService: PaginationService
   ) {}
 
   async getCollectionRankings(queryOptions: RankingsRequestDto): Promise<CollectionStatsArrayResponseDto> {
@@ -127,8 +129,7 @@ export class StatsService {
     collection: ParsedCollectionId,
     query: CollectionHistoricalStatsQueryDto
   ): Promise<CollectionStatsArrayResponseDto> {
-    const startAfterCursorStr = base64Decode(query.cursor);
-    const startAfterCursor = startAfterCursorStr ? parseInt(startAfterCursorStr, 10) : '';
+    const startAfterCursor = this.paginationService.decodeCursor<number>(query.cursor || '');
     const orderDirection = query.orderDirection;
     const limit = query.limit;
     const period = query.period;
@@ -171,7 +172,7 @@ export class StatsService {
       combinedStats.pop(); // Remove the item that was added to check if there are more results
     }
     const cursorTimestamp = combinedStats?.[combinedStats?.length - 1]?.timestamp;
-    const cursor = base64Encode(cursorTimestamp ? `${cursorTimestamp}` : '');
+    const cursor = this.paginationService.encodeCursor(cursorTimestamp ?? '');
 
     return {
       data: combinedStats,
@@ -329,7 +330,7 @@ export class StatsService {
 
     let startAfter;
     if (queryOptions.cursor) {
-      const decodedCursor = base64Decode(queryOptions.cursor);
+      const decodedCursor = this.paginationService.decodeCursor<string>(queryOptions.cursor);
       const [chainId, address] = decodedCursor.split(':');
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)
@@ -361,7 +362,7 @@ export class StatsService {
     const cursorInfo = collectionStats[collectionStats.length - 1];
     let cursor = '';
     if (cursorInfo?.chainId && cursorInfo?.collectionAddress) {
-      cursor = base64Encode(`${cursorInfo.chainId}:${cursorInfo.collectionAddress}`);
+      cursor = this.paginationService.encodeCursor(`${cursorInfo.chainId}:${cursorInfo.collectionAddress}`);
     }
     return { data: collectionStats, cursor };
   }
