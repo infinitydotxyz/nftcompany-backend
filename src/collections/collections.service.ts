@@ -114,10 +114,6 @@ export default class CollectionsService {
     await collection.ref.set({ metadata }, { merge: true });
   }
 
-  async setAddress(collection: ParsedCollectionId, address: string) {
-    await collection.ref.set({ address }, { merge: true });
-  }
-
   /**
    * Verify whether the given user address is the deployer/creator of the collection.
    */
