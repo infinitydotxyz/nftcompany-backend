@@ -1,9 +1,10 @@
-import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
-import { Injectable } from '@nestjs/common';
+import { ChainId, CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
+import { ethers } from 'ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
@@ -12,11 +13,12 @@ import { UserFollowingCollectionPostPayload } from './dto/user-following-collect
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
+import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './user-id.pipe';
 
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
+  constructor(private firebaseService: FirebaseService, @Optional() private statsService: StatsService) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -159,5 +161,71 @@ export class UserService {
 
     await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).delete();
     return {};
+  }
+
+  async getByUsername(username: string) {
+    const snapshot = await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+
+    const doc = snapshot.docs[0];
+
+    const user = doc?.data() as UserProfileDto;
+
+    return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
+  }
+
+  /**
+   * Returns a document reference to the collection with the specified address.
+   */
+  getRef(address: string) {
+    return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
+  }
+
+  async parse(value: string): Promise<ParsedUserId> {
+    const usernameOrAddress = trimLowerCase(value);
+
+    // username
+    if (!usernameOrAddress.includes(':') && !ethers.utils.isAddress(usernameOrAddress)) {
+      const { user, ref } = await this.getByUsername(usernameOrAddress);
+      if (!user) {
+        throw new NotFoundException('Failed to find user via username');
+      }
+      const userChainId = ChainId.Mainnet;
+      const userAddress = user.address;
+      return {
+        userAddress,
+        userChainId,
+        ref
+      };
+    }
+
+    // address
+    if (ethers.utils.isAddress(usernameOrAddress)) {
+      return {
+        userAddress: usernameOrAddress,
+        userChainId: ChainId.Mainnet,
+        ref: this.getRef(usernameOrAddress) as FirebaseFirestore.DocumentReference<UserProfileDto>
+      };
+    }
+
+    // chain:address
+    const [chainId, address] = value.split(':').map((item) => trimLowerCase(item));
+
+    if (!Object.values(ChainId).includes(chainId as any)) {
+      throw new BadRequestException('Invalid chain id');
+    }
+
+    if (!ethers.utils.isAddress(address)) {
+      throw new BadRequestException('Invalid address');
+    }
+
+    return {
+      userAddress: address,
+      userChainId: chainId as ChainId,
+      ref: this.getRef(address) as FirebaseFirestore.DocumentReference<UserProfileDto>
+    };
   }
 }

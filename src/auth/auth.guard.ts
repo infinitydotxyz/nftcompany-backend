@@ -4,11 +4,12 @@ import { auth } from '../constants';
 import { ethers } from 'ethers';
 import { Reflector } from '@nestjs/core';
 import { metadataKey } from 'auth/match-signer.decorator';
-import { ParseUserIdPipe } from 'user/user-id.pipe';
+import { UserService } from 'user/user.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private reflector: Reflector, private parseUserIdPipe: ParseUserIdPipe) {}
+  constructor(private reflector: Reflector, private userService: UserService) {}
+
   async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     const paramName = this.reflector.get<string>(metadataKey, context.getHandler());
@@ -27,7 +28,7 @@ export class AuthGuard implements CanActivate {
       }
 
       const paramValue = request.params[paramName];
-      const user = await this.parseUserIdPipe.transform(paramValue);
+      const user = await this.userService.parse(paramValue);
 
       return user.userAddress === signingAddress;
     } catch (err: any) {
