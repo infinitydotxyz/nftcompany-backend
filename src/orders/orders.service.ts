@@ -26,13 +26,19 @@ export default class OrdersService {
       try {
         for (const nft of order.nfts) {
           const collection = nft.collectionAddress;
+          const collectionName = nft.collectionName;
+          const profileImage = nft.profileImage;
           for (const token of nft.tokens) {
             // get data
             const tokenId = token.tokenId.toString();
             const orderItemData = this.getPartialFirestoreOrderItemFromSignedOBOrder(order);
             orderItemData.collection = collection;
+            orderItemData.collectionName = collectionName;
+            orderItemData.profileImage = profileImage;
             orderItemData.tokenId = tokenId;
             orderItemData.numTokens = token.numTokens;
+            orderItemData.imageUrl = token.imageUrl;
+            orderItemData.tokenName = token.tokenName;
 
             // get doc id
             const orderItemDocRef = orderItemsRef.doc(
@@ -51,6 +57,32 @@ export default class OrdersService {
     fsBatchHandler.flush().catch((err) => {
       error(err);
     });
+  }
+
+  async getOrders(params: any) { // todo: remove any
+    const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
+    // todo: needs pagination
+    const query = ordersCollectionRef.where('orderStatus', '==', ORDER_VALID_ACTIVE);
+    const orders = await query.get();
+    // todo: change this
+    const results: FirebaseFirestore.DocumentData[] = [];
+    orders.forEach((doc) => {
+      const order = doc.data();
+      const orderItems: FirestoreOrderItem[] = [];
+      doc.ref.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL).get().then((items) => {
+        items.forEach((orderItemDoc) => {
+          const orderItem = orderItemDoc.data() as FirestoreOrderItem;
+          orderItems.push(orderItem);
+        });
+      }).catch((err) => {
+        error(err);
+      });
+      order.orderItems = orderItems;
+      results.push(order);
+    });
+    return {
+      orders: results
+    }
   }
 
   getFirestoreOrderFromSignedOBOrder(order: SignedOBOrderDto): FirestoreOrder {

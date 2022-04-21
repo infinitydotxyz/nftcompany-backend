@@ -38,6 +38,10 @@ export interface FirestoreOrderItem {
   takerUsername: string;
   takerAddress: string;
   collection: string;
+  collectionName: string;
+  profileImage: string; // todo: change to more descriptive name
   tokenId: string;
+  tokenName: string;
+  imageUrl: string;
   numTokens: number;
 }
