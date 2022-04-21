@@ -1,6 +1,6 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
 import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
-import { PipeTransform, Injectable, BadRequestException, NotFoundException, Global } from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ethers } from 'ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { UserProfileDto } from './dto/user-profile.dto';
