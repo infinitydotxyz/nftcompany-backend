@@ -1,14 +1,14 @@
 import {
-  isOrderSpecExpired,
-  getCurrentOrderSpecPrice,
+  isOBOrderExpired,
+  getCurrentOBOrderPrice,
   MarketListId,
-  OBOrderSpec,
-  OBOrderSpecNFT
+  OBOrder,
+  OBOrderItem
 } from '@infinityxyz/lib/types/core';
 import { sellOrdersWithParams } from './marketFirebase';
 
 export class ActiveSellOrders {
-  orderMap: Map<string, OBOrderSpec[]> = new Map<string, OBOrderSpec[]>();
+  orderMap: Map<string, OBOrder[]> = new Map<string, OBOrder[]>();
   collectionAddresses: string[] = [];
 
   async addCollectionAddresses(addresses: string[]) {
@@ -21,11 +21,11 @@ export class ActiveSellOrders {
       const orders = await sellOrdersWithParams(MarketListId.ValidActive, diff);
 
       for (const sellOrder of orders) {
-        if (!isOrderSpecExpired(sellOrder)) {
-          const addrs = sellOrder.nftsWithMetadata.map((e) => e.collectionAddress);
+        if (!isOBOrderExpired(sellOrder)) {
+          const addrs = sellOrder.nfts.map((e) => e.collectionAddress);
           for (const addr of addrs) {
             let orderArray = this.orderMap.get(addr);
-            const activeSellOrder: OBOrderSpec = { ...sellOrder };
+            const activeSellOrder: OBOrder = { ...sellOrder };
             if (!orderArray) {
               orderArray = [activeSellOrder];
             } else {
@@ -38,8 +38,8 @@ export class ActiveSellOrders {
     }
   }
 
-  async ordersInCollections(nfts: OBOrderSpecNFT[]): Promise<OBOrderSpec[]> {
-    const result: OBOrderSpec[] = [];
+  async ordersInCollections(nfts: OBOrderItem[]): Promise<OBOrder[]> {
+    const result: OBOrder[] = [];
     if (nfts) {
       const addresses = nfts.map((e) => e.collectionAddress);
       await this.addCollectionAddresses(addresses);
@@ -53,8 +53,8 @@ export class ActiveSellOrders {
       }
 
       const sortedOrders = result.sort((a, b) => {
-        const aCurrPrice = getCurrentOrderSpecPrice(a);
-        const bCurrPrice = getCurrentOrderSpecPrice(b);
+        const aCurrPrice = getCurrentOBOrderPrice(a);
+        const bCurrPrice = getCurrentOBOrderPrice(b);
         if (aCurrPrice.gt(bCurrPrice)) {
           return 1;
         } else if (aCurrPrice.lt(bCurrPrice)) {
@@ -69,13 +69,13 @@ export class ActiveSellOrders {
     return result;
   }
 
-  async ordersForBuyOrder(buyOrder: OBOrderSpec): Promise<OBOrderSpec[]> {
-    const result: OBOrderSpec[] = [];
+  async ordersForBuyOrder(buyOrder: OBOrder): Promise<OBOrder[]> {
+    const result: OBOrder[] = [];
 
-    const sellOrders = await this.ordersInCollections(buyOrder.nftsWithMetadata);
-    const buyCurrPrice = getCurrentOrderSpecPrice(buyOrder);
+    const sellOrders = await this.ordersInCollections(buyOrder.nfts);
+    const buyCurrPrice = getCurrentOBOrderPrice(buyOrder);
     for (const sellOrder of sellOrders) {
-      const sellCurrPrice = getCurrentOrderSpecPrice(sellOrder);
+      const sellCurrPrice = getCurrentOBOrderPrice(sellOrder);
       if (sellCurrPrice <= buyCurrPrice) {
         result.push(sellOrder);
       }

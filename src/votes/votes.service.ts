@@ -139,4 +139,18 @@ export class VotesService {
       cursor
     };
   }
+
+  async getUserVote(user: UserDto, collection: ParsedCollectionId): Promise<UserCollectionVoteDto | null> {
+    const userVoteRef = collection.ref
+      .collection(firestoreConstants.COLLECTION_VOTES_COLL)
+      .doc(VotesService.getVoteDocId(user));
+
+    const userVoteSnapshot = await userVoteRef.get();
+
+    if (!userVoteSnapshot.exists) {
+      return null;
+    }
+
+    return userVoteSnapshot.data() as UserCollectionVoteDto;
+  }
 }

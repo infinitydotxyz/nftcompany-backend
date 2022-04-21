@@ -1,4 +1,4 @@
-import { MarketListId, isOrderSpecExpired } from '@infinityxyz/lib/types/core';
+import { MarketListId, isOBOrderExpired } from '@infinityxyz/lib/types/core';
 import { expiredOrders, moveOrder } from './marketFirebase';
 import { marketOrders } from './marketOrders';
 
@@ -29,12 +29,16 @@ export class MarketOrderTask {
   scanForExpiredOrders() {
     if (!this.expiredScanTimer) {
       this.expiredScanTimer = setTimeout(async () => {
-        const orders = await expiredOrders();
-        for (const order of orders) {
-          if (isOrderSpecExpired(order.order)) {
-            // Move order to invalid list
-            await moveOrder(order.order, order.listId, MarketListId.Invalid);
+        try {
+          const orders = await expiredOrders();
+          for (const order of orders) {
+            if (isOBOrderExpired(order.order)) {
+              // Move order to invalid list
+              await moveOrder(order.order, order.listId, MarketListId.Invalid);
+            }
           }
+        } catch (err) {
+          console.error(err);
         }
 
         this.expiredScanTimer = undefined;
@@ -45,11 +49,15 @@ export class MarketOrderTask {
   scanForMatches() {
     if (!this.matchScanTimer) {
       this.matchScanTimer = setTimeout(async () => {
-        const matches = await marketOrders.marketMatches();
+        try {
+          const matches = await marketOrders.marketMatches();
 
-        // Execute the buys if found
-        for (const m of matches) {
-          await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
+          // Execute the buys if found
+          for (const m of matches) {
+            await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
+          }
+        } catch (err) {
+          console.error(err);
         }
 
         this.matchScanTimer = undefined;
