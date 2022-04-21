@@ -2,7 +2,7 @@ import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
-import { DeleteUserProfileImagesDto, UpdateUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
+import { DeleteUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
 import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
