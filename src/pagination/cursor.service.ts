@@ -2,12 +2,6 @@
 import { Injectable } from '@nestjs/common';
 import { base64Decode, base64Encode } from 'utils';
 
-/**
- * Pagination service.
- *
- * Supported types of pagination:
- * - cursor
- */
 @Injectable()
 export class CursorService {
   /**
