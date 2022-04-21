@@ -75,6 +75,7 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { UserCollectionPermissions } from './dto/user-collection-permissions';
 
 @Controller('user')
 export class UserController {
@@ -413,6 +414,26 @@ export class UserController {
 
     // Update stats in the background (do NOT await this call).
     this.statsService.getCurrentSocialsStats(collection.ref).catch((err) => this.logger.error(err));
+  }
+
+  @Get(':userId/collections/:collectionId/permissions')
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
+  @ApiOperation({
+    description: "Get the user's permissions for this collection",
+    tags: [ApiTag.User, ApiTag.Collection]
+  })
+  @ApiParamUserId('userId')
+  @ApiParamCollectionId('collectionId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionPermissions })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async getCollectionPermissions(
+    @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<UserCollectionPermissions> {
+    return { canModify: await this.collectionsService.canModify(userAddress, collection) };
   }
 
   @Get(':userId/followingCollections')
