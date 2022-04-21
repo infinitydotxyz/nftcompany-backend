@@ -8,7 +8,6 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
-import { OrdersDto } from './orders.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -25,7 +24,7 @@ export class OrdersController {
   //   description: 'Post orders',
   //   tags: [ApiTag.Orders]
   // })
-  @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
+  @ApiOkResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })

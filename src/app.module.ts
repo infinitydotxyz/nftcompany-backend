@@ -13,13 +13,12 @@ import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
 import { VotesModule } from './votes/votes.module';
 import { MarketListingsModule } from './market-listings/market-listings.module';
+import { OrdersModule } from 'orders/orders.module';
+import { ParseUserIdPipe } from 'user/user-id.pipe';
 
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
-import { OrdersModule } from 'orders/orders.module';
-import { ParseUserIdPipe } from 'user/user-id.pipe';
-import { AlchemyService } from './alchemy/alchemy.service';
 
 @Module({
   imports: [
@@ -42,7 +41,7 @@ import { AlchemyService } from './alchemy/alchemy.service';
     OrdersModule
   ],
   controllers: [AppController],
-  providers: [AppService, ParseUserIdPipe, AlchemyService]
+  providers: [AppService, ParseUserIdPipe]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
