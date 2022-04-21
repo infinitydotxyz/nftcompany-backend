@@ -3,14 +3,13 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { auth } from '../../constants';
 import { ethers } from 'ethers';
 import { Reflector } from '@nestjs/core';
-import { toLower } from 'lodash';
 import { metadataKey } from 'common/decorators/match-signer.decorator';
+import { ParseUserIdPipe } from 'user/user-id.pipe';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
-
-  canActivate(context: ExecutionContext) {
+  constructor(private reflector: Reflector, private parseUserIdPipe: ParseUserIdPipe) {}
+  async canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
     const paramName = this.reflector.get<string>(metadataKey, context.getHandler());
     const messageHeader = request.headers?.[auth.message];
@@ -28,17 +27,9 @@ export class AuthGuard implements CanActivate {
       }
 
       const paramValue = request.params[paramName];
+      const user = await this.parseUserIdPipe.transform(paramValue);
 
-      let address = trimLowerCase(paramValue);
-
-      // Chain:address
-      if (paramValue.includes(':')) {
-        const split = paramValue.split(':');
-        address = toLower(split[1]);
-      }
-
-      // Address
-      return address === signingAddress;
+      return user.userAddress === signingAddress;
     } catch (err: any) {
       return false;
     }

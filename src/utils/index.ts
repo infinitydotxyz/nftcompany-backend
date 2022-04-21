@@ -130,17 +130,22 @@ export function hexToDecimalTokenId(tokenId: string): string {
   return tokenId;
 }
 
-export function calcPercentChange(prev = NaN, current: number) {
-  const change = prev - current;
+const round = (value: number, decimals: number) => {
+  const decimalsFactor = Math.pow(10, decimals);
+  return Math.floor(value * decimalsFactor) / decimalsFactor;
+};
+
+export const calcPercentChange = (prev = NaN, current: number) => {
+  const change = current - prev;
   const decimal = change / Math.abs(prev);
   const percent = decimal * 100;
 
-  if (Number.isNaN(percent)) {
-    return current;
+  if (Number.isNaN(percent) || !Number.isFinite(percent)) {
+    return 0;
   }
 
-  return percent;
-}
+  return round(percent, 4);
+};
 
 export function getDocIdHash({
   collectionAddress,
