@@ -1,10 +1,15 @@
 import { Global, Module } from '@nestjs/common';
-import { ParseUserIdPipe } from 'user/user-id.pipe';
-import { AuthGuard } from './auth.guard';
-
+import { UserParserModule } from 'user/parser/parser.module';
+import { UserParserService } from 'user/parser/parser.service';
+/**
+ * Global authentication module.
+ *
+ * This module re-exports the dependencies that are required in `AuthGuard`.
+ */
 @Global()
 @Module({
-  providers: [AuthGuard, ParseUserIdPipe],
-  exports: [AuthGuard, ParseUserIdPipe]
+  providers: [UserParserService],
+  exports: [UserParserService],
+  imports: [UserParserModule]
 })
 export class AuthModule {}

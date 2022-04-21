@@ -12,6 +12,7 @@ import { ProfileModule } from './profile/profile.module';
 @Module({
   providers: [UserService],
   imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
-  controllers: [UserController]
+  controllers: [UserController],
+  exports: [UserService]
 })
 export class UserModule {}
