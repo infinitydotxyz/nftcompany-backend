@@ -19,6 +19,7 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
 import { OrdersModule } from 'orders/orders.module';
 import { MnemonicModule } from './mnemonic/mnemonic.module';
+import { ParseUserIdPipe } from 'user/user-id.pipe';
 
 @Module({
   imports: [
@@ -42,7 +43,7 @@ import { MnemonicModule } from './mnemonic/mnemonic.module';
     MnemonicModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService, ParseUserIdPipe]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

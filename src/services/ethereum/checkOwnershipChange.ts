@@ -1,9 +1,8 @@
-import { NULL_ADDRESS } from '../../constants';
 import { getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
 import ERC721ABI from 'abi/ERC721.json';
 import ERC1155ABI from 'abi/ERC1155.json';
-import { error } from '@infinityxyz/lib/utils';
+import { error, NULL_ADDRESS } from '@infinityxyz/lib/utils';
 
 export async function checkOwnershipChange(doc: any): Promise<boolean> {
   const order = doc.data();

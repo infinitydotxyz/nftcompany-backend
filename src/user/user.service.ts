@@ -12,16 +12,14 @@ import { UserFollowingCollectionPostPayload } from './dto/user-following-collect
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
-import { UserDto } from './dto/user.dto';
+import { ParsedUserId } from './user-id.pipe';
 
 @Injectable()
 export class UserService {
   constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
 
-  async getUserWatchlist(user: UserDto, query: RankingsRequestDto) {
-    const collectionFollows = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
+  async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
+    const collectionFollows = user.ref
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .select('collectionAddress', 'collectionChainId');
     const snap = await collectionFollows.get();
@@ -50,11 +48,19 @@ export class UserService {
     return orderedStats;
   }
 
-  async getUserFollowingCollections(user: UserDto) {
-    const collectionFollows = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
-      .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
+  async getProfile(user: ParsedUserId) {
+    const profileSnapshot = await user.ref.get();
+    const profile = profileSnapshot.data();
+
+    if (!profile) {
+      return null;
+    }
+
+    return profile;
+  }
+
+  async getCollectionsBeingFollowed(user: ParsedUserId) {
+    const collectionFollows = user.ref.collection(firestoreConstants.COLLECTION_FOLLOWS_COLL);
 
     const snap = await collectionFollows.get();
     const followingCollections: UserFollowingCollection[] = snap.docs.map((doc) => {
@@ -64,7 +70,7 @@ export class UserService {
     return followingCollections;
   }
 
-  async addUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionPostPayload) {
+  async followCollection(user: ParsedUserId, payload: UserFollowingCollectionPostPayload) {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: payload.collectionChainId,
       address: payload.collectionAddress
@@ -82,9 +88,7 @@ export class UserService {
       );
     }
 
-    await this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
+    await user.ref
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .doc(payload.collectionChainId + ':' + payload.collectionAddress)
       .set({
@@ -97,7 +101,7 @@ export class UserService {
     return {};
   }
 
-  async removeUserFollowingCollection(user: UserDto, payload: UserFollowingCollectionDeletePayload) {
+  async unfollowCollection(user: ParsedUserId, payload: UserFollowingCollectionDeletePayload) {
     const collectionRef = await this.firebaseService.getCollectionRef({
       chainId: payload.collectionChainId,
       address: payload.collectionAddress
@@ -115,20 +119,15 @@ export class UserService {
       );
     }
 
-    await this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
+    await user.ref
       .collection(firestoreConstants.COLLECTION_FOLLOWS_COLL)
       .doc(payload.collectionChainId + ':' + payload.collectionAddress)
       .delete();
     return {};
   }
 
-  async getUserFollowingUsers(user: UserDto) {
-    const userFollows = this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
-      .collection(firestoreConstants.USER_FOLLOWS_COLL);
+  async getUsersBeingFollowed(user: ParsedUserId) {
+    const userFollows = user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL);
 
     const snap = await userFollows.get();
     const followingUsers: UserFollowingUser[] = snap.docs.map((doc) => {
@@ -138,7 +137,7 @@ export class UserService {
     return followingUsers;
   }
 
-  async addUserFollowingUser(user: UserDto, payload: UserFollowingUserPostPayload) {
+  async followUser(user: ParsedUserId, payload: UserFollowingUserPostPayload) {
     const userRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(payload.userAddress);
 
     const followingUser = (await userRef.get()).data();
@@ -146,31 +145,19 @@ export class UserService {
       throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
-    await this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
-      .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userAddress)
-      .set({
-        userAddress: payload.userAddress
-      });
+    await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).set({
+      userAddress: payload.userAddress
+    });
     return {};
   }
 
-  async removeUserFollowingUser(user: UserDto, payload: UserFollowingUserDeletePayload) {
-    const userRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(payload.userAddress);
-
-    const followingUser = (await userRef.get()).data();
+  async unfollowUser(user: ParsedUserId, payload: UserFollowingUserDeletePayload) {
+    const followingUser = (await user.ref.get()).data();
     if (!followingUser) {
       throw new InvalidUserError(payload.userAddress, 'User not found');
     }
 
-    await this.firebaseService.firestore
-      .collection(firestoreConstants.USERS_COLL)
-      .doc(user.userAddress)
-      .collection(firestoreConstants.USER_FOLLOWS_COLL)
-      .doc(payload.userAddress)
-      .delete();
+    await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).delete();
     return {};
   }
 }

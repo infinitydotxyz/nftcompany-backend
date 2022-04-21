@@ -1,12 +1,45 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { trimLowerCase } from '@infinityxyz/lib/utils';
-import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
+import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
+import { PipeTransform, Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ethers } from 'ethers';
-import { UserDto } from './dto/user.dto';
+import { FirebaseService } from 'firebase/firebase.service';
+import { UserProfileDto } from './dto/user-profile.dto';
+
+export type ParsedUserId = {
+  userAddress: string;
+  userChainId: ChainId;
+  ref: FirebaseFirestore.DocumentReference<UserProfileDto>;
+};
 
 @Injectable()
-export class ParseUserIdPipe implements PipeTransform<string, UserDto> {
-  transform(value: string): UserDto {
+export class ParseUserIdPipe implements PipeTransform<string, Promise<ParsedUserId>> {
+  constructor(private firebaseService: FirebaseService) {}
+
+  async transform(value: string): Promise<ParsedUserId> {
+    const usernameOrAddress = trimLowerCase(value);
+
+    if (!usernameOrAddress.includes(':') && !ethers.utils.isAddress(usernameOrAddress)) {
+      const { user, ref } = await this.getUserByUsername(usernameOrAddress);
+      const userChainId = ChainId.Mainnet;
+      const userAddress = user.address;
+      return {
+        userAddress,
+        userChainId,
+        ref
+      };
+    }
+
+    if (ethers.utils.isAddress(usernameOrAddress)) {
+      const ref = this.firebaseService.firestore
+        .collection(firestoreConstants.USERS_COLL)
+        .doc(usernameOrAddress) as FirebaseFirestore.DocumentReference<UserProfileDto>;
+      return {
+        userAddress: usernameOrAddress,
+        userChainId: ChainId.Mainnet,
+        ref
+      };
+    }
+
     const [chainId, address] = value.split(':').map((item) => trimLowerCase(item));
 
     if (!Object.values(ChainId).includes(chainId as any)) {
@@ -17,9 +50,32 @@ export class ParseUserIdPipe implements PipeTransform<string, UserDto> {
       throw new BadRequestException('Invalid address');
     }
 
+    const ref = this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .doc(address) as FirebaseFirestore.DocumentReference<UserProfileDto>;
+
     return {
       userAddress: address,
-      userChainId: chainId as ChainId
+      userChainId: chainId as ChainId,
+      ref
     };
+  }
+
+  private async getUserByUsername(username: string) {
+    const snapshot = await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+
+    const doc = snapshot.docs[0];
+
+    const user = doc?.data() as UserProfileDto;
+
+    if (!user) {
+      throw new NotFoundException('Failed to find user via username');
+    }
+
+    return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
   }
 }

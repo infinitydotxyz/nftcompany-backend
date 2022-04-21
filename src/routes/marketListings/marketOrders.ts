@@ -14,7 +14,8 @@ import { BigNumber } from 'ethers';
 @singleton()
 export class MarketOrders {
   // Runs in the background, scanning the order list
-  task: MarketOrderTask = new MarketOrderTask();
+  // commented becasuse it is crashing the server
+  // task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
     const c = await orderMap(true, MarketListId.ValidActive);

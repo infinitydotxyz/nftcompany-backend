@@ -1,10 +1,9 @@
 import { getChainId, getProvider } from './ethers';
-import { POLYGON_WETH_ADDRESS, WETH_ADDRESS } from '../constants';
 import { ListingType, StatusCode } from '@infinityxyz/lib/types/core';
 import BigNumber from 'bignumber.js';
 import { List, uniqBy } from 'lodash';
 import { ParsedQs } from 'qs';
-import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { error, ETHEREUM_WETH_ADDRESS, POLYGON_WETH_ADDRESS, trimLowerCase } from '@infinityxyz/lib/utils';
 import { createHash } from 'crypto';
 
 export const base64Encode = (data: string) => Buffer.from(data).toString('base64');
@@ -118,7 +117,7 @@ export function validateInputs(props: validateInputsProps, requiredProps: string
 
 export function getPaymentTokenAddress(listingType?: string, chainId?: string): string | undefined {
   if (chainId === '1') {
-    return listingType === ListingType.EnglishAuction ? WETH_ADDRESS : undefined;
+    return listingType === ListingType.EnglishAuction ? ETHEREUM_WETH_ADDRESS : undefined;
   } else if (chainId === '137') {
     return POLYGON_WETH_ADDRESS;
   }
@@ -131,17 +130,22 @@ export function hexToDecimalTokenId(tokenId: string): string {
   return tokenId;
 }
 
-export function calcPercentChange(prev = NaN, current: number) {
-  const change = prev - current;
+const round = (value: number, decimals: number) => {
+  const decimalsFactor = Math.pow(10, decimals);
+  return Math.floor(value * decimalsFactor) / decimalsFactor;
+};
+
+export const calcPercentChange = (prev = NaN, current: number) => {
+  const change = current - prev;
   const decimal = change / Math.abs(prev);
   const percent = decimal * 100;
 
-  if (Number.isNaN(percent)) {
-    return current;
+  if (Number.isNaN(percent) || !Number.isFinite(percent)) {
+    return 0;
   }
 
-  return percent;
-}
+  return round(percent, 4);
+};
 
 export function getDocIdHash({
   collectionAddress,
