@@ -2,7 +2,7 @@ import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
-import { UpdateUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
+import { DeleteUserProfileImagesDto, UpdateUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
 import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
@@ -21,7 +21,7 @@ export class ProfileService {
     return isValid;
   }
 
-  async updateProfileImages(user: ParsedUserId, data: UpdateUserProfileImagesDto) {
+  async updateProfileImages(user: ParsedUserId, data: DeleteUserProfileImagesDto) {
     const profileSnap = await user.ref.get();
     const currentProfile = profileSnap.data();
     const createdAt = currentProfile?.createdAt ?? Date.now();

@@ -21,6 +21,7 @@ import {
 import { AuthGuard } from 'common/guards/auth.guard';
 import { UserService } from './user.service';
 import {
+  ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
   ApiHeader,
@@ -68,7 +69,11 @@ import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
-import { UpdateUserProfileImagesDto } from './dto/update-user-profile-images.dto';
+import {
+  DeleteUserProfileImagesDto,
+  UpdateUserProfileImagesDto,
+  UserProfileImagesDto
+} from './dto/update-user-profile-images.dto';
 
 @Controller('user')
 export class UserController {
@@ -184,15 +189,18 @@ export class UserController {
   })
   @ApiParamUserId('userId')
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: UpdateUserProfileImagesDto
+  })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async uploadImages(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
-    @Body() data: UpdateUserProfileImagesDto,
+    @Body() data: DeleteUserProfileImagesDto,
     @UploadedFiles()
-    files?: { profileImage?: Express.Multer.File[]; bannerImage?: Express.Multer.File[] }
+    files?: UserProfileImagesDto
   ): Promise<void> {
-    const profile: Partial<UserProfileDto> & UpdateUserProfileImagesDto = {
+    const profile: Partial<UserProfileDto> & DeleteUserProfileImagesDto = {
       ...data
     };
 
