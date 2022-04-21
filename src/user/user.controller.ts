@@ -22,10 +22,12 @@ import { AuthGuard } from 'common/guards/auth.guard';
 import { UserService } from './user.service';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
   ApiHeader,
   ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -69,10 +71,14 @@ import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
-import { UpdateUserProfileImagesDto } from './dto/update-user-profile-images.dto';
 import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { sleep } from 'utils';
+import {
+  DeleteUserProfileImagesDto,
+  UpdateUserProfileImagesDto,
+  UserProfileImagesDto
+} from './dto/update-user-profile-images.dto';
 
 @Controller('user')
 export class UserController {
@@ -164,7 +170,9 @@ export class UserController {
     description: "Update a user's profile",
     tags: [ApiTag.User]
   })
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParamUserId('userId')
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateProfile(
@@ -201,17 +209,22 @@ export class UserController {
     description: 'Update user images',
     tags: [ApiTag.User]
   })
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParamUserId('userId')
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: UpdateUserProfileImagesDto
+  })
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async uploadImages(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
-    @Body() data: UpdateUserProfileImagesDto,
+    @Body() data: DeleteUserProfileImagesDto,
     @UploadedFiles()
-    files?: { profileImage?: Express.Multer.File[]; bannerImage?: Express.Multer.File[] }
+    files?: UserProfileImagesDto
   ): Promise<void> {
-    const profile: Partial<UserProfileDto> & UpdateUserProfileImagesDto = {
+    const profile: Partial<UserProfileDto> & DeleteUserProfileImagesDto = {
       ...data
     };
 
@@ -379,6 +392,7 @@ export class UserController {
     name: 'Content-Type',
     required: false
   })
+  @ApiNoContentResponse({ description: ResponseDescription.Success })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(

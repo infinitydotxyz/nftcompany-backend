@@ -6,10 +6,11 @@ import { CollectionsController } from './collections.controller';
 import CollectionsService from './collections.service';
 import { NftsController } from './nfts/nfts.controller';
 import { NftsService } from './nfts/nfts.service';
+import { AlchemyService } from './alchemy/alchemy.service';
 
 @Module({
   imports: [StatsModule, VotesModule, TwitterModule],
-  providers: [CollectionsService, NftsService],
+  providers: [CollectionsService, NftsService, AlchemyService],
   controllers: [CollectionsController, NftsController],
   exports: [CollectionsService, NftsService]
 })

@@ -19,6 +19,7 @@ import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
 import { OrdersModule } from 'orders/orders.module';
 import { ParseUserIdPipe } from 'user/user-id.pipe';
+import { AlchemyService } from './alchemy/alchemy.service';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { ParseUserIdPipe } from 'user/user-id.pipe';
     OrdersModule
   ],
   controllers: [AppController],
-  providers: [AppService, ParseUserIdPipe]
+  providers: [AppService, ParseUserIdPipe, AlchemyService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
