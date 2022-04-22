@@ -1,31 +1,24 @@
 import { jsonString } from '@infinityxyz/lib/utils';
+import { UserAuth } from 'auth/user-auth.decorator';
+import { ApiTag } from 'common/api-tags';
 import { Body, Controller, Param, Post } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiInternalServerErrorResponse,
-  ApiOkResponse,
-  ApiUnauthorizedResponse
-} from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
+import { OrdersDto } from './orders.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private ordersService: OrdersService) {}
 
-  // todo: uncomment
   @Post(':userId/create')
-  // @ApiParamUserId('userId')
-  // @ApiSignatureAuth()
-  // @UseGuards(AuthGuard)
-  // @MatchSigner('userId')
-  // @ApiOperation({
-  //   description: 'Post orders',
-  //   tags: [ApiTag.Orders]
-  // })
-  @ApiOkResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiOperation({
+    description: 'Post orders',
+    tags: [ApiTag.Orders]
+  })
+  @UserAuth('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   postOrders(@Param() userId: string, @Body() body: any) {
@@ -41,7 +34,6 @@ export class OrdersController {
   //   tags: [ApiTag.Orders]
   // })
   @ApiOkResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async getOrders(@Body() body: any) {
