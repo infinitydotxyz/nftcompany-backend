@@ -15,8 +15,7 @@ import {
   Headers,
   Delete,
   BadRequestException,
-  UploadedFiles,
-  UseGuards
+  UploadedFiles
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import {
@@ -29,8 +28,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
-  ApiUnauthorizedResponse
+  ApiQuery
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
@@ -75,9 +73,6 @@ import {
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
-import { ApiSignatureAuth } from 'auth/api-signature.decorator';
-import { AuthGuard } from 'auth/auth.guard';
-import { MatchSigner } from 'auth/match-signer.decorator';
 
 @Controller('user')
 export class UserController {
@@ -103,11 +98,7 @@ export class UserController {
     required: true,
     type: String
   })
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
-  @ApiSignatureAuth()
-  @ApiParamUserId('userId')
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async checkUsername(
