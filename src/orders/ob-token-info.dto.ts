@@ -20,7 +20,7 @@ export class OBTokenInfoDto {
   })
   @IsString()
   @IsNotEmpty()
-  imageUrl: string;
+  tokenImage: string;
 
   @ApiProperty({
     description: 'No. of tokens. 1 for ERC721, >=1 for ERC1155'
