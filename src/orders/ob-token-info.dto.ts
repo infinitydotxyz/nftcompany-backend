@@ -20,7 +20,7 @@ export class OBTokenInfoDto {
   })
   @IsString()
   @IsNotEmpty()
-  imageUrl: string;
+  tokenImage: string;
 
   @ApiProperty({
     description: 'No. of tokens. 1 for ERC721, >=1 for ERC1155'
@@ -28,4 +28,16 @@ export class OBTokenInfoDto {
   @IsNumber()
   @IsNotEmpty()
   numTokens: number;
+
+  @ApiProperty({
+    description: 'Taker username'
+  })
+  @IsString()
+  takerUsername: string;
+
+  @ApiProperty({
+    description: 'Taker address'
+  })
+  @IsString()
+  takerAddress: string;
 }

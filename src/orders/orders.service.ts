@@ -4,8 +4,10 @@ import { ORDER_VALID_ACTIVE } from '../constants';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
 import { getDocIdHash } from 'utils';
-import { FirestoreOrder, FirestoreOrderItem } from './firestore-order';
 import { SignedOBOrderDto } from './signed-ob-order.dto';
+import { FirestoreOrder, FirestoreOrderItem } from '@infinityxyz/lib/types/core';
+import { OBOrderItemDto } from './ob-order-item.dto';
+import { OBTokenInfoDto } from './ob-token-info.dto';
 
 @Injectable()
 export default class OrdersService {
@@ -25,20 +27,14 @@ export default class OrdersService {
       const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
       try {
         for (const nft of order.nfts) {
-          const collection = nft.collectionAddress;
           for (const token of nft.tokens) {
             // get data
             const tokenId = token.tokenId.toString();
-            const orderItemData = this.getPartialFirestoreOrderItemFromSignedOBOrder(order);
-            orderItemData.collection = collection;
-            orderItemData.tokenId = tokenId;
-            orderItemData.numTokens = token.numTokens;
-
+            const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
             // get doc id
             const orderItemDocRef = orderItemsRef.doc(
-              getDocIdHash({ collectionAddress: collection, tokenId, chainId: order.chainId })
+              getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
             );
-
             // add to batch
             fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
           }
@@ -53,6 +49,38 @@ export default class OrdersService {
     });
   }
 
+  async getOrders(params: any) {
+    console.log(params); // todo: remove
+    // todo: remove any
+    const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
+    // todo: needs pagination
+    const query = ordersCollectionRef.where('orderStatus', '==', ORDER_VALID_ACTIVE);
+    const orders = await query.get();
+    // todo: change this
+    const results: FirebaseFirestore.DocumentData[] = [];
+    orders.forEach((doc) => {
+      const order = doc.data();
+      const orderItems: FirestoreOrderItem[] = [];
+      doc.ref
+        .collection(firestoreConstants.ORDER_ITEMS_SUB_COLL)
+        .get()
+        .then((items) => {
+          items.forEach((orderItemDoc) => {
+            const orderItem = orderItemDoc.data() as FirestoreOrderItem;
+            orderItems.push(orderItem);
+          });
+        })
+        .catch((err) => {
+          error(err);
+        });
+      order.nfts = orderItems;
+      results.push(order);
+    });
+    return {
+      orders: results
+    };
+  }
+
   getFirestoreOrderFromSignedOBOrder(order: SignedOBOrderDto): FirestoreOrder {
     const data: FirestoreOrder = {
       id: order.id,
@@ -60,9 +88,7 @@ export default class OrdersService {
       chainId: order.chainId,
       isSellOrder: order.isSellOrder,
       numItems: order.numItems,
-      startPriceWei: order.startPriceWei,
       startPriceEth: order.startPriceEth,
-      endPriceWei: order.endPriceWei,
       endPriceEth: order.endPriceEth,
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
@@ -72,15 +98,17 @@ export default class OrdersService {
       currencyAddress: order.execParams.currencyAddress,
       makerAddress: order.makerAddress,
       makerUsername: order.makerUsername,
-      takerAddress: order.takerAddress,
-      takerUsername: order.takerUsername,
       signedOrder: order.signedOrder
     };
     return data;
   }
 
-  getPartialFirestoreOrderItemFromSignedOBOrder(order: SignedOBOrderDto): Partial<FirestoreOrderItem> {
-    const data: Partial<FirestoreOrderItem> = {
+  getFirestoreOrderItemFromSignedOBOrder(
+    order: SignedOBOrderDto,
+    nft: OBOrderItemDto,
+    token: OBTokenInfoDto
+  ): FirestoreOrderItem {
+    const data: FirestoreOrderItem = {
       id: order.id,
       orderStatus: ORDER_VALID_ACTIVE,
       chainId: order.chainId,
@@ -92,8 +120,15 @@ export default class OrdersService {
       endTimeMs: order.endTimeMs,
       makerAddress: order.makerAddress,
       makerUsername: order.makerUsername,
-      takerAddress: order.takerAddress,
-      takerUsername: order.takerUsername
+      takerAddress: token.takerAddress,
+      takerUsername: token.takerUsername,
+      collection: nft.collectionAddress,
+      collectionName: nft.collectionName,
+      collectionImage: nft.collectionImage,
+      tokenId: token.tokenId,
+      numTokens: token.numTokens,
+      tokenImage: token.tokenImage,
+      tokenName: token.tokenName
     };
     return data;
   }

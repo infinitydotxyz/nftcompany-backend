@@ -1,8 +1,9 @@
-import { isOBOrderExpired, MarketListId, OBOrder } from '@infinityxyz/lib/types/core';
+import { MarketListId, OBOrder } from '@infinityxyz/lib/types/core';
 import { firestore } from 'container';
 import { docsToArray } from 'utils/formatters';
 import { fstrCnstnts } from '../../constants';
 import { createHash } from 'crypto';
+import { isOBOrderExpired } from '@infinityxyz/lib/utils';
 
 export interface ExpiredCacheItem {
   listId: MarketListId;

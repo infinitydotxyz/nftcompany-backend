@@ -24,7 +24,7 @@ export class OBOrderItemDto {
   })
   @IsString()
   @IsNotEmpty()
-  profileImage: string;
+  collectionImage: string;
 
   @ApiProperty({
     description: 'Tokens in the order'
