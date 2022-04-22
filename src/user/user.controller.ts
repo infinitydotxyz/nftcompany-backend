@@ -76,7 +76,6 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
-import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
 
 @Controller('user')
 export class UserController {
