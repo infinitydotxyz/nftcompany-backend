@@ -5,9 +5,9 @@ import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
 import { getDocIdHash } from 'utils';
 import { SignedOBOrderDto } from './signed-ob-order.dto';
-import { FirestoreOrder, FirestoreOrderItem } from '@infinityxyz/lib/types/core';
 import { OBOrderItemDto } from './ob-order-item.dto';
 import { OBTokenInfoDto } from './ob-token-info.dto';
+import { FirestoreOrder, FirestoreOrderItem } from '@infinityxyz/lib/types/core';
 
 @Injectable()
 export default class OrdersService {
