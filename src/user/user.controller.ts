@@ -103,12 +103,7 @@ export class UserController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async checkUsername(
-    @ParamUserId('userId', ParseUserIdPipe) user: 
-     
-     
-     
-     
-     ,
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @QueryUsername('username') usernameObj: UsernameType
   ): Promise<ValidateUsernameResponseDto> {
     let reason = usernameObj.isValid ? '' : usernameObj.reason;
