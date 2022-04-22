@@ -1,6 +1,6 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
@@ -12,11 +12,12 @@ import { UserFollowingCollectionPostPayload } from './dto/user-following-collect
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
-import { ParsedUserId } from './user-id.pipe';
+import { UserProfileDto } from './dto/user-profile.dto';
+import { ParsedUserId } from './parser/parsed-user-id';
 
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, private statsService: StatsService) {}
+  constructor(private firebaseService: FirebaseService, @Optional() private statsService: StatsService) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -159,5 +160,26 @@ export class UserService {
 
     await user.ref.collection(firestoreConstants.USER_FOLLOWS_COLL).doc(payload.userAddress).delete();
     return {};
+  }
+
+  async getByUsername(username: string) {
+    const snapshot = await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+
+    const doc = snapshot.docs[0];
+
+    const user = doc?.data() as UserProfileDto;
+
+    return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
+  }
+
+  /**
+   * Returns a document reference to the collection with the specified address.
+   */
+  getRef(address: string) {
+    return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
   }
 }

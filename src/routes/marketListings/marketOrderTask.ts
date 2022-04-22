@@ -1,4 +1,5 @@
-import { MarketListId, isOBOrderExpired } from '@infinityxyz/lib/types/core';
+import { MarketListId } from '@infinityxyz/lib/types/core';
+import { isOBOrderExpired } from '@infinityxyz/lib/utils';
 import { expiredOrders, moveOrder } from './marketFirebase';
 import { marketOrders } from './marketOrders';
 

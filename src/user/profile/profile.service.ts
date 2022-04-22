@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { DeleteUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
 import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
-import { ParsedUserId } from '../user-id.pipe';
 import { MAX_USERNAME_CHARS, MIN_USERNAME_CHARS, usernameCharRegex, usernameRegex } from './profile.constants';
 
 @Injectable()
@@ -68,13 +68,18 @@ export class ProfileService {
     await user.ref.set(profile, { merge: true });
   }
 
-  async isAvailable(username: string): Promise<boolean> {
+  async isAvailable(username: string, currentUserAddress?: string): Promise<boolean> {
     const normalizedUsername = username.toLowerCase();
     const usersCollection = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL);
 
     const snapshot = await usersCollection.where('username', '==', normalizedUsername).get();
 
-    return snapshot.empty;
+    if (snapshot.empty) {
+      return true;
+    }
+
+    const owner = snapshot.docs?.[0]?.data();
+    return owner.address === currentUserAddress;
   }
 
   async getSuggestions(username: string): Promise<string[]> {
