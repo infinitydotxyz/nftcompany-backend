@@ -76,6 +76,8 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
+import { NftActivityArray, NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto';
 
 @Controller('user')
 export class UserController {
@@ -605,5 +607,26 @@ export class UserController {
       throw err;
     }
     return '';
+  }
+
+  @Get(':userId/activity')
+  @ApiOperation({
+    description: 'Get the activity of a user',
+    tags: [ApiTag.User]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async getActivity(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() query: UserActivityQueryDto
+  ): Promise<NftActivityArray> {
+    const activity = await this.userService.getActivity(query);
+    const response: UserActivityDto = {
+      data: activity,
+      hasNextPage: false,
+      cursor: ''
+    };
+    return response;
   }
 }

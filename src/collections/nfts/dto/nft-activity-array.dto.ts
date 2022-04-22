@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { NftActivity } from './nft-activity.dto';
 
-export class NftActivityArray {
+export class NftActivityArrayDto {
   @ApiProperty({ description: 'Array of activities for the nft', type: [NftActivity] })
   data!: NftActivity[];
 

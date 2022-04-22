@@ -19,6 +19,7 @@ import { ParseUserIdPipe } from 'user/user-id.pipe';
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
+import { ActivityModule } from './activity/activity.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,7 +38,8 @@ import { FB_STORAGE_BUCKET } from './constants';
     VotesModule,
     StorageModule,
     MarketListingsModule,
-    OrdersModule
+    OrdersModule,
+    ActivityModule
   ],
   controllers: [AppController],
   providers: [AppService, ParseUserIdPipe]
