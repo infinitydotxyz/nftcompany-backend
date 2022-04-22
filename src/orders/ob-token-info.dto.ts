@@ -28,4 +28,16 @@ export class OBTokenInfoDto {
   @IsNumber()
   @IsNotEmpty()
   numTokens: number;
+
+  @ApiProperty({
+    description: 'Taker username'
+  })
+  @IsString()
+  takerUsername: string;
+
+  @ApiProperty({
+    description: 'Taker address'
+  })
+  @IsString()
+  takerAddress: string;
 }
