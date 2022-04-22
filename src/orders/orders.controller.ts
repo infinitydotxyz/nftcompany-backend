@@ -26,4 +26,20 @@ export class OrdersController {
     console.log('body', jsonString(body)); // todo: remove log
     this.ordersService.postOrders(body.orders);
   }
+
+  // todo: uncomment
+  @Post('get')
+  // @ApiOperation({
+  //   description: 'Post orders',
+  //   tags: [ApiTag.Orders]
+  // })
+  @ApiOkResponse({ description: ResponseDescription.Success })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async getOrders(@Body() body: any) {
+    // todo: remove any
+    console.log('body', jsonString(body)); // todo: remove log
+    const data = await this.ordersService.getOrders(body);
+    return data;
+  }
 }

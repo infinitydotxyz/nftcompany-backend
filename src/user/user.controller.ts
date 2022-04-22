@@ -396,7 +396,7 @@ export class UserController {
   })
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
+  // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getCollectionsBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingCollectionsArrayDto> {
@@ -419,7 +419,6 @@ export class UserController {
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
   async followCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionPostPayload
@@ -444,7 +443,6 @@ export class UserController {
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async unfollowCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionDeletePayload
@@ -468,7 +466,7 @@ export class UserController {
   })
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingUsersArrayDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
+  // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getUsersBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingUsersArrayDto> {
@@ -491,7 +489,6 @@ export class UserController {
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async followUser(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserPostPayload
@@ -516,7 +513,6 @@ export class UserController {
   @ApiCreatedResponse({ description: ResponseDescription.Success })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async unfollowUser(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserDeletePayload
