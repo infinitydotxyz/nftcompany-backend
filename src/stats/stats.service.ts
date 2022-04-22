@@ -129,7 +129,7 @@ export class StatsService {
     collection: ParsedCollectionId,
     query: CollectionHistoricalStatsQueryDto
   ): Promise<CollectionStatsArrayResponseDto> {
-    const startAfterCursor = this.paginationService.decodeCursor<number>(query.cursor || '');
+    const startAfterCursor = this.paginationService.decodeCursorToNumber(query.cursor || '');
     const orderDirection = query.orderDirection;
     const limit = query.limit;
     const period = query.period;
@@ -330,7 +330,7 @@ export class StatsService {
 
     let startAfter;
     if (queryOptions.cursor) {
-      const decodedCursor = this.paginationService.decodeCursor<string>(queryOptions.cursor);
+      const decodedCursor = this.paginationService.decodeCursor(queryOptions.cursor);
       const [chainId, address] = decodedCursor.split(':');
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)

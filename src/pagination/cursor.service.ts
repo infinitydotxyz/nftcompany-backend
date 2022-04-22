@@ -22,19 +22,31 @@ export class CursorService {
    * @param encoded base64 encoded cursor
    * @returns plaintext
    */
-  decodeCursor<T extends string | number | object>(encoded: string): T {
-    const decoded = base64Decode(encoded);
+  decodeCursor(encoded: string): string {
+    return base64Decode(encoded);
+  }
 
-    if (decoded.startsWith('[') || decoded.startsWith('{')) {
-      try {
-        return JSON.parse(decoded) as T;
-      } catch (err: any) {
-        return {} as T;
-      }
-    } else if (!isNaN(Number(decoded))) {
-      return Number(decoded) as T;
-    } else {
-      return decoded as T;
+  /**
+   * Decodes a base64 encoded JSON cursor to an object.
+   * @param encoded
+   * @returns
+   */
+  decodeCursorToObject<T>(encoded: string): T {
+    try {
+      const decoded = this.decodeCursor(encoded);
+      return JSON.parse(decoded);
+    } catch (err: any) {
+      return {} as T;
     }
+  }
+
+  /**
+   * Decodes a base64 encoded cursor containing a number to a number.
+   * @param encoded
+   * @returns
+   */
+  decodeCursorToNumber(encoded: string) {
+    const decoded = this.decodeCursor(encoded);
+    return Number(decoded);
   }
 }

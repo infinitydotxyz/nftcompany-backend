@@ -70,7 +70,7 @@ export class TwitterService {
 
     const limit = query.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
 
-    const startAfterCursor = this.paginationService.decodeCursor<{ id?: string; followersCount?: number }>(
+    const startAfterCursor = this.paginationService.decodeCursorToObject<{ id?: string; followersCount?: number }>(
       query.cursor || ''
     );
 

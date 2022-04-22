@@ -113,7 +113,7 @@ export class VotesService {
       .where('userChainId', '==', user.userChainId)
       .orderBy('updatedAt', orderDirection);
 
-    const decodedCursor = this.paginationService.decodeCursor<number>(options.cursor || '');
+    const decodedCursor = this.paginationService.decodeCursorToNumber(options.cursor || '');
     if (!Number.isNaN(decodedCursor)) {
       votesQuery = votesQuery.startAfter(decodedCursor);
     }

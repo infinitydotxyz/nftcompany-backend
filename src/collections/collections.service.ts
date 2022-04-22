@@ -39,7 +39,7 @@ export default class CollectionsService {
       throw new InvalidCollectionError(collection.address, collection.chainId, 'Collection is not complete');
     }
 
-    const offset = this.paginationService.decodeCursor<number>(query.cursor || '');
+    const offset = this.paginationService.decodeCursorToNumber(query.cursor || '');
 
     const topOwners = await this.mnemonicService.getTopOwners(collection.address, {
       limit: query.limit + 1,
@@ -93,7 +93,7 @@ export default class CollectionsService {
 
     firestoreQuery = firestoreQuery.orderBy('slug');
 
-    const offset = this.paginationService.decodeCursor<number>(search.cursor || '');
+    const offset = this.paginationService.decodeCursorToNumber(search.cursor || '');
     if (offset) {
       firestoreQuery = firestoreQuery.startAfter(offset);
     }
