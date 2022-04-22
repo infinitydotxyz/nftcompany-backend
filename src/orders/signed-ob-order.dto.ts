@@ -49,18 +49,6 @@ export class SignedOBOrderDto {
   makerAddress: string;
 
   @ApiProperty({
-    description: 'Taker username of the order'
-  })
-  @IsString()
-  takerUsername: string;
-
-  @ApiProperty({
-    description: 'Taker address of the order'
-  })
-  @IsString()
-  takerAddress: string;
-
-  @ApiProperty({
     description: 'Starting price in ETH of the order'
   })
   @IsNumber()
@@ -73,20 +61,6 @@ export class SignedOBOrderDto {
   @IsNumber()
   @IsNotEmpty()
   endPriceEth: number;
-
-  @ApiProperty({
-    description: 'Starting price in Wei of the order'
-  })
-  @IsString()
-  @IsNotEmpty()
-  startPriceWei: string;
-
-  @ApiProperty({
-    description: 'Ending price in Wei of the order'
-  })
-  @IsString()
-  @IsNotEmpty()
-  endPriceWei: string;
 
   @ApiProperty({
     description: 'Starting time in milliseconds since epoch of the order'
