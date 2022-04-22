@@ -68,13 +68,18 @@ export class ProfileService {
     await user.ref.set(profile, { merge: true });
   }
 
-  async isAvailable(username: string): Promise<boolean> {
+  async isAvailable(username: string, currentUserAddress?: string): Promise<boolean> {
     const normalizedUsername = username.toLowerCase();
     const usersCollection = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL);
 
     const snapshot = await usersCollection.where('username', '==', normalizedUsername).get();
 
-    return snapshot.empty;
+    if (snapshot.empty) {
+      return true;
+    }
+
+    const owner = snapshot.docs?.[0]?.data();
+    return owner.address === currentUserAddress;
   }
 
   async getSuggestions(username: string): Promise<string[]> {

@@ -30,6 +30,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
@@ -75,6 +76,7 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { NormalizeAddressPipe } from 'common/pipes/normalize-address.pipe';
 
 @Controller('user')
 export class UserController {
@@ -89,19 +91,33 @@ export class UserController {
     private profileService: ProfileService
   ) {}
 
-  @Get('checkUsername')
+  @Get('/:userId/checkUsername')
   @ApiOperation({
     description: 'Check if a username if valid and available',
     tags: [ApiTag.User]
   })
+  @ApiQuery({
+    name: 'username',
+    description: 'The username to check',
+    required: true,
+    type: String
+  })
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
+  @ApiParamUserId('userId')
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async checkUsername(@QueryUsername('username') usernameObj: UsernameType): Promise<ValidateUsernameResponseDto> {
+  async checkUsername(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @QueryUsername('username') usernameObj: UsernameType
+  ): Promise<ValidateUsernameResponseDto> {
     let reason = usernameObj.isValid ? '' : usernameObj.reason;
     let isAvailable = true;
 
     if (usernameObj.isValid) {
-      isAvailable = await this.profileService.isAvailable(usernameObj.username);
+      isAvailable = await this.profileService.isAvailable(usernameObj.username, user.userAddress);
       if (!isAvailable) {
         reason = 'Username is already taken';
       }
