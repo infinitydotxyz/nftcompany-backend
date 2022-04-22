@@ -13,7 +13,7 @@ import { OBTokenInfoDto } from './ob-token-info.dto';
 export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
-  postOrders(orders: SignedOBOrderDto[]) {
+  postOrders(userId: string, orders: SignedOBOrderDto[]) {
     const fsBatchHandler = new FirestoreBatchHandler();
     const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
     for (const order of orders) {
