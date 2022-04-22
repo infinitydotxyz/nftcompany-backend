@@ -1,7 +1,5 @@
 import { singleton, container } from 'tsyringe';
 import {
-  getCurrentOBOrderPrice,
-  isOBOrderExpired,
   OBOrder,
   BuyOrderMatch,
   MarketListId
@@ -10,6 +8,7 @@ import { ActiveSellOrders } from './activeSellOrders';
 import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
 import { BigNumber } from 'ethers';
+import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils';
 
 @singleton()
 export class MarketOrders {

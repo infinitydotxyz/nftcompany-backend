@@ -30,6 +30,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
@@ -89,19 +90,33 @@ export class UserController {
     private profileService: ProfileService
   ) {}
 
-  @Get('checkUsername')
+  @Get('/:userId/checkUsername')
   @ApiOperation({
     description: 'Check if a username if valid and available',
     tags: [ApiTag.User]
   })
+  @ApiQuery({
+    name: 'username',
+    description: 'The username to check',
+    required: true,
+    type: String
+  })
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
+  @ApiParamUserId('userId')
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async checkUsername(@QueryUsername('username') usernameObj: UsernameType): Promise<ValidateUsernameResponseDto> {
+  async checkUsername(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @QueryUsername('username') usernameObj: UsernameType
+  ): Promise<ValidateUsernameResponseDto> {
     let reason = usernameObj.isValid ? '' : usernameObj.reason;
     let isAvailable = true;
 
     if (usernameObj.isValid) {
-      isAvailable = await this.profileService.isAvailable(usernameObj.username);
+      isAvailable = await this.profileService.isAvailable(usernameObj.username, user.userAddress);
       if (!isAvailable) {
         reason = 'Username is already taken';
       }
@@ -137,7 +152,20 @@ export class UserController {
   async getUserProfile(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserProfileDto> {
     const userProfile = await this.userService.getProfile(user);
     if (userProfile === null) {
-      throw new NotFoundException('User not found');
+      return {
+        address: user.userAddress,
+        displayName: '',
+        username: '',
+        bio: '',
+        profileImage: '',
+        bannerImage: '',
+        discordUsername: '',
+        twitterUsername: '',
+        instagramUsername: '',
+        facebookUsername: '',
+        createdAt: NaN,
+        updatedAt: NaN
+      };
     }
 
     return userProfile;
@@ -427,7 +455,7 @@ export class UserController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
+  // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getCollectionsBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingCollectionsArrayDto> {
@@ -454,7 +482,6 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
   async followCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionPostPayload
@@ -483,7 +510,6 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async unfollowCollection(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingCollectionDeletePayload
@@ -511,7 +537,7 @@ export class UserController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingUsersArrayDto })
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  @UseInterceptors(new CacheControlInterceptor())
+  // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getUsersBeingFollowed(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId
   ): Promise<UserFollowingUsersArrayDto> {
@@ -538,7 +564,6 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async followUser(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserPostPayload
@@ -567,7 +592,6 @@ export class UserController {
   @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @UseInterceptors(new CacheControlInterceptor())
   async unfollowUser(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Body() payload: UserFollowingUserDeletePayload
