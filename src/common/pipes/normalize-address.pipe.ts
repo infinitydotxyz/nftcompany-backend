@@ -7,7 +7,7 @@ export class NormalizeAddressPipe<T extends { address: string } | string> implem
     if (typeof value === 'string') {
       return trimLowerCase(value) as T;
     }
-    const normalizedAddress = trimLowerCase(value.address);
+    const normalizedAddress = trimLowerCase(value?.address);
     return {
       ...(value as any),
       address: normalizedAddress
