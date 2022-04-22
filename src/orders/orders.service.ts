@@ -73,7 +73,7 @@ export default class OrdersService {
         .catch((err) => {
           error(err);
         });
-      order.orderItems = orderItems;
+      order.nfts = orderItems;
       results.push(order);
     });
     return {
