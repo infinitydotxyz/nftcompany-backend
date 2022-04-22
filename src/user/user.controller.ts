@@ -137,7 +137,20 @@ export class UserController {
   async getUserProfile(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserProfileDto> {
     const userProfile = await this.userService.getProfile(user);
     if (userProfile === null) {
-      throw new NotFoundException('User not found');
+      return {
+        address: user.userAddress,
+        displayName: '',
+        username: '',
+        bio: '',
+        profileImage: '',
+        bannerImage: '',
+        discordUsername: '',
+        twitterUsername: '',
+        instagramUsername: '',
+        facebookUsername: '',
+        createdAt: NaN,
+        updatedAt: NaN
+      };
     }
 
     return userProfile;
