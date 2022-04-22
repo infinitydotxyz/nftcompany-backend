@@ -15,7 +15,8 @@ import {
   Headers,
   Delete,
   BadRequestException,
-  UploadedFiles
+  UploadedFiles,
+  UseGuards
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import {
@@ -28,7 +29,8 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery
+  ApiQuery,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
@@ -73,6 +75,9 @@ import {
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
+import { ApiSignatureAuth } from 'auth/api-signature.decorator';
+import { AuthGuard } from 'auth/auth.guard';
+import { MatchSigner } from 'auth/match-signer.decorator';
 
 @Controller('user')
 export class UserController {
@@ -87,20 +92,33 @@ export class UserController {
     private profileService: ProfileService
   ) {}
 
-  @Get('checkUsername')
+  @Get('/:userId/checkUsername')
   @ApiOperation({
     description: 'Check if a username if valid and available',
     tags: [ApiTag.User]
   })
-  @ApiQuery({ name: 'username', description: 'The username to check' })
+  @ApiQuery({
+    name: 'username',
+    description: 'The username to check',
+    required: true,
+    type: String
+  })
+  @UseGuards(AuthGuard)
+  @MatchSigner('userId')
+  @ApiSignatureAuth()
+  @ApiParamUserId('userId')
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async checkUsername(@QueryUsername('username') usernameObj: UsernameType): Promise<ValidateUsernameResponseDto> {
+  async checkUsername(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @QueryUsername('username') usernameObj: UsernameType
+  ): Promise<ValidateUsernameResponseDto> {
     let reason = usernameObj.isValid ? '' : usernameObj.reason;
     let isAvailable = true;
 
     if (usernameObj.isValid) {
-      isAvailable = await this.profileService.isAvailable(usernameObj.username);
+      isAvailable = await this.profileService.isAvailable(usernameObj.username, user.userAddress);
       if (!isAvailable) {
         reason = 'Username is already taken';
       }
@@ -137,7 +155,20 @@ export class UserController {
   async getUserProfile(@ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId): Promise<UserProfileDto> {
     const userProfile = await this.userService.getProfile(user);
     if (userProfile === null) {
-      throw new NotFoundException('User not found');
+      return {
+        address: user.userAddress,
+        displayName: '',
+        username: '',
+        bio: '',
+        profileImage: '',
+        bannerImage: '',
+        discordUsername: '',
+        twitterUsername: '',
+        instagramUsername: '',
+        facebookUsername: '',
+        createdAt: NaN,
+        updatedAt: NaN
+      };
     }
 
     return userProfile;
