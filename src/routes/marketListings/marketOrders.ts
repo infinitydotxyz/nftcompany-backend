@@ -7,7 +7,6 @@ import {
   MarketListId
 } from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
-import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
 import { BigNumber } from 'ethers';
 
