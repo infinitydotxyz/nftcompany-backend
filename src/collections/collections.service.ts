@@ -94,7 +94,6 @@ export default class CollectionsService {
     firestoreQuery = firestoreQuery.orderBy('slug');
 
     const cursor = this.paginationService.decodeCursor(search.cursor);
-    console.log(cursor);
     if (cursor) {
       firestoreQuery = firestoreQuery.startAfter(cursor);
     }

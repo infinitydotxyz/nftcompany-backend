@@ -328,7 +328,6 @@ export class StatsService {
     if (queryOptions.cursor) {
       const decodedCursor = this.paginationService.decodeCursor(queryOptions.cursor);
       const [chainId, address] = decodedCursor.split(':');
-      console.log(decodedCursor);
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)
         .where('timestamp', '==', timestamp)
