@@ -1,4 +1,4 @@
-import { SignedOBOrder } from '@infinityxyz/lib/types/core';
+import { FirestoreOrder, SignedOBOrder } from '@infinityxyz/lib/types/core';
 import { Injectable } from '@nestjs/common';
 import { error } from 'console';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
@@ -11,28 +11,24 @@ export default class OrdersService {
 
   postOrders(orders: SignedOBOrder[]) {
     const fsBatchHandler = new FirestoreBatchHandler();
-    const ordersCollectionRef = this.firebaseService.firestore
-      .collection('orders');
+    const ordersCollectionRef = this.firebaseService.firestore.collection('orders');
     for (const order of orders) {
-      const dataToStore = { // todo: create a type for this
+      const dataToStore: FirestoreOrder = {
+        // todo: create a type for this
         id: order.id,
         chainId: order.chainId,
         isSellOrder: order.isSellOrder,
         numItems: order.numItems,
-        startPrice: order.startPriceWei,
         startPriceEth: order.startPriceEth,
-        endPrice: order.endPriceWei,
         endPriceEth: order.endPriceEth,
-        startTime: order.startTimeMs,
-        endTime: order.endTimeMs,
+        startTimeMs: order.startTimeMs,
+        endTimeMs: order.endTimeMs,
         minBpsToSeller: order.minBpsToSeller,
         nonce: order.nonce,
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
         makerAddress: order.makerAddress,
         makerUsername: order.makerUsername,
-        takerAddress: order.takerAddress,
-        takerUsername: order.takerUsername,
         signedOrder: order.signedOrder,
         orderStatus: 'validActive' // todo: move to constants
       };
