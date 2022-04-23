@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { DeleteUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
 import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
-import { ParsedUserId } from '../user-id.pipe';
 import { MAX_USERNAME_CHARS, MIN_USERNAME_CHARS, usernameCharRegex, usernameRegex } from './profile.constants';
 
 @Injectable()

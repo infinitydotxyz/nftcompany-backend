@@ -10,7 +10,6 @@ import {
   Query,
   UnauthorizedException,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
   HttpStatus,
   Headers,
@@ -18,7 +17,6 @@ import {
   BadRequestException,
   UploadedFiles
 } from '@nestjs/common';
-import { AuthGuard } from 'common/guards/auth.guard';
 import { UserService } from './user.service';
 import {
   ApiBody,
@@ -30,24 +28,21 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
-  ApiUnauthorizedResponse
+  ApiQuery
 } from '@nestjs/swagger';
 import { ApiTag } from 'common/api-tags';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
-import { ApiSignatureAuth } from 'api-signature.decorator';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { VotesService } from 'votes/votes.service';
 import { UserCollectionVotesArrayDto } from 'votes/dto/user-collection-votes-array.dto';
-import { ApiParamUserId, ParamUserId } from 'common/decorators/param-user-id.decorator';
-import { ParsedUserId, ParseUserIdPipe } from './user-id.pipe';
+import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
+import { ParseUserIdPipe } from './parser/parse-user-id.pipe';
 import { UserCollectionVotesQuery } from 'votes/dto/user-collection-votes-query.dto';
 import { UserCollectionVoteDto } from 'votes/dto/user-collection-vote.dto';
 import { UserCollectionVoteBodyDto } from 'votes/dto/user-collection-vote-body.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
-import { MatchSigner } from 'common/decorators/match-signer.decorator';
 import { ParseCollectionIdPipe, ParsedCollectionId } from 'collections/collection-id.pipe';
 import { UpdateCollectionDto } from 'collections/dto/collection.dto';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
@@ -71,13 +66,16 @@ import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
+import { UserAuth } from 'auth/user-auth.decorator';
 import {
   DeleteUserProfileImagesDto,
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
 import { UserActivityQueryDto } from './dto/user-activity-query.dto';
-import { NftActivityArray, NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto';
+import { NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto';
+import { ParsedUserId } from './parser/parsed-user-id';
+import { UserCollectionPermissions } from './dto/user-collection-permissions';
 
 @Controller('user')
 export class UserController {
@@ -103,11 +101,7 @@ export class UserController {
     required: true,
     type: String
   })
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
-  @ApiSignatureAuth()
-  @ApiParamUserId('userId')
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: ValidateUsernameResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async checkUsername(
@@ -148,6 +142,7 @@ export class UserController {
     description: 'Get a user by their id',
     tags: [ApiTag.User]
   })
+  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserProfileDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
@@ -174,9 +169,7 @@ export class UserController {
   }
 
   @Put('/:userId')
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
-  @ApiSignatureAuth()
+  @UserAuth('userId')
   @ApiOperation({
     description: "Update a user's profile",
     tags: [ApiTag.User]
@@ -184,7 +177,6 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiParamUserId('userId')
   @ApiNoContentResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateProfile(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
@@ -207,9 +199,6 @@ export class UserController {
   }
 
   @Put('/:userId/images')
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
-  @ApiSignatureAuth()
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'profileImage', maxCount: 1 },
@@ -227,7 +216,6 @@ export class UserController {
     type: UpdateUserProfileImagesDto
   })
   @ApiNoContentResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async uploadImages(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
@@ -280,12 +268,8 @@ export class UserController {
     description: "Get a user's watchlist",
     tags: [ApiTag.User, ApiTag.Stats]
   })
-  @ApiParamUserId('userId')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: CollectionStatsArrayResponseDto })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
   async getWatchlist(
@@ -304,16 +288,12 @@ export class UserController {
   }
 
   @Get(':userId/collectionVotes')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: "Get a user's votes on collections",
     tags: [ApiTag.User, ApiTag.Votes]
   })
-  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionVotesArrayDto })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getUserCollectionVotes(
@@ -325,17 +305,13 @@ export class UserController {
   }
 
   @Get(':userId/collectionVotes/:collectionId')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: "Get a user's votes for a specific collection",
     tags: [ApiTag.User, ApiTag.Votes]
   })
-  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionVoteBodyDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async getUserCollectionVote(
@@ -350,16 +326,12 @@ export class UserController {
   }
 
   @Post(':userId/collectionVotes/:collectionId')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: "Update a user's vote on a collection",
     tags: [ApiTag.User, ApiTag.Votes]
   })
-  @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @UseInterceptors(new CacheControlInterceptor())
   async saveUserCollectionVote(
@@ -388,15 +360,12 @@ export class UserController {
 
   @Put(':userId/collections/:collectionId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @UseInterceptors(FileInterceptor('profileImage'))
-  @ApiSignatureAuth()
   @ApiOperation({
     description: 'Update collection information',
     tags: [ApiTag.User, ApiTag.Collection]
   })
-  @ApiParamUserId('userId')
   @ApiParamCollectionId('collectionId')
   @ApiConsumes('multipart/form-data', 'application/json')
   @ApiHeader({
@@ -404,7 +373,6 @@ export class UserController {
     required: false
   })
   @ApiNoContentResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
@@ -445,17 +413,30 @@ export class UserController {
     this.statsService.getCurrentSocialsStats(collection.ref).catch((err) => this.logger.error(err));
   }
 
+  @Get(':userId/collections/:collectionId/permissions')
+  @UserAuth('userId')
+  @ApiOperation({
+    description: "Get the user's permissions for this collection",
+    tags: [ApiTag.User, ApiTag.Collection]
+  })
+  @ApiParamUserId('userId')
+  @ApiParamCollectionId('collectionId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: UserCollectionPermissions })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async getCollectionPermissions(
+    @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
+    @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId
+  ): Promise<UserCollectionPermissions> {
+    return { canModify: await this.collectionsService.canModify(userAddress, collection) };
+  }
+
   @Get(':userId/followingCollections')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Get the collections a user is following',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingCollectionsArrayDto })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getCollectionsBeingFollowed(
@@ -472,16 +453,12 @@ export class UserController {
   }
 
   @Post(':userId/followingCollections')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Follow a collection for a user',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async followCollection(
@@ -500,16 +477,12 @@ export class UserController {
   }
 
   @Delete(':userId/followingCollections')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Unfollow a collection for a user',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   async unfollowCollection(
@@ -528,16 +501,12 @@ export class UserController {
   }
 
   @Get(':userId/followingUsers')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Get the users that the user is following',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: UserFollowingUsersArrayDto })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   // @UseInterceptors(new CacheControlInterceptor()) // disabled cache until there is a way to refresh cache.
   async getUsersBeingFollowed(
@@ -554,16 +523,12 @@ export class UserController {
   }
 
   @Post(':userId/followingUsers')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Follow a user for a user',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   async followUser(
@@ -582,16 +547,12 @@ export class UserController {
   }
 
   @Delete(':userId/followingUsers')
-  @ApiSignatureAuth()
-  @UseGuards(AuthGuard)
-  @MatchSigner('userId')
+  @UserAuth('userId')
   @ApiOperation({
     description: 'Unfollow a user for a user',
     tags: [ApiTag.User]
   })
-  @ApiParamUserId('userId')
   @ApiCreatedResponse({ description: ResponseDescription.Success })
-  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   async unfollowUser(

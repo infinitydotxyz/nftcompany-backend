@@ -8,11 +8,11 @@ import { StorageModule } from 'storage/storage.module';
 import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
-import { ParseUserIdPipe } from './user-id.pipe';
 
 @Module({
-  providers: [UserService, ParseUserIdPipe],
+  providers: [UserService],
   imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
-  controllers: [UserController]
+  controllers: [UserController],
+  exports: [UserService]
 })
 export class UserModule {}

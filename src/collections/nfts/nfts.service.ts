@@ -5,7 +5,6 @@ import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import CollectionsService from 'collections/collections.service';
 import { FirebaseService } from 'firebase/firebase.service';
-import { base64Decode, base64Encode } from 'utils';
 import { NftActivityFiltersDto } from './dto/nft-activity-filters.dto';
 import { NftActivity } from './dto/nft-activity.dto';
 import { NftQueryDto } from './dto/nft-query.dto';
@@ -13,10 +12,15 @@ import { NftDto } from './dto/nft.dto';
 import { NftArrayDto } from './dto/nft-array.dto';
 import { NftsOrderBy, NftsQueryDto } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
+import { CursorService } from 'pagination/cursor.service';
 
 @Injectable()
 export class NftsService {
-  constructor(private firebaseService: FirebaseService, private collectionsService: CollectionsService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private collectionsService: CollectionsService,
+    private paginationService: CursorService
+  ) {}
 
   async getNft(nftQuery: NftQueryDto): Promise<NftDto | undefined> {
     const collection = await this.collectionsService.getCollectionByAddress(nftQuery);
@@ -46,13 +50,9 @@ export class NftsService {
   }
 
   async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {
+    type Cursor = Record<NftsOrderBy, string | number>;
     const nftsCollection = collection.ref.collection(firestoreConstants.COLLECTION_NFTS_COLL);
-    let decodedCursor;
-    try {
-      decodedCursor = JSON.parse(base64Decode(query.cursor));
-    } catch (err: any) {
-      decodedCursor = {};
-    }
+    const decodedCursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor || '');
 
     let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
 
@@ -97,15 +97,15 @@ export class NftsService {
       data.pop();
     }
 
-    const cursor: any = {};
+    const cursor: Cursor = {} as any;
     const lastItem = data[data.length - 1];
-    for (const key of Object.values(NftsOrderBy)) {
+    for (const key of Object.values(NftsOrderBy) as NftsOrderBy[]) {
       if (lastItem?.[key]) {
         cursor[key] = lastItem[key];
       }
     }
 
-    const encodedCursor = base64Encode(JSON.stringify(cursor));
+    const encodedCursor = this.paginationService.encodeCursor(cursor);
 
     return {
       data,
@@ -126,7 +126,7 @@ export class NftsService {
       .orderBy('timestamp', 'desc');
 
     if (filter.cursor) {
-      const decodedCursor = parseInt(base64Decode(filter.cursor), 10);
+      const decodedCursor = this.paginationService.decodeCursorToNumber(filter.cursor);
       activityQuery = activityQuery.startAfter(decodedCursor);
     }
 
@@ -174,7 +174,7 @@ export class NftsService {
     }
 
     const rawCursor = `${activities?.[activities?.length - 1]?.timestamp ?? ''}`;
-    const cursor = base64Encode(rawCursor);
+    const cursor = this.paginationService.encodeCursor(rawCursor);
 
     return {
       data: activities,
