@@ -1,5 +1,14 @@
 import { Collection } from '@infinityxyz/lib/types/core';
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  InternalServerErrorException,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Query,
+  UseInterceptors
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -12,6 +21,7 @@ import { ApiTag } from 'common/api-tags';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { CollectionStatsArrayResponseDto } from 'stats/dto/collection-stats-array.dto';
@@ -28,6 +38,8 @@ import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
 import { CollectionStatsByPeriodDto } from './dto/collection-stats-by-period.dto';
 import { CollectionStatsQueryDto } from './dto/collection-stats-query.dto';
 import { CollectionDto } from './dto/collection.dto';
+import { TopOwnersArrayResponseDto } from './dto/top-owners-array.dto';
+import { TopOwnersQueryDto } from './dto/top-owners-query.dto';
 
 @Controller('collections')
 export class CollectionsController {
@@ -86,6 +98,35 @@ export class CollectionsController {
     }
 
     return collection;
+  }
+
+  @Get('/:id/topOwners')
+  @ApiOperation({
+    tags: [ApiTag.Collection],
+    description: 'Get the top owners of nfts in the collection'
+  })
+  @ApiParamCollectionId()
+  @ApiOkResponse({ description: ResponseDescription.Success, type: TopOwnersArrayResponseDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor({ maxAge: 60 * 3 }))
+  async getTopOwners(
+    @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
+    @Query() query: TopOwnersQueryDto
+  ): Promise<TopOwnersArrayResponseDto> {
+    try {
+      const topOwners = await this.collectionsService.getTopOwners(collection, query);
+      if (!topOwners) {
+        throw new InternalServerErrorException('Failed to get top owners');
+      }
+      return topOwners;
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new NotFoundException();
+      }
+      throw err;
+    }
   }
 
   @Get('/:id/stats')
