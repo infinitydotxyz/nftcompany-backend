@@ -1,10 +1,5 @@
-import {
-  isOBOrderExpired,
-  getCurrentOBOrderPrice,
-  MarketListId,
-  OBOrder,
-  OBOrderItem
-} from '@infinityxyz/lib/types/core';
+import { MarketListId, OBOrder, OBOrderItem } from '@infinityxyz/lib/types/core';
+import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils';
 import { sellOrdersWithParams } from './marketFirebase';
 
 export class ActiveSellOrders {

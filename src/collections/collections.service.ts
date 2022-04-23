@@ -93,9 +93,10 @@ export default class CollectionsService {
 
     firestoreQuery = firestoreQuery.orderBy('slug');
 
-    const offset = this.paginationService.decodeCursorToNumber(search.cursor || '');
-    if (offset) {
-      firestoreQuery = firestoreQuery.startAfter(offset);
+    const cursor = this.paginationService.decodeCursor(search.cursor);
+    console.log(cursor);
+    if (cursor) {
+      firestoreQuery = firestoreQuery.startAfter(cursor);
     }
 
     const snapshot = await firestoreQuery
@@ -130,11 +131,11 @@ export default class CollectionsService {
     if (hasNextPage) {
       collections.pop(); // Remove item used to check if there are more results
     }
-    const cursor = this.paginationService.encodeCursor(collections?.[collections?.length - 1]?.slug ?? ''); // Must be after we pop the item used for pagination
+    const updatedCursor = this.paginationService.encodeCursor(collections?.[collections?.length - 1]?.slug ?? ''); // Must be after we pop the item used for pagination
 
     return {
       data: collections,
-      cursor,
+      cursor: updatedCursor,
       hasNextPage
     };
   }
