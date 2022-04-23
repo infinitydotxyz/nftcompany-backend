@@ -132,4 +132,18 @@ export default class OrdersService {
     };
     return data;
   }
+
+  async deleteOrder(orderId: string) {
+    if (orderId) {
+      try {
+        const docRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL).doc(orderId);
+
+        await docRef.delete();
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      console.log('_deleteOrder, id is blank');
+    }
+  }
 }

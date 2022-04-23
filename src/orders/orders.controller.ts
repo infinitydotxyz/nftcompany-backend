@@ -2,7 +2,13 @@ import { jsonString } from '@infinityxyz/lib/utils';
 import { UserAuth } from 'auth/user-auth.decorator';
 import { ApiTag } from 'common/api-tags';
 import { Body, Controller, Param, Post } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiInternalServerErrorResponse,
+  ApiUnauthorizedResponse,
+  ApiOkResponse,
+  ApiOperation
+} from '@nestjs/swagger';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
 import { OrdersDto } from './orders.dto';
@@ -41,5 +47,19 @@ export class OrdersController {
     console.log('body', jsonString(body)); // todo: remove log
     const data = await this.ordersService.getOrders(body);
     return data;
+  }
+
+  @Post('delete')
+  // @ApiOperation({
+  //   description: 'Post orders',
+  //   tags: [ApiTag.Orders]
+  // })
+  @ApiOkResponse({ description: ResponseDescription.Success })
+  @ApiUnauthorizedResponse({ description: ResponseDescription.Unauthorized })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  async deleteOrder(@Body() body: any) {
+    console.log('deleteOrder: ', jsonString(body)); // todo: remove log
+    await this.ordersService.deleteOrder(body.orderId);
   }
 }
