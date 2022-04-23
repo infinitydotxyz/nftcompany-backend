@@ -1,9 +1,9 @@
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
-import { IsOptional, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsOptional, IsNumber, IsString } from 'class-validator';
 import { ActivityType } from 'collections/nfts/nft-activity.types';
 import { IsEnumArray } from 'common/decorators/is-enum-array.decorator';
-import { PriceFilterDto } from 'common/dto/price-filter.dto';
+import { arrayTransformer } from 'common/transformers/array-query.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export class UserActivityQueryDto {
@@ -13,6 +13,7 @@ export class UserActivityQueryDto {
     type: [ActivityType]
   })
   @IsEnumArray(ActivityType, { message: 'Invalid event type' })
+  @Transform(arrayTransformer)
   events: ActivityType[];
 
   @ApiProperty({
@@ -28,12 +29,4 @@ export class UserActivityQueryDto {
   @IsOptional()
   @IsString()
   cursor?: string;
-
-  @ApiPropertyOptional({
-    description: 'Price filter'
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PriceFilterDto)
-  price?: PriceFilterDto;
 }

@@ -8,10 +8,20 @@ import { StorageModule } from 'storage/storage.module';
 import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
+import { PaginationModule } from 'pagination/pagination.module';
 
 @Module({
+  imports: [
+    StatsModule,
+    VotesModule,
+    CollectionsModule,
+    StorageModule,
+    DiscordModule,
+    TwitterModule,
+    ProfileModule,
+    PaginationModule
+  ],
   providers: [UserService],
-  imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
   controllers: [UserController],
   exports: [UserService]
 })

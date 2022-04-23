@@ -1,12 +1,17 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { FeedEventType } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { NftActivity } from 'collections/nfts/dto/nft-activity.dto';
+import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CursorService } from 'pagination/cursor.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
@@ -17,7 +22,11 @@ import { ParsedUserId } from './parser/parsed-user-id';
 
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, @Optional() private statsService: StatsService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private paginationService: CursorService,
+    @Optional() private statsService: StatsService
+  ) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -181,5 +190,74 @@ export class UserService {
    */
   getRef(address: string) {
     return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
+  }
+
+  async getActivity(user: ParsedUserId, query: UserActivityQueryDto) {
+    const activityTypes = query.events.length > 0 ? query.events : Object.values(ActivityType);
+
+    const events = activityTypes.map((item) => activityTypeToEventType[item]);
+
+    const queries = events.map((event) => {
+      const firestoreQuery = this.firebaseService.firestore
+        .collection(firestoreConstants.FEED_COLL)
+        .where('type', '==', event);
+      switch (event) {
+        case FeedEventType.NftSale: {
+          const sales = firestoreQuery.where('seller', '==', user.userAddress);
+          const purchases = firestoreQuery.where('buyer', '==', user.userAddress);
+          return [sales, purchases];
+        }
+        // case FeedEventType.NftListing: {
+        //   const listings = firestoreQuery.where('maker', '==', user.userAddress); // TODO is maker correct?
+        //   return [listings];
+        // }
+        // case FeedEventType.NftOffer: {
+        //   const offersMade = firestoreQuery.where('maker', '==', user.userAddress);
+        //   const offersReceived = firestoreQuery.where('taker', '==', user.userAddress); // TODO is taker correct?
+        //   return [offersMade, offersReceived];
+        // }
+        default:
+          console.log(`Unsupported activity type. ${event}`);
+          return [];
+      }
+    });
+
+    const cursor = this.paginationService.decodeCursorToNumber(query.cursor);
+    const orderDirection = OrderDirection.Descending;
+
+    const snapshots = await Promise.all(
+      queries
+        .flatMap((item) => item)
+        .map((firestoreQuery) => {
+          let q = firestoreQuery.orderBy('timestamp', orderDirection).limit(query.limit + 1);
+          if (!Number.isNaN(cursor)) {
+            q = q.startAfter(cursor);
+          }
+          return q.get();
+        })
+    );
+
+    const docs = snapshots.flatMap((item) => item.docs);
+
+    const data = docs
+      .map((item) => item.data())
+      .filter((item) => !!item)
+      .sort((a, b) =>
+        orderDirection === OrderDirection.Descending ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
+      ) as NftActivity[];
+
+    const results = data.slice(0, query.limit + 1);
+    const hasNextPage = results.length > query.limit;
+    if (hasNextPage) {
+      results.pop();
+    }
+    const lastItem = results?.[results?.length - 1];
+    const nextCursor = this.paginationService.encodeCursor(lastItem?.timestamp ?? '');
+
+    return {
+      data: results,
+      hasNextPage,
+      cursor: nextCursor
+    };
   }
 }

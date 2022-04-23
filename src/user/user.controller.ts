@@ -581,13 +581,9 @@ export class UserController {
   async getActivity(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() query: UserActivityQueryDto
-  ): Promise<NftActivityArray> {
-    const activity = await this.userService.getActivity(query);
-    const response: UserActivityDto = {
-      data: activity,
-      hasNextPage: false,
-      cursor: ''
-    };
-    return response;
+  ): Promise<NftActivityArrayDto> {
+    const activity = await this.userService.getActivity(user, query);
+    // TODO verify data is correct
+    return activity; // TODO standardize return type for all event types ?
   }
 }
