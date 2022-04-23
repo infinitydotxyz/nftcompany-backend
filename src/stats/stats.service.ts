@@ -53,7 +53,7 @@ export class StatsService {
 
     const query = {
       ...queryOptions,
-      limit: queryOptions.limit + 1 // +1 to check if there are more results
+      limit: queryOptions.limit
     };
 
     const primaryStats = await this.getPrimaryStats(query, primaryStatsCollectionName);
@@ -76,15 +76,10 @@ export class StatsService {
       })
     );
 
-    const hasNextPage = combinedStats.length > queryOptions.limit;
-    if (hasNextPage) {
-      combinedStats.pop(); // Remove the item that was added to check if there are more results
-    }
-
     return {
       data: combinedStats,
       cursor: primaryStats.cursor,
-      hasNextPage
+      hasNextPage: primaryStats.hasNextPage
     };
   }
 
@@ -129,7 +124,7 @@ export class StatsService {
     collection: ParsedCollectionId,
     query: CollectionHistoricalStatsQueryDto
   ): Promise<CollectionStatsArrayResponseDto> {
-    const startAfterCursor = this.paginationService.decodeCursorToNumber(query.cursor || '');
+    const startAfterCursor = this.paginationService.decodeCursorToNumber(query.cursor);
     const orderDirection = query.orderDirection;
     const limit = query.limit;
     const period = query.period;
@@ -140,7 +135,8 @@ export class StatsService {
       .where('timestamp', '<=', query.maxDate)
       .where('timestamp', '>=', query.minDate)
       .orderBy('timestamp', orderDirection);
-    if (typeof startAfterCursor === 'number' && !Number.isNaN(startAfterCursor)) {
+
+    if (!Number.isNaN(startAfterCursor)) {
       statsQuery = statsQuery.startAfter(startAfterCursor);
     }
     statsQuery = statsQuery.limit(limit + 1); // +1 to check if there are more results
@@ -332,6 +328,7 @@ export class StatsService {
     if (queryOptions.cursor) {
       const decodedCursor = this.paginationService.decodeCursor(queryOptions.cursor);
       const [chainId, address] = decodedCursor.split(':');
+      console.log(decodedCursor);
       const startAfterDocResults = await collectionGroup
         .where('period', '==', queryOptions.period)
         .where('timestamp', '==', timestamp)
@@ -352,19 +349,25 @@ export class StatsService {
       query = query.startAfter(startAfter);
     }
 
-    query = query.limit(queryOptions.limit);
+    query = query.limit(queryOptions.limit + 1); // +1 to check if there are more results
 
     const res = await query.get();
     const collectionStats = res.docs.map((snapShot) => {
       return snapShot.data();
     }) as Stats[] | SocialsStats[];
 
+    const hasNextPage = collectionStats.length > queryOptions.limit;
+
+    if (hasNextPage) {
+      collectionStats.pop();
+    }
     const cursorInfo = collectionStats[collectionStats.length - 1];
     let cursor = '';
     if (cursorInfo?.chainId && cursorInfo?.collectionAddress) {
       cursor = this.paginationService.encodeCursor(`${cursorInfo.chainId}:${cursorInfo.collectionAddress}`);
     }
-    return { data: collectionStats, cursor };
+
+    return { data: collectionStats, cursor, hasNextPage };
   }
 
   async getCollectionStatsForPeriod(
