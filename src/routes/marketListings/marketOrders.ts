@@ -1,7 +1,6 @@
 import { singleton, container } from 'tsyringe';
 import { OBOrder, BuyOrderMatch, MarketListId } from '@infinityxyz/lib/types/core';
 import { ActiveSellOrders } from './activeSellOrders';
-import { MarketOrderTask } from './marketOrderTask';
 import { addBuyOrder, addSellOrder, orderMap, buyOrders, moveOrder } from './marketFirebase';
 import { BigNumber } from 'ethers';
 import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils';
@@ -9,7 +8,7 @@ import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils
 @singleton()
 export class MarketOrders {
   // Runs in the background, scanning the order list
-  // commented becasuse it is crashing the server
+  // commented because it is crashing the server
   // task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {

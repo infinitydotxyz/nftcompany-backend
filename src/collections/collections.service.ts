@@ -183,7 +183,7 @@ export default class CollectionsService {
     const document = await editorsDocRef.get();
     const data = document.data();
 
-    return data?.[userAddress]?.authorized;
+    return data?.[userAddress]?.authorized == true;
   }
 
   /**
@@ -195,7 +195,7 @@ export default class CollectionsService {
       .doc(firestoreConstants.ADMINS_DOC);
     const document = await adminDocRef.get();
     const data = document.data();
-    return data?.[userAddress]?.authorized;
+    return data?.[userAddress]?.authorized == true;
   }
 
   /**
