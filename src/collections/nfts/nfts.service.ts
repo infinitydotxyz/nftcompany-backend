@@ -50,8 +50,9 @@ export class NftsService {
   }
 
   async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {
+    type Cursor = Record<NftsOrderBy, string | number>;
     const nftsCollection = collection.ref.collection(firestoreConstants.COLLECTION_NFTS_COLL);
-    const decodedCursor = this.paginationService.decodeCursorToObject<any>(query.cursor || '');
+    const decodedCursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor || '');
 
     let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
 
@@ -96,9 +97,9 @@ export class NftsService {
       data.pop();
     }
 
-    const cursor: any = {};
+    const cursor: Cursor = {} as any;
     const lastItem = data[data.length - 1];
-    for (const key of Object.values(NftsOrderBy)) {
+    for (const key of Object.values(NftsOrderBy) as NftsOrderBy[]) {
       if (lastItem?.[key]) {
         cursor[key] = lastItem[key];
       }

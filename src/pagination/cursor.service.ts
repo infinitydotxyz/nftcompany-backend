@@ -22,7 +22,7 @@ export class CursorService {
    * @param encoded base64 encoded cursor
    * @returns plaintext
    */
-  decodeCursor(encoded: string): string {
+  decodeCursor(encoded = ''): string {
     return base64Decode(encoded);
   }
 
@@ -31,7 +31,7 @@ export class CursorService {
    * @param encoded
    * @returns
    */
-  decodeCursorToObject<T>(encoded: string): T {
+  decodeCursorToObject<T>(encoded = ''): T {
     try {
       const decoded = this.decodeCursor(encoded);
       return JSON.parse(decoded);
@@ -45,7 +45,7 @@ export class CursorService {
    * @param encoded
    * @returns
    */
-  decodeCursorToNumber(encoded: string) {
+  decodeCursorToNumber(encoded = '') {
     const decoded = this.decodeCursor(encoded);
     return Number(decoded);
   }
