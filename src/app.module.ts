@@ -14,6 +14,7 @@ import { CollectionsModule } from 'collections/collections.module';
 import { VotesModule } from './votes/votes.module';
 import { OrdersModule } from 'orders/orders.module';
 import { AuthModule } from 'auth/auth.module';
+import { MnemonicModule } from 'mnemonic/mnemonic.module';
 
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
@@ -37,6 +38,7 @@ import { FB_STORAGE_BUCKET } from './constants';
     VotesModule,
     StorageModule,
     OrdersModule,
+    MnemonicModule,
     AuthModule
   ],
   controllers: [AppController],

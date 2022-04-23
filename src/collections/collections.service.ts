@@ -3,8 +3,12 @@ import { firestoreConstants, getCollectionDocId, getEndCode, getSearchFriendlySt
 import { Injectable } from '@nestjs/common';
 import { FirebaseService } from 'firebase/firebase.service';
 import { CollectionSearchQueryDto } from './dto/collection-search-query.dto';
-import { base64Encode, base64Decode } from 'utils';
 import { ParsedCollectionId } from './collection-id.pipe';
+import { MnemonicService } from 'mnemonic/mnemonic.service';
+import { TopOwnersQueryDto } from './dto/top-owners-query.dto';
+import { TopOwnerDto } from './dto/top-owner.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { CursorService } from 'pagination/cursor.service';
 
 interface CollectionQueryOptions {
   /**
@@ -17,11 +21,59 @@ interface CollectionQueryOptions {
 
 @Injectable()
 export default class CollectionsService {
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private mnemonicService: MnemonicService,
+    private paginationService: CursorService
+  ) {}
 
   private get defaultCollectionQueryOptions(): CollectionQueryOptions {
     return {
       limitToCompleteCollections: true
+    };
+  }
+
+  async getTopOwners(collection: ParsedCollectionId, query: TopOwnersQueryDto) {
+    const collectionData = (await collection.ref.get()).data();
+    if (collectionData?.state?.create?.step !== CreationFlow.Complete) {
+      throw new InvalidCollectionError(collection.address, collection.chainId, 'Collection is not complete');
+    }
+
+    const offset = this.paginationService.decodeCursorToNumber(query.cursor || '');
+
+    const topOwners = await this.mnemonicService.getTopOwners(collection.address, {
+      limit: query.limit + 1,
+      orderDirection: query.orderDirection,
+      offset
+    });
+
+    if (topOwners == null) {
+      return null;
+    }
+
+    const hasNextPage = topOwners.owner.length > query.limit;
+    if (hasNextPage) {
+      topOwners.owner.pop(); // Remove item used to check if there are more results
+    }
+    const updatedOffset = topOwners.owner.length + offset;
+    const cursor = this.paginationService.encodeCursor(updatedOffset);
+
+    const numNfts = (collectionData as Collection)?.numNfts;
+
+    const transformedData = topOwners.owner.map((owner) => {
+      const topOwner: TopOwnerDto = {
+        ownerAddress: owner.address,
+        ownedCount: owner.ownedCount,
+        percentOwned: Math.floor((owner.ownedCount / numNfts) * 1_000_000) / 10_000,
+        numNfts
+      };
+      return topOwner;
+    });
+
+    return {
+      cursor,
+      hasNextPage,
+      data: transformedData
     };
   }
 
@@ -41,9 +93,9 @@ export default class CollectionsService {
 
     firestoreQuery = firestoreQuery.orderBy('slug');
 
-    const decodedCursor = search.cursor ? base64Decode(search.cursor) : '';
-    if (decodedCursor) {
-      firestoreQuery = firestoreQuery.startAfter(decodedCursor);
+    const cursor = this.paginationService.decodeCursor(search.cursor);
+    if (cursor) {
+      firestoreQuery = firestoreQuery.startAfter(cursor);
     }
 
     const snapshot = await firestoreQuery
@@ -78,11 +130,11 @@ export default class CollectionsService {
     if (hasNextPage) {
       collections.pop(); // Remove item used to check if there are more results
     }
-    const cursor = base64Encode(collections?.[collections?.length - 1]?.slug ?? ''); // Must be after we pop the item used for pagination
+    const updatedCursor = this.paginationService.encodeCursor(collections?.[collections?.length - 1]?.slug ?? ''); // Must be after we pop the item used for pagination
 
     return {
       data: collections,
-      cursor,
+      cursor: updatedCursor,
       hasNextPage
     };
   }

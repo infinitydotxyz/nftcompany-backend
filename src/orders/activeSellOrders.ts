@@ -1,85 +1,83 @@
-import {
-  MarketListId,
-  OBOrder,
-  OBOrderItem
-} from '@infinityxyz/lib/types/core';
-import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils';
-import { sellOrdersWithParams } from './marketFirebase';
+// todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo
 
-export class ActiveSellOrders {
-  orderMap: Map<string, OBOrder[]> = new Map<string, OBOrder[]>();
-  collectionAddresses: string[] = [];
+// import { MarketListId, OBOrder, OBOrderItem } from '@infinityxyz/lib/types/core';
+// import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils';
+// import { sellOrdersWithParams } from './marketFirebase';
 
-  async addCollectionAddresses(addresses: string[]) {
-    const diff = addresses.filter((x) => !this.collectionAddresses.includes(x));
+// export class ActiveSellOrders {
+//   orderMap: Map<string, OBOrder[]> = new Map<string, OBOrder[]>();
+//   collectionAddresses: string[] = [];
 
-    if (diff.length > 0) {
-      this.collectionAddresses.push(...diff);
+//   async addCollectionAddresses(addresses: string[]) {
+//     const diff = addresses.filter((x) => !this.collectionAddresses.includes(x));
 
-      // NOTE: addresses is limited to 10, handle that later?
-      const orders = await sellOrdersWithParams(MarketListId.ValidActive, diff);
+//     if (diff.length > 0) {
+//       this.collectionAddresses.push(...diff);
 
-      for (const sellOrder of orders) {
-        if (!isOBOrderExpired(sellOrder)) {
-          const addrs = sellOrder.nfts.map((e) => e.collectionAddress);
-          for (const addr of addrs) {
-            let orderArray = this.orderMap.get(addr);
-            const activeSellOrder: OBOrder = { ...sellOrder };
-            if (!orderArray) {
-              orderArray = [activeSellOrder];
-            } else {
-              orderArray.push(activeSellOrder);
-            }
-            this.orderMap.set(addr, orderArray);
-          }
-        }
-      }
-    }
-  }
+//       // NOTE: addresses is limited to 10, handle that later?
+//       const orders = await sellOrdersWithParams(MarketListId.ValidActive, diff);
 
-  async ordersInCollections(nfts: OBOrderItem[]): Promise<OBOrder[]> {
-    const result: OBOrder[] = [];
-    if (nfts) {
-      const addresses = nfts.map((e) => e.collectionAddress);
-      await this.addCollectionAddresses(addresses);
+//       for (const sellOrder of orders) {
+//         if (!isOBOrderExpired(sellOrder)) {
+//           const addrs = sellOrder.nfts.map((e) => e.collectionAddress);
+//           for (const addr of addrs) {
+//             let orderArray = this.orderMap.get(addr);
+//             const activeSellOrder: OBOrder = { ...sellOrder };
+//             if (!orderArray) {
+//               orderArray = [activeSellOrder];
+//             } else {
+//               orderArray.push(activeSellOrder);
+//             }
+//             this.orderMap.set(addr, orderArray);
+//           }
+//         }
+//       }
+//     }
+//   }
 
-      for (const address of addresses) {
-        const orders = this.orderMap.get(address);
+//   async ordersInCollections(nfts: OBOrderItem[]): Promise<OBOrder[]> {
+//     const result: OBOrder[] = [];
+//     if (nfts) {
+//       const addresses = nfts.map((e) => e.collectionAddress);
+//       await this.addCollectionAddresses(addresses);
 
-        if (orders) {
-          result.push(...orders);
-        }
-      }
+//       for (const address of addresses) {
+//         const orders = this.orderMap.get(address);
 
-      const sortedOrders = result.sort((a, b) => {
-        const aCurrPrice = getCurrentOBOrderPrice(a);
-        const bCurrPrice = getCurrentOBOrderPrice(b);
-        if (aCurrPrice.gt(bCurrPrice)) {
-          return 1;
-        } else if (aCurrPrice.lt(bCurrPrice)) {
-          return -1;
-        } else {
-          return 0;
-        }
-      });
+//         if (orders) {
+//           result.push(...orders);
+//         }
+//       }
 
-      return sortedOrders;
-    }
-    return result;
-  }
+//       const sortedOrders = result.sort((a, b) => {
+//         const aCurrPrice = getCurrentOBOrderPrice(a);
+//         const bCurrPrice = getCurrentOBOrderPrice(b);
+//         if (aCurrPrice.gt(bCurrPrice)) {
+//           return 1;
+//         } else if (aCurrPrice.lt(bCurrPrice)) {
+//           return -1;
+//         } else {
+//           return 0;
+//         }
+//       });
 
-  async ordersForBuyOrder(buyOrder: OBOrder): Promise<OBOrder[]> {
-    const result: OBOrder[] = [];
+//       return sortedOrders;
+//     }
+//     return result;
+//   }
 
-    const sellOrders = await this.ordersInCollections(buyOrder.nfts);
-    const buyCurrPrice = getCurrentOBOrderPrice(buyOrder);
-    for (const sellOrder of sellOrders) {
-      const sellCurrPrice = getCurrentOBOrderPrice(sellOrder);
-      if (sellCurrPrice <= buyCurrPrice) {
-        result.push(sellOrder);
-      }
-    }
+//   async ordersForBuyOrder(buyOrder: OBOrder): Promise<OBOrder[]> {
+//     const result: OBOrder[] = [];
 
-    return result;
-  }
-}
+//     const sellOrders = await this.ordersInCollections(buyOrder.nfts);
+//     const buyCurrPrice = getCurrentOBOrderPrice(buyOrder);
+//     for (const sellOrder of sellOrders) {
+//       const sellCurrPrice = getCurrentOBOrderPrice(sellOrder);
+//       if (sellCurrPrice <= buyCurrPrice) {
+//         result.push(sellOrder);
+//       }
+//     }
+
+//     return result;
+//   }
+// }

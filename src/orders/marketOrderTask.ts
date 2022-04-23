@@ -1,68 +1,70 @@
-import { MarketListId } from '@infinityxyz/lib/types/core';
-import { isOBOrderExpired } from '@infinityxyz/lib/utils';
-import { expiredOrders, moveOrder } from './marketFirebase';
-import { marketOrders } from './marketOrders';
+// todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo
 
-// ---------------------------------------------------------------
-// MarketOrderTask
+// import { MarketListId } from '@infinityxyz/lib/types/core';
+// import { isOBOrderExpired } from '@infinityxyz/lib/utils';
+// import { expiredOrders, moveOrder } from './marketFirebase';
+// import { marketOrders } from './marketOrders';
 
-const fiveSecondDelay: number = 5 * 1000;
-const fifteenMinuteDelay: number = 15 * (60 * 1000);
+// // ---------------------------------------------------------------
+// // MarketOrderTask
 
-export class MarketOrderTask {
-  expiredScanTimer: NodeJS.Timeout | undefined;
-  matchScanTimer: NodeJS.Timeout | undefined;
+// const fiveSecondDelay: number = 5 * 1000;
+// const fifteenMinuteDelay: number = 15 * (60 * 1000);
 
-  constructor() {
-    // Schedule a scan
-    this.scan();
+// export class MarketOrderTask {
+//   expiredScanTimer: NodeJS.Timeout | undefined;
+//   matchScanTimer: NodeJS.Timeout | undefined;
 
-    setInterval(() => {
-      this.scan();
-    }, fifteenMinuteDelay);
-  }
+//   constructor() {
+//     // Schedule a scan
+//     this.scan();
 
-  scan() {
-    this.scanForExpiredOrders();
-    this.scanForMatches();
-  }
+//     setInterval(() => {
+//       this.scan();
+//     }, fifteenMinuteDelay);
+//   }
 
-  scanForExpiredOrders() {
-    if (!this.expiredScanTimer) {
-      this.expiredScanTimer = setTimeout(async () => {
-        try {
-          const orders = await expiredOrders();
-          for (const order of orders) {
-            if (isOBOrderExpired(order.order)) {
-              // Move order to invalid list
-              await moveOrder(order.order, order.listId, MarketListId.Invalid);
-            }
-          }
-        } catch (err) {
-          console.error(err);
-        }
+//   scan() {
+//     this.scanForExpiredOrders();
+//     this.scanForMatches();
+//   }
 
-        this.expiredScanTimer = undefined;
-      }, fiveSecondDelay);
-    }
-  }
+//   scanForExpiredOrders() {
+//     if (!this.expiredScanTimer) {
+//       this.expiredScanTimer = setTimeout(async () => {
+//         try {
+//           const orders = await expiredOrders();
+//           for (const order of orders) {
+//             if (isOBOrderExpired(order.order)) {
+//               // Move order to invalid list
+//               await moveOrder(order.order, order.listId, MarketListId.Invalid);
+//             }
+//           }
+//         } catch (err) {
+//           console.error(err);
+//         }
 
-  scanForMatches() {
-    if (!this.matchScanTimer) {
-      this.matchScanTimer = setTimeout(async () => {
-        try {
-          const matches = await marketOrders.marketMatches();
+//         this.expiredScanTimer = undefined;
+//       }, fiveSecondDelay);
+//     }
+//   }
 
-          // Execute the buys if found
-          for (const m of matches) {
-            await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
-          }
-        } catch (err) {
-          console.error(err);
-        }
+//   scanForMatches() {
+//     if (!this.matchScanTimer) {
+//       this.matchScanTimer = setTimeout(async () => {
+//         try {
+//           const matches = await marketOrders.marketMatches();
 
-        this.matchScanTimer = undefined;
-      }, fiveSecondDelay);
-    }
-  }
-}
+//           // Execute the buys if found
+//           for (const m of matches) {
+//             await marketOrders.executeBuyOrder(m.buyOrder.id ?? '');
+//           }
+//         } catch (err) {
+//           console.error(err);
+//         }
+
+//         this.matchScanTimer = undefined;
+//       }, fiveSecondDelay);
+//     }
+//   }
+// }
