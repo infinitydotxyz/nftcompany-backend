@@ -5,7 +5,7 @@ import { Body, Controller, Param, Post } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
-import { OrdersDto } from './orders.dto';
+import { OrdersDto } from './dto/orders.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')

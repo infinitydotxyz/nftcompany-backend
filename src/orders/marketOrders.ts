@@ -8,7 +8,7 @@ import { getCurrentOBOrderPrice, isOBOrderExpired } from '@infinityxyz/lib/utils
 @singleton()
 export class MarketOrders {
   // Runs in the background, scanning the order list
-  // commented becasuse it is crashing the server
+  // todo: commented because it is crashing the server
   // task: MarketOrderTask = new MarketOrderTask();
 
   async executeBuyOrder(orderId: string): Promise<void> {
