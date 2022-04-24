@@ -1,10 +1,17 @@
-import { FirestoreOrder, FirestoreOrderItem } from '@infinityxyz/lib/types/core';
+import {
+  FirestoreOrder,
+  FirestoreOrderItem,
+  GetOrdersQuery,
+  OBOrderItem,
+  OBOrderStatus,
+  OBTokenInfo,
+  SignedOBOrder
+} from '@infinityxyz/lib/types/core';
 import { error, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
 import { getDocIdHash } from 'utils';
-import { ORDER_VALID_ACTIVE } from '../constants';
 import { OBOrderItemDto } from './dto/ob-order-item.dto';
 import { OBTokenInfoDto } from './dto/ob-token-info.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
@@ -59,42 +66,24 @@ export default class OrdersService {
     });
   }
 
-  async getOrders(params: any) {
-    console.log(params); // todo: remove
-    // todo: remove any
+  async getOrders(reqQuery: GetOrdersQuery): Promise<SignedOBOrder[]> {
     const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
     // todo: needs pagination
-    const query = ordersCollectionRef.where('orderStatus', '==', ORDER_VALID_ACTIVE);
-    const orders = await query.get();
+    const firestoreQuery = ordersCollectionRef.where('orderStatus', '==', OBOrderStatus.ValidActive);
+    const firestoreOrders = await firestoreQuery.get();
     // todo: change this
-    const results: FirebaseFirestore.DocumentData[] = [];
-    orders.forEach((doc) => {
-      const order = doc.data();
-      const orderItems: FirestoreOrderItem[] = [];
-      doc.ref
-        .collection(firestoreConstants.ORDER_ITEMS_SUB_COLL)
-        .get()
-        .then((items) => {
-          items.forEach((orderItemDoc) => {
-            const orderItem = orderItemDoc.data() as FirestoreOrderItem;
-            orderItems.push(orderItem);
-          });
-        })
-        .catch((err) => {
-          error(err);
-        });
-      order.nfts = orderItems;
-      results.push(order);
-    });
-    return {
-      orders: results
-    };
+    const results: SignedOBOrder[] = [];
+    for (const firestoreOrderDoc of firestoreOrders.docs) {
+      const signedOBOrder = await this.getSignedOBOrderFromFirestoreOrderDoc(firestoreOrderDoc);
+      results.push(signedOBOrder);
+    }
+    return results;
   }
 
-  getFirestoreOrderFromSignedOBOrder(order: SignedOBOrderDto): FirestoreOrder {
+  private getFirestoreOrderFromSignedOBOrder(order: SignedOBOrderDto): FirestoreOrder {
     const data: FirestoreOrder = {
       id: order.id,
-      orderStatus: ORDER_VALID_ACTIVE,
+      orderStatus: OBOrderStatus.ValidActive,
       chainId: order.chainId,
       isSellOrder: order.isSellOrder,
       numItems: order.numItems,
@@ -113,14 +102,14 @@ export default class OrdersService {
     return data;
   }
 
-  getFirestoreOrderItemFromSignedOBOrder(
+  private getFirestoreOrderItemFromSignedOBOrder(
     order: SignedOBOrderDto,
     nft: OBOrderItemDto,
     token: OBTokenInfoDto
   ): FirestoreOrderItem {
     const data: FirestoreOrderItem = {
       id: order.id,
-      orderStatus: ORDER_VALID_ACTIVE,
+      orderStatus: OBOrderStatus.ValidActive,
       chainId: order.chainId,
       isSellOrder: order.isSellOrder,
       numItems: order.numItems,
@@ -141,6 +130,59 @@ export default class OrdersService {
       tokenName: token.tokenName
     };
     return data;
+  }
+
+  private async getSignedOBOrderFromFirestoreOrderDoc(
+    firestoreOrderDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
+  ): Promise<SignedOBOrder> {
+    const order = firestoreOrderDoc.data() as FirestoreOrder;
+    const items = await firestoreOrderDoc.ref.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL).get();
+    const obOrderItemMap: { [key: string]: OBOrderItem } = {};
+    for (const item of items.docs) {
+      const itemData = item.data() as FirestoreOrderItem;
+      const tokens: OBTokenInfo[] = [];
+      const token: OBTokenInfo = {
+        tokenId: itemData.tokenId,
+        numTokens: itemData.numTokens,
+        tokenImage: itemData.tokenImage,
+        tokenName: itemData.tokenName,
+        takerAddress: itemData.takerAddress,
+        takerUsername: itemData.takerUsername
+      };
+      const existing = obOrderItemMap[itemData.collection];
+      if (existing) {
+        existing.tokens.push(token);
+      } else {
+        tokens.push(token);
+        const obOrderItem: OBOrderItem = {
+          collectionAddress: itemData.collection,
+          collectionImage: itemData.collectionImage,
+          collectionName: itemData.collectionName,
+          tokens
+        };
+        obOrderItemMap[itemData.collection] = obOrderItem;
+      }
+    }
+    const signedOBOrder: SignedOBOrder = {
+      id: order.id,
+      chainId: order.chainId,
+      isSellOrder: order.isSellOrder,
+      numItems: order.numItems,
+      startPriceEth: order.startPriceEth,
+      endPriceEth: order.endPriceEth,
+      startTimeMs: order.startTimeMs,
+      endTimeMs: order.endTimeMs,
+      minBpsToSeller: order.minBpsToSeller,
+      nonce: order.nonce,
+      makerAddress: order.makerAddress,
+      makerUsername: order.makerUsername,
+      nfts: Object.values(obOrderItemMap),
+      signedOrder: order.signedOrder,
+      execParams: { complicationAddress: order.complicationAddress, currencyAddress: order.currencyAddress },
+      extraParams: {}
+    };
+    console.log('signedOBOrder', signedOBOrder);
+    return signedOBOrder;
   }
 
   // todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo

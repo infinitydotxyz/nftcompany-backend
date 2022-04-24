@@ -1,5 +1,6 @@
+import { GetOrdersQuery, SignedOBOrder } from '@infinityxyz/lib/types/core';
 import { jsonString } from '@infinityxyz/lib/utils';
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse, ApiOkResponse,
@@ -21,7 +22,7 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  @UserAuth('userId')
+  // @UserAuth('userId') todo: uncomment
   @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
@@ -32,18 +33,16 @@ export class OrdersController {
   }
 
   // todo: uncomment
-  @Post('get')
+  @Get('get')
   // @ApiOperation({
-  //   description: 'Post orders',
+  //   description: 'Get orders',
   //   tags: [ApiTag.Orders]
   // })
   @ApiOkResponse({ description: ResponseDescription.Success })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async getOrders(@Body() body: any) {
-    // todo: remove any
-    console.log('body', jsonString(body)); // todo: remove log
-    const data = await this.ordersService.getOrders(body);
+  async getOrders(@Query() query: GetOrdersQuery): Promise<SignedOBOrder[]> {
+    const data = await this.ordersService.getOrders(query);
     return data;
   }
 }

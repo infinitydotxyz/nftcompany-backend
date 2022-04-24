@@ -125,7 +125,3 @@ export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // In ms
 export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min
-
-export const ORDER_VALID_ACTIVE = 'validActive';
-export const ORDER_VALID_INACTIVE = 'validInactive';
-export const ORDER_INACTIVE = 'inactive';
