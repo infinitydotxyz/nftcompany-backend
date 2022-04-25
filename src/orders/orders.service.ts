@@ -10,6 +10,7 @@ import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
+import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from 'utils';
 import { OBOrderItemDto } from './dto/ob-order-item.dto';
 import { OBTokenInfoDto } from './dto/ob-token-info.dto';
@@ -43,7 +44,7 @@ export default class OrdersService {
       const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
       try {
         for (const nft of order.nfts) {
-          if (nft.tokens.length === 0) {
+          if (nft.tokens.length === 0) { // to support any tokens from a collection type orders
             const emptyToken = {
               tokenId: '',
               numTokens: 1, // default for both ERC721 and ERC1155
@@ -176,11 +177,18 @@ export default class OrdersService {
     return data;
   }
 
-  private getFirestoreOrderItemFromSignedOBOrder(
+  private async getFirestoreOrderItemFromSignedOBOrder(
     order: SignedOBOrderDto,
     nft: OBOrderItemDto,
     token: OBTokenInfoDto
-  ): FirestoreOrderItem {
+  ): Promise<FirestoreOrderItem> {
+    let takerAddress = token.takerAddress;
+    let takerUsername = token.takerUsername;
+    if (!order.isSellOrder) {
+      // for buy orders, fetch the current owner of the token
+      takerAddress = await getERC721Owner(nft.collectionAddress, token.tokenId, order.chainId);
+      takerUsername = ''; // todo: fetch taker username
+    }
     const data: FirestoreOrderItem = {
       id: order.id,
       orderStatus: OBOrderStatus.ValidActive,
@@ -193,8 +201,8 @@ export default class OrdersService {
       endTimeMs: order.endTimeMs,
       makerAddress: order.makerAddress,
       makerUsername: order.makerUsername,
-      takerAddress: token.takerAddress,
-      takerUsername: token.takerUsername,
+      takerAddress,
+      takerUsername,
       collectionAddress: nft.collectionAddress,
       collectionName: nft.collectionName,
       collectionImage: nft.collectionImage,
