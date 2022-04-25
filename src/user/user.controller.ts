@@ -575,6 +575,7 @@ export class UserController {
     description: 'Get the activity of a user',
     tags: [ApiTag.User]
   })
+  @ApiParamUserId('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
