@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
 import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
 import { TweetDto } from './dto/tweet.dto';
@@ -68,7 +68,7 @@ export class TwitterService {
   ): Promise<TweetArrayDto> {
     const mentionsRef = collectionRef.collection(firestoreConstants.COLLECTION_MENTIONS_COLL);
 
-    const limit = query.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
+    const limit = query.limit ?? DEFAULT_ITEMS_PER_PAGE;
 
     const startAfterCursor = this.paginationService.decodeCursorToObject<{ id?: string; followersCount?: number }>(
       query.cursor || ''

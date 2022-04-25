@@ -1,5 +1,5 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
@@ -118,7 +118,7 @@ export class VotesService {
       votesQuery = votesQuery.startAfter(decodedCursor);
     }
 
-    const limit = options?.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
+    const limit = options?.limit ?? DEFAULT_ITEMS_PER_PAGE;
     votesQuery = votesQuery.limit(limit + 1);
     const votesSnapshot = await votesQuery.get();
     const votes = votesSnapshot.docs.map((item) => item.data() as UserCollectionVoteDto);

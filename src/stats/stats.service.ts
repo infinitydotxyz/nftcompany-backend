@@ -256,9 +256,11 @@ export class StatsService {
     const numOwners = collectionData?.numOwners ?? NaN;
     const numNfts = collectionData?.numNfts ?? NaN;
     const hasBlueCheck = collectionData?.hasBlueCheck ?? false;
+    const slug = collectionData?.slug ?? '';
 
     const mergedStats: CollectionStatsDto = {
       name,
+      slug,
       profileImage,
       numOwners,
       numNfts,

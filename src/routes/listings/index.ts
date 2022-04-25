@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/lib/types/core';
 import {
-  DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
@@ -15,6 +14,7 @@ import {
 import { getListingsByCollection } from 'services/infinity/listings/getListingsByCollection';
 import { getListingByTokenAddressAndId } from 'services/infinity/listings/getListingsByTokenAddressAndId';
 import { validateInputs } from 'utils/index';
+import { DEFAULT_ITEMS_PER_PAGE } from '@infinityxyz/lib/utils';
 
 const router = Router();
 

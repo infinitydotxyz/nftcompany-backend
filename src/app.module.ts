@@ -12,7 +12,6 @@ import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
 import { VotesModule } from './votes/votes.module';
-import { MarketListingsModule } from './market-listings/market-listings.module';
 import { OrdersModule } from 'orders/orders.module';
 import { AuthModule } from 'auth/auth.module';
 import { MnemonicModule } from 'mnemonic/mnemonic.module';
@@ -38,7 +37,6 @@ import { FB_STORAGE_BUCKET } from './constants';
     UserModule,
     VotesModule,
     StorageModule,
-    MarketListingsModule,
     OrdersModule,
     MnemonicModule,
     AuthModule
