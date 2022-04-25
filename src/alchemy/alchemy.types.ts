@@ -52,7 +52,7 @@ export interface AlchemyNftWithMetadata {
     raw: string;
 
     gateway: string;
-  };
+  }[];
 
   metadata: {
     image: string;

@@ -8,16 +8,20 @@ import { StorageModule } from 'storage/storage.module';
 import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
-import { AlchemyService } from 'alchemy/alchemy.service';
-import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
-import { ParseUserIdPipe } from './parser/parse-user-id.pipe';
-
-@Module({
-  providers: [UserService, ParseUserIdPipe, AlchemyService, AlchemyNftToInfinityNft],
+import { AlchemyModule } from 'alchemy/alchemy.module';
 
 @Module({
   providers: [UserService],
-  imports: [StatsModule, VotesModule, CollectionsModule, StorageModule, DiscordModule, TwitterModule, ProfileModule],
+  imports: [
+    StatsModule,
+    VotesModule,
+    StorageModule,
+    DiscordModule,
+    TwitterModule,
+    ProfileModule,
+    AlchemyModule,
+    CollectionsModule
+  ],
   controllers: [UserController],
   exports: [UserService]
 })

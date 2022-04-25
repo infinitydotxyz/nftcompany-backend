@@ -4,6 +4,7 @@ import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
 import { AlchemyService } from 'alchemy/alchemy.service';
+import { Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
 import { NftDto } from 'collections/nfts/dto/nft.dto';
@@ -20,15 +21,16 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
+import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 
 @Injectable()
 export class UserService {
   constructor(
     private firebaseService: FirebaseService,
-    private statsService: StatsService,
     private alchemyService: AlchemyService,
-    private alchemyNftToInfinityNft: AlchemyNftToInfinityNft
+    private alchemyNftToInfinityNft: AlchemyNftToInfinityNft,
+    @Optional() private statsService: StatsService
   ) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
@@ -238,5 +240,26 @@ export class UserService {
       cursor: updatedCursor,
       hasNextPage
     };
+  }
+
+  async getByUsername(username: string) {
+    const snapshot = await this.firebaseService.firestore
+      .collection(firestoreConstants.USERS_COLL)
+      .where('username', '==', username)
+      .limit(1)
+      .get();
+
+    const doc = snapshot.docs[0];
+
+    const user = doc?.data() as UserProfileDto;
+
+    return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
+  }
+
+  /**
+   * Returns a document reference to the collection with the specified address.
+   */
+  getRef(address: string) {
+    return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
   }
 }

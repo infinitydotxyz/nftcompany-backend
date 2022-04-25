@@ -34,7 +34,6 @@ export class AlchemyNftToInfinityNft
       tokenId
     });
     const metadata = nft?.metadata ?? (alchemyNft.metadata as any);
-
     return {
       address: alchemyNft.contract.address,
       chainId,
@@ -50,10 +49,10 @@ export class AlchemyNftToInfinityNft
       tokenUri: nft?.tokenUri ?? alchemyNft.tokenUri?.raw ?? '',
       rarityRank: nft?.rarityRank ?? NaN,
       rarityScore: nft?.rarityScore ?? NaN,
-      image: nft?.image ?? {
-        url: alchemyNft?.media?.gateway ?? '',
-        originalUrl: alchemyNft?.media?.raw ?? '',
-        updatedAt: NaN
+      image: {
+        url: (nft?.image?.url || alchemyNft?.media?.[0]?.gateway || alchemyNft?.metadata?.image) ?? '',
+        originalUrl: (nft?.image?.originalUrl || alchemyNft?.media?.[0]?.raw || alchemyNft?.metadata?.image) ?? '',
+        updatedAt: nft?.image?.updatedAt ?? NaN
       },
       state: nft?.state ?? undefined,
       tokenStandard: alchemyNft.id.tokenMetadata.tokenType as TokenStandard
