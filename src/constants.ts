@@ -1,5 +1,6 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { warn } from '@infinityxyz/lib/utils/logger';
+import 'dotenv/config';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
@@ -13,8 +14,7 @@ export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? '
 export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey');
 export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey');
 export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet');
-export const ALCHEMY_NFT_BASE_URL_ETH_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlEth');
-export const ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlPolygon');
+export const ALCHEMY_JSON_RPC_POLYGON_MAINNET = getEnvironmentVariable('alchemyJsonRpcPolygonMainnet');
 export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey');
 export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken');
 export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey');
@@ -108,7 +108,6 @@ export const FEATURED_LIMIT = 4; // Number of featured collections
 
 export const OPENSEA_API = 'https://api.opensea.io/api/v1/';
 
-export const DEFAULT_ITEMS_PER_PAGE = 50;
 export const DEFAULT_MIN_ETH = 0.0000001;
 export const DEFAULT_MAX_ETH = 1000000; // For listings
 export const DEFAULT_PRICE_SORT_DIRECTION = OrderDirection.Descending;
@@ -125,7 +124,3 @@ export const MIN_TWITTER_UPDATE_INTERVAL = ONE_HOUR; // In ms
 export const MIN_DISCORD_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_LINK_UPDATE_INTERVAL = ONE_HOUR;
 export const MIN_COLLECTION_STATS_UPDATE_INTERVAL = ONE_HOUR / 4; // 15 min
-
-export const ORDER_VALID_ACTIVE = 'validActive';
-export const ORDER_VALID_INACTIVE = 'validInactive';
-export const ORDER_INACTIVE = 'inactive';

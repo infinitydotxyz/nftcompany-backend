@@ -9,12 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { FirebaseService } from '../firebase/firebase.service';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
 import { VerifiedMentionTweet, VerifiedMentionIncludes, VerifiedMentionUser, TwitterEndpoint } from './twitter.types';
 import { PaginatedQuery } from 'common/dto/paginated-query.dto';
-import { base64Decode, base64Encode } from 'utils';
 import { TweetDto } from './dto/tweet.dto';
 import { TweetArrayDto } from './dto/tweet-array.dto';
+import { CursorService } from 'pagination/cursor.service';
 
 /**
  * Access level is Elevated
@@ -26,7 +26,11 @@ import { TweetArrayDto } from './dto/tweet-array.dto';
 export class TwitterService {
   private readonly client: AxiosInstance;
 
-  constructor(private config: ConfigService, private firebaseService: FirebaseService) {
+  constructor(
+    private config: ConfigService,
+    private firebaseService: FirebaseService,
+    private paginationService: CursorService
+  ) {
     const bearer = this.config.get<EnvironmentVariables>('twitterBearerToken');
 
     this.client = axios.create({
@@ -64,16 +68,11 @@ export class TwitterService {
   ): Promise<TweetArrayDto> {
     const mentionsRef = collectionRef.collection(firestoreConstants.COLLECTION_MENTIONS_COLL);
 
-    const limit = query.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
+    const limit = query.limit ?? DEFAULT_ITEMS_PER_PAGE;
 
-    let startAfterCursor;
-    if (query.cursor) {
-      try {
-        startAfterCursor = JSON.parse(base64Decode(query.cursor));
-      } catch (e) {
-        console.log(e);
-      }
-    }
+    const startAfterCursor = this.paginationService.decodeCursorToObject<{ id?: string; followersCount?: number }>(
+      query.cursor || ''
+    );
 
     let topMentionsQuery = mentionsRef.orderBy('author.followersCount', 'desc').orderBy('author.id');
 
@@ -94,12 +93,10 @@ export class TwitterService {
     }
 
     const lastItem = topMentions?.[topMentions?.length - 1];
-    const cursor = base64Encode(
-      JSON.stringify({
-        Id: lastItem?.author.id,
-        FollowersCount: lastItem?.author.followersCount
-      })
-    );
+    const cursor = this.paginationService.encodeCursor({
+      id: lastItem?.author.id,
+      followersCount: lastItem?.author.followersCount
+    });
 
     return {
       data: topMentions,

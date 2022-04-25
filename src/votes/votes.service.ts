@@ -1,12 +1,12 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CursorService } from 'pagination/cursor.service';
 import { UserDto } from 'user/dto/user.dto';
-import { base64Decode, base64Encode } from 'utils';
 import { CollectionVotesDto } from './dto/collection-votes.dto';
 import { UserCollectionVoteDto } from './dto/user-collection-vote.dto';
 import { UserCollectionVotesArrayDto } from './dto/user-collection-votes-array.dto';
@@ -23,7 +23,7 @@ export class VotesService {
     return `shard-${shardNumber}`;
   }
 
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(private firebaseService: FirebaseService, private paginationService: CursorService) {}
 
   async getCollectionVotes(collection: ParsedCollectionId): Promise<CollectionVotesDto> {
     const shardsSnapshot = await collection.ref.collection(firestoreConstants.COLLECTION_VOTES_SHARDS_COLL).get();
@@ -113,12 +113,12 @@ export class VotesService {
       .where('userChainId', '==', user.userChainId)
       .orderBy('updatedAt', orderDirection);
 
-    const decodedCursor = parseInt(base64Decode(options.cursor), 10);
+    const decodedCursor = this.paginationService.decodeCursorToNumber(options.cursor || '');
     if (!Number.isNaN(decodedCursor)) {
       votesQuery = votesQuery.startAfter(decodedCursor);
     }
 
-    const limit = options?.limit ?? FirebaseService.DEFAULT_ITEMS_PER_PAGE;
+    const limit = options?.limit ?? DEFAULT_ITEMS_PER_PAGE;
     votesQuery = votesQuery.limit(limit + 1);
     const votesSnapshot = await votesQuery.get();
     const votes = votesSnapshot.docs.map((item) => item.data() as UserCollectionVoteDto);
@@ -131,7 +131,7 @@ export class VotesService {
     }
 
     const rawCursor = votes?.[votes?.length - 1]?.updatedAt;
-    const cursor = rawCursor ? base64Encode(`${rawCursor}`) : '';
+    const cursor = rawCursor ? this.paginationService.encodeCursor(rawCursor) : '';
 
     return {
       data: votes,

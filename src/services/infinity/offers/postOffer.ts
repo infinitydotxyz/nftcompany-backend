@@ -5,7 +5,7 @@ import { prepareEmail } from '../email/prepareEmail';
 import { updateNumOrders } from '../orders/updateNumOrders';
 import { getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
-import ERC721ABI from 'abi/ERC721.json';
+import { ERC721ABI } from 'abi/erc721';
 
 export async function postOffer(maker: string, payload: any, batch: any, numOrders: number, hasBonus: boolean) {
   log('Writing offer to firestore for user', maker);

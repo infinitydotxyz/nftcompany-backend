@@ -5,7 +5,6 @@ import { IsEnum, IsEthereumAddress } from 'class-validator';
 import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
 export class UserFollowingCollection {
-
   @ApiProperty({
     description: 'Address of the following collection'
   })

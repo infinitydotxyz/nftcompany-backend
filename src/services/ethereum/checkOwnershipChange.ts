@@ -1,8 +1,8 @@
 import { getProvider } from 'utils/ethers';
 import { ethers } from 'ethers';
-import ERC721ABI from 'abi/ERC721.json';
-import ERC1155ABI from 'abi/ERC1155.json';
-import { error, NULL_ADDRESS } from '@infinityxyz/lib/utils';
+import { ERC721ABI } from 'abi/erc721';
+import { ERC1155ABI } from 'abi/erc1155';
+import { error, NULL_ADDRESS, trimLowerCase } from '@infinityxyz/lib/utils';
 
 export async function checkOwnershipChange(doc: any): Promise<boolean> {
   const order = doc.data();
@@ -31,7 +31,7 @@ export async function checkOwnershipChange(doc: any): Promise<boolean> {
   return false;
 }
 
-export async function getERC721Owner(address: string, tokenId: string, chainId: string) {
+export async function getERC721Owner(address: string, tokenId: string, chainId: string): Promise<string> {
   try {
     const provider = getProvider(chainId);
     if (provider == null) {
@@ -39,11 +39,11 @@ export async function getERC721Owner(address: string, tokenId: string, chainId: 
       return '';
     }
     const contract = new ethers.Contract(address, ERC721ABI, provider);
-    let newOwner = await contract.ownerOf(tokenId);
-    newOwner = newOwner.trim().toLowerCase();
+    const newOwner = trimLowerCase(await contract.ownerOf(tokenId));
     return newOwner;
   } catch (err: any) {
-    return '';
+    console.error('Failed to get ERC721 owner');
+    throw err;
   }
 }
 

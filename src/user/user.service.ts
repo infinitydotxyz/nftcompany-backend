@@ -20,7 +20,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
-import { ParsedUserId } from './user-id.pipe';
+import { ParsedUserId } from './parser/parsed-user-id';
 
 @Injectable()
 export class UserService {
