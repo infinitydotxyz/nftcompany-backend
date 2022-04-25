@@ -30,7 +30,7 @@ import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
-  public postOrders(userId: string, orders: SignedOBOrderDto[]) {
+  public async postOrders(userId: string, orders: SignedOBOrderDto[]): Promise<string> {
     const fsBatchHandler = new FirestoreBatchHandler();
     const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
     for (const order of orders) {
@@ -44,7 +44,8 @@ export default class OrdersService {
       const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
       try {
         for (const nft of order.nfts) {
-          if (nft.tokens.length === 0) { // to support any tokens from a collection type orders
+          if (nft.tokens.length === 0) {
+            // to support any tokens from a collection type orders
             const emptyToken = {
               tokenId: '',
               numTokens: 1, // default for both ERC721 and ERC1155
@@ -53,7 +54,7 @@ export default class OrdersService {
               takerAddress: '',
               takerUsername: ''
             };
-            const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
+            const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
             // get doc id
             const tokenId = '';
             const orderItemDocRef = orderItemsRef.doc(
@@ -63,7 +64,7 @@ export default class OrdersService {
             fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
           } else {
             for (const token of nft.tokens) {
-              const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+              const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
               // get doc id
               const tokenId = token.tokenId.toString();
               const orderItemDocRef = orderItemsRef.doc(
@@ -76,12 +77,15 @@ export default class OrdersService {
         }
       } catch (err: any) {
         console.error('Failed saving orders to firestore', err);
+        return 'Failed';
       }
     }
     // commit batch
     fsBatchHandler.flush().catch((err) => {
       console.error(err);
+      return 'Failed';
     });
+    return 'Success';
   }
 
   public async getOrders(

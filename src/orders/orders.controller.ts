@@ -23,10 +23,11 @@ export class OrdersController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  postOrders(@Param() userId: string, @Body() body: any) {
+  public async postOrders(@Param() userId: string, @Body() body: any): Promise<string> {
     // todo: remove any
     console.log('body', jsonString(body)); // todo: remove log
-    this.ordersService.postOrders(userId, body.orders);
+    const result = await this.ordersService.postOrders(userId, body.orders);
+    return result;
   }
 
   // todo: uncomment
@@ -38,8 +39,10 @@ export class OrdersController {
   @ApiOkResponse({ description: ResponseDescription.Success })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async getOrders(@Query() reqQuery: GetOrderItemsQuery): Promise<SignedOBOrder[]> {
-    const orderItemsCollectionRef = this.firebaseService.firestore.collectionGroup(firestoreConstants.ORDER_ITEMS_SUB_COLL);
+  public async getOrders(@Query() reqQuery: GetOrderItemsQuery): Promise<SignedOBOrder[]> {
+    const orderItemsCollectionRef = this.firebaseService.firestore.collectionGroup(
+      firestoreConstants.ORDER_ITEMS_SUB_COLL
+    );
     // default fetch valid active orders
     let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
     if (reqQuery.orderStatus) {
