@@ -23,7 +23,7 @@ export class OrdersController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  public async postOrders(@Param() userId: string, @Body() body: any): Promise<string> {
+  public async postOrders(@Param('userId') userId: string, @Body() body: any): Promise<string> {
     // todo: remove any
     console.log('body', jsonString(body)); // todo: remove log
     const result = await this.ordersService.postOrders(userId, body.orders);
@@ -88,5 +88,18 @@ export class OrdersController {
     // query firestore
     const data = await this.ordersService.getOrders(firestoreQuery);
     return data;
+  }
+
+  // todo: uncomment
+  @Get(':userId/nonce')
+  // @ApiOperation({
+  //   description: 'Get order nonce for user',
+  //   tags: [ApiTag.Orders]
+  // })
+  @ApiOkResponse({ description: ResponseDescription.Success })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async getOrderNonce(@Param('userId') userId: string): Promise<string> {
+    return await this.ordersService.getOrderNonce(userId);
   }
 }

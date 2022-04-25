@@ -37,7 +37,7 @@ export default class OrdersService {
       const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
       for (const order of orders) {
         // get data
-        const dataToStore = await this.getFirestoreOrderFromSignedOBOrder(userId, order);
+        const dataToStore = this.getFirestoreOrderFromSignedOBOrder(userId, order);
         // save
         const docRef = ordersCollectionRef.doc(order.id);
         fsBatchHandler.add(docRef, dataToStore, { merge: true });
@@ -165,9 +165,8 @@ export default class OrdersService {
     return results;
   }
 
-  private async getFirestoreOrderFromSignedOBOrder(user: string, order: SignedOBOrderDto): Promise<FirestoreOrder> {
+  private getFirestoreOrderFromSignedOBOrder(user: string, order: SignedOBOrderDto): FirestoreOrder {
     try {
-      const nonce = await this.getOrderNonce(user);
       const data: FirestoreOrder = {
         id: order.id,
         orderStatus: OBOrderStatus.ValidActive,
@@ -179,7 +178,7 @@ export default class OrdersService {
         startTimeMs: order.startTimeMs,
         endTimeMs: order.endTimeMs,
         minBpsToSeller: order.minBpsToSeller,
-        nonce,
+        nonce: order.nonce,
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
         makerAddress: order.makerAddress,
@@ -193,23 +192,22 @@ export default class OrdersService {
     }
   }
 
-  private async getOrderNonce(user: string): Promise<string> {
+  public async getOrderNonce(userId: string): Promise<string> {
     try {
-      user = trimLowerCase(user);
+      const user = trimLowerCase(userId);
       const userDocRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(user);
       const updatedNonce = await this.firebaseService.firestore.runTransaction(async (t) => {
         const userDoc = await t.get(userDocRef);
-        if (!userDoc.exists) {
-          throw new Error('User does not exist');
-        }
-        const nonce = userDoc.data()?.nonce ?? '0';
+        const userDocData = userDoc.data() || { address: user };
+        const nonce = userDocData.orderNonce ?? '0';
         const newNonce = BigNumber.from(nonce).add(1).toString();
-        t.update(userDocRef, { nonce: newNonce });
+        userDocData.orderNonce = newNonce;
+        t.set(userDocRef, userDocData, { merge: true });
         return newNonce;
       });
       return updatedNonce;
     } catch (e) {
-      console.error('Failed to get order nonce for user', user);
+      console.error('Failed to get order nonce for user', userId);
       throw e;
     }
   }
