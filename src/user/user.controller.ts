@@ -579,6 +579,7 @@ export class UserController {
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
   async getActivity(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() query: UserActivityQueryDto
