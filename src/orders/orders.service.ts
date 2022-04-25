@@ -6,16 +6,24 @@ import {
   OBTokenInfo,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
+import {
+  firestoreConstants,
+  getCreatorFeeManagerAddress,
+  getFeeTreasuryAddress,
+  trimLowerCase
+} from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
-import { BigNumber } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
+import { getProvider } from 'utils/ethers';
 import { FirebaseService } from '../firebase/firebase.service';
 import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from '../utils';
 import { OBOrderItemDto } from './dto/ob-order-item.dto';
 import { OBTokenInfoDto } from './dto/ob-token-info.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
+import { InfinityFeeTreasuryABI } from 'abi/infinityFeeTreasury';
+import { InfinityCreatorsFeeManagerABI } from 'abi/infinityCreatorsFeeManager';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -94,6 +102,24 @@ export default class OrdersService {
     return 'Success';
   }
 
+  // todo: change this when fees change
+  public async fetchMinBps(chainId: string, collections: string[]): Promise<number> {
+    let minBps = 10000;
+    try {
+      const curatorFeeBps = await this.getCuratorFeeBps(chainId);
+      console.log(`Curator fee bps: ${curatorFeeBps}`);
+      for (const collection of collections) {
+        const creatorFeeBps = await this.getCreatorFeeBps(chainId, collection);
+        console.log(`Creator fee bps for ${collection}: ${creatorFeeBps}`);
+        const totalBps = curatorFeeBps + creatorFeeBps;
+        minBps = Math.min(minBps, totalBps);
+      }
+    } catch (e) {
+      console.error('Failed to fetch min bps', e);
+    }
+    return minBps;
+  }
+
   public async getOrders(
     firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>
   ): Promise<SignedOBOrder[]> {
@@ -165,6 +191,26 @@ export default class OrdersService {
     return results;
   }
 
+  public async getOrderNonce(userId: string): Promise<string> {
+    try {
+      const user = trimLowerCase(userId);
+      const userDocRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(user);
+      const updatedNonce = await this.firebaseService.firestore.runTransaction(async (t) => {
+        const userDoc = await t.get(userDocRef);
+        const userDocData = userDoc.data() || { address: user };
+        const nonce = userDocData.orderNonce ?? '0';
+        const newNonce = BigNumber.from(nonce).add(1).toString();
+        userDocData.orderNonce = newNonce;
+        t.set(userDocRef, userDocData, { merge: true });
+        return newNonce;
+      });
+      return updatedNonce;
+    } catch (e) {
+      console.error('Failed to get order nonce for user', userId);
+      throw e;
+    }
+  }
+
   private getFirestoreOrderFromSignedOBOrder(user: string, order: SignedOBOrderDto): FirestoreOrder {
     try {
       const data: FirestoreOrder = {
@@ -192,26 +238,6 @@ export default class OrdersService {
     }
   }
 
-  public async getOrderNonce(userId: string): Promise<string> {
-    try {
-      const user = trimLowerCase(userId);
-      const userDocRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(user);
-      const updatedNonce = await this.firebaseService.firestore.runTransaction(async (t) => {
-        const userDoc = await t.get(userDocRef);
-        const userDocData = userDoc.data() || { address: user };
-        const nonce = userDocData.orderNonce ?? '0';
-        const newNonce = BigNumber.from(nonce).add(1).toString();
-        userDocData.orderNonce = newNonce;
-        t.set(userDocRef, userDocData, { merge: true });
-        return newNonce;
-      });
-      return updatedNonce;
-    } catch (e) {
-      console.error('Failed to get order nonce for user', userId);
-      throw e;
-    }
-  }
-
   private async getFirestoreOrderItemFromSignedOBOrder(
     order: SignedOBOrderDto,
     nft: OBOrderItemDto,
@@ -219,9 +245,11 @@ export default class OrdersService {
   ): Promise<FirestoreOrderItem> {
     let takerAddress = token.takerAddress;
     let takerUsername = token.takerUsername;
-    if (!order.isSellOrder) {
+    if (!order.isSellOrder && nft.collectionAddress && token.tokenId) {
       // for buy orders, fetch the current owner of the token
+      console.log(nft.collectionAddress, token.tokenId, order.chainId);
       takerAddress = await getERC721Owner(nft.collectionAddress, token.tokenId, order.chainId);
+      console.log('takerAddress', takerAddress); // todo: remove
       takerUsername = ''; // todo: fetch taker username
     }
     const data: FirestoreOrderItem = {
@@ -247,6 +275,38 @@ export default class OrdersService {
       tokenName: token.tokenName
     };
     return data;
+  }
+
+  private async getCuratorFeeBps(chainId: string): Promise<number> {
+    try {
+      const provider = getProvider(chainId);
+      if (provider == null) {
+        throw new Error('Cannot get curator fee bps as provider is null');
+      }
+      const feeTreasuryAddress = getFeeTreasuryAddress(chainId);
+      const contract = new ethers.Contract(feeTreasuryAddress, InfinityFeeTreasuryABI, provider);
+      const curatorFeeBps = await contract.CURATOR_FEE_BPS();
+      return curatorFeeBps;
+    } catch (err) {
+      console.error('Failed to get curator fee bps', err);
+      throw err;
+    }
+  }
+
+  private async getCreatorFeeBps(chainId: string, collection: string): Promise<number> {
+    try {
+      const provider = getProvider(chainId);
+      if (provider == null) {
+        throw new Error('Cannot get creator fee bps as provider is null');
+      }
+      const creatorFeeManagerAddress = getCreatorFeeManagerAddress(chainId);
+      const contract = new ethers.Contract(creatorFeeManagerAddress, InfinityCreatorsFeeManagerABI, provider);
+      const creatorFeeBps = await contract.getCreatorsFeeInfo(collection, 0, 0);
+      return creatorFeeBps;
+    } catch (err) {
+      console.error('Failed to get creator fee bps', err);
+      throw err;
+    }
   }
 
   // todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo

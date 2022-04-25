@@ -1,5 +1,6 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
 import { warn } from '@infinityxyz/lib/utils/logger';
+import 'dotenv/config';
 
 const getEnvironmentVariable = (name: string, required = true) => {
   const variable = process.env[name];
@@ -13,8 +14,7 @@ export const TEST_ROOT = getEnvironmentVariable('firestoreTestRoot', false) ?? '
 export const COVALENT_API_KEY = getEnvironmentVariable('covalentKey');
 export const UNMARSHALL_API_KEY = getEnvironmentVariable('unmarshalKey');
 export const ALCHEMY_JSON_RPC_ETH_MAINNET = getEnvironmentVariable('alchemyJsonRpcEthMainnet');
-export const ALCHEMY_NFT_BASE_URL_ETH_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlEth');
-export const ALCHEMY_NFT_BASE_URL_POLYGON_MAINNET = getEnvironmentVariable('alchemyNftAPiBaseUrlPolygon');
+export const ALCHEMY_JSON_RPC_POLYGON_MAINNET = getEnvironmentVariable('alchemyJsonRpcPolygonMainnet');
 export const OPENSEA_API_KEY = getEnvironmentVariable('openseaKey');
 export const TWITTER_BEARER_TOKEN = getEnvironmentVariable('twitterBearerToken');
 export const ETHERSCAN_API_KEY = getEnvironmentVariable('etherscanApiKey');

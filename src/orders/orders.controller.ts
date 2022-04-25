@@ -1,4 +1,10 @@
-import { GetOrderItemsQuery, OBOrderStatus, OrderDirection, SignedOBOrder } from '@infinityxyz/lib/types/core';
+import {
+  GetMinBpsQuery,
+  GetOrderItemsQuery,
+  OBOrderStatus,
+  OrderDirection,
+  SignedOBOrder
+} from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
@@ -20,13 +26,28 @@ export class OrdersController {
     tags: [ApiTag.Orders]
   })
   // @UserAuth('userId') todo: uncomment
-  @ApiOkResponse({ description: ResponseDescription.Success, type: OrdersDto })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async postOrders(@Param('userId') userId: string, @Body() body: any): Promise<string> {
     // todo: remove any
     console.log('body', jsonString(body)); // todo: remove log
     const result = await this.ordersService.postOrders(userId, body.orders);
+    return result;
+  }
+
+  @Get('/minbps')
+  @ApiOperation({
+    description: 'Fetch MinBps',
+    tags: [ApiTag.Orders]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: Number })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async fetchMinBps(@Query() query: GetMinBpsQuery): Promise<number> {
+    const chainId = query.chainId ?? '1';
+    console.log('collections', query.collections);
+    const collections = query.collections ?? [];
+    const result = await this.ordersService.fetchMinBps(chainId, collections);
     return result;
   }
 

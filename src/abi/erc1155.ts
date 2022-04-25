@@ -1,4 +1,4 @@
-[
+export const ERC1155ABI = [
   {
     "inputs": [
       { "internalType": "address", "name": "owner", "type": "address" },
