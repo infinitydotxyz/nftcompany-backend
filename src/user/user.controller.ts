@@ -583,7 +583,6 @@ export class UserController {
     @Query() query: UserActivityQueryDto
   ): Promise<NftActivityArrayDto> {
     const activity = await this.userService.getActivity(user, query);
-    // TODO verify data is correct
-    return activity; // TODO standardize return type for all event types ?
+    return activity;
   }
 }

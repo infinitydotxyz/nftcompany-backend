@@ -1,5 +1,5 @@
-import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { FeedEventType } from '@infinityxyz/lib/types/core/feed';
+import { ChainId, CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { ExchangeEvent, FeedEventType, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
@@ -192,6 +192,21 @@ export class UserService {
     return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
   }
 
+  private transformSale(sale: NftSaleEvent): NftActivity {
+    const activity: NftActivity = {
+      address: sale.collectionAddress,
+      tokenId: sale.tokenId,
+      chainId: sale.chainId as ChainId,
+      type: ActivityType.Sale,
+      from: sale.seller,
+      to: sale.buyer,
+      price: sale.price,
+      timestamp: sale.timestamp,
+      paymentToken: sale.paymentToken
+    };
+    return activity;
+  }
+
   async getActivity(user: ParsedUserId, query: UserActivityQueryDto) {
     const activityTypes = query.events.length > 0 ? query.events : Object.values(ActivityType);
 
@@ -244,7 +259,7 @@ export class UserService {
       .filter((item) => !!item)
       .sort((a, b) =>
         orderDirection === OrderDirection.Descending ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
-      ) as NftActivity[];
+      ) as (NftSaleEvent | ExchangeEvent)[]; // TODO update to include order/listing event types
 
     const results = data.slice(0, query.limit + 1);
     const hasNextPage = results.length > query.limit;
@@ -254,8 +269,20 @@ export class UserService {
     const lastItem = results?.[results?.length - 1];
     const nextCursor = this.paginationService.encodeCursor(lastItem?.timestamp ?? '');
 
+    const activityEvents = results
+      .map((item) => {
+        switch (item.type) {
+          case FeedEventType.NftSale:
+            return this.transformSale(item as NftSaleEvent);
+          default:
+            console.log(`Unsupported activity type. ${item.type}`);
+            return null;
+        }
+      })
+      .filter((item) => !!item) as NftActivity[];
+
     return {
-      data: results,
+      data: activityEvents,
       hasNextPage,
       cursor: nextCursor
     };
