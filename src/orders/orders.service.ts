@@ -6,12 +6,13 @@ import {
   OBTokenInfo,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
-import { FirebaseService } from 'firebase/firebase.service';
-import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
-import { getDocIdHash } from 'utils';
+import { BigNumber } from 'ethers';
+import { FirebaseService } from '../firebase/firebase.service';
+import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
+import { getDocIdHash } from '../utils';
 import { OBOrderItemDto } from './dto/ob-order-item.dto';
 import { OBTokenInfoDto } from './dto/ob-token-info.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
@@ -31,60 +32,65 @@ export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
   public async postOrders(userId: string, orders: SignedOBOrderDto[]): Promise<string> {
-    const fsBatchHandler = new FirestoreBatchHandler();
-    const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
-    for (const order of orders) {
-      // get data
-      const dataToStore = this.getFirestoreOrderFromSignedOBOrder(order);
-      // save
-      const docRef = ordersCollectionRef.doc(order.id);
-      fsBatchHandler.add(docRef, dataToStore, { merge: true });
+    try {
+      const fsBatchHandler = new FirestoreBatchHandler();
+      const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
+      for (const order of orders) {
+        // get data
+        const dataToStore = await this.getFirestoreOrderFromSignedOBOrder(userId, order);
+        // save
+        const docRef = ordersCollectionRef.doc(order.id);
+        fsBatchHandler.add(docRef, dataToStore, { merge: true });
 
-      // get order items
-      const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
-      try {
-        for (const nft of order.nfts) {
-          if (nft.tokens.length === 0) {
-            // to support any tokens from a collection type orders
-            const emptyToken = {
-              tokenId: '',
-              numTokens: 1, // default for both ERC721 and ERC1155
-              tokenImage: '',
-              tokenName: '',
-              takerAddress: '',
-              takerUsername: ''
-            };
-            const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
-            // get doc id
-            const tokenId = '';
-            const orderItemDocRef = orderItemsRef.doc(
-              getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
-            );
-            // add to batch
-            fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
-          } else {
-            for (const token of nft.tokens) {
-              const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+        // get order items
+        const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
+        try {
+          for (const nft of order.nfts) {
+            if (nft.tokens.length === 0) {
+              // to support any tokens from a collection type orders
+              const emptyToken = {
+                tokenId: '',
+                numTokens: 1, // default for both ERC721 and ERC1155
+                tokenImage: '',
+                tokenName: '',
+                takerAddress: '',
+                takerUsername: ''
+              };
+              const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
               // get doc id
-              const tokenId = token.tokenId.toString();
+              const tokenId = '';
               const orderItemDocRef = orderItemsRef.doc(
                 getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
               );
               // add to batch
               fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+            } else {
+              for (const token of nft.tokens) {
+                const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+                // get doc id
+                const tokenId = token.tokenId.toString();
+                const orderItemDocRef = orderItemsRef.doc(
+                  getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
+                );
+                // add to batch
+                fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+              }
             }
           }
+        } catch (err: any) {
+          console.error('Failed saving orders to firestore', err);
+          return 'Failed';
         }
-      } catch (err: any) {
-        console.error('Failed saving orders to firestore', err);
-        return 'Failed';
       }
-    }
-    // commit batch
-    fsBatchHandler.flush().catch((err) => {
-      console.error(err);
+      // commit batch
+      fsBatchHandler.flush().catch((err) => {
+        console.error(err);
+        return 'Failed';
+      });
+    } catch (err) {
+      console.error('Failed to post orders', err);
       return 'Failed';
-    });
+    }
     return 'Success';
   }
 
@@ -159,26 +165,53 @@ export default class OrdersService {
     return results;
   }
 
-  private getFirestoreOrderFromSignedOBOrder(order: SignedOBOrderDto): FirestoreOrder {
-    const data: FirestoreOrder = {
-      id: order.id,
-      orderStatus: OBOrderStatus.ValidActive,
-      chainId: order.chainId,
-      isSellOrder: order.isSellOrder,
-      numItems: order.numItems,
-      startPriceEth: order.startPriceEth,
-      endPriceEth: order.endPriceEth,
-      startTimeMs: order.startTimeMs,
-      endTimeMs: order.endTimeMs,
-      minBpsToSeller: order.minBpsToSeller,
-      nonce: order.nonce,
-      complicationAddress: order.execParams.complicationAddress,
-      currencyAddress: order.execParams.currencyAddress,
-      makerAddress: order.makerAddress,
-      makerUsername: order.makerUsername,
-      signedOrder: order.signedOrder
-    };
-    return data;
+  private async getFirestoreOrderFromSignedOBOrder(user: string, order: SignedOBOrderDto): Promise<FirestoreOrder> {
+    try {
+      const nonce = await this.getOrderNonce(user);
+      const data: FirestoreOrder = {
+        id: order.id,
+        orderStatus: OBOrderStatus.ValidActive,
+        chainId: order.chainId,
+        isSellOrder: order.isSellOrder,
+        numItems: order.numItems,
+        startPriceEth: order.startPriceEth,
+        endPriceEth: order.endPriceEth,
+        startTimeMs: order.startTimeMs,
+        endTimeMs: order.endTimeMs,
+        minBpsToSeller: order.minBpsToSeller,
+        nonce,
+        complicationAddress: order.execParams.complicationAddress,
+        currencyAddress: order.execParams.currencyAddress,
+        makerAddress: order.makerAddress,
+        makerUsername: order.makerUsername,
+        signedOrder: order.signedOrder
+      };
+      return data;
+    } catch (err) {
+      console.error('Failed to get firestore order from signed order', err);
+      throw err;
+    }
+  }
+
+  private async getOrderNonce(user: string): Promise<string> {
+    try {
+      user = trimLowerCase(user);
+      const userDocRef = this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(user);
+      const updatedNonce = await this.firebaseService.firestore.runTransaction(async (t) => {
+        const userDoc = await t.get(userDocRef);
+        if (!userDoc.exists) {
+          throw new Error('User does not exist');
+        }
+        const nonce = userDoc.data()?.nonce ?? '0';
+        const newNonce = BigNumber.from(nonce).add(1).toString();
+        t.update(userDocRef, { nonce: newNonce });
+        return newNonce;
+      });
+      return updatedNonce;
+    } catch (e) {
+      console.error('Failed to get order nonce for user', user);
+      throw e;
+    }
   }
 
   private async getFirestoreOrderItemFromSignedOBOrder(
