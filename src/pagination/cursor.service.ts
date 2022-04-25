@@ -47,6 +47,6 @@ export class CursorService {
    */
   decodeCursorToNumber(encoded = '') {
     const decoded = this.decodeCursor(encoded);
-    return Number(decoded);
+    return parseInt(decoded, 10);
   }
 }
