@@ -1,11 +1,11 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { Token, TokenStandard } from '@infinityxyz/lib/types/core/Token';
+import { TokenStandard } from '@infinityxyz/lib/types/core/Token';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Erc721MetadataDto } from './erc721-metadata.dto';
 import { NftImageDto } from './nft-image.dto';
 import { NftStateDto } from './nft-state.dto';
 
-export class NftDto implements Token {
+export class NftDto {
   @ApiProperty({
     description: 'Collection address'
   })
@@ -95,5 +95,5 @@ export class NftDto implements Token {
     description: 'The standard of the nft',
     enum: TokenStandard
   })
-  tokenStandard: TokenStandard.ERC721; // Erc721 is the only standard currently supported
+  tokenStandard: TokenStandard;
 }

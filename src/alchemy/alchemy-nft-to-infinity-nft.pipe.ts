@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common/decorators/core/injectable.decorator'
 import { PipeTransform } from '@nestjs/common/interfaces/features/pipe-transform.interface';
 import { NftDto } from 'collections/nfts/dto/nft.dto';
 import { NftsService } from 'collections/nfts/nfts.service';
-import { AlchemyNft, AlchemyNftWithMetadata } from './alchemy.types';
+import { AlchemyNft } from './alchemy.types';
 
 @Injectable()
 export class AlchemyNftToInfinityNft
@@ -25,10 +25,6 @@ export class AlchemyNftToInfinityNft
       if (nft) {
         return nft;
       }
-      return null;
-    }
-
-    if ((alchemyNft as AlchemyNftWithMetadata).id.tokenMetadata.tokenType !== TokenStandard.ERC721) {
       return null;
     }
 
@@ -60,7 +56,7 @@ export class AlchemyNftToInfinityNft
         updatedAt: NaN
       },
       state: nft?.state ?? undefined,
-      tokenStandard: TokenStandard.ERC721
+      tokenStandard: alchemyNft.id.tokenMetadata.tokenType as TokenStandard
     };
   }
 }
