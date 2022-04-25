@@ -1,13 +1,12 @@
 import {
   FirestoreOrder,
   FirestoreOrderItem,
-  GetOrdersQuery,
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { error, firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -30,7 +29,7 @@ import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
-  postOrders(userId: string, orders: SignedOBOrderDto[]) {
+  public postOrders(userId: string, orders: SignedOBOrderDto[]) {
     const fsBatchHandler = new FirestoreBatchHandler();
     const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
     for (const order of orders) {
@@ -44,37 +43,112 @@ export default class OrdersService {
       const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
       try {
         for (const nft of order.nfts) {
-          for (const token of nft.tokens) {
-            // get data
-            const tokenId = token.tokenId.toString();
-            const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+          if (nft.tokens.length === 0) {
+            const emptyToken = {
+              tokenId: '',
+              numTokens: 1, // default for both ERC721 and ERC1155
+              tokenImage: '',
+              tokenName: '',
+              takerAddress: '',
+              takerUsername: ''
+            };
+            const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
             // get doc id
+            const tokenId = '';
             const orderItemDocRef = orderItemsRef.doc(
               getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
             );
             // add to batch
             fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+          } else {
+            for (const token of nft.tokens) {
+              const orderItemData = this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+              // get doc id
+              const tokenId = token.tokenId.toString();
+              const orderItemDocRef = orderItemsRef.doc(
+                getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
+              );
+              // add to batch
+              fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+            }
           }
         }
       } catch (err: any) {
-        error('Failed saving orders to firestore', err);
+        console.error('Failed saving orders to firestore', err);
       }
     }
     // commit batch
     fsBatchHandler.flush().catch((err) => {
-      error(err);
+      console.error(err);
     });
   }
 
-  async getOrders(reqQuery: GetOrdersQuery): Promise<SignedOBOrder[]> {
-    const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
-    // todo: needs pagination
-    const firestoreQuery = ordersCollectionRef.where('orderStatus', '==', OBOrderStatus.ValidActive);
-    const firestoreOrders = await firestoreQuery.get();
-    // todo: change this
+  public async getOrders(
+    firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>
+  ): Promise<SignedOBOrder[]> {
+    // fetch query snapshot
+    const firestoreOrderItems = await firestoreQuery.get();
+    const obOrderItemMap: { [key: string]: { [key: string]: OBOrderItem } } = {};
     const results: SignedOBOrder[] = [];
-    for (const firestoreOrderDoc of firestoreOrders.docs) {
-      const signedOBOrder = await this.getSignedOBOrderFromFirestoreOrderDoc(firestoreOrderDoc);
+    for (const orderItemDoc of firestoreOrderItems.docs) {
+      const orderItemData = orderItemDoc.data() as FirestoreOrderItem;
+      const orderDoc = orderItemDoc.ref.parent.parent;
+      const orderDocData = (await orderDoc?.get())?.data() as FirestoreOrder;
+      if (!orderDocData) {
+        console.error('Cannot fetch order data from firestore for order item', orderItemData.id);
+        continue;
+      }
+      const token: OBTokenInfo = {
+        tokenId: orderItemData.tokenId,
+        numTokens: orderItemData.numTokens,
+        tokenImage: orderItemData.tokenImage,
+        tokenName: orderItemData.tokenName,
+        takerAddress: orderItemData.takerAddress,
+        takerUsername: orderItemData.takerUsername
+      };
+      const existingOrder = obOrderItemMap[orderItemData.id];
+      if (existingOrder) {
+        const existingOrderItem = existingOrder[orderItemData.collectionAddress];
+        if (existingOrderItem) {
+          existingOrderItem.tokens.push(token);
+        } else {
+          existingOrder[orderItemData.collectionAddress] = {
+            collectionAddress: orderItemData.collectionAddress,
+            collectionName: orderItemData.collectionName,
+            collectionImage: orderItemData.collectionImage,
+            tokens: [token]
+          };
+        }
+      } else {
+        const obOrderItem: OBOrderItem = {
+          collectionAddress: orderItemData.collectionAddress,
+          collectionImage: orderItemData.collectionImage,
+          collectionName: orderItemData.collectionName,
+          tokens: [token]
+        };
+        obOrderItemMap[orderItemData.id] = { [orderItemData.collectionAddress]: obOrderItem };
+      }
+      const signedOBOrder: SignedOBOrder = {
+        id: orderItemData.id,
+        chainId: orderItemData.chainId,
+        isSellOrder: orderItemData.isSellOrder,
+        numItems: orderItemData.numItems,
+        startPriceEth: orderItemData.startPriceEth,
+        endPriceEth: orderItemData.endPriceEth,
+        startTimeMs: orderItemData.startTimeMs,
+        endTimeMs: orderItemData.endTimeMs,
+        minBpsToSeller: orderDocData.minBpsToSeller,
+        nonce: orderDocData.nonce,
+        makerAddress: orderItemData.makerAddress,
+        makerUsername: orderItemData.makerUsername,
+        nfts: Object.values(obOrderItemMap[orderItemData.id]),
+        signedOrder: orderDocData.signedOrder,
+        execParams: {
+          complicationAddress: orderDocData.complicationAddress,
+          currencyAddress: orderDocData.currencyAddress
+        },
+        extraParams: {}
+      };
       results.push(signedOBOrder);
     }
     return results;
@@ -121,7 +195,7 @@ export default class OrdersService {
       makerUsername: order.makerUsername,
       takerAddress: token.takerAddress,
       takerUsername: token.takerUsername,
-      collection: nft.collectionAddress,
+      collectionAddress: nft.collectionAddress,
       collectionName: nft.collectionName,
       collectionImage: nft.collectionImage,
       tokenId: token.tokenId,
@@ -130,59 +204,6 @@ export default class OrdersService {
       tokenName: token.tokenName
     };
     return data;
-  }
-
-  private async getSignedOBOrderFromFirestoreOrderDoc(
-    firestoreOrderDoc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>
-  ): Promise<SignedOBOrder> {
-    const order = firestoreOrderDoc.data() as FirestoreOrder;
-    const items = await firestoreOrderDoc.ref.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL).get();
-    const obOrderItemMap: { [key: string]: OBOrderItem } = {};
-    for (const item of items.docs) {
-      const itemData = item.data() as FirestoreOrderItem;
-      const tokens: OBTokenInfo[] = [];
-      const token: OBTokenInfo = {
-        tokenId: itemData.tokenId,
-        numTokens: itemData.numTokens,
-        tokenImage: itemData.tokenImage,
-        tokenName: itemData.tokenName,
-        takerAddress: itemData.takerAddress,
-        takerUsername: itemData.takerUsername
-      };
-      const existing = obOrderItemMap[itemData.collection];
-      if (existing) {
-        existing.tokens.push(token);
-      } else {
-        tokens.push(token);
-        const obOrderItem: OBOrderItem = {
-          collectionAddress: itemData.collection,
-          collectionImage: itemData.collectionImage,
-          collectionName: itemData.collectionName,
-          tokens
-        };
-        obOrderItemMap[itemData.collection] = obOrderItem;
-      }
-    }
-    const signedOBOrder: SignedOBOrder = {
-      id: order.id,
-      chainId: order.chainId,
-      isSellOrder: order.isSellOrder,
-      numItems: order.numItems,
-      startPriceEth: order.startPriceEth,
-      endPriceEth: order.endPriceEth,
-      startTimeMs: order.startTimeMs,
-      endTimeMs: order.endTimeMs,
-      minBpsToSeller: order.minBpsToSeller,
-      nonce: order.nonce,
-      makerAddress: order.makerAddress,
-      makerUsername: order.makerUsername,
-      nfts: Object.values(obOrderItemMap),
-      signedOrder: order.signedOrder,
-      execParams: { complicationAddress: order.complicationAddress, currencyAddress: order.currencyAddress },
-      extraParams: {}
-    };
-    console.log('signedOBOrder', signedOBOrder);
-    return signedOBOrder;
   }
 
   // todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo

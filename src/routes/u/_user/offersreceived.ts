@@ -1,11 +1,10 @@
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import {
-  DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION
 } from '../../../constants';
-import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Router, Request, Response } from 'express';
 import { getFilteredUserOffersReceived } from 'services/infinity/users/offers/getUserOffersRef';

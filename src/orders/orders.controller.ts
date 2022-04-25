@@ -1,21 +1,18 @@
-import { GetOrdersQuery, SignedOBOrder } from '@infinityxyz/lib/types/core';
-import { jsonString } from '@infinityxyz/lib/utils';
+import { GetOrderItemsQuery, OBOrderStatus, OrderDirection, SignedOBOrder } from '@infinityxyz/lib/types/core';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import {
-  ApiBadRequestResponse,
-  ApiInternalServerErrorResponse, ApiOkResponse,
-  ApiOperation
-} from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { UserAuth } from 'auth/user-auth.decorator';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
+import { FirebaseService } from 'firebase/firebase.service';
 import { OrdersDto } from './dto/orders.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private ordersService: OrdersService) {}
+  constructor(private ordersService: OrdersService, private firebaseService: FirebaseService) {}
 
   @Post(':userId/create')
   @ApiOperation({
@@ -41,8 +38,52 @@ export class OrdersController {
   @ApiOkResponse({ description: ResponseDescription.Success })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  async getOrders(@Query() query: GetOrdersQuery): Promise<SignedOBOrder[]> {
-    const data = await this.ordersService.getOrders(query);
+  async getOrders(@Query() reqQuery: GetOrderItemsQuery): Promise<SignedOBOrder[]> {
+    const orderItemsCollectionRef = this.firebaseService.firestore.collectionGroup(firestoreConstants.ORDER_ITEMS_SUB_COLL);
+    // default fetch valid active orders
+    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    if (reqQuery.orderStatus) {
+      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', reqQuery.orderStatus);
+    } else {
+      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', OBOrderStatus.ValidActive);
+    }
+    // other filters
+    if (reqQuery.chainId) {
+      firestoreQuery = orderItemsCollectionRef.where('chainId', '==', reqQuery.chainId);
+    }
+    if (reqQuery.isSellOrder !== undefined) {
+      firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
+    }
+    if (reqQuery.minPrice !== undefined) {
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', reqQuery.minPrice);
+    }
+    if (reqQuery.maxPrice !== undefined) {
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', reqQuery.maxPrice);
+    }
+    if (reqQuery.numItems !== undefined) {
+      firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
+    }
+    if (reqQuery.collections && reqQuery.collections.length > 0) {
+      firestoreQuery = orderItemsCollectionRef.where('collection', 'in', reqQuery.collections);
+    }
+
+    // ordering
+    if (reqQuery.orderBy) {
+      firestoreQuery = firestoreQuery.orderBy(reqQuery.orderBy, reqQuery.orderByDirection);
+    } else {
+      // default order by startTimeMs desc
+      firestoreQuery = firestoreQuery.orderBy('startTimeMs', OrderDirection.Descending);
+    }
+
+    // pagination
+    if (reqQuery.cursor) {
+      firestoreQuery = orderItemsCollectionRef.startAfter(reqQuery.cursor);
+    }
+    // limit
+    firestoreQuery = firestoreQuery.limit(reqQuery.limit || DEFAULT_ITEMS_PER_PAGE);
+
+    // query firestore
+    const data = await this.ordersService.getOrders(firestoreQuery);
     return data;
   }
 }
