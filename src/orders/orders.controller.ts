@@ -86,7 +86,7 @@ export class OrdersController {
       firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
     }
     if (reqQuery.collections && reqQuery.collections.length > 0) {
-      firestoreQuery = orderItemsCollectionRef.where('collection', 'in', reqQuery.collections);
+      firestoreQuery = orderItemsCollectionRef.where('collectionAddress', 'in', reqQuery.collections);
     }
 
     // ordering
