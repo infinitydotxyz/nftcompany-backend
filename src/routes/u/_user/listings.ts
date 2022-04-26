@@ -1,9 +1,8 @@
 import { OrderDirection, StatusCode, ListingType } from '@infinityxyz/lib/types/core';
-import { error, trimLowerCase } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, error, trimLowerCase } from '@infinityxyz/lib/utils';
 import { parseQueryFields } from 'utils/parsers';
 import { Request, Response } from 'express';
 import {
-  DEFAULT_ITEMS_PER_PAGE,
   DEFAULT_MAX_ETH,
   DEFAULT_MIN_ETH,
   DEFAULT_PRICE_SORT_DIRECTION

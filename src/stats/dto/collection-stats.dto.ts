@@ -3,143 +3,148 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CollectionStatsDto implements SocialsStats, Stats {
   @ApiProperty({ description: 'Name of the collection' })
-  name!: string;
+  name: string;
 
   @ApiProperty({
     description: 'Profile image of the collection'
   })
-  profileImage!: string;
+  profileImage: string;
+
+  @ApiProperty({
+    description: 'The slug for the collection'
+  })
+  slug: string;
 
   @ApiProperty({
     description: 'Whether the collection is verified'
   })
-  hasBlueCheck!: boolean;
+  hasBlueCheck: boolean;
 
   @ApiProperty({ description: 'Chain id' })
-  chainId!: ChainId;
+  chainId: ChainId;
 
   @ApiProperty({ description: 'Corresponding collection address' })
-  collectionAddress!: string;
+  collectionAddress: string;
 
   @ApiProperty({
     description: 'Number of owners of nfts in the collection'
   })
-  numOwners!: number;
+  numOwners: number;
 
   @ApiProperty({
     description: 'Number of nfts in the collection'
   })
-  numNfts!: number;
+  numNfts: number;
 
   @ApiProperty({ description: 'Floor price' })
-  floorPrice!: number;
+  floorPrice: number;
 
   @ApiProperty({ description: 'Floor price for the previous period' })
-  prevFloorPrice!: number;
+  prevFloorPrice: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  floorPricePercentChange!: number;
+  floorPricePercentChange: number;
 
   @ApiProperty({ description: 'Ceiling price' })
-  ceilPrice!: number;
+  ceilPrice: number;
 
   @ApiProperty({ description: 'Ceiling price in the previous period' })
-  prevCeilPrice!: number;
+  prevCeilPrice: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  ceilPricePercentChange!: number;
+  ceilPricePercentChange: number;
 
   @ApiProperty({ description: 'Volume' })
-  volume!: number;
+  volume: number;
 
   @ApiProperty({ description: 'Volume in the previous period' })
-  prevVolume!: number;
+  prevVolume: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  volumePercentChange!: number;
+  volumePercentChange: number;
 
   @ApiProperty({ description: 'Number of sales' })
-  numSales!: number;
+  numSales: number;
 
   @ApiProperty({ description: 'Number of sales in the previous period' })
-  prevNumSales!: number;
+  prevNumSales: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  numSalesPercentChange!: number;
+  numSalesPercentChange: number;
 
   @ApiProperty({ description: 'Average price' })
-  avgPrice!: number;
+  avgPrice: number;
 
   @ApiProperty({ description: 'Average price in the previous period' })
-  prevAvgPrice!: number;
+  prevAvgPrice: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  avgPricePercentChange!: number;
+  avgPricePercentChange: number;
 
   @ApiProperty({ description: 'Discord followers' })
-  discordFollowers!: number;
+  discordFollowers: number;
 
   @ApiProperty({ description: 'Discord followers in the previous period' })
-  prevDiscordFollowers!: number;
+  prevDiscordFollowers: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  discordFollowersPercentChange!: number;
+  discordFollowersPercentChange: number;
 
   @ApiProperty({ description: 'Discord presence' })
-  discordPresence!: number;
+  discordPresence: number;
 
   @ApiProperty({ description: 'Discord presence in the previous period' })
-  prevDiscordPresence!: number;
+  prevDiscordPresence: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  discordPresencePercentChange!: number;
+  discordPresencePercentChange: number;
 
   @ApiProperty({ description: 'Guild id of the discord in the current period' })
-  guildId!: string;
+  guildId: string;
   @ApiProperty({ description: 'Discord invite in the current period' })
-  discordLink!: string;
+  discordLink: string;
 
   @ApiProperty({ description: 'Twitter followers' })
-  twitterFollowers!: number;
+  twitterFollowers: number;
 
   @ApiProperty({ description: 'Twitter followers in the previous period' })
-  prevTwitterFollowers!: number;
+  prevTwitterFollowers: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  twitterFollowersPercentChange!: number;
+  twitterFollowersPercentChange: number;
 
   @ApiProperty({ description: 'Number of accounts being followed' })
-  twitterFollowing!: number;
+  twitterFollowing: number;
 
   @ApiProperty({ description: 'Number of accounts being followed in the previous period' })
-  prevTwitterFollowing!: number;
+  prevTwitterFollowing: number;
 
   @ApiProperty({ description: 'Percent change between the previous period and this period' })
-  twitterFollowingPercentChange!: number;
+  twitterFollowingPercentChange: number;
 
   @ApiProperty({ description: 'Twitter id of the account in the current period' })
-  twitterId!: string;
+  twitterId: string;
 
   @ApiProperty({ description: 'Twitter handle of the account in the current period' })
-  twitterHandle!: string;
+  twitterHandle: string;
 
   @ApiProperty({ description: 'Link to the twitter account in the current period' })
-  twitterLink!: string;
+  twitterLink: string;
 
   @ApiProperty({ description: 'Timestamp of the current period' })
-  timestamp!: number;
+  timestamp: number;
 
   @ApiProperty({ description: 'Period of the current stats' })
-  period!: StatsPeriod;
+  period: StatsPeriod;
 
   @ApiProperty({ description: 'The number of votes for the collection' })
-  votesFor!: number;
+  votesFor: number;
 
   @ApiProperty({
     description: 'Number of votes against the collection'
   })
-  votesAgainst!: number;
+  votesAgainst: number;
 
   @ApiProperty({ description: 'Timestamp that the stats were updated at' })
-  updatedAt!: number;
+  updatedAt: number;
 }

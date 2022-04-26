@@ -12,13 +12,14 @@ import { DiscordModule } from './discord/discord.module';
 import { UserModule } from './user/user.module';
 import { CollectionsModule } from 'collections/collections.module';
 import { VotesModule } from './votes/votes.module';
-import { MarketListingsModule } from './market-listings/market-listings.module';
 import { OrdersModule } from 'orders/orders.module';
-import { ParseUserIdPipe } from 'user/user-id.pipe';
+import { AuthModule } from 'auth/auth.module';
+import { MnemonicModule } from 'mnemonic/mnemonic.module';
 
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -36,11 +37,12 @@ import { FB_STORAGE_BUCKET } from './constants';
     UserModule,
     VotesModule,
     StorageModule,
-    MarketListingsModule,
-    OrdersModule
+    OrdersModule,
+    MnemonicModule,
+    AuthModule
   ],
   controllers: [AppController],
-  providers: [AppService, ParseUserIdPipe]
+  providers: [AppService]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
