@@ -25,7 +25,7 @@ export class AlchemyService {
   constructor(private config: ConfigService<EnvironmentVariables>) {
     const apiKey = this.config.get('ALCHEMY_API_KEY');
     if (!apiKey) {
-      throw new Error('Missing alchemyNftAPiBaseUrlEth in environment variables');
+      throw new Error('Missing ALCHEMY_API_KEY environment variables');
     }
     this.apiKey = apiKey;
 
