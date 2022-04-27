@@ -30,6 +30,7 @@ export class NftsController {
     description: 'Get a list of nfts for a collection',
     tags: [ApiTag.Collection, ApiTag.Nft]
   })
+  @ApiParamCollectionId('id')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })

@@ -8,7 +8,13 @@ import { PriceFilterDto } from './price-filter.dto';
 
 export enum NftsOrderBy {
   RarityRank = 'rarityRank',
-  TokenId = 'tokenId'
+  TokenId = 'tokenId',
+  Price = 'price'
+}
+
+export enum OrderType {
+  Listing = 'listing',
+  Offer = 'offer'
 }
 
 export class NftsQueryDto extends PickType(PriceFilterDto, ['minPrice', 'maxPrice', 'currency'] as const) {
@@ -17,21 +23,21 @@ export class NftsQueryDto extends PickType(PriceFilterDto, ['minPrice', 'maxPric
     enum: NftsOrderBy
   })
   @IsEnum(NftsOrderBy)
-  orderBy!: NftsOrderBy;
+  orderBy: NftsOrderBy;
 
   @ApiProperty({
     description: 'Direction to order by',
     enum: OrderDirection
   })
   @IsEnum(OrderDirection)
-  orderDirection!: OrderDirection;
+  orderDirection: OrderDirection;
 
   @ApiProperty({
     description: 'Number of results to get. Max of 50'
   })
   @IsNumber()
   @Transform(parseIntTransformer({ max: 50 }))
-  limit!: number;
+  limit: number;
 
   @ApiPropertyOptional({
     description: 'Cursor to start after'
@@ -58,4 +64,12 @@ export class NftsQueryDto extends PickType(PriceFilterDto, ['minPrice', 'maxPric
   @IsArray()
   @Transform(arrayTransformer)
   traitValues?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Order type to include in the response',
+    enum: OrderType
+  })
+  @IsOptional()
+  @IsEnum(OrderType)
+  orderType?: OrderType;
 }

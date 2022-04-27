@@ -6,17 +6,17 @@ export class Erc721MetadataDto implements Erc721Metadata {
   @ApiPropertyOptional({
     description: 'Name of the item'
   })
-  name!: string;
+  name: string;
 
   @ApiPropertyOptional({
     description: 'Title of the item'
   })
-  title!: string;
+  title: string;
 
   @ApiPropertyOptional({
     description: 'URL to the image of the item'
   })
-  image!: string;
+  image: string;
   /**
    * Raw svg image data
    */
@@ -26,36 +26,36 @@ export class Erc721MetadataDto implements Erc721Metadata {
   @ApiPropertyOptional({
     description: 'raw svg image data'
   })
-  image_data!: string;
+  image_data: string;
 
   @ApiPropertyOptional({
     description: 'External url for the item'
   })
-  external_url!: string;
+  external_url: string;
 
   @ApiPropertyOptional({
     description: 'Description of the item'
   })
-  description!: string;
+  description: string;
 
   @ApiPropertyOptional({
     description: 'Background color of the item (6 decimal hexadecimal without #)'
   })
-  background_color!: string;
+  background_color: string;
 
   @ApiPropertyOptional({
     description: 'URL to a multi-media attachment for the item'
   })
-  animation_url!: string;
+  animation_url: string;
 
   @ApiPropertyOptional({
     description: 'URL to a youtube video'
   })
-  youtube_url!: string;
+  youtube_url: string;
 
   @ApiPropertyOptional({
     description: 'Attributes for the item',
     type: [Erc721AttributeDto]
   })
-  attributes!: Erc721AttributeDto[];
+  attributes: Erc721AttributeDto[];
 }

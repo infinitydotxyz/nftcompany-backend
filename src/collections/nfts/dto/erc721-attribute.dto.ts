@@ -5,13 +5,13 @@ export class Erc721AttributeDto {
   @ApiProperty({
     description: 'The trait value'
   })
-  value!: string | number;
+  value: string | number;
 
   @ApiPropertyOptional({
     description: 'The display type for the attribute',
     enum: DisplayType
   })
-  display_type!: DisplayType;
+  display_type: DisplayType;
 
   @ApiPropertyOptional({
     description: 'Trait type'
