@@ -19,8 +19,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "update:lib": "npm install @infinityxyz/lib@latest",
-    "backfill-orders": "npx cross-env NODE_PATH=./src ts-node ./src/scripts/backfillOrdersToNfts.ts"
+    "update:lib": "npm install @infinityxyz/lib@latest"
   },
   "repository": {
     "type": "git",
@@ -50,7 +49,6 @@
     "express": "4.17.3",
     "express-rate-limit": "6.3.0",
     "firebase-admin": "^10.0.2",
-    "firebase-functions": "^3.20.1",
     "helmet": "^5.0.2",
     "lodash": "^4.17.21",
     "mime": "^3.0.0",
