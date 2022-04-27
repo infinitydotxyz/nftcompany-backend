@@ -87,7 +87,6 @@ export class CollectionsController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
-  @UseInterceptors(new CacheControlInterceptor())
   async getOne(
     @ParamCollectionId('id', ParseCollectionIdPipe) { chainId, address }: ParsedCollectionId
   ): Promise<Collection> {
