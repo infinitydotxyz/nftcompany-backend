@@ -1,16 +1,17 @@
 import { OrderDirection } from '@infinityxyz/lib/types/core';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { arrayTransformer } from 'common/transformers/array-query.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
+import { PriceFilterDto } from './price-filter.dto';
 
 export enum NftsOrderBy {
   RarityRank = 'rarityRank',
   TokenId = 'tokenId'
 }
 
-export class NftsQueryDto {
+export class NftsQueryDto extends PickType(PriceFilterDto, ['minPrice', 'maxPrice', 'currency'] as const) {
   @ApiProperty({
     description: 'Property to order nfts by',
     enum: NftsOrderBy
