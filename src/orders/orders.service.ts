@@ -1,6 +1,7 @@
 import {
   FirestoreOrder,
   FirestoreOrderItem,
+  OBOrder,
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
@@ -9,6 +10,7 @@ import {
 import {
   firestoreConstants,
   getCreatorFeeManagerAddress,
+  getExchangeAddress,
   getFeeTreasuryAddress,
   trimLowerCase
 } from '@infinityxyz/lib/utils';
@@ -24,6 +26,8 @@ import { OBTokenInfoDto } from './dto/ob-token-info.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import { InfinityFeeTreasuryABI } from 'abi/infinityFeeTreasury';
 import { InfinityCreatorsFeeManagerABI } from 'abi/infinityCreatorsFeeManager';
+import { getOrderId, OrderHashParams } from './orders.utils';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -308,6 +312,35 @@ export default class OrdersService {
       console.error('Failed to get creator fee bps', err);
       throw err;
     }
+  }
+
+  private getOrderId(order: SignedOBOrderDto, maker: ParsedUserId) {
+    const orderHashParams = this.getOrderHashParamsFromSignedOrder(order, maker.userAddress);
+    const orderId = getOrderId(order.chainId, getExchangeAddress(order.chainId), orderHashParams);
+    return orderId;
+  }
+
+  private getOrderHashParamsFromSignedOrder(signedOrder: SignedOBOrderDto, makerAddress: string) {
+    const orderHashParams: OrderHashParams = {
+      startPriceEth: signedOrder.startPriceEth,
+      endPriceEth: signedOrder.endPriceEth,
+      startTimeMs: signedOrder.startTimeMs,
+      endTimeMs: signedOrder.endTimeMs,
+      execParams: signedOrder.execParams,
+      extraParams: signedOrder.extraParams,
+      minBpsToSeller: signedOrder.minBpsToSeller,
+      numItems: signedOrder.signedOrder.nfts.reduce((numItems: number, nft) => numItems + nft.tokens.length, 0),
+      nonce: signedOrder.nonce,
+      isSellOrder: signedOrder.signedOrder.isSellOrder,
+      makerAddress,
+      nfts: signedOrder.signedOrder.nfts.map((item) => {
+        return {
+          collectionAddress: item.collection,
+          tokens: item.tokens
+        };
+      })
+    };
+    return orderHashParams;
   }
 
   // todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo
