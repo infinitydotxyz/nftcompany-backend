@@ -260,6 +260,7 @@ export default class OrdersService {
       numItems: order.numItems,
       startPriceEth: order.startPriceEth,
       endPriceEth: order.endPriceEth,
+      currencyAddress: order.execParams.currencyAddress,
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
       makerAddress: order.makerAddress,
