@@ -2,6 +2,7 @@ import { OBOrder, OBOrderItem, OBTokenInfo } from '@infinityxyz/lib/types/core';
 import { getExchangeAddress, NULL_ADDRESS, NULL_HASH } from '@infinityxyz/lib/utils';
 import { BytesLike } from 'ethers';
 import { solidityKeccak256, parseEther, defaultAbiCoder, keccak256 } from 'ethers/lib/utils';
+import { ChainNFTsDto } from './dto/chain-nfts.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 
 export type OrderHashTokensParam = Pick<OBTokenInfo, 'tokenId' | 'numTokens'>;
@@ -38,7 +39,7 @@ function getOrderHashParamsFromSignedOrder(signedOrder: SignedOBOrderDto, makerA
     execParams: signedOrder.execParams,
     extraParams: signedOrder.extraParams,
     minBpsToSeller: signedOrder.minBpsToSeller,
-    numItems: signedOrder.signedOrder.nfts.reduce((numItems: number, nft) => numItems + nft.tokens.length, 0),
+    numItems: getNumItems(signedOrder.signedOrder.nfts),
     nonce: signedOrder.nonce,
     isSellOrder: signedOrder.signedOrder.isSellOrder,
     makerAddress,
@@ -50,6 +51,10 @@ function getOrderHashParamsFromSignedOrder(signedOrder: SignedOBOrderDto, makerA
     })
   };
   return orderHashParams;
+}
+
+export function getNumItems(nfts: ChainNFTsDto[]) {
+  return nfts.reduce((numItems: number, nft) => numItems + nft.tokens.length, 0);
 }
 
 export function getOrderId(chainId: string, exchangeAddr: string, orderHashParams: OrderHashParams): string {

@@ -8,7 +8,7 @@ import {
 import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
-import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
+import { ParamUserId } from 'auth/param-user-id.decorator';
 import { UserAuth } from 'auth/user-auth.decorator';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
@@ -16,7 +16,6 @@ import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
-import { sleep } from 'utils';
 import { OrdersDto } from './dto/orders.dto';
 import OrdersService from './orders.service';
 
@@ -39,9 +38,8 @@ export class OrdersController {
   ): Promise<string> {
     const maker = user.userAddress;
     console.log('body', jsonString(body)); // todo: remove log
-    // const result = await this.ordersService.postOrders(userId, body.orders);
-    await sleep(200);
-    return '';
+    const result = await this.ordersService.createOrder(maker, body.orders);
+    return result;
   }
 
   @Get('/minbps')

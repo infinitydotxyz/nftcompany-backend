@@ -1,7 +1,6 @@
 import {
   FirestoreOrder,
   FirestoreOrderItem,
-  OBOrder,
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
@@ -10,7 +9,6 @@ import {
 import {
   firestoreConstants,
   getCreatorFeeManagerAddress,
-  getExchangeAddress,
   getFeeTreasuryAddress,
   trimLowerCase
 } from '@infinityxyz/lib/utils';
@@ -21,13 +19,12 @@ import { getProvider } from 'utils/ethers';
 import { FirebaseService } from '../firebase/firebase.service';
 import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from '../utils';
-import { OBOrderItemDto } from './dto/ob-order-item.dto';
-import { OBTokenInfoDto } from './dto/ob-token-info.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import { InfinityFeeTreasuryABI } from 'abi/infinityFeeTreasury';
 import { InfinityCreatorsFeeManagerABI } from 'abi/infinityCreatorsFeeManager';
-import { getOrderId, OrderHashParams } from './orders.utils';
-import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { getNumItems, getOrderIdFromSignedOrder } from './orders.utils';
+import { ChainNFTsDto } from './dto/chain-nfts.dto';
+import { ChainTokensDto } from './dto/chain-tokens.dto';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -43,21 +40,22 @@ import { ParsedUserId } from 'user/parser/parsed-user-id';
 export default class OrdersService {
   constructor(private firebaseService: FirebaseService) {}
 
-  public async postOrders(userId: string, orders: SignedOBOrderDto[]): Promise<string> {
+  public async createOrder(makerAddress: string, orders: SignedOBOrderDto[]): Promise<string> {
     try {
       const fsBatchHandler = new FirestoreBatchHandler();
       const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
       for (const order of orders) {
         // get data
-        const dataToStore = this.getFirestoreOrderFromSignedOBOrder(userId, order);
+        const orderId = getOrderIdFromSignedOrder(order, makerAddress);
+        const dataToStore = this.getFirestoreOrderFromSignedOBOrder(makerAddress, order, orderId);
         // save
-        const docRef = ordersCollectionRef.doc(order.id);
+        const docRef = ordersCollectionRef.doc(orderId);
         fsBatchHandler.add(docRef, dataToStore, { merge: true });
 
         // get order items
         const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
         try {
-          for (const nft of order.nfts) {
+          for (const nft of order.signedOrder.nfts) {
             if (nft.tokens.length === 0) {
               // to support any tokens from a collection type orders
               const emptyToken = {
@@ -68,21 +66,33 @@ export default class OrdersService {
                 takerAddress: '',
                 takerUsername: ''
               };
-              const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, emptyToken);
+              const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
+                order,
+                nft,
+                emptyToken,
+                orderId,
+                makerAddress
+              );
               // get doc id
               const tokenId = '';
               const orderItemDocRef = orderItemsRef.doc(
-                getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
+                getDocIdHash({ collectionAddress: nft.collection, tokenId, chainId: order.chainId })
               );
               // add to batch
               fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
             } else {
               for (const token of nft.tokens) {
-                const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(order, nft, token);
+                const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
+                  order,
+                  nft,
+                  token,
+                  orderId,
+                  makerAddress
+                );
                 // get doc id
                 const tokenId = token.tokenId.toString();
                 const orderItemDocRef = orderItemsRef.doc(
-                  getDocIdHash({ collectionAddress: nft.collectionAddress, tokenId, chainId: order.chainId })
+                  getDocIdHash({ collectionAddress: nft.collection, tokenId, chainId: order.chainId })
                 );
                 // add to batch
                 fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
@@ -215,14 +225,18 @@ export default class OrdersService {
     }
   }
 
-  private getFirestoreOrderFromSignedOBOrder(user: string, order: SignedOBOrderDto): FirestoreOrder {
+  private getFirestoreOrderFromSignedOBOrder(
+    makerAddress: string,
+    order: SignedOBOrderDto,
+    orderId: string
+  ): FirestoreOrder {
     try {
       const data: FirestoreOrder = {
-        id: order.id,
+        id: orderId,
         orderStatus: OBOrderStatus.ValidActive,
         chainId: order.chainId,
-        isSellOrder: order.isSellOrder,
-        numItems: order.numItems,
+        isSellOrder: order.signedOrder.isSellOrder,
+        numItems: getNumItems(order.signedOrder.nfts),
         startPriceEth: order.startPriceEth,
         endPriceEth: order.endPriceEth,
         startTimeMs: order.startTimeMs,
@@ -231,8 +245,8 @@ export default class OrdersService {
         nonce: order.nonce,
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
-        makerAddress: order.makerAddress,
-        makerUsername: order.makerUsername,
+        makerAddress,
+        makerUsername: '', // TODO get maker username
         signedOrder: order.signedOrder
       };
       return data;
@@ -244,40 +258,45 @@ export default class OrdersService {
 
   private async getFirestoreOrderItemFromSignedOBOrder(
     order: SignedOBOrderDto,
-    nft: OBOrderItemDto,
-    token: OBTokenInfoDto
+    nft: ChainNFTsDto,
+    token: ChainTokensDto,
+    orderId: string,
+    makerAddress: string
   ): Promise<FirestoreOrderItem> {
-    let takerAddress = token.takerAddress;
-    let takerUsername = token.takerUsername;
-    if (!order.isSellOrder && nft.collectionAddress && token.tokenId) {
+    let takerAddress = '';
+    let takerUsername = '';
+    if (!order.signedOrder.isSellOrder && nft.collection && token.tokenId) {
       // for buy orders, fetch the current owner of the token
-      console.log(nft.collectionAddress, token.tokenId, order.chainId);
-      takerAddress = await getERC721Owner(nft.collectionAddress, token.tokenId, order.chainId);
+      console.log(nft.collection, token.tokenId, order.chainId);
+      takerAddress = await getERC721Owner(nft.collection, token.tokenId, order.chainId);
       console.log('takerAddress', takerAddress); // todo: remove
       takerUsername = ''; // todo: fetch taker username
     }
     const data: FirestoreOrderItem = {
-      id: order.id,
+      id: orderId,
       orderStatus: OBOrderStatus.ValidActive,
       chainId: order.chainId,
-      isSellOrder: order.isSellOrder,
-      numItems: order.numItems,
+      isSellOrder: order.signedOrder.isSellOrder,
+      numItems: getNumItems(order.signedOrder.nfts),
       startPriceEth: order.startPriceEth,
       endPriceEth: order.endPriceEth,
       currencyAddress: order.execParams.currencyAddress,
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
-      makerAddress: order.makerAddress,
-      makerUsername: order.makerUsername,
+      makerAddress: makerAddress,
+      makerUsername: '', // TODO get username
       takerAddress,
       takerUsername,
-      collectionAddress: nft.collectionAddress,
-      collectionName: nft.collectionName,
-      collectionImage: nft.collectionImage,
+      collectionAddress: nft.collection,
+      collectionName: '', // TODO get collection name
+      collectionImage: '', // TODO get collection image
+      collectionSlug: '', // TODO get collection slug
+      hasBlueCheck: false, // TODO get hasBlueCheck
       tokenId: token.tokenId,
       numTokens: token.numTokens,
-      tokenImage: token.tokenImage,
-      tokenName: token.tokenName
+      tokenImage: '', // TODO
+      tokenName: '', // TODO
+      tokenSlug: '' // TODO get token slug
     };
     return data;
   }
@@ -312,35 +331,6 @@ export default class OrdersService {
       console.error('Failed to get creator fee bps', err);
       throw err;
     }
-  }
-
-  private getOrderId(order: SignedOBOrderDto, maker: ParsedUserId) {
-    const orderHashParams = this.getOrderHashParamsFromSignedOrder(order, maker.userAddress);
-    const orderId = getOrderId(order.chainId, getExchangeAddress(order.chainId), orderHashParams);
-    return orderId;
-  }
-
-  private getOrderHashParamsFromSignedOrder(signedOrder: SignedOBOrderDto, makerAddress: string) {
-    const orderHashParams: OrderHashParams = {
-      startPriceEth: signedOrder.startPriceEth,
-      endPriceEth: signedOrder.endPriceEth,
-      startTimeMs: signedOrder.startTimeMs,
-      endTimeMs: signedOrder.endTimeMs,
-      execParams: signedOrder.execParams,
-      extraParams: signedOrder.extraParams,
-      minBpsToSeller: signedOrder.minBpsToSeller,
-      numItems: signedOrder.signedOrder.nfts.reduce((numItems: number, nft) => numItems + nft.tokens.length, 0),
-      nonce: signedOrder.nonce,
-      isSellOrder: signedOrder.signedOrder.isSellOrder,
-      makerAddress,
-      nfts: signedOrder.signedOrder.nfts.map((item) => {
-        return {
-          collectionAddress: item.collection,
-          tokens: item.tokens
-        };
-      })
-    };
-    return orderHashParams;
   }
 
   // todo: the below stuff doesn't belong in orders service; commenting to reference this when moved to another repo
