@@ -1,18 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEthereumAddress, IsNotEmpty, IsString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsEthereumAddress, ValidateNested } from 'class-validator';
+import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
+import { ChainTokensDto } from './chain-tokens.dto';
 
 export class ChainNFTsDto {
   @ApiProperty({
     description: 'Collection address'
   })
-  @IsString()
-  @IsNotEmpty()
   @IsEthereumAddress()
+  @Transform(normalizeAddressTransformer)
   collection: string;
 
   @ApiProperty({
-    description: 'Tokens in the order'
+    description: 'Tokens in the order',
+    type: [ChainTokensDto]
   })
-  @IsArray()
-  tokens: { tokenId: string; numTokens: number }[];
+  @IsArray({ each: true })
+  @ValidateNested()
+  @Type(() => ChainTokensDto)
+  tokens: ChainTokensDto[];
 }

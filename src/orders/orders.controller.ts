@@ -8,10 +8,16 @@ import {
 import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiParamUserId, ParamUserId } from 'auth/param-user-id.decorator';
+import { UserAuth } from 'auth/user-auth.decorator';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
+import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { sleep } from 'utils';
+import { OrdersDto } from './dto/orders.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -23,15 +29,19 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  // @UserAuth('userId') todo: uncomment
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  public async postOrders(@Param('userId') userId: string, @Body() body: any): Promise<string> {
-    // todo: remove any
+  public async postOrders(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Body() body: OrdersDto
+  ): Promise<string> {
+    const maker = user.userAddress;
     console.log('body', jsonString(body)); // todo: remove log
-    const result = await this.ordersService.postOrders(userId, body.orders);
-    return result;
+    // const result = await this.ordersService.postOrders(userId, body.orders);
+    await sleep(200);
+    return '';
   }
 
   @Get('/minbps')

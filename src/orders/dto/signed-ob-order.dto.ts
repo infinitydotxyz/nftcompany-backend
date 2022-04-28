@@ -1,52 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ValidateNested, IsArray, IsString, IsNumber, IsBoolean, IsNotEmpty, IsEthereumAddress } from 'class-validator';
+import { ValidateNested, IsString, IsNumber, IsNotEmpty } from 'class-validator';
 import { ChainOBOrderDto } from './chain-ob-order.dto';
 import { ExecParamsDto } from './exec-params.dto';
 import { ExtraParamsDto } from './extra-params.dto';
-import { OBOrderItemDto } from './ob-order-item.dto';
 
 export class SignedOBOrderDto {
-  @ApiProperty({
-    description: 'Order id'
-  })
-  @IsString()
-  @IsNotEmpty()
-  id: string;
-
   @ApiProperty({
     description: 'Chain id'
   })
   @IsString()
   @IsNotEmpty()
   chainId: string;
-
-  @ApiProperty({
-    description: 'Whether the order a sell or buy'
-  })
-  @IsBoolean()
-  isSellOrder: boolean;
-
-  @ApiProperty({
-    description: 'Number of items in the order'
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  numItems: number;
-
-  @ApiProperty({
-    description: 'Maker username of the order'
-  })
-  @IsString()
-  makerUsername: string;
-
-  @ApiProperty({
-    description: 'Maker address of the order'
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsEthereumAddress()
-  makerAddress: string;
 
   @ApiProperty({
     description: 'Starting price in ETH of the order'
@@ -91,14 +56,6 @@ export class SignedOBOrderDto {
   nonce: string;
 
   @ApiProperty({
-    description: 'NFTs in the order'
-  })
-  @ValidateNested({ each: true })
-  @Type(() => OBOrderItemDto)
-  @IsArray()
-  nfts: OBOrderItemDto[];
-
-  @ApiProperty({
     description: 'Execution params like txn currency and type of order'
   })
   @ValidateNested()
@@ -106,14 +63,14 @@ export class SignedOBOrderDto {
   execParams: ExecParamsDto;
 
   @ApiProperty({
-    description: 'NFTs in the order'
+    description: 'Extra params for the order'
   })
   @ValidateNested()
   @Type(() => ExtraParamsDto)
   extraParams: ExtraParamsDto;
 
   @ApiProperty({
-    description: 'Order in the format reqd by exchange contracts'
+    description: 'Order in the format required by exchange contracts'
   })
   @ValidateNested()
   @Type(() => ChainOBOrderDto)
