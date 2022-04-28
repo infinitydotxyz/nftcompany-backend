@@ -1,7 +1,6 @@
 import { FirestoreOrderItem, OBOrderStatus } from '@infinityxyz/lib/types/core/OBOrder';
 import { ApiProperty } from '@nestjs/swagger/dist';
 import { IsBoolean, IsEnum, IsEthereumAddress, IsNumber, IsString } from 'class-validator';
-import { IsSupportedChainId } from 'common/decorators/is-supported-chain-id.decorator';
 
 export class FirestoreOrderItemDto implements FirestoreOrderItem {
   @ApiProperty({

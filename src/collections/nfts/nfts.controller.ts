@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -11,6 +11,7 @@ import { ApiTag } from 'common/api-tags';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ApiParamTokenId, ParamTokenId } from 'common/decorators/param-token-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { BadQueryError } from 'common/errors/bad-query.error';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
@@ -40,9 +41,16 @@ export class NftsController {
     @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Query() query: NftsQueryDto
   ) {
-    const nfts = await this.nftService.getCollectionNfts(collection, query);
+    try {
+      const nfts = await this.nftService.getCollectionNfts(collection, query);
 
-    return nfts;
+      return nfts;
+    } catch (err) {
+      if (err instanceof BadQueryError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
   @Get(':id/nfts/:tokenId')
