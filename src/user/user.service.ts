@@ -251,6 +251,10 @@ export class UserService {
 
     const doc = snapshot.docs[0];
 
+    if (!doc?.exists) {
+      return { user: null, ref: null };
+    }
+
     const user = doc?.data() as UserProfileDto;
 
     return { user, ref: doc.ref as FirebaseFirestore.DocumentReference<UserProfileDto> };
