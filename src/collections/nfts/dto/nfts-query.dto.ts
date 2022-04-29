@@ -48,7 +48,7 @@ export class NftsQueryDto extends PickType(PriceFilterDto, ['minPrice', 'maxPric
   cursor?: string;
 
   @ApiPropertyOptional({
-    description: 'Trait types to filter by. Use commas for multiple types.',
+    description: 'Trait types to filter by',
     type: [String]
   })
   @IsOptional()

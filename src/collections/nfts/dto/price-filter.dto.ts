@@ -3,18 +3,19 @@ import { Transform } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional } from 'class-validator';
 import { round } from 'lodash';
 
-export enum SupportedCurrency {
-  Eth = 'ETH'
+export enum Currency {
+  ETH = 'ETH',
+  WETH = 'WETH'
 }
 
 export class PriceFilterDto {
   @ApiPropertyOptional({
     description: 'Currency to filter by',
-    enum: SupportedCurrency
+    enum: Currency
   })
-  @IsEnum(SupportedCurrency)
+  @IsEnum(Currency)
   @IsOptional()
-  currency?: SupportedCurrency;
+  currency?: Currency;
 
   @ApiPropertyOptional({
     description: 'Min price to filter by'

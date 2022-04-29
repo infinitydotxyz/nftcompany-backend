@@ -1,6 +1,8 @@
 import { FirestoreOrderItem, OBOrderStatus } from '@infinityxyz/lib/types/core/OBOrder';
 import { ApiProperty } from '@nestjs/swagger/dist';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEnum, IsEthereumAddress, IsNumber, IsString } from 'class-validator';
+import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
 
 export class FirestoreOrderItemDto implements FirestoreOrderItem {
   @ApiProperty({
@@ -123,4 +125,29 @@ export class FirestoreOrderItemDto implements FirestoreOrderItem {
   })
   @IsNumber()
   numTokens: number;
+
+  @ApiProperty({
+    description: 'Address of the currency token for the offer'
+  })
+  @Transform(normalizeAddressTransformer)
+  @IsEthereumAddress()
+  currencyAddress: string;
+
+  @ApiProperty({
+    description: 'Slug for the collection'
+  })
+  @IsString()
+  collectionSlug: string;
+
+  @ApiProperty({
+    description: 'Whether the collection is verified'
+  })
+  @IsBoolean()
+  hasBlueCheck: boolean;
+
+  @ApiProperty({
+    description: 'Slug for the token'
+  })
+  @IsString()
+  tokenSlug: string;
 }
