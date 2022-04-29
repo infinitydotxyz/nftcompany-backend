@@ -61,7 +61,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { PartialUpdateUserProfileDto, UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { PartialUpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';

@@ -4,7 +4,7 @@ import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { DeleteUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
-import { PartialUpdateUserProfileDto, UpdateUserProfileDto } from '../dto/update-user-profile.dto';
+import { PartialUpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
 import { MAX_USERNAME_CHARS, MIN_USERNAME_CHARS, usernameCharRegex, usernameRegex } from './profile.constants';
