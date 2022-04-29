@@ -266,8 +266,8 @@ export default class OrdersService {
       makerUsername: order.makerUsername,
       takerAddress,
       takerUsername,
-      collectionAddress: nft.collectionAddress,
-      collectionName: nft.collectionName,
+      collectionAddress: nft.collectionAddress, // todo: lowercase
+      collectionName: nft.collectionName, // todo: add slug
       collectionImage: nft.collectionImage,
       tokenId: token.tokenId,
       numTokens: token.numTokens,
