@@ -44,13 +44,15 @@ export class ChainOBOrderDto implements ChainOBOrder {
   execParams: string[];
 
   @ApiProperty({
-    description: 'Encoded extra params'
+    description: 'Encoded extra params',
+    type: String
   })
   @IsString()
   extraParams: BytesLike;
 
   @ApiProperty({
-    description: 'Order signature'
+    description: 'Order signature',
+    type: String
   })
   @IsNotEmpty()
   @IsString()

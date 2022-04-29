@@ -5,7 +5,7 @@ import {
   OrderDirection,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
@@ -30,7 +30,7 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  // @UserAuth('userId')
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
@@ -38,7 +38,6 @@ export class OrdersController {
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
     @Body() body: OrdersDto
   ): Promise<string> {
-    console.log('body', jsonString(body)); // todo: remove log
     const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
     const result = await this.ordersService.createOrder(maker, orders);
     return result;

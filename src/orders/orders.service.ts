@@ -1,6 +1,5 @@
 import {
   ChainId,
-  ChainOBOrder,
   Collection,
   CreationFlow,
   FirestoreOrder,
@@ -9,7 +8,6 @@ import {
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
-  RefreshTokenFlow,
   SignedOBOrder,
   Token
 } from '@infinityxyz/lib/types/core';
@@ -25,7 +23,6 @@ import FirestoreBatchHandler from '../databases/FirestoreBatchHandler';
 import { BigNumber, ethers } from 'ethers';
 import { getProvider } from '../utils/ethers';
 import { FirebaseService } from '../firebase/firebase.service';
-import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from '../utils';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import { InfinityFeeTreasuryABI } from '../abi/infinityFeeTreasury';
@@ -40,7 +37,6 @@ import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
 import { InvalidCollectionError } from '../common/errors/invalid-collection.error';
 import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
-import { instanceToPlain } from 'class-transformer';
 import { EthereumService } from 'ethereum/ethereum.service';
 
 // todo: remove this with the below commented code
