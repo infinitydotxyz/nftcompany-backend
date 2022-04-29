@@ -6,13 +6,14 @@ import {
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
 import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
 import { UserAuth } from 'auth/user-auth.decorator';
 import { instanceToPlain } from 'class-transformer';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
@@ -37,10 +38,16 @@ export class OrdersController {
   public async postOrders(
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
     @Body() body: OrdersDto
-  ): Promise<string> {
-    const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
-    const result = await this.ordersService.createOrder(maker, orders);
-    return result;
+  ): Promise<void> {
+    try {
+      const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+      await this.ordersService.createOrder(maker, orders);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
   @Get('minbps')
