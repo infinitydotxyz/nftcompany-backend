@@ -35,6 +35,7 @@ import CollectionsService from 'collections/collections.service';
 import { NftsService } from 'collections/nfts/nfts.service';
 import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { UserParserService } from 'user/parser/parser.service';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -52,18 +53,17 @@ export default class OrdersService {
     private firebaseService: FirebaseService,
     private userService: UserService,
     private collectionService: CollectionsService,
-    private nftsService: NftsService
+    private nftsService: NftsService,
+    private userParser: UserParserService
   ) {}
 
   public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<string> {
     try {
-      const makerProfile = await this.userService.getProfile(maker);
-      const makerUsername = makerProfile?.username ?? '';
-
       const fsBatchHandler = new FirestoreBatchHandler();
       const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
-
       const metadata = await this.getOrderMetadata(orders);
+      const makerProfile = await this.userService.getProfile(maker);
+      const makerUsername = makerProfile?.username ?? '';
 
       for (const order of orders) {
         // get data
@@ -219,7 +219,6 @@ export default class OrdersService {
         }
       }
     }
-
     return metadata;
   }
 
@@ -377,11 +376,11 @@ export default class OrdersService {
     let takerUsername = '';
     if (!order.signedOrder.isSellOrder && nft.collection && token.tokenId) {
       // for buy orders, fetch the current owner of the token
-      console.log(nft.collection, token.tokenId, order.chainId);
       takerAddress = await getERC721Owner(nft.collection, token.tokenId, order.chainId);
       console.log('takerAddress', takerAddress); // todo: remove
       if (takerAddress) {
-        const takerProfile = await this.userService.getProfile(takerAddress);
+        const taker = await this.userParser.parse(takerAddress);
+        const takerProfile = await this.userService.getProfile(taker);
         takerUsername = takerProfile?.username ?? '';
       }
     }
