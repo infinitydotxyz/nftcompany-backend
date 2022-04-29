@@ -12,20 +12,6 @@ export class OBOrderItemDto {
   @IsEthereumAddress()
   collectionAddress: string;
 
-  // @ApiProperty({
-  //   description: 'Collection name'
-  // })
-  // @IsString()
-  // @IsNotEmpty()
-  // collectionName: string;
-
-  // @ApiProperty({
-  //   description: 'Profile image url'
-  // })
-  // @IsString()
-  // @IsNotEmpty()
-  // collectionImage: string;
-
   @ApiProperty({
     description: 'Tokens in the order'
   })

@@ -4,6 +4,7 @@ import {
   CreationFlow,
   FirestoreOrder,
   FirestoreOrderItem,
+  InfinityLinkType,
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
@@ -15,6 +16,7 @@ import {
   firestoreConstants,
   getCreatorFeeManagerAddress,
   getFeeTreasuryAddress,
+  getInfinityLink,
   trimLowerCase
 } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
@@ -36,6 +38,7 @@ import { NftsService } from 'collections/nfts/nfts.service';
 import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { UserParserService } from 'user/parser/parser.service';
+import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -103,6 +106,7 @@ export default class OrdersService {
               );
               // add to batch
               fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+              this.writeOrderItemsToFeed([{ ...orderItemData, orderItemId: orderItemDocRef.id }], fsBatchHandler);
             } else {
               for (const token of nft.tokens) {
                 const orderItemMetadata = metadata[order.chainId as ChainId][nft.collection];
@@ -132,6 +136,7 @@ export default class OrdersService {
                 );
                 // add to batch
                 fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+                this.writeOrderItemsToFeed([{ ...orderItemData, orderItemId: orderItemDocRef.id }], fsBatchHandler);
               }
             }
           }
@@ -141,10 +146,7 @@ export default class OrdersService {
         }
       }
       // commit batch
-      fsBatchHandler.flush().catch((err) => {
-        console.error(err);
-        return 'Failed';
-      });
+      await fsBatchHandler.flush();
     } catch (err) {
       console.error('Failed to post orders', err);
       return 'Failed';
@@ -442,6 +444,69 @@ export default class OrdersService {
     } catch (err) {
       console.error('Failed to get creator fee bps', err);
       throw err;
+    }
+  }
+
+  private writeOrderItemsToFeed(
+    orderItems: (FirestoreOrderItem & { orderItemId: string })[],
+    batch: FirebaseFirestore.WriteBatch | FirestoreBatchHandler
+  ) {
+    const feedCollection = this.firebaseService.firestore.collection(firestoreConstants.FEED_COLL);
+    for (const orderItem of orderItems) {
+      const usersInvolved = [orderItem.makerAddress, orderItem.takerAddress].filter((address) => !!address);
+      const feedEvent: Omit<NftListingEvent, 'isSellOrder' | 'type'> = {
+        orderId: orderItem.id,
+        orderItemId: orderItem.orderItemId,
+        paymentToken: orderItem.currencyAddress,
+        quantity: orderItem.numTokens,
+        startPriceEth: orderItem.startPriceEth,
+        endPriceEth: orderItem.endPriceEth,
+        startTimeMs: orderItem.startTimeMs,
+        endTimeMs: orderItem.endTimeMs,
+        makerUsername: orderItem.makerUsername,
+        makerAddress: orderItem.makerAddress,
+        takerUsername: orderItem.takerUsername,
+        takerAddress: orderItem.takerAddress,
+        usersInvolved,
+        tokenId: orderItem.tokenId,
+        chainId: orderItem.chainId,
+        likes: 0,
+        comments: 0,
+        timestamp: Date.now(),
+        collectionAddress: orderItem.collectionAddress,
+        collectionName: orderItem.collectionName,
+        collectionSlug: orderItem.collectionSlug,
+        collectionProfileImage: orderItem.collectionImage,
+        hasBlueCheck: orderItem.hasBlueCheck,
+        internalUrl: getInfinityLink({
+          type: InfinityLinkType.Asset,
+          collectionAddress: orderItem.collectionAddress,
+          tokenId: orderItem.tokenId
+        }),
+        image: orderItem.tokenImage,
+        nftName: orderItem.tokenName,
+        nftSlug: orderItem.tokenSlug
+      };
+      let event: NftListingEvent | NftOfferEvent;
+      if (orderItem.isSellOrder) {
+        event = {
+          ...feedEvent,
+          type: FeedEventType.NftListing,
+          isSellOrder: true
+        };
+      } else {
+        event = {
+          ...feedEvent,
+          type: FeedEventType.NftOffer,
+          isSellOrder: false
+        };
+      }
+      const newDoc = feedCollection.doc();
+      if ('add' in batch) {
+        batch.add(newDoc, event, { merge: false });
+      } else {
+        batch.create(newDoc, event);
+      }
     }
   }
 
