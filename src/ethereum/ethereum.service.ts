@@ -37,9 +37,9 @@ export class EthereumService {
   }
 
   private getProviderUrl(chainId: ChainId, apiKey: string) {
-    //   const polygon = `https://polygon-mainnet.g.alchemyapi.io/v2/`; // TODO add polygon
     const baseUrlByChainId = {
-      [ChainId.Mainnet]: `https://eth-mainnet.alchemyapi.io/v2/`
+      [ChainId.Mainnet]: `https://eth-mainnet.alchemyapi.io/v2/`,
+      [ChainId.Polygon]: `https://polygon-mainnet.g.alchemyapi.io/v2/`
     };
 
     const baseUrl = baseUrlByChainId[chainId];
