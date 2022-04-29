@@ -81,16 +81,20 @@ export class OrdersController {
       firestoreQuery = orderItemsCollectionRef.where('chainId', '==', reqQuery.chainId);
     }
     if (reqQuery.isSellOrder !== undefined) {
-      firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
+      const isSellOrder = String(reqQuery.isSellOrder) === 'true';
+      firestoreQuery = firestoreQuery.where('isSellOrder', '==', isSellOrder);
     }
     if (reqQuery.minPrice !== undefined) {
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', reqQuery.minPrice);
+      const minPrice = parseFloat(String(reqQuery.minPrice));
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', minPrice);
     }
     if (reqQuery.maxPrice !== undefined) {
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', reqQuery.maxPrice);
+      const maxPrice = parseFloat(String(reqQuery.maxPrice));
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', maxPrice);
     }
     if (reqQuery.numItems !== undefined) {
-      firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
+      const numItems = parseInt(String(reqQuery.numItems));
+      firestoreQuery = firestoreQuery.where('numItems', '==', numItems);
     }
     if (reqQuery.collections && reqQuery.collections.length > 0) {
       firestoreQuery = orderItemsCollectionRef.where('collectionAddress', 'in', reqQuery.collections);
@@ -109,7 +113,8 @@ export class OrdersController {
       firestoreQuery = orderItemsCollectionRef.startAfter(reqQuery.cursor);
     }
     // limit
-    firestoreQuery = firestoreQuery.limit(reqQuery.limit || DEFAULT_ITEMS_PER_PAGE);
+    const limit = parseInt(String(reqQuery.limit));
+    firestoreQuery = firestoreQuery.limit(limit || DEFAULT_ITEMS_PER_PAGE);
 
     // query firestore
     const data = await this.ordersService.getOrders(firestoreQuery);
