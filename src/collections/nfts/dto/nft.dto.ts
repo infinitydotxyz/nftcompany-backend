@@ -1,11 +1,11 @@
 import { ChainId } from '@infinityxyz/lib/types/core';
-import { Token, TokenStandard } from '@infinityxyz/lib/types/core/Token';
+import { TokenStandard } from '@infinityxyz/lib/types/core/Token';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Erc721MetadataDto } from './erc721-metadata.dto';
 import { NftImageDto } from './nft-image.dto';
 import { NftStateDto } from './nft-state.dto';
 
-export class NftDto implements Token {
+export class NftDto {
   @ApiProperty({
     description: 'Chain id that the collection is on'
   })

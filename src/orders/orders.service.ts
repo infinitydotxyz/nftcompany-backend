@@ -260,6 +260,7 @@ export default class OrdersService {
       numItems: order.numItems,
       startPriceEth: order.startPriceEth,
       endPriceEth: order.endPriceEth,
+      currencyAddress: order.execParams.currencyAddress,
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
       makerAddress: order.makerAddress,
@@ -272,7 +273,10 @@ export default class OrdersService {
       tokenId: token.tokenId,
       numTokens: token.numTokens,
       tokenImage: token.tokenImage,
-      tokenName: token.tokenName
+      tokenName: token.tokenName,
+      collectionSlug: '', // TODO just to make type checker happy this should be removed when merged
+      hasBlueCheck: false, // TODO just to make type checker happy
+      tokenSlug: '' // TODO just to make type checker happy
     };
     return data;
   }
