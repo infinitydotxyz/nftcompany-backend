@@ -31,9 +31,9 @@ export class ChainOBOrderDto implements ChainOBOrder {
     description: 'NFTs in the order',
     type: [ChainNFTsDto]
   })
+  @IsArray()
   @ValidateNested({ each: true, message: 'Invalid chain nft' })
   @Type(() => ChainNFTsDto)
-  @IsArray()
   nfts: ChainNFTsDto[];
 
   @ApiProperty({

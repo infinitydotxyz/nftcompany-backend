@@ -1,5 +1,6 @@
 import {
   ChainId,
+  ChainOBOrder,
   Collection,
   CreationFlow,
   FirestoreOrder,
@@ -39,6 +40,8 @@ import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
 import { InvalidCollectionError } from '../common/errors/invalid-collection.error';
 import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
+import { instanceToPlain } from 'class-transformer';
+import { EthereumService } from 'ethereum/ethereum.service';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -57,7 +60,8 @@ export default class OrdersService {
     private userService: UserService,
     private collectionService: CollectionsService,
     private nftsService: NftsService,
-    private userParser: UserParserService
+    private userParser: UserParserService,
+    private ethereumService: EthereumService
   ) {}
 
   public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<string> {
@@ -115,9 +119,9 @@ export default class OrdersService {
                 const orderItemTokenMetadata: OrderItemTokenMetadata = {
                   tokenId: token.tokenId,
                   numTokens: token.numTokens, // default for both ERC721 and ERC1155
-                  tokenImage: tokenData.image.url,
-                  tokenName: (tokenData.metadata).name ?? '',
-                  tokenSlug: tokenData.slug
+                  tokenImage: tokenData.image.url ?? '',
+                  tokenName: tokenData.metadata.name ?? '',
+                  tokenSlug: tokenData.slug ?? ''
                 };
 
                 const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
@@ -207,8 +211,8 @@ export default class OrdersService {
         );
 
         for (const token of tokens) {
-          if (token?.state?.metadata?.step !== RefreshTokenFlow.Complete) {
-            throw new InvalidCollectionError(collectionAddress, chainId, 'Token was not found');
+          if (!token) {
+            throw new InvalidCollectionError(collectionAddress, chainId, `Failed to find token`);
           }
           metadata[chainId] = {
             [collectionAddress]: {
@@ -351,7 +355,7 @@ export default class OrdersService {
         startTimeMs: order.startTimeMs,
         endTimeMs: order.endTimeMs,
         minBpsToSeller: order.minBpsToSeller,
-        nonce: order.nonce,
+        nonce: order.nonce.toString(),
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
         makerAddress: trimLowerCase(makerAddress),
@@ -378,8 +382,11 @@ export default class OrdersService {
     let takerUsername = '';
     if (!order.signedOrder.isSellOrder && nft.collection && token.tokenId) {
       // for buy orders, fetch the current owner of the token
-      takerAddress = await getERC721Owner(nft.collection, token.tokenId, order.chainId);
-      console.log('takerAddress', takerAddress); // todo: remove
+      takerAddress = await this.ethereumService.getErc721Owner({
+        address: nft.collection,
+        tokenId: token.tokenId,
+        chainId: order.chainId
+      });
       if (takerAddress) {
         const taker = await this.userParser.parse(takerAddress);
         const takerProfile = await this.userService.getProfile(taker);
@@ -408,9 +415,9 @@ export default class OrdersService {
       hasBlueCheck: collection.hasBlueCheck ?? false,
       tokenId: token.tokenId,
       numTokens: token.numTokens,
-      tokenImage: token.tokenImage,
-      tokenName: token.tokenName,
-      tokenSlug: token.tokenSlug
+      tokenImage: token.tokenImage ?? '',
+      tokenName: token.tokenName ?? '',
+      tokenSlug: token.tokenSlug ?? ''
     };
     return data;
   }

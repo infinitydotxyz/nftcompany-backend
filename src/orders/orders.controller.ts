@@ -10,6 +10,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
 import { UserAuth } from 'auth/user-auth.decorator';
+import { instanceToPlain } from 'class-transformer';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
@@ -17,6 +18,7 @@ import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
 import { OrdersDto } from './dto/orders.dto';
+import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -28,16 +30,17 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  // @UserAuth('userId') todo: uncomment
+  // @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async postOrders(
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
-    @Body() body: any // todo: remove any
+    @Body() body: OrdersDto
   ): Promise<string> {
     console.log('body', jsonString(body)); // todo: remove log
-    const result = await this.ordersService.createOrder(maker, body.orders);
+    const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+    const result = await this.ordersService.createOrder(maker, orders);
     return result;
   }
 
