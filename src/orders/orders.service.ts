@@ -20,24 +20,24 @@ import {
   trimLowerCase
 } from '@infinityxyz/lib/utils';
 import { Injectable } from '@nestjs/common';
-import FirestoreBatchHandler from 'databases/FirestoreBatchHandler';
+import FirestoreBatchHandler from '../databases/FirestoreBatchHandler';
 import { BigNumber, ethers } from 'ethers';
-import { getProvider } from 'utils/ethers';
+import { getProvider } from '../utils/ethers';
 import { FirebaseService } from '../firebase/firebase.service';
 import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from '../utils';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
-import { InfinityFeeTreasuryABI } from 'abi/infinityFeeTreasury';
-import { InfinityCreatorsFeeManagerABI } from 'abi/infinityCreatorsFeeManager';
-import { getNumItems, getOrderIdFromSignedOrder } from './orders.utils';
+import { InfinityFeeTreasuryABI } from '../abi/infinityFeeTreasury';
+import { InfinityCreatorsFeeManagerABI } from '../abi/infinityCreatorsFeeManager';
+import { getOrderIdFromSignedOrder } from './orders.utils';
 import { ChainNFTsDto } from './dto/chain-nfts.dto';
-import { ParsedUserId } from 'user/parser/parsed-user-id';
-import { UserService } from 'user/user.service';
-import CollectionsService from 'collections/collections.service';
-import { NftsService } from 'collections/nfts/nfts.service';
+import { ParsedUserId } from '../user/parser/parsed-user-id';
+import { UserService } from '../user/user.service';
+import CollectionsService from '../collections/collections.service';
+import { NftsService } from '../collections/nfts/nfts.service';
 import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
-import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
-import { UserParserService } from 'user/parser/parser.service';
+import { InvalidCollectionError } from '../common/errors/invalid-collection.error';
+import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
 
 // todo: remove this with the below commented code
@@ -89,7 +89,7 @@ export default class OrdersService {
                 tokenName: '',
                 tokenSlug: ''
               };
-              const collection: Collection = {} as any;
+              const collection: Collection = {} as Collection;
               const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
                 order,
                 nft,
@@ -116,7 +116,7 @@ export default class OrdersService {
                   tokenId: token.tokenId,
                   numTokens: token.numTokens, // default for both ERC721 and ERC1155
                   tokenImage: tokenData.image.url,
-                  tokenName: (tokenData.metadata as any).name ?? '',
+                  tokenName: (tokenData.metadata).name ?? '',
                   tokenSlug: tokenData.slug
                 };
 
@@ -186,7 +186,7 @@ export default class OrdersService {
           throw new InvalidCollectionError(
             collection?.address ?? 'Unknown',
             collection?.chainId ?? 'Unknown',
-            'Collection is not complete'
+            'Collection indexing is not complete'
           );
         }
         return {
@@ -345,7 +345,7 @@ export default class OrdersService {
         orderStatus: OBOrderStatus.ValidActive,
         chainId: order.chainId,
         isSellOrder: order.signedOrder.isSellOrder,
-        numItems: getNumItems(order.signedOrder.nfts),
+        numItems: order.numItems,
         startPriceEth: order.startPriceEth,
         endPriceEth: order.endPriceEth,
         startTimeMs: order.startTimeMs,
@@ -354,8 +354,8 @@ export default class OrdersService {
         nonce: order.nonce,
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
-        makerAddress,
-        makerUsername,
+        makerAddress: trimLowerCase(makerAddress),
+        makerUsername: trimLowerCase(makerUsername),
         signedOrder: order.signedOrder
       };
       return data;
@@ -391,16 +391,16 @@ export default class OrdersService {
       orderStatus: OBOrderStatus.ValidActive,
       chainId: order.chainId,
       isSellOrder: order.signedOrder.isSellOrder,
-      numItems: getNumItems(order.signedOrder.nfts),
+      numItems: order.numItems,
       startPriceEth: order.startPriceEth,
       endPriceEth: order.endPriceEth,
       currencyAddress: order.execParams.currencyAddress,
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
-      makerAddress: makerAddress,
-      makerUsername,
-      takerAddress,
-      takerUsername,
+      makerAddress: trimLowerCase(makerAddress),
+      makerUsername: trimLowerCase(makerUsername),
+      takerAddress: trimLowerCase(takerAddress),
+      takerUsername: trimLowerCase(takerUsername),
       collectionAddress: nft.collection,
       collectionName: collection.metadata?.name ?? '',
       collectionImage: collection.metadata?.profileImage ?? '',

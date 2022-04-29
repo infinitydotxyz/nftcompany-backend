@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { IsArray, IsEthereumAddress, ValidateNested } from 'class-validator';
-import { normalizeAddressTransformer } from 'common/transformers/normalize-address.transformer';
+import { normalizeAddressTransformer } from '../../common/transformers/normalize-address.transformer';
 import { ChainTokensDto } from './chain-tokens.dto';
 
 export class ChainNFTsDto {

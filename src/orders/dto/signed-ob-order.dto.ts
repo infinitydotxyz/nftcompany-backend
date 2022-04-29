@@ -14,6 +14,12 @@ export class SignedOBOrderDto {
   chainId: string;
 
   @ApiProperty({
+    description: 'Number of items in the order'
+  })
+  @IsNumber()
+  numItems: number;
+
+  @ApiProperty({
     description: 'Starting price in ETH of the order'
   })
   @IsNumber()

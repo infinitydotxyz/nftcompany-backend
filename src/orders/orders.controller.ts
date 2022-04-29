@@ -28,13 +28,13 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  @UserAuth('userId')
+  // @UserAuth('userId') todo: uncomment
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async postOrders(
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
-    @Body() body: OrdersDto
+    @Body() body: any // todo: remove any
   ): Promise<string> {
     console.log('body', jsonString(body)); // todo: remove log
     const result = await this.ordersService.createOrder(maker, body.orders);

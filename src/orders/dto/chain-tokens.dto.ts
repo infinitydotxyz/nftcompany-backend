@@ -10,7 +10,7 @@ export class ChainTokensDto {
   tokenId: string;
 
   @ApiProperty({
-    description: 'The quantity of the Nft'
+    description: 'Number of nfts: 1 for ERC721, >= 1 for ERC1155'
   })
   @IsNumber()
   numTokens: number;
