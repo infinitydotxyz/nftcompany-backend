@@ -1,6 +1,6 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { NftListingEvent, NftOfferEvent, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
+import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
@@ -176,7 +176,7 @@ export class UserService {
   async getByUsername(username: string) {
     const snapshot = await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .where('username', '==', username)
+      .where('username', '==', trimLowerCase(username))
       .limit(1)
       .get();
 

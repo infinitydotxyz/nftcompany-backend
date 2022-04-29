@@ -7,7 +7,7 @@ export class OrdersDto {
   @ApiProperty({
     description: 'Orders to be saved'
   })
-  @ValidateNested({ each: true })
+  @ValidateNested({ each: true, message: 'Invalid signed order' })
   @Type(() => SignedOBOrderDto)
   @IsArray()
   orders: SignedOBOrderDto[];

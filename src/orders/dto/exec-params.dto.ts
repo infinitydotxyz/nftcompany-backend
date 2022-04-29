@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEthereumAddress, IsNotEmpty, IsString } from 'class-validator';
+import { normalizeAddressTransformer } from '../../common/transformers/normalize-address.transformer';
 
 export class ExecParamsDto {
   @ApiProperty({
@@ -8,6 +10,7 @@ export class ExecParamsDto {
   @IsString()
   @IsNotEmpty()
   @IsEthereumAddress()
+  @Transform(normalizeAddressTransformer)
   complicationAddress: string;
 
   @ApiProperty({
@@ -16,5 +19,6 @@ export class ExecParamsDto {
   @IsString()
   @IsNotEmpty()
   @IsEthereumAddress()
+  @Transform(normalizeAddressTransformer)
   currencyAddress: string;
 }
