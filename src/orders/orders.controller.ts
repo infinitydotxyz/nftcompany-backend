@@ -41,7 +41,7 @@ export class OrdersController {
     return result;
   }
 
-  @Get('/minbps')
+  @Get('minbps')
   @ApiOperation({
     description: 'Fetch MinBps',
     tags: [ApiTag.Orders]
