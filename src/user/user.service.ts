@@ -1,10 +1,10 @@
 /* eslint-disable no-empty */
-import { ChainId, CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { firestoreConstants } from '@infinityxyz/lib/utils';
-import { Injectable } from '@nestjs/common';
+import { ChainId } from '@infinityxyz/lib/types/core';
 import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
 import { AlchemyService } from 'alchemy/alchemy.service';
-import { Optional } from '@nestjs/common';
+import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
+import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
 import { NftDto } from 'collections/nfts/dto/nft.dto';
@@ -245,7 +245,7 @@ export class UserService {
   async getByUsername(username: string) {
     const snapshot = await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
-      .where('username', '==', username)
+      .where('username', '==', trimLowerCase(username))
       .limit(1)
       .get();
 

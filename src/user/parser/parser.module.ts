@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AlchemyModule } from 'alchemy/alchemy.module';
-import { UserService } from 'user/user.service';
+import { UserModule } from 'user/user.module';
 import { UserParserService } from './parser.service';
 
+@Global()
 @Module({
-  providers: [UserService, UserParserService],
-  exports: [UserService, UserParserService],
-  imports: [AlchemyModule]
+  providers: [UserParserService],
+  exports: [UserParserService],
+  imports: [UserModule, AlchemyModule]
 })
 export class UserParserModule {}
