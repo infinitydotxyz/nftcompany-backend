@@ -14,6 +14,7 @@ import { instanceToPlain } from 'class-transformer';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { InvalidTokenError } from 'common/errors/invalid-token-error';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
@@ -44,6 +45,8 @@ export class OrdersController {
       await this.ordersService.createOrder(maker, orders);
     } catch (err) {
       if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      } else if (err instanceof InvalidTokenError) {
         throw new BadRequestException(err.message);
       }
       throw err;

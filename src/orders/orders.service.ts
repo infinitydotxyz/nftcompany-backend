@@ -38,6 +38,7 @@ import { InvalidCollectionError } from '../common/errors/invalid-collection.erro
 import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
 import { EthereumService } from 'ethereum/ethereum.service';
+import { InvalidTokenError } from 'common/errors/invalid-token-error';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -71,6 +72,7 @@ export default class OrdersService {
       for (const order of orders) {
         // get data
         const orderId = getOrderIdFromSignedOrder(order, maker.userAddress);
+        console.log(orderId);
         const dataToStore = this.getFirestoreOrderFromSignedOBOrder(maker.userAddress, makerUsername, order, orderId);
         // save
         const docRef = ordersCollectionRef.doc(orderId);
@@ -202,7 +204,7 @@ export default class OrdersService {
 
         for (const token of tokens) {
           if (!token) {
-            throw new InvalidCollectionError(collectionAddress, chainId, `Failed to find token`);
+            throw new InvalidTokenError(collectionAddress, chainId, 'Unknown', `Failed to find token`);
           }
           metadata[chainId] = {
             [collectionAddress]: {
