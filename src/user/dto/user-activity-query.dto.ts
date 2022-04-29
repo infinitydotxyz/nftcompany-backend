@@ -7,7 +7,7 @@ import { arrayTransformer } from 'common/transformers/array-query.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export class UserActivityQueryDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Activity types to include in the response. By default all events will be included',
     enum: ActivityType,
     type: [ActivityType]
