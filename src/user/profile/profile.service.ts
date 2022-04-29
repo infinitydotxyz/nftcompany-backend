@@ -4,7 +4,7 @@ import { randomInt } from 'crypto';
 import { FirebaseService } from 'firebase/firebase.service';
 import { DeleteUserProfileImagesDto } from 'user/dto/update-user-profile-images.dto';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
-import { UpdateUserProfileDto } from '../dto/update-user-profile.dto';
+import { PartialUpdateUserProfileDto, UpdateUserProfileDto } from '../dto/update-user-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { InvalidProfileError } from '../errors/invalid-profile.error';
 import { MAX_USERNAME_CHARS, MIN_USERNAME_CHARS, usernameCharRegex, usernameRegex } from './profile.constants';
@@ -46,15 +46,21 @@ export class ProfileService {
     await user.ref.set(profile, { merge: true });
   }
 
-  async updateProfile(user: ParsedUserId, updatedProfile: Partial<UserProfileDto> & UpdateUserProfileDto) {
+  async updateProfile(user: ParsedUserId, updatedProfile: PartialUpdateUserProfileDto) {
     const profileSnap = await user.ref.get();
     const currentProfile = profileSnap.data();
     const createdAt = currentProfile?.createdAt ?? Date.now();
     const updatedAt = Date.now();
 
-    const canClaimUsername = await this.canClaimUsername(updatedProfile.username, currentProfile ?? {});
-    if (!canClaimUsername) {
-      throw new InvalidProfileError(`Username ${updatedProfile.username} is invalid or already taken`);
+    if ('username' in updatedProfile) {
+      if (updatedProfile.username) {
+        const canClaimUsername = await this.canClaimUsername(updatedProfile.username, currentProfile ?? {});
+        if (!canClaimUsername) {
+          throw new InvalidProfileError(`Username ${updatedProfile.username} is invalid or already taken`);
+        }
+      } else {
+        delete updatedProfile.username;
+      }
     }
 
     const profile = {
