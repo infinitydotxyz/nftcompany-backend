@@ -8,13 +8,14 @@ import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
 export class UserActivityQueryDto {
   @ApiProperty({
-    description: 'Activity types to include in the response',
+    description: 'Activity types to include in the response. By default all events will be included',
     enum: ActivityType,
     type: [ActivityType]
   })
   @IsEnumArray(ActivityType, { message: 'Invalid event type' })
   @Transform(arrayTransformer)
-  events: ActivityType[];
+  @IsOptional()
+  events?: ActivityType[];
 
   @ApiProperty({
     description: 'Max number of events to get. Max of 50'

@@ -1,9 +1,8 @@
-import { ChainId, CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
-import { ExchangeEvent, FeedEventType, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
+import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { NftListingEvent, NftOfferEvent, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
-import { NftActivity } from 'collections/nfts/dto/nft-activity.dto';
 import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
@@ -11,6 +10,7 @@ import { FirebaseService } from 'firebase/firebase.service';
 import { CursorService } from 'pagination/cursor.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserActivityArrayDto } from './dto/user-activity-array.dto';
 import { UserActivityQueryDto } from './dto/user-activity-query.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
@@ -19,6 +19,8 @@ import { UserFollowingUserPostPayload } from './dto/user-following-user-post-pay
 import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
+
+export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
 
 @Injectable()
 export class UserService {
@@ -192,97 +194,37 @@ export class UserService {
     return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
   }
 
-  private transformSale(sale: NftSaleEvent): NftActivity {
-    const activity: NftActivity = {
-      address: sale.collectionAddress,
-      tokenId: sale.tokenId,
-      chainId: sale.chainId as ChainId,
-      type: ActivityType.Sale,
-      from: sale.seller,
-      to: sale.buyer,
-      price: sale.price,
-      timestamp: sale.timestamp,
-      paymentToken: sale.paymentToken
-    };
-    return activity;
-  }
-
-  async getActivity(user: ParsedUserId, query: UserActivityQueryDto) {
-    const activityTypes = query.events.length > 0 ? query.events : Object.values(ActivityType);
+  async getActivity(user: ParsedUserId, query: UserActivityQueryDto): Promise<UserActivityArrayDto> {
+    const activityTypes = query.events && query?.events.length > 0 ? query.events : Object.values(ActivityType);
 
     const events = activityTypes.map((item) => activityTypeToEventType[item]);
 
-    const queries = events.map((event) => {
-      const firestoreQuery = this.firebaseService.firestore
-        .collection(firestoreConstants.FEED_COLL)
-        .where('type', '==', event);
-      switch (event) {
-        case FeedEventType.NftSale: {
-          const sales = firestoreQuery.where('seller', '==', user.userAddress);
-          const purchases = firestoreQuery.where('buyer', '==', user.userAddress);
-          return [sales, purchases];
-        }
-        // case FeedEventType.NftListing: {
-        //   const listings = firestoreQuery.where('maker', '==', user.userAddress); // TODO is maker correct?
-        //   return [listings];
-        // }
-        // case FeedEventType.NftOffer: {
-        //   const offersMade = firestoreQuery.where('maker', '==', user.userAddress);
-        //   const offersReceived = firestoreQuery.where('taker', '==', user.userAddress); // TODO is taker correct?
-        //   return [offersMade, offersReceived];
-        // }
-        default:
-          console.log(`Unsupported activity type. ${event}`);
-          return [];
-      }
-    });
+    let userEventsQuery = this.firebaseService.firestore
+      .collection(firestoreConstants.FEED_COLL)
+      .where('type', 'in', events)
+      .where('usersInvolved', 'array-contains', user.userAddress);
 
     const cursor = this.paginationService.decodeCursorToNumber(query.cursor);
     const orderDirection = OrderDirection.Descending;
 
-    const snapshots = await Promise.all(
-      queries
-        .flatMap((item) => item)
-        .map((firestoreQuery) => {
-          let q = firestoreQuery.orderBy('timestamp', orderDirection).limit(query.limit + 1);
-          if (!Number.isNaN(cursor)) {
-            q = q.startAfter(cursor);
-          }
-          return q.get();
-        })
-    );
+    userEventsQuery = userEventsQuery.orderBy('timestamp', orderDirection).limit(query.limit + 1);
 
-    const docs = snapshots.flatMap((item) => item.docs);
-
-    const data = docs
-      .map((item) => item.data())
-      .filter((item) => !!item)
-      .sort((a, b) =>
-        orderDirection === OrderDirection.Descending ? b.timestamp - a.timestamp : a.timestamp - b.timestamp
-      ) as (NftSaleEvent | ExchangeEvent)[]; // TODO update to include order/listing event types
-
-    const results = data.slice(0, query.limit + 1);
-    const hasNextPage = results.length > query.limit;
-    if (hasNextPage) {
-      results.pop();
+    if (!Number.isNaN(cursor)) {
+      userEventsQuery = userEventsQuery.startAfter(cursor);
     }
-    const lastItem = results?.[results?.length - 1];
+    const snapshot = await userEventsQuery.get();
+
+    const data = snapshot.docs.map((item) => item.data() as UserActivity);
+
+    const hasNextPage = data.length > query.limit;
+    if (hasNextPage) {
+      data.pop();
+    }
+    const lastItem = data?.[data?.length - 1];
     const nextCursor = this.paginationService.encodeCursor(lastItem?.timestamp ?? '');
 
-    const activityEvents = results
-      .map((item) => {
-        switch (item.type) {
-          case FeedEventType.NftSale:
-            return this.transformSale(item as NftSaleEvent);
-          default:
-            console.log(`Unsupported activity type. ${item.type}`);
-            return null;
-        }
-      })
-      .filter((item) => !!item) as NftActivity[];
-
     return {
-      data: activityEvents,
+      data: data,
       hasNextPage,
       cursor: nextCursor
     };
