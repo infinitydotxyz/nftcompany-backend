@@ -14,10 +14,15 @@ import { UserFollowingUserPostPayload } from './dto/user-following-user-post-pay
 import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
+import { UserParserService } from './parser/parser.service';
 
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, @Optional() private statsService: StatsService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private userParser: UserParserService,
+    @Optional() private statsService: StatsService
+  ) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -49,7 +54,8 @@ export class UserService {
     return orderedStats;
   }
 
-  async getProfile(user: ParsedUserId) {
+  async getProfile(userOrAddress: ParsedUserId | string) {
+    const user = typeof userOrAddress === 'string' ? await this.userParser.parse(userOrAddress) : userOrAddress;
     const profileSnapshot = await user.ref.get();
     const profile = profileSnapshot.data();
 

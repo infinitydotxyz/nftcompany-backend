@@ -17,7 +17,7 @@ export class ChainNFTsDto {
     type: [ChainTokensDto]
   })
   @IsArray({ each: true })
-  @ValidateNested()
+  @ValidateNested({ message: 'Invalid chain tokens' })
   @Type(() => ChainTokensDto)
   tokens: ChainTokensDto[];
 }

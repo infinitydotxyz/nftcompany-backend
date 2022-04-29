@@ -1,10 +1,15 @@
 import {
+  ChainId,
+  Collection,
+  CreationFlow,
   FirestoreOrder,
   FirestoreOrderItem,
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
-  SignedOBOrder
+  RefreshTokenFlow,
+  SignedOBOrder,
+  Token
 } from '@infinityxyz/lib/types/core';
 import {
   firestoreConstants,
@@ -24,7 +29,12 @@ import { InfinityFeeTreasuryABI } from 'abi/infinityFeeTreasury';
 import { InfinityCreatorsFeeManagerABI } from 'abi/infinityCreatorsFeeManager';
 import { getNumItems, getOrderIdFromSignedOrder } from './orders.utils';
 import { ChainNFTsDto } from './dto/chain-nfts.dto';
-import { ChainTokensDto } from './dto/chain-tokens.dto';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { UserService } from 'user/user.service';
+import CollectionsService from 'collections/collections.service';
+import { NftsService } from 'collections/nfts/nfts.service';
+import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -38,16 +48,27 @@ import { ChainTokensDto } from './dto/chain-tokens.dto';
 
 @Injectable()
 export default class OrdersService {
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private userService: UserService,
+    private collectionService: CollectionsService,
+    private nftsService: NftsService
+  ) {}
 
-  public async createOrder(makerAddress: string, orders: SignedOBOrderDto[]): Promise<string> {
+  public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<string> {
     try {
+      const makerProfile = await this.userService.getProfile(maker);
+      const makerUsername = makerProfile?.username ?? '';
+
       const fsBatchHandler = new FirestoreBatchHandler();
       const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
+
+      const metadata = await this.getOrderMetadata(orders);
+
       for (const order of orders) {
         // get data
-        const orderId = getOrderIdFromSignedOrder(order, makerAddress);
-        const dataToStore = this.getFirestoreOrderFromSignedOBOrder(makerAddress, order, orderId);
+        const orderId = getOrderIdFromSignedOrder(order, maker.userAddress);
+        const dataToStore = this.getFirestoreOrderFromSignedOBOrder(maker.userAddress, makerUsername, order, orderId);
         // save
         const docRef = ordersCollectionRef.doc(orderId);
         fsBatchHandler.add(docRef, dataToStore, { merge: true });
@@ -58,20 +79,22 @@ export default class OrdersService {
           for (const nft of order.signedOrder.nfts) {
             if (nft.tokens.length === 0) {
               // to support any tokens from a collection type orders
-              const emptyToken = {
+              const emptyToken: OrderItemTokenMetadata = {
                 tokenId: '',
                 numTokens: 1, // default for both ERC721 and ERC1155
                 tokenImage: '',
                 tokenName: '',
-                takerAddress: '',
-                takerUsername: ''
+                tokenSlug: ''
               };
+              const collection: Collection = {} as any;
               const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
                 order,
                 nft,
                 emptyToken,
                 orderId,
-                makerAddress
+                maker.userAddress,
+                makerUsername,
+                collection
               );
               // get doc id
               const tokenId = '';
@@ -82,12 +105,25 @@ export default class OrdersService {
               fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
             } else {
               for (const token of nft.tokens) {
+                const orderItemMetadata = metadata[order.chainId as ChainId][nft.collection];
+                const tokenData = orderItemMetadata.nfts[token.tokenId];
+                const collection = orderItemMetadata.collection;
+                const orderItemTokenMetadata: OrderItemTokenMetadata = {
+                  tokenId: token.tokenId,
+                  numTokens: token.numTokens, // default for both ERC721 and ERC1155
+                  tokenImage: tokenData.image.url,
+                  tokenName: (tokenData.metadata as any).name ?? '',
+                  tokenSlug: tokenData.slug
+                };
+
                 const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
                   order,
                   nft,
-                  token,
+                  orderItemTokenMetadata,
                   orderId,
-                  makerAddress
+                  maker.userAddress,
+                  makerUsername,
+                  collection
                 );
                 // get doc id
                 const tokenId = token.tokenId.toString();
@@ -114,6 +150,77 @@ export default class OrdersService {
       return 'Failed';
     }
     return 'Success';
+  }
+
+  private async getOrderMetadata(orders: SignedOBOrderDto[]): Promise<OrderMetadata> {
+    type CollectionAddress = string;
+    type TokenId = string;
+    const tokens: Map<ChainId, Map<CollectionAddress, Set<TokenId>>> = new Map();
+
+    for (const order of orders) {
+      const collectionsByChainId = tokens.get(order.chainId as ChainId) ?? new Map<CollectionAddress, Set<TokenId>>();
+      for (const nft of order.signedOrder.nfts) {
+        const tokensByCollection = collectionsByChainId.get(nft.collection) ?? new Set();
+        for (const token of nft.tokens) {
+          tokensByCollection.add(token.tokenId);
+        }
+        collectionsByChainId.set(nft.collection, tokensByCollection);
+      }
+      tokens.set(order.chainId as ChainId, collectionsByChainId);
+    }
+
+    const metadata: OrderMetadata = {};
+    for (const [chainId, collections] of tokens) {
+      const collectionsData = await Promise.all(
+        [...collections].map(([address]) => {
+          return this.collectionService.getCollectionByAddress({
+            address,
+            chainId
+          });
+        })
+      );
+      const collectionsByAddress = collectionsData.reduce((acc: { [address: string]: Collection }, collection) => {
+        if (collection?.state?.create?.step !== CreationFlow.Complete) {
+          throw new InvalidCollectionError(
+            collection?.address ?? 'Unknown',
+            collection?.chainId ?? 'Unknown',
+            'Collection is not complete'
+          );
+        }
+        return {
+          ...acc,
+          [collection.address]: collection
+        };
+      }, {});
+
+      for (const [collectionAddress, tokenIds] of collections) {
+        const tokens = await Promise.all(
+          [...tokenIds].map((tokenId) => {
+            return this.nftsService.getNft({
+              address: collectionAddress,
+              chainId,
+              tokenId
+            });
+          })
+        );
+
+        for (const token of tokens) {
+          if (token?.state?.metadata?.step !== RefreshTokenFlow.Complete) {
+            throw new InvalidCollectionError(collectionAddress, chainId, 'Token was not found');
+          }
+          metadata[chainId] = {
+            [collectionAddress]: {
+              collection: collectionsByAddress[collectionAddress],
+              nfts: {
+                [token.tokenId]: token as Token
+              }
+            }
+          };
+        }
+      }
+    }
+
+    return metadata;
   }
 
   // todo: change this when fees change
@@ -227,6 +334,7 @@ export default class OrdersService {
 
   private getFirestoreOrderFromSignedOBOrder(
     makerAddress: string,
+    makerUsername: string,
     order: SignedOBOrderDto,
     orderId: string
   ): FirestoreOrder {
@@ -246,7 +354,7 @@ export default class OrdersService {
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
         makerAddress,
-        makerUsername: '', // TODO get maker username
+        makerUsername,
         signedOrder: order.signedOrder
       };
       return data;
@@ -259,9 +367,11 @@ export default class OrdersService {
   private async getFirestoreOrderItemFromSignedOBOrder(
     order: SignedOBOrderDto,
     nft: ChainNFTsDto,
-    token: ChainTokensDto,
+    token: OrderItemTokenMetadata,
     orderId: string,
-    makerAddress: string
+    makerAddress: string,
+    makerUsername: string,
+    collection: Partial<Collection>
   ): Promise<FirestoreOrderItem> {
     let takerAddress = '';
     let takerUsername = '';
@@ -270,7 +380,10 @@ export default class OrdersService {
       console.log(nft.collection, token.tokenId, order.chainId);
       takerAddress = await getERC721Owner(nft.collection, token.tokenId, order.chainId);
       console.log('takerAddress', takerAddress); // todo: remove
-      takerUsername = ''; // todo: fetch taker username
+      if (takerAddress) {
+        const takerProfile = await this.userService.getProfile(takerAddress);
+        takerUsername = takerProfile?.username ?? '';
+      }
     }
     const data: FirestoreOrderItem = {
       id: orderId,
@@ -284,19 +397,19 @@ export default class OrdersService {
       startTimeMs: order.startTimeMs,
       endTimeMs: order.endTimeMs,
       makerAddress: makerAddress,
-      makerUsername: '', // TODO get username
+      makerUsername,
       takerAddress,
       takerUsername,
       collectionAddress: nft.collection,
-      collectionName: '', // TODO get collection name
-      collectionImage: '', // TODO get collection image
-      collectionSlug: '', // TODO get collection slug
-      hasBlueCheck: false, // TODO get hasBlueCheck
+      collectionName: collection.metadata?.name ?? '',
+      collectionImage: collection.metadata?.profileImage ?? '',
+      collectionSlug: collection?.slug ?? '',
+      hasBlueCheck: collection.hasBlueCheck ?? false,
       tokenId: token.tokenId,
       numTokens: token.numTokens,
-      tokenImage: '', // TODO
-      tokenName: '', // TODO
-      tokenSlug: '' // TODO get token slug
+      tokenImage: token.tokenImage,
+      tokenName: token.tokenName,
+      tokenSlug: token.tokenSlug
     };
     return data;
   }

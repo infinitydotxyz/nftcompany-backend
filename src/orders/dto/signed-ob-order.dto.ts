@@ -17,62 +17,56 @@ export class SignedOBOrderDto {
     description: 'Starting price in ETH of the order'
   })
   @IsNumber()
-  @IsNotEmpty()
   startPriceEth: number;
 
   @ApiProperty({
     description: 'Ending price in ETH of the order'
   })
   @IsNumber()
-  @IsNotEmpty()
   endPriceEth: number;
 
   @ApiProperty({
     description: 'Starting time in milliseconds since epoch of the order'
   })
   @IsNumber()
-  @IsNotEmpty()
   startTimeMs: number;
 
   @ApiProperty({
     description: 'Ending time in milliseconds since epoch of the order'
   })
   @IsNumber()
-  @IsNotEmpty()
   endTimeMs: number;
 
   @ApiProperty({
     description: 'Minimum percentage in bps a seller should get after all fees'
   })
   @IsNumber()
-  @IsNotEmpty()
   minBpsToSeller: number;
 
   @ApiProperty({
     description: 'Order nonce'
   })
   @IsString()
-  @IsNotEmpty()
   nonce: string;
 
   @ApiProperty({
     description: 'Execution params like txn currency and type of order'
   })
-  @ValidateNested()
+  @ValidateNested({ message: 'Invalid exec params' })
   @Type(() => ExecParamsDto)
   execParams: ExecParamsDto;
 
   @ApiProperty({
     description: 'Extra params for the order'
   })
-  @ValidateNested()
+  @ValidateNested({ message: 'Invalid extra params' })
   @Type(() => ExtraParamsDto)
   extraParams: ExtraParamsDto;
 
   @ApiProperty({
     description: 'Order in the format required by exchange contracts'
   })
-  @ValidateNested()
+  @ValidateNested({ message: 'Invalid signed order' })
   @Type(() => ChainOBOrderDto)
   signedOrder: ChainOBOrderDto;
 }

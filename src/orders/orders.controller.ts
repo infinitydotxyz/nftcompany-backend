@@ -33,10 +33,9 @@ export class OrdersController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async postOrders(
-    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
     @Body() body: OrdersDto
   ): Promise<string> {
-    const maker = user.userAddress;
     console.log('body', jsonString(body)); // todo: remove log
     const result = await this.ordersService.createOrder(maker, body.orders);
     return result;
