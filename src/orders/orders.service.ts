@@ -72,7 +72,6 @@ export default class OrdersService {
       for (const order of orders) {
         // get data
         const orderId = getOrderIdFromSignedOrder(order, maker.userAddress);
-        console.log(orderId);
         const dataToStore = this.getFirestoreOrderFromSignedOBOrder(maker.userAddress, makerUsername, order, orderId);
         // save
         const docRef = ordersCollectionRef.doc(orderId);
