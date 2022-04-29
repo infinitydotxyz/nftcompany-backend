@@ -4,7 +4,7 @@
   "description": "",
   "private": true,
   "scripts": {
-    "ci-pre-build": "mkdir ./src/creds & mkdir ./creds && cp ./ci/creds-blank/* ./creds & cp ./ci/creds-blank/* ./src/creds",
+    "ci-pre-build": "mkdir ./src/creds && mkdir ./creds && cp ./ci/creds-blank/* ./creds && cp ./ci/creds-blank/* ./src/creds",
     "clean": "rimraf dist",
     "build": "npm run clean && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
