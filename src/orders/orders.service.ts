@@ -8,7 +8,6 @@ import {
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
-  RefreshTokenFlow,
   SignedOBOrder,
   Token
 } from '@infinityxyz/lib/types/core';
@@ -24,7 +23,6 @@ import FirestoreBatchHandler from '../databases/FirestoreBatchHandler';
 import { BigNumber, ethers } from 'ethers';
 import { getProvider } from '../utils/ethers';
 import { FirebaseService } from '../firebase/firebase.service';
-import { getERC721Owner } from '../services/ethereum/checkOwnershipChange';
 import { getDocIdHash } from '../utils';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import { InfinityFeeTreasuryABI } from '../abi/infinityFeeTreasury';
@@ -39,6 +37,8 @@ import { OrderItemTokenMetadata, OrderMetadata } from './order.types';
 import { InvalidCollectionError } from '../common/errors/invalid-collection.error';
 import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
+import { EthereumService } from 'ethereum/ethereum.service';
+import { InvalidTokenError } from 'common/errors/invalid-token-error';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -57,10 +57,11 @@ export default class OrdersService {
     private userService: UserService,
     private collectionService: CollectionsService,
     private nftsService: NftsService,
-    private userParser: UserParserService
+    private userParser: UserParserService,
+    private ethereumService: EthereumService
   ) {}
 
-  public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<string> {
+  public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<void> {
     try {
       const fsBatchHandler = new FirestoreBatchHandler();
       const ordersCollectionRef = this.firebaseService.firestore.collection(firestoreConstants.ORDERS_COLL);
@@ -78,80 +79,74 @@ export default class OrdersService {
 
         // get order items
         const orderItemsRef = docRef.collection(firestoreConstants.ORDER_ITEMS_SUB_COLL);
-        try {
-          for (const nft of order.signedOrder.nfts) {
-            if (nft.tokens.length === 0) {
-              // to support any tokens from a collection type orders
-              const emptyToken: OrderItemTokenMetadata = {
-                tokenId: '',
-                numTokens: 1, // default for both ERC721 and ERC1155
-                tokenImage: '',
-                tokenName: '',
-                tokenSlug: ''
+        for (const nft of order.signedOrder.nfts) {
+          if (nft.tokens.length === 0) {
+            // to support any tokens from a collection type orders
+            const emptyToken: OrderItemTokenMetadata = {
+              tokenId: '',
+              numTokens: 1, // default for both ERC721 and ERC1155
+              tokenImage: '',
+              tokenName: '',
+              tokenSlug: ''
+            };
+            const collection: Collection = {} as Collection;
+            const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
+              order,
+              nft,
+              emptyToken,
+              orderId,
+              maker.userAddress,
+              makerUsername,
+              collection
+            );
+            // get doc id
+            const tokenId = '';
+            const orderItemDocRef = orderItemsRef.doc(
+              getDocIdHash({ collectionAddress: nft.collection, tokenId, chainId: order.chainId })
+            );
+            // add to batch
+            fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
+            this.writeOrderItemsToFeed([{ ...orderItemData, orderItemId: orderItemDocRef.id }], fsBatchHandler);
+          } else {
+            for (const token of nft.tokens) {
+              const orderItemMetadata = metadata[order.chainId as ChainId][nft.collection];
+              const tokenData = orderItemMetadata.nfts[token.tokenId];
+              const collection = orderItemMetadata.collection;
+              const orderItemTokenMetadata: OrderItemTokenMetadata = {
+                tokenId: token.tokenId,
+                numTokens: token.numTokens, // default for both ERC721 and ERC1155
+                tokenImage: tokenData.image.url ?? '',
+                tokenName: tokenData.metadata.name ?? '',
+                tokenSlug: tokenData.slug ?? ''
               };
-              const collection: Collection = {} as Collection;
+
               const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
                 order,
                 nft,
-                emptyToken,
+                orderItemTokenMetadata,
                 orderId,
                 maker.userAddress,
                 makerUsername,
                 collection
               );
               // get doc id
-              const tokenId = '';
+              const tokenId = token.tokenId.toString();
               const orderItemDocRef = orderItemsRef.doc(
                 getDocIdHash({ collectionAddress: nft.collection, tokenId, chainId: order.chainId })
               );
               // add to batch
               fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
               this.writeOrderItemsToFeed([{ ...orderItemData, orderItemId: orderItemDocRef.id }], fsBatchHandler);
-            } else {
-              for (const token of nft.tokens) {
-                const orderItemMetadata = metadata[order.chainId as ChainId][nft.collection];
-                const tokenData = orderItemMetadata.nfts[token.tokenId];
-                const collection = orderItemMetadata.collection;
-                const orderItemTokenMetadata: OrderItemTokenMetadata = {
-                  tokenId: token.tokenId,
-                  numTokens: token.numTokens, // default for both ERC721 and ERC1155
-                  tokenImage: tokenData.image.url,
-                  tokenName: (tokenData.metadata).name ?? '',
-                  tokenSlug: tokenData.slug
-                };
-
-                const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
-                  order,
-                  nft,
-                  orderItemTokenMetadata,
-                  orderId,
-                  maker.userAddress,
-                  makerUsername,
-                  collection
-                );
-                // get doc id
-                const tokenId = token.tokenId.toString();
-                const orderItemDocRef = orderItemsRef.doc(
-                  getDocIdHash({ collectionAddress: nft.collection, tokenId, chainId: order.chainId })
-                );
-                // add to batch
-                fsBatchHandler.add(orderItemDocRef, orderItemData, { merge: true });
-                this.writeOrderItemsToFeed([{ ...orderItemData, orderItemId: orderItemDocRef.id }], fsBatchHandler);
-              }
             }
           }
-        } catch (err: any) {
-          console.error('Failed saving orders to firestore', err);
-          return 'Failed';
         }
       }
       // commit batch
       await fsBatchHandler.flush();
     } catch (err) {
-      console.error('Failed to post orders', err);
-      return 'Failed';
+      console.error('Failed to create order(s)', err);
+      throw err;
     }
-    return 'Success';
   }
 
   private async getOrderMetadata(orders: SignedOBOrderDto[]): Promise<OrderMetadata> {
@@ -207,8 +202,8 @@ export default class OrdersService {
         );
 
         for (const token of tokens) {
-          if (token?.state?.metadata?.step !== RefreshTokenFlow.Complete) {
-            throw new InvalidCollectionError(collectionAddress, chainId, 'Token was not found');
+          if (!token) {
+            throw new InvalidTokenError(collectionAddress, chainId, 'Unknown', `Failed to find token`);
           }
           metadata[chainId] = {
             [collectionAddress]: {
@@ -351,7 +346,7 @@ export default class OrdersService {
         startTimeMs: order.startTimeMs,
         endTimeMs: order.endTimeMs,
         minBpsToSeller: order.minBpsToSeller,
-        nonce: order.nonce,
+        nonce: order.nonce.toString(),
         complicationAddress: order.execParams.complicationAddress,
         currencyAddress: order.execParams.currencyAddress,
         makerAddress: trimLowerCase(makerAddress),
@@ -378,8 +373,11 @@ export default class OrdersService {
     let takerUsername = '';
     if (!order.signedOrder.isSellOrder && nft.collection && token.tokenId) {
       // for buy orders, fetch the current owner of the token
-      takerAddress = await getERC721Owner(nft.collection, token.tokenId, order.chainId);
-      console.log('takerAddress', takerAddress); // todo: remove
+      takerAddress = await this.ethereumService.getErc721Owner({
+        address: nft.collection,
+        tokenId: token.tokenId,
+        chainId: order.chainId
+      });
       if (takerAddress) {
         const taker = await this.userParser.parse(takerAddress);
         const takerProfile = await this.userService.getProfile(taker);
@@ -408,9 +406,9 @@ export default class OrdersService {
       hasBlueCheck: collection.hasBlueCheck ?? false,
       tokenId: token.tokenId,
       numTokens: token.numTokens,
-      tokenImage: token.tokenImage,
-      tokenName: token.tokenName,
-      tokenSlug: token.tokenSlug
+      tokenImage: token.tokenImage ?? '',
+      tokenName: token.tokenName ?? '',
+      tokenSlug: token.tokenSlug ?? ''
     };
     return data;
   }

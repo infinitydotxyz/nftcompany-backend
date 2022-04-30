@@ -31,9 +31,9 @@ export class ChainOBOrderDto implements ChainOBOrder {
     description: 'NFTs in the order',
     type: [ChainNFTsDto]
   })
+  @IsArray()
   @ValidateNested({ each: true, message: 'Invalid chain nft' })
   @Type(() => ChainNFTsDto)
-  @IsArray()
   nfts: ChainNFTsDto[];
 
   @ApiProperty({
@@ -44,13 +44,15 @@ export class ChainOBOrderDto implements ChainOBOrder {
   execParams: string[];
 
   @ApiProperty({
-    description: 'Encoded extra params'
+    description: 'Encoded extra params',
+    type: String
   })
   @IsString()
   extraParams: BytesLike;
 
   @ApiProperty({
-    description: 'Order signature'
+    description: 'Order signature',
+    type: String
   })
   @IsNotEmpty()
   @IsString()
