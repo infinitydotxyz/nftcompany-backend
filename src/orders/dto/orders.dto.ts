@@ -5,9 +5,10 @@ import { SignedOBOrderDto } from './signed-ob-order.dto';
 
 export class OrdersDto {
   @ApiProperty({
-    description: 'Orders to be saved'
+    description: 'Orders to be saved',
+    type: [SignedOBOrderDto]
   })
-  @ValidateNested({ each: true })
+  @ValidateNested({ each: true, message: 'Invalid signed order' })
   @Type(() => SignedOBOrderDto)
   @IsArray()
   orders: SignedOBOrderDto[];

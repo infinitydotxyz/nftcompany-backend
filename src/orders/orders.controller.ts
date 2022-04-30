@@ -5,13 +5,22 @@ import {
   OrderDirection,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
+import { ParamUserId } from 'auth/param-user-id.decorator';
+import { UserAuth } from 'auth/user-auth.decorator';
+import { instanceToPlain } from 'class-transformer';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { InvalidTokenError } from 'common/errors/invalid-token-error';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
+import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
+import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { OrdersDto } from './dto/orders.dto';
+import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -23,18 +32,28 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  // @UserAuth('userId') todo: uncomment
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  public async postOrders(@Param('userId') userId: string, @Body() body: any): Promise<string> {
-    // todo: remove any
-    console.log('body', jsonString(body)); // todo: remove log
-    const result = await this.ordersService.postOrders(userId, body.orders);
-    return result;
+  public async postOrders(
+    @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
+    @Body() body: OrdersDto
+  ): Promise<void> {
+    try {
+      const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+      await this.ordersService.createOrder(maker, orders);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      } else if (err instanceof InvalidTokenError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
-  @Get('/minbps')
+  @Get('minbps')
   @ApiOperation({
     description: 'Fetch MinBps',
     tags: [ApiTag.Orders]
@@ -74,16 +93,20 @@ export class OrdersController {
       firestoreQuery = orderItemsCollectionRef.where('chainId', '==', reqQuery.chainId);
     }
     if (reqQuery.isSellOrder !== undefined) {
-      firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
+      const isSellOrder = String(reqQuery.isSellOrder) === 'true';
+      firestoreQuery = firestoreQuery.where('isSellOrder', '==', isSellOrder);
     }
     if (reqQuery.minPrice !== undefined) {
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', reqQuery.minPrice);
+      const minPrice = parseFloat(String(reqQuery.minPrice));
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', minPrice);
     }
     if (reqQuery.maxPrice !== undefined) {
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', reqQuery.maxPrice);
+      const maxPrice = parseFloat(String(reqQuery.maxPrice));
+      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', maxPrice);
     }
     if (reqQuery.numItems !== undefined) {
-      firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
+      const numItems = parseInt(String(reqQuery.numItems));
+      firestoreQuery = firestoreQuery.where('numItems', '==', numItems);
     }
     if (reqQuery.collections && reqQuery.collections.length > 0) {
       firestoreQuery = orderItemsCollectionRef.where('collectionAddress', 'in', reqQuery.collections);
@@ -102,7 +125,8 @@ export class OrdersController {
       firestoreQuery = orderItemsCollectionRef.startAfter(reqQuery.cursor);
     }
     // limit
-    firestoreQuery = firestoreQuery.limit(reqQuery.limit || DEFAULT_ITEMS_PER_PAGE);
+    const limit = parseInt(String(reqQuery.limit));
+    firestoreQuery = firestoreQuery.limit(limit || DEFAULT_ITEMS_PER_PAGE);
 
     // query firestore
     const data = await this.ordersService.getOrders(firestoreQuery);
