@@ -375,16 +375,11 @@ export class UserController {
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Headers('Content-Type') contentType: string,
-    @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
+    @Body() { metadata = {}, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
-    }
-
-    if (!metadata) {
-      throw new BadRequestException();
     }
 
     if (deleteProfileImage) {
@@ -394,8 +389,8 @@ export class UserController {
     // Upload image if we're submitting a file.
     // Note that we can't both update the collection and update the image at the same time.
     // This is done intentionally to keep things simpler.
-    if (contentType === 'multipart/form-data' && profileImage && profileImage.size > 0) {
-      const image = await this.storageService.saveImage(profileImage.filename, {
+    if (profileImage && profileImage.size > 0) {
+      const image = await this.storageService.saveImage(profileImage.originalname, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
