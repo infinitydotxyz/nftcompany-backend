@@ -5,16 +5,22 @@ import {
   OrderDirection,
   SignedOBOrder
 } from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinityxyz/lib/utils';
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
+import { UserAuth } from 'auth/user-auth.decorator';
+import { instanceToPlain } from 'class-transformer';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
+import { InvalidTokenError } from 'common/errors/invalid-token-error';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { OrdersDto } from './dto/orders.dto';
+import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -26,17 +32,25 @@ export class OrdersController {
     description: 'Post orders',
     tags: [ApiTag.Orders]
   })
-  // @UserAuth('userId') todo: uncomment
+  @UserAuth('userId')
   @ApiOkResponse({ description: ResponseDescription.Success, type: String })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async postOrders(
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
-    @Body() body: any // todo: remove any
-  ): Promise<string> {
-    console.log('body', jsonString(body)); // todo: remove log
-    const result = await this.ordersService.createOrder(maker, body.orders);
-    return result;
+    @Body() body: OrdersDto
+  ): Promise<void> {
+    try {
+      const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+      await this.ordersService.createOrder(maker, orders);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      } else if (err instanceof InvalidTokenError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
   @Get('minbps')

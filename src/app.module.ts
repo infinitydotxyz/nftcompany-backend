@@ -20,6 +20,7 @@ import { MnemonicModule } from 'mnemonic/mnemonic.module';
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
 import { AlchemyModule } from './alchemy/alchemy.module';
+import { EthereumModule } from './ethereum/ethereum.module';
 
 @Module({
   imports: [
@@ -41,7 +42,8 @@ import { AlchemyModule } from './alchemy/alchemy.module';
     OrdersModule,
     MnemonicModule,
     AuthModule,
-    AlchemyModule
+    AlchemyModule,
+    EthereumModule
   ],
   controllers: [AppController],
   providers: [AppService]
