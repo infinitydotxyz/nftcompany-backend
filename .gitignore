@@ -129,3 +129,7 @@ src/nfts/doge_builder/images
 
 # scripts
 addIndices.ts
+createIndexes.ts
+debug.txt
+removeDuplicateIndexes.ts
+results.json

@@ -1,6 +1,3006 @@
 {
   "indexes": [
     {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "isSellOrder",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "orderStatus",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "startPriceEth",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "numItems",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "orderItems",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "endTimeMs",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "allCollections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hasBlueCheck",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "collectionListings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "metadata.hasBlueCheck",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.asset.searchCollectionName",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "collections",
       "queryScope": "COLLECTION",
       "fields": [
@@ -578,6 +3578,20 @@
         },
         {
           "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feed",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "buyer",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
           "order": "DESCENDING"
         }
       ]
@@ -623,6 +3637,20 @@
         {
           "fieldPath": "timestamp",
           "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "feed",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "collectionAddress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -737,6 +3765,24 @@
       ]
     },
     {
+      "collectionGroup": "feed",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "usersInvolved",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "mentions",
       "queryScope": "COLLECTION",
       "fields": [
@@ -751,62 +3797,6 @@
       ]
     },
     {
-      "collectionGroup": "nfts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "metadata.attributes",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "rarityRank",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "nfts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "metadata.attributes",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "rarityRank",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "nfts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "metadata.attributes",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "nfts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "metadata.attributes",
-          "arrayConfig": "CONTAINS"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "nftStats",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
@@ -1272,150 +4262,7 @@
         }
       ]
     },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "chainId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collection",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isSellOrder",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "makerAddress",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "chainId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collection",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isSellOrder",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "chainId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collectionAddress",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isSellOrder",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "makerAddress",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "chainId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collectionAddress",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isSellOrder",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "orderStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "startPriceEth",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "endTimeMs",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "chainId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "collectionAddress",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isSellOrder",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "tokenId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "orderItems",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "orderStatus",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "startTimeMs",
-          "order": "DESCENDING"
-        }
-      ]
-    },
+
     {
       "collectionGroup": "sales",
       "queryScope": "COLLECTION",

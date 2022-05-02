@@ -9,14 +9,13 @@ import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants, jsonString } from '@infinit
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
-import { UserAuth } from 'auth/user-auth.decorator';
 import { ApiTag } from 'common/api-tags';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
-import { OrdersDto } from './dto/orders.dto';
+
 import OrdersService from './orders.service';
 
 @Controller('orders')

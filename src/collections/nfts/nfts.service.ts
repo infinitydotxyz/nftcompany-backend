@@ -13,7 +13,6 @@ import { NftArrayDto } from './dto/nft-array.dto';
 import { NftsOrderBy, NftsQueryDto, OrderType } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
 import { CursorService } from 'pagination/cursor.service';
-import { BadQueryError } from 'common/errors/bad-query.error';
 
 @Injectable()
 export class NftsService {
@@ -50,39 +49,26 @@ export class NftsService {
     }
   }
 
-  /**
-   * queries
-   * hasOrder == true
-   * metadata.attributes array-contains-any
-   * ordersSnippet.listing.orderItem.startPrice
-   * ordersSnippet.offer.orderItem.hasOrder
-   * orderBy rarity tokenId or ordersSnippet.listing.orderItem.startPrice
-   *
-   */
   async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {
     type Cursor = Record<NftsOrderBy, string | number>;
     const nftsCollection = collection.ref.collection(firestoreConstants.COLLECTION_NFTS_COLL);
     const decodedCursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
 
     let nftsQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = nftsCollection;
+    if (query.orderBy === NftsOrderBy.Price && !query.orderType) {
+      query.orderType = OrderType.Listing;
+    }
 
     const orderType = query.orderType || OrderType.Listing;
     const startPriceField = `ordersSnippet.${orderType}.orderItem.startPriceEth`;
     if (query.orderType) {
       nftsQuery = nftsQuery.where(`ordersSnippet.${orderType}.hasOrder`, '==', true);
-      if (query.owner) {
-        const addressField = orderType === OrderType.Listing ? 'makerAddress' : 'takerAddress'; // TODO how do we do this for erc 1155?
-        nftsQuery = nftsQuery.where(`ordersSnippet.${orderType}.orderItem.${addressField}`, '==', query.owner);
-      }
-    } else if (query.owner) {
-      throw new BadQueryError('Order type must be specified to query by owner');
     }
 
     if (query.traitTypes) {
       const traitTypes = query.traitTypes ?? [];
       const traitTypesValues = query?.traitValues?.map((item) => item.split('|')) ?? [];
 
-      console.log(traitTypes, traitTypesValues);
       const traits: object[] = [];
       for (let index = 0; index < traitTypes.length; index++) {
         const traitType = traitTypes[index];
@@ -103,13 +89,11 @@ export class NftsService {
     }
 
     const hasPriceFilter = query.minPrice !== undefined || query.maxPrice !== undefined;
-    if (query.currency && hasPriceFilter) {
-      if (query.minPrice !== undefined) {
-        nftsQuery = nftsQuery.where(startPriceField, '>=', query.minPrice);
-      }
-      if (query.maxPrice !== undefined) {
-        nftsQuery = nftsQuery.where(startPriceField, '<=', query.maxPrice);
-      }
+    if (hasPriceFilter) {
+      const minPrice = query.minPrice ?? 0;
+      const maxPrice = query.maxPrice ?? Number.MAX_SAFE_INTEGER;
+      nftsQuery = nftsQuery.where(startPriceField, '>=', minPrice);
+      nftsQuery = nftsQuery.where(startPriceField, '<=', maxPrice);
     }
 
     let orderBy: string = query.orderBy;
@@ -151,8 +135,6 @@ export class NftsService {
           break;
       }
     }
-    console.log(cursor);
-
     const encodedCursor = this.paginationService.encodeCursor(cursor);
 
     return {
