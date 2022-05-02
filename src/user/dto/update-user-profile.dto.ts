@@ -1,4 +1,4 @@
-import { PickType } from '@nestjs/swagger';
+import { PartialType, PickType } from '@nestjs/swagger';
 import { UserProfileDto } from './user-profile.dto';
 
 export class UpdateUserProfileDto extends PickType(UserProfileDto, [
@@ -10,3 +10,5 @@ export class UpdateUserProfileDto extends PickType(UserProfileDto, [
   'instagramUsername',
   'facebookUsername'
 ] as const) {}
+
+export class PartialUpdateUserProfileDto extends PartialType(UpdateUserProfileDto) {}
