@@ -13,7 +13,7 @@ export class NftQueryDto {
     message: 'Invalid address'
   })
   @Transform(normalizeAddressTransformer)
-  readonly address!: string;
+  address: string;
 
   @ApiProperty({
     description: 'Collection chain id',
@@ -22,11 +22,11 @@ export class NftQueryDto {
   @IsSupportedChainId({
     message: 'Invalid chainId'
   })
-  readonly chainId!: ChainId;
+  chainId: ChainId;
 
   @ApiProperty({
     description: 'Token id of the nft to get'
   })
   @IsString()
-  tokenId!: string;
+  tokenId: string;
 }
