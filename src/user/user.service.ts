@@ -1,11 +1,18 @@
+/* eslint-disable no-empty */
+import { ChainId } from '@infinityxyz/lib/types/core';
+import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
+import { AlchemyService } from 'alchemy/alchemy.service';
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
 import { NftListingEvent, NftOfferEvent, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
+import { NftDto } from 'collections/nfts/dto/nft.dto';
 import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
+import { BigNumber } from 'ethers/lib/ethers';
 import { FirebaseService } from 'firebase/firebase.service';
 import { CursorService } from 'pagination/cursor.service';
 import { StatsService } from 'stats/stats.service';
@@ -17,8 +24,10 @@ import { UserFollowingCollectionPostPayload } from './dto/user-following-collect
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
+import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
+import { MnemonicService } from 'mnemonic/mnemonic.service';
 
 export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
 
@@ -26,6 +35,9 @@ export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
 export class UserService {
   constructor(
     private firebaseService: FirebaseService,
+    private alchemyService: AlchemyService,
+    private alchemyNftToInfinityNft: AlchemyNftToInfinityNft,
+    private mnemonicSErvice: MnemonicService,
     private paginationService: CursorService,
     @Optional() private statsService: StatsService
   ) {}
@@ -173,6 +185,70 @@ export class UserService {
     return {};
   }
 
+  async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
+    const chainId = ChainId.Mainnet;
+    type Cursor = { pageKey?: string; startAtToken?: string };
+    const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
+    const getPage = async (
+      pageKey: string,
+      startAtToken?: string
+    ): Promise<{ pageKey: string; nfts: NftDto[]; hasNextPage: boolean }> => {
+      const response = await this.alchemyService.getUserNfts(
+        user.userAddress,
+        ChainId.Mainnet,
+        pageKey,
+        query.collectionAddresses
+      );
+      const nextPageKey = response?.pageKey ?? '';
+      let nfts = response?.ownedNfts ?? [];
+
+      if (startAtToken) {
+        const indexToStartAt = nfts.findIndex(
+          (item) => BigNumber.from(item.id.tokenId).toString() === cursor.startAtToken
+        );
+        nfts = nfts.slice(indexToStartAt);
+      }
+
+      const nftsToTransform = nfts.map((item) => ({ alchemyNft: item, chainId }));
+      const results = await this.alchemyNftToInfinityNft.transform(nftsToTransform);
+      const validNfts = results.filter((item) => !!item) as NftDto[];
+
+      return { pageKey: nextPageKey, nfts: validNfts, hasNextPage: !!nextPageKey };
+    };
+
+    const limit = query.limit + 1; // +1 to check if there is a next page
+    let nfts: NftDto[] = [];
+    let alchemyHasNextPage = true;
+    let pageKey = '';
+    let nextPageKey = cursor?.pageKey ?? '';
+    let pageNumber = 0;
+    while (nfts.length < limit && alchemyHasNextPage) {
+      pageKey = nextPageKey;
+      const startAtToken = pageNumber === 0 && cursor.startAtToken ? cursor.startAtToken : undefined;
+      const response = await getPage(pageKey, startAtToken);
+      nfts = [...nfts, ...response.nfts];
+      alchemyHasNextPage = response.hasNextPage;
+      nextPageKey = response.pageKey;
+      pageNumber += 1;
+    }
+
+    const continueFromCurrentPage = nfts.length > query.limit;
+    const hasNextPage = continueFromCurrentPage || alchemyHasNextPage;
+    const nftsToReturn = nfts.slice(0, query.limit);
+    const nftToStartAt = nfts?.[query.limit]?.tokenId;
+
+    const updatedCursor = this.paginationService.encodeCursor({
+      pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
+      startAtToken: nftToStartAt
+    });
+
+    return {
+      data: nftsToReturn,
+      cursor: updatedCursor,
+      hasNextPage
+    };
+  }
+
   async getByUsername(username: string) {
     const snapshot = await this.firebaseService.firestore
       .collection(firestoreConstants.USERS_COLL)
@@ -181,6 +257,10 @@ export class UserService {
       .get();
 
     const doc = snapshot.docs[0];
+
+    if (!doc?.exists) {
+      return { user: null, ref: null };
+    }
 
     const user = doc?.data() as UserProfileDto;
 

@@ -19,6 +19,7 @@ import { MnemonicModule } from 'mnemonic/mnemonic.module';
 // TODO adi update this for prod
 import * as serviceAccount from './creds/nftc-dev-firebase-creds.json';
 import { FB_STORAGE_BUCKET } from './constants';
+import { AlchemyModule } from './alchemy/alchemy.module';
 import { EthereumModule } from './ethereum/ethereum.module';
 
 @Module({
@@ -41,6 +42,7 @@ import { EthereumModule } from './ethereum/ethereum.module';
     OrdersModule,
     MnemonicModule,
     AuthModule,
+    AlchemyModule,
     EthereumModule
   ],
   controllers: [AppController],

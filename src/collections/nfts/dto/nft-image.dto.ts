@@ -6,8 +6,10 @@ export class NftImageDto {
   })
   url: string;
 
-  @ApiPropertyOptional({})
-  originalUrl: "The original url of the image (from the nft's metadata)";
+  @ApiPropertyOptional({
+    description: "The original url of the image (from the nft's metadata)"
+  })
+  originalUrl: string;
 
   @ApiProperty({
     description: 'Epoch timestamp (ms) that the image was last updated at'

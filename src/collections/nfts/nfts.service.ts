@@ -35,18 +35,45 @@ export class NftsService {
         return undefined;
       }
 
-      const nftDocRef = this.firebaseService.firestore
-        .collection(firestoreConstants.COLLECTIONS_COLL)
-        .doc(collectionDocId)
-        .collection(firestoreConstants.COLLECTION_NFTS_COLL)
-        .doc(nftQuery.tokenId);
+      const nfts = await this.getNfts([
+        { address: collection.address, chainId: collection.chainId as ChainId, tokenId: nftQuery.tokenId }
+      ]);
 
-      const nftSnapshot = await nftDocRef.get();
-
-      const nft = nftSnapshot.data() as NftDto | undefined;
+      const nft = nfts?.[0];
 
       return nft;
     }
+  }
+
+  async getNfts(nfts: { address: string; chainId: ChainId; tokenId: string }[]) {
+    const refs = nfts.map((item) => {
+      const collectionDocId = getCollectionDocId({
+        collectionAddress: item.address,
+        chainId: item.chainId
+      });
+      return this.firebaseService.firestore
+        .collection(firestoreConstants.COLLECTIONS_COLL)
+        .doc(collectionDocId)
+        .collection(firestoreConstants.COLLECTION_NFTS_COLL)
+        .doc(item.tokenId);
+    });
+
+    if (refs.length === 0) {
+      return [];
+    }
+    const snapshots = await this.firebaseService.firestore.getAll(...refs);
+
+    const nftDtos = snapshots.map((snapshot, index) => {
+      const nft = snapshot.data() as NftDto | undefined;
+
+      if (nft) {
+        nft.address = nfts[index].address;
+      }
+
+      return nft;
+    });
+
+    return nftDtos;
   }
 
   async getCollectionNfts(collection: ParsedCollectionId, query: NftsQueryDto): Promise<NftArrayDto> {

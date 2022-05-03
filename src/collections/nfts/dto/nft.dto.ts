@@ -8,6 +8,11 @@ import { OrdersSnippetDto } from './order-snippet.dto';
 
 export class NftDto {
   @ApiProperty({
+    description: 'Collection address'
+  })
+  address: string;
+
+  @ApiProperty({
     description: 'Chain id that the collection is on'
   })
   chainId: ChainId;

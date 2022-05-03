@@ -8,6 +8,8 @@ import { StorageModule } from 'storage/storage.module';
 import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
+import { AlchemyModule } from 'alchemy/alchemy.module';
+import { MnemonicModule } from 'mnemonic/mnemonic.module';
 import { PaginationModule } from 'pagination/pagination.module';
 
 @Module({
@@ -19,7 +21,9 @@ import { PaginationModule } from 'pagination/pagination.module';
     DiscordModule,
     TwitterModule,
     ProfileModule,
-    PaginationModule
+    PaginationModule,
+    MnemonicModule,
+    AlchemyModule
   ],
   providers: [UserService],
   controllers: [UserController],

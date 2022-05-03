@@ -1,17 +1,22 @@
-import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNumber, IsString, IsOptional } from 'class-validator';
-import { IsSupportedChainId } from 'common/decorators/is-supported-chain-id.decorator';
+import { IsNumber, IsString, IsOptional, IsEthereumAddress, IsArray, ArrayMaxSize } from 'class-validator';
+import { normalizeAddressArrayTransformer } from 'common/transformers/normalize-address.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 
+const MAX_COLLECTION_ADDRESSES = 20;
+
 export class UserNftsQueryDto {
-  @ApiProperty({
-    description: 'Chain id to get nfts for',
-    enum: ChainId
+  @ApiPropertyOptional({
+    description: 'Collection address to filter by',
+    type: [String]
   })
-  @IsSupportedChainId({ message: 'Invalid chain id' })
-  chainId: ChainId;
+  @IsOptional()
+  @Transform(normalizeAddressArrayTransformer)
+  @IsArray()
+  @IsEthereumAddress({ each: true })
+  @ArrayMaxSize(MAX_COLLECTION_ADDRESSES, { message: `Can filter by a max of ${MAX_COLLECTION_ADDRESSES} addresses` })
+  collectionAddresses?: string[];
 
   @ApiProperty({
     description: 'Number of results to get. Max of 50'
