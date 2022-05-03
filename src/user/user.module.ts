@@ -9,6 +9,7 @@ import { DiscordModule } from 'discord/discord.module';
 import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
 import { AlchemyModule } from 'alchemy/alchemy.module';
+import { MnemonicModule } from 'mnemonic/mnemonic.module';
 
 @Module({
   providers: [UserService],
@@ -20,7 +21,8 @@ import { AlchemyModule } from 'alchemy/alchemy.module';
     TwitterModule,
     ProfileModule,
     AlchemyModule,
-    CollectionsModule
+    CollectionsModule,
+    MnemonicModule
   ],
   controllers: [UserController],
   exports: [UserService]

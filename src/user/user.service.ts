@@ -23,6 +23,7 @@ import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
+import { MnemonicService } from 'mnemonic/mnemonic.service';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,7 @@ export class UserService {
     private firebaseService: FirebaseService,
     private alchemyService: AlchemyService,
     private alchemyNftToInfinityNft: AlchemyNftToInfinityNft,
+    private mnemonicSErvice: MnemonicService,
     @Optional() private statsService: StatsService
   ) {}
 
@@ -176,8 +178,39 @@ export class UserService {
     return {};
   }
 
+  async getNftsMnemonic(user: ParsedUserId, query: UserNftsQueryDto) {
+    let cursor: { offset?: number } = {};
+    try {
+      cursor = JSON.parse(base64Decode(query.cursor ?? ''));
+    } catch {}
+    const data = await this.mnemonicSErvice.getUserNfts(user.userAddress, {
+      limit: query.limit,
+      offset: cursor.offset,
+      contractAddress: query.collectionAddress,
+      tokenTypes: []
+    });
+
+    if (data == null) {
+      return null;
+    }
+
+    const updatedOffset = (cursor.offset ?? 0) + data.tokens.length;
+    const nextCursor = JSON.stringify({ offset: updatedOffset });
+
+    return {
+      data: data.tokens
+    };
+    // const updatedCursor = base64Encode(
+    //   JSON.stringify({
+    //     pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
+    //     startAtToken: nftToStartAt
+    //   })
+    // );
+  }
+
   async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
     const chainId = ChainId.Mainnet;
+
     let cursor: { pageKey?: string; startAtToken?: string } = {};
     try {
       cursor = JSON.parse(base64Decode(query.cursor ?? ''));
