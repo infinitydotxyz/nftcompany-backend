@@ -15,8 +15,8 @@ import { BadQueryError } from 'common/errors/bad-query.error';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
-import { NftActivityArray } from './dto/nft-activity-array';
-import { NftActivityFilters } from './dto/nft-activity-filters';
+import { NftActivityArrayDto } from './dto/nft-activity-array.dto';
+import { NftActivityFiltersDto } from './dto/nft-activity-filters.dto';
 import { NftArrayDto } from './dto/nft-array.dto';
 import { NftDto } from './dto/nft.dto';
 import { NftsQueryDto } from './dto/nfts-query.dto';
@@ -86,14 +86,14 @@ export class NftsController {
   })
   @ApiParamCollectionId('id')
   @ApiParamTokenId('tokenId')
-  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArray })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
   async getNftActivity(
     @ParamCollectionId('id', ParseCollectionIdPipe) { address, chainId }: ParsedCollectionId,
     @ParamTokenId('tokenId') tokenId: string,
-    @Query() filters: NftActivityFilters
+    @Query() filters: NftActivityFiltersDto
   ) {
     const { data, cursor, hasNextPage } = await this.nftService.getNftActivity({ address, chainId, tokenId }, filters);
 

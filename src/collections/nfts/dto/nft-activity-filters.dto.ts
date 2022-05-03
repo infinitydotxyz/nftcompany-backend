@@ -5,7 +5,7 @@ import { Transform } from 'class-transformer';
 import { ActivityType } from '../nft-activity.types';
 import { IsEnumArray } from 'common/decorators/is-enum-array.decorator';
 
-export class NftActivityFilters {
+export class NftActivityFiltersDto {
   @ApiProperty({
     description: 'Activity types to include in the response',
     enum: ActivityType,

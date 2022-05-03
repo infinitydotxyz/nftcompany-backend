@@ -1,9 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { NftActivity } from './nft-activity.dto';
+import { UserActivity } from 'user/user.service';
 
-export class NftActivityArray {
-  @ApiProperty({ description: 'Array of activities for the nft', type: [NftActivity] })
-  data: NftActivity[];
+export class UserActivityArrayDto {
+  @ApiProperty({
+    description: 'Array of user activities. NftListingEvent | NftSaleEvent | NftOfferEvent'
+  })
+  data: UserActivity[];
 
   @ApiProperty({ description: 'Cursor that can be used to get the next page' })
   cursor: string;

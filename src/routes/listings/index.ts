@@ -1,10 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { ListingType, StatusCode, OrderDirection } from '@infinityxyz/lib/types/core';
-import {
-  DEFAULT_MAX_ETH,
-  DEFAULT_MIN_ETH,
-  DEFAULT_PRICE_SORT_DIRECTION
-} from '../../constants';
+import { DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, DEFAULT_PRICE_SORT_DIRECTION } from '../../constants';
 import { parseQueryFields } from 'utils/parsers';
 import { Router } from 'express';
 import {

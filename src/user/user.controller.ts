@@ -12,7 +12,6 @@ import {
   UploadedFile,
   UseInterceptors,
   HttpStatus,
-  Headers,
   Delete,
   BadRequestException,
   UploadedFiles
@@ -61,7 +60,7 @@ import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { ValidateUsernameResponseDto } from './dto/validate-username-response.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { PartialUpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
@@ -72,8 +71,11 @@ import {
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
+import { NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 import { UserCollectionPermissions } from './dto/user-collection-permissions';
+import { UserActivityArrayDto } from './dto/user-activity-array.dto';
 
 @Controller('user')
 export class UserController {
@@ -178,9 +180,9 @@ export class UserController {
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   async updateProfile(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
-    @Body() data: UpdateUserProfileDto
+    @Body() data: PartialUpdateUserProfileDto
   ): Promise<void> {
-    const profile: Partial<UserProfileDto> & UpdateUserProfileDto = {
+    const profile: Partial<UserProfileDto> = {
       ...data
     };
 
@@ -375,16 +377,11 @@ export class UserController {
   async updateCollection(
     @ParamUserId('userId', ParseUserIdPipe) { userAddress }: ParsedUserId,
     @ParamCollectionId('collectionId', ParseCollectionIdPipe) collection: ParsedCollectionId,
-    @Headers('Content-Type') contentType: string,
-    @Body() { metadata, deleteProfileImage }: UpdateCollectionDto,
+    @Body() { metadata = {}, deleteProfileImage }: UpdateCollectionDto,
     @UploadedFile() profileImage: Express.Multer.File
   ) {
     if (!(await this.collectionsService.canModify(userAddress, collection))) {
       throw new UnauthorizedException();
-    }
-
-    if (!metadata) {
-      throw new BadRequestException();
     }
 
     if (deleteProfileImage) {
@@ -394,8 +391,8 @@ export class UserController {
     // Upload image if we're submitting a file.
     // Note that we can't both update the collection and update the image at the same time.
     // This is done intentionally to keep things simpler.
-    if (contentType === 'multipart/form-data' && profileImage && profileImage.size > 0) {
-      const image = await this.storageService.saveImage(profileImage.filename, {
+    if (profileImage && profileImage.size > 0) {
+      const image = await this.storageService.saveImage(profileImage.originalname, {
         contentType: profileImage.mimetype,
         data: profileImage.buffer
       });
@@ -566,5 +563,23 @@ export class UserController {
       throw err;
     }
     return '';
+  }
+
+  @Get(':userId/activity')
+  @ApiOperation({
+    description: 'Get the activity of a user',
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getActivity(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() query: UserActivityQueryDto
+  ): Promise<UserActivityArrayDto> {
+    const activity = await this.userService.getActivity(user, query);
+    return activity;
   }
 }
