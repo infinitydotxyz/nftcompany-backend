@@ -3,18 +3,22 @@ import { ChainId } from '@infinityxyz/lib/types/core';
 import { AlchemyNftToInfinityNft } from 'alchemy/alchemy-nft-to-infinity-nft.pipe';
 import { AlchemyService } from 'alchemy/alchemy.service';
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { NftListingEvent, NftOfferEvent, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
 import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
 import { NftDto } from 'collections/nfts/dto/nft.dto';
+import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { BigNumber } from 'ethers/lib/ethers';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CursorService } from 'pagination/cursor.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
-import { base64Decode, base64Encode } from 'utils';
+import { UserActivityArrayDto } from './dto/user-activity-array.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
@@ -25,6 +29,8 @@ import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 import { MnemonicService } from 'mnemonic/mnemonic.service';
 
+export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
+
 @Injectable()
 export class UserService {
   constructor(
@@ -32,6 +38,7 @@ export class UserService {
     private alchemyService: AlchemyService,
     private alchemyNftToInfinityNft: AlchemyNftToInfinityNft,
     private mnemonicSErvice: MnemonicService,
+    private paginationService: CursorService,
     @Optional() private statsService: StatsService
   ) {}
 
@@ -179,10 +186,9 @@ export class UserService {
   }
 
   async getNftsMnemonic(user: ParsedUserId, query: UserNftsQueryDto) {
-    let cursor: { offset?: number } = {};
-    try {
-      cursor = JSON.parse(base64Decode(query.cursor ?? ''));
-    } catch {}
+    type Cursor = { offset?: number };
+    const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
+
     const data = await this.mnemonicSErvice.getUserNfts(user.userAddress, {
       limit: query.limit,
       offset: cursor.offset,
@@ -195,26 +201,19 @@ export class UserService {
     }
 
     const updatedOffset = (cursor.offset ?? 0) + data.tokens.length;
-    const nextCursor = JSON.stringify({ offset: updatedOffset });
+    const nextCursor = this.paginationService.encodeCursor({ offset: updatedOffset });
 
     return {
-      data: data.tokens
+      data: data.tokens,
+      cursor: nextCursor,
+      hasNextPage: false // TODO
     };
-    // const updatedCursor = base64Encode(
-    //   JSON.stringify({
-    //     pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
-    //     startAtToken: nftToStartAt
-    //   })
-    // );
   }
 
   async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
     const chainId = ChainId.Mainnet;
-
-    let cursor: { pageKey?: string; startAtToken?: string } = {};
-    try {
-      cursor = JSON.parse(base64Decode(query.cursor ?? ''));
-    } catch {}
+    type Cursor = { pageKey?: string; startAtToken?: string };
+    const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
 
     const getPage = async (
       pageKey: string,
@@ -261,12 +260,10 @@ export class UserService {
     const nftsToReturn = nfts.slice(0, query.limit);
     const nftToStartAt = nfts?.[query.limit]?.tokenId;
 
-    const updatedCursor = base64Encode(
-      JSON.stringify({
-        pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
-        startAtToken: nftToStartAt
-      })
-    );
+    const updatedCursor = this.paginationService.encodeCursor({
+      pageKey: continueFromCurrentPage ? pageKey : nextPageKey,
+      startAtToken: nftToStartAt
+    });
 
     return {
       data: nftsToReturn,
@@ -298,5 +295,41 @@ export class UserService {
    */
   getRef(address: string) {
     return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
+  }
+
+  async getActivity(user: ParsedUserId, query: UserActivityQueryDto): Promise<UserActivityArrayDto> {
+    const activityTypes = query.events && query?.events.length > 0 ? query.events : Object.values(ActivityType);
+
+    const events = activityTypes.map((item) => activityTypeToEventType[item]);
+
+    let userEventsQuery = this.firebaseService.firestore
+      .collection(firestoreConstants.FEED_COLL)
+      .where('type', 'in', events)
+      .where('usersInvolved', 'array-contains', user.userAddress);
+
+    const cursor = this.paginationService.decodeCursorToNumber(query.cursor);
+    const orderDirection = OrderDirection.Descending;
+
+    userEventsQuery = userEventsQuery.orderBy('timestamp', orderDirection).limit(query.limit + 1);
+
+    if (!Number.isNaN(cursor)) {
+      userEventsQuery = userEventsQuery.startAfter(cursor);
+    }
+    const snapshot = await userEventsQuery.get();
+
+    const data = snapshot.docs.map((item) => item.data() as UserActivity);
+
+    const hasNextPage = data.length > query.limit;
+    if (hasNextPage) {
+      data.pop();
+    }
+    const lastItem = data?.[data?.length - 1];
+    const nextCursor = this.paginationService.encodeCursor(lastItem?.timestamp ?? '');
+
+    return {
+      data: data,
+      hasNextPage,
+      cursor: nextCursor
+    };
   }
 }

@@ -1,4 +1,3 @@
-import { ChainId } from '@infinityxyz/lib/types/core';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsNumber, IsString, IsOptional, IsEthereumAddress } from 'class-validator';

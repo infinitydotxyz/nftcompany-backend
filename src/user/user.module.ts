@@ -10,20 +10,22 @@ import { TwitterModule } from 'twitter/twitter.module';
 import { ProfileModule } from './profile/profile.module';
 import { AlchemyModule } from 'alchemy/alchemy.module';
 import { MnemonicModule } from 'mnemonic/mnemonic.module';
+import { PaginationModule } from 'pagination/pagination.module';
 
 @Module({
-  providers: [UserService],
   imports: [
     StatsModule,
     VotesModule,
+    CollectionsModule,
     StorageModule,
     DiscordModule,
     TwitterModule,
     ProfileModule,
-    AlchemyModule,
-    CollectionsModule,
-    MnemonicModule
+    PaginationModule,
+    MnemonicModule,
+    AlchemyModule
   ],
+  providers: [UserService],
   controllers: [UserController],
   exports: [UserService]
 })
