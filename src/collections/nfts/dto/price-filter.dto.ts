@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 import { round } from 'lodash';
 
 export enum Currency {
@@ -20,7 +20,13 @@ export class PriceFilterDto {
   @ApiPropertyOptional({
     description: 'Min price to filter by'
   })
-  @Transform((params) => round(params.value, 6))
+  @Transform((params) => {
+    const value = parseFloat(params.value);
+    if (!Number.isNaN(value)) {
+      return round(value, 6);
+    }
+    return undefined;
+  })
   @IsNumber({
     maxDecimalPlaces: 6
   })
@@ -30,7 +36,16 @@ export class PriceFilterDto {
   @ApiPropertyOptional({
     description: 'Max price to filter by'
   })
-  @IsNumber()
   @IsOptional()
+  @Transform((params) => {
+    const value = parseFloat(params.value);
+    if (!Number.isNaN(value)) {
+      return round(value, 6);
+    }
+    return undefined;
+  })
+  @IsNumber({
+    maxDecimalPlaces: 6
+  })
   maxPrice?: number;
 }
