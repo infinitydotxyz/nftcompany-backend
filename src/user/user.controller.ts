@@ -186,9 +186,9 @@ export class UserController {
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() filters: UserNftsQueryDto
   ): Promise<NftArrayDto> {
-    const response = await this.userService.getNftsMnemonic(user, filters);
+    const response = await this.userService.getNfts(user, filters);
 
-    return response as any;
+    return response;
   }
 
   @Put('/:userId')

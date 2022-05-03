@@ -230,10 +230,7 @@ export class UserService {
         nfts = nfts.slice(indexToStartAt);
       }
 
-      const promises = nfts?.map((alchemyNft) => {
-        return this.alchemyNftToInfinityNft.transform({ alchemyNft, chainId });
-      });
-      const results = await Promise.all(promises);
+      const results = await this.alchemyNftToInfinityNft.transform(nfts.map((item) => ({ alchemyNft: item, chainId })));
       const validNfts = results.filter((item) => !!item) as NftDto[];
 
       return { pageKey: nextPageKey, nfts: validNfts, hasNextPage: !!nextPageKey };

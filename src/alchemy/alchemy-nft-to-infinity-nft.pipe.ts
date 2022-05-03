@@ -9,53 +9,60 @@ import { AlchemyNft } from './alchemy.types';
 
 @Injectable()
 export class AlchemyNftToInfinityNft
-  implements PipeTransform<{ alchemyNft: AlchemyNft; chainId: ChainId }, Promise<NftDto | null>>
+  implements PipeTransform<{ alchemyNft: AlchemyNft; chainId: ChainId }[], Promise<Array<NftDto | null>>>
 {
   constructor(private nftsService: NftsService) {}
 
-  async transform({ alchemyNft, chainId }: { alchemyNft: AlchemyNft; chainId: ChainId }): Promise<NftDto | null> {
-    const tokenId = BigNumber.from(alchemyNft.id.tokenId).toString();
-    if (!('metadata' in alchemyNft)) {
-      const nft = await this.nftsService.getNft({
-        address: alchemyNft.contract.address,
-        chainId,
-        tokenId
-      });
-
-      if (nft) {
-        return nft;
-      }
-      return null;
-    }
-
-    const nft = await this.nftsService.getNft({
-      address: alchemyNft.contract.address,
-      chainId,
-      tokenId
+  async transform(alchemyNfts: { alchemyNft: AlchemyNft; chainId: ChainId }[]): Promise<Array<NftDto | null>> {
+    const nftRefProps = alchemyNfts.map((item) => {
+      return {
+        address: item.alchemyNft.contract.address,
+        chainId: item.chainId,
+        tokenId: BigNumber.from(item.alchemyNft.id.tokenId).toString()
+      };
     });
-    const metadata = nft?.metadata ?? (alchemyNft.metadata as any);
-    return {
-      address: alchemyNft.contract.address,
-      chainId,
-      slug: nft?.slug ?? '',
-      tokenId: tokenId,
-      minter: nft?.minter ?? '',
-      mintedAt: nft?.mintedAt ?? NaN,
-      mintTxHash: nft?.mintTxHash ?? '',
-      mintPrice: nft?.mintPrice ?? NaN,
-      metadata,
-      numTraitTypes: nft?.numTraitTypes ?? metadata?.attributes?.length ?? 0,
-      updatedAt: nft?.updatedAt ?? NaN,
-      tokenUri: nft?.tokenUri ?? alchemyNft.tokenUri?.raw ?? '',
-      rarityRank: nft?.rarityRank ?? NaN,
-      rarityScore: nft?.rarityScore ?? NaN,
-      image: {
-        url: (nft?.image?.url || alchemyNft?.media?.[0]?.gateway || alchemyNft?.metadata?.image) ?? '',
-        originalUrl: (nft?.image?.originalUrl || alchemyNft?.media?.[0]?.raw || alchemyNft?.metadata?.image) ?? '',
-        updatedAt: nft?.image?.updatedAt ?? NaN
-      },
-      state: nft?.state ?? undefined,
-      tokenStandard: alchemyNft.id.tokenMetadata.tokenType as TokenStandard
-    };
+    const nfts = await this.nftsService.getNfts(nftRefProps);
+
+    return nfts.map((nftDto, index) => {
+      const { alchemyNft, chainId } = alchemyNfts[index];
+      const tokenId = BigNumber.from(alchemyNft.id.tokenId).toString();
+      let metadata = nftDto?.metadata;
+      if (!('metadata' in alchemyNft)) {
+        if (nftDto) {
+          return nftDto;
+        }
+        return null;
+      }
+      if ('metadata' in alchemyNft && !metadata) {
+        metadata = alchemyNft.metadata as any;
+      }
+      if (!metadata) {
+        return null;
+      }
+
+      return {
+        address: alchemyNft.contract.address,
+        chainId: chainId,
+        slug: nftDto?.slug ?? '',
+        tokenId: tokenId,
+        minter: nftDto?.minter ?? '',
+        mintedAt: nftDto?.mintedAt ?? NaN,
+        mintTxHash: nftDto?.mintTxHash ?? '',
+        mintPrice: nftDto?.mintPrice ?? NaN,
+        metadata,
+        numTraitTypes: nftDto?.numTraitTypes ?? metadata?.attributes?.length ?? 0,
+        updatedAt: nftDto?.updatedAt ?? NaN,
+        tokenUri: nftDto?.tokenUri ?? alchemyNft.tokenUri?.raw ?? '',
+        rarityRank: nftDto?.rarityRank ?? NaN,
+        rarityScore: nftDto?.rarityScore ?? NaN,
+        image: {
+          url: (nftDto?.image?.url || alchemyNft?.media?.[0]?.gateway || alchemyNft?.metadata?.image) ?? '',
+          originalUrl: (nftDto?.image?.originalUrl || alchemyNft?.media?.[0]?.raw || alchemyNft?.metadata?.image) ?? '',
+          updatedAt: nftDto?.image?.updatedAt ?? NaN
+        },
+        state: nftDto?.state ?? undefined,
+        tokenStandard: alchemyNft.id.tokenMetadata.tokenType as TokenStandard
+      };
+    });
   }
 }
