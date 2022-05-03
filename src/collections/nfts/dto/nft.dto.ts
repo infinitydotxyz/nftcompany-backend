@@ -4,6 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Erc721MetadataDto } from './erc721-metadata.dto';
 import { NftImageDto } from './nft-image.dto';
 import { NftStateDto } from './nft-state.dto';
+import { OrdersSnippetDto } from './order-snippet.dto';
 
 export class NftDto {
   @ApiProperty({
@@ -46,7 +47,7 @@ export class NftDto {
   })
   mintPrice: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Epoch timestamp (ms) that the nft was burned at (if it has been burned)'
   })
   destroyedAt?: number;
@@ -96,4 +97,9 @@ export class NftDto {
     enum: TokenStandard
   })
   tokenStandard: TokenStandard;
+
+  @ApiPropertyOptional({
+    description: 'Best active orders for the nft (if any)'
+  })
+  ordersSnippet?: OrdersSnippetDto;
 }
