@@ -58,6 +58,9 @@ export class NftsService {
         .doc(item.tokenId);
     });
 
+    if (refs.length === 0) {
+      return [];
+    }
     const snapshots = await this.firebaseService.firestore.getAll(...refs);
 
     const nftDtos = snapshots.map((snapshot, index) => {

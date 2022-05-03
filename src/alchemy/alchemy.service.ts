@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config/dist/config.service';
 import axios, { AxiosInstance } from 'axios';
 import { normalize } from 'path';
-import qs from 'qs';
 import { EnvironmentVariables } from 'types/environment-variables.interface';
 import { AlchemyUserNftsResponse } from './alchemy.types';
 
@@ -29,26 +28,20 @@ export class AlchemyService {
     }
     this.apiKey = apiKey;
 
-    this.client = axios.create({
-      paramsSerializer: (params: string[]) => {
-        return qs.stringify(params, { arrayFormat: 'repeat' });
-      }
-    });
+    this.client = axios.create();
   }
 
   async getUserNfts(owner: string, chainId: ChainId, cursor: string, contractAddresses?: string[]) {
     const url = this.getBaseUrl(chainId, '/getNFTs');
-    url.searchParams.set('owner', owner);
-    url.searchParams.set('withMetadata', 'true');
-    if (cursor) {
-      url.searchParams.set('pageKey', cursor);
-    }
-    if (contractAddresses && contractAddresses?.length > 0) {
-      url.searchParams.set('contractAddresses', contractAddresses.join(','));
-    }
-
     try {
-      const response = await this.client.get(url.toString());
+      const response = await this.client.get(url.toString(), {
+        params: {
+          owner: owner,
+          withMetadata: 'true',
+          ...(cursor ? { pageKey: cursor } : {}),
+          ...(contractAddresses && contractAddresses?.length > 0 ? { contractAddresses } : {})
+        }
+      });
       const data = response.data as AlchemyUserNftsResponse;
 
       if (!data) {

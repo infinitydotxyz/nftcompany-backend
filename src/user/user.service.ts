@@ -185,41 +185,20 @@ export class UserService {
     return {};
   }
 
-  async getNftsMnemonic(user: ParsedUserId, query: UserNftsQueryDto) {
-    type Cursor = { offset?: number };
-    const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
-
-    const data = await this.mnemonicSErvice.getUserNfts(user.userAddress, {
-      limit: query.limit,
-      offset: cursor.offset,
-      contractAddress: query.collectionAddress,
-      tokenTypes: []
-    });
-
-    if (data == null) {
-      return null;
-    }
-
-    const updatedOffset = (cursor.offset ?? 0) + data.tokens.length;
-    const nextCursor = this.paginationService.encodeCursor({ offset: updatedOffset });
-
-    return {
-      data: data.tokens,
-      cursor: nextCursor,
-      hasNextPage: false // TODO
-    };
-  }
-
   async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
     const chainId = ChainId.Mainnet;
     type Cursor = { pageKey?: string; startAtToken?: string };
     const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
-
     const getPage = async (
       pageKey: string,
       startAtToken?: string
     ): Promise<{ pageKey: string; nfts: NftDto[]; hasNextPage: boolean }> => {
-      const response = await this.alchemyService.getUserNfts(user.userAddress, ChainId.Mainnet, pageKey);
+      const response = await this.alchemyService.getUserNfts(
+        user.userAddress,
+        ChainId.Mainnet,
+        pageKey,
+        query.collectionAddresses
+      );
       const nextPageKey = response?.pageKey ?? '';
       let nfts = response?.ownedNfts ?? [];
 
@@ -230,7 +209,8 @@ export class UserService {
         nfts = nfts.slice(indexToStartAt);
       }
 
-      const results = await this.alchemyNftToInfinityNft.transform(nfts.map((item) => ({ alchemyNft: item, chainId })));
+      const nftsToTransform = nfts.map((item) => ({ alchemyNft: item, chainId }));
+      const results = await this.alchemyNftToInfinityNft.transform(nftsToTransform);
       const validNfts = results.filter((item) => !!item) as NftDto[];
 
       return { pageKey: nextPageKey, nfts: validNfts, hasNextPage: !!nextPageKey };
