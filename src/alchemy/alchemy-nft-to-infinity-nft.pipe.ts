@@ -28,10 +28,7 @@ export class AlchemyNftToInfinityNft
       const tokenId = BigNumber.from(alchemyNft.id.tokenId).toString();
       let metadata = nftDto?.metadata;
       if (!('metadata' in alchemyNft)) {
-        if (nftDto) {
-          return nftDto;
-        }
-        return null;
+        return nftDto || null;
       }
       if ('metadata' in alchemyNft && !metadata) {
         metadata = alchemyNft.metadata as any;
