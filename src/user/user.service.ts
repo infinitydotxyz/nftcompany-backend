@@ -1,12 +1,17 @@
 import { CreationFlow, OrderDirection } from '@infinityxyz/lib/types/core';
+import { NftListingEvent, NftOfferEvent, NftSaleEvent } from '@infinityxyz/lib/types/core/feed';
 import { firestoreConstants, trimLowerCase } from '@infinityxyz/lib/utils';
 import { Injectable, Optional } from '@nestjs/common';
 import RankingsRequestDto from 'collections/dto/rankings-query.dto';
+import { ActivityType, activityTypeToEventType } from 'collections/nfts/nft-activity.types';
 import { InvalidCollectionError } from 'common/errors/invalid-collection.error';
 import { InvalidUserError } from 'common/errors/invalid-user.error';
 import { FirebaseService } from 'firebase/firebase.service';
+import { CursorService } from 'pagination/cursor.service';
 import { StatsService } from 'stats/stats.service';
 import { UserFollowingCollection } from 'user/dto/user-following-collection.dto';
+import { UserActivityArrayDto } from './dto/user-activity-array.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
 import { UserFollowingCollectionDeletePayload } from './dto/user-following-collection-delete-payload.dto';
 import { UserFollowingCollectionPostPayload } from './dto/user-following-collection-post-payload.dto';
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
@@ -15,9 +20,15 @@ import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 
+export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
+
 @Injectable()
 export class UserService {
-  constructor(private firebaseService: FirebaseService, @Optional() private statsService: StatsService) {}
+  constructor(
+    private firebaseService: FirebaseService,
+    private paginationService: CursorService,
+    @Optional() private statsService: StatsService
+  ) {}
 
   async getWatchlist(user: ParsedUserId, query: RankingsRequestDto) {
     const collectionFollows = user.ref
@@ -181,5 +192,41 @@ export class UserService {
    */
   getRef(address: string) {
     return this.firebaseService.firestore.collection(firestoreConstants.USERS_COLL).doc(address);
+  }
+
+  async getActivity(user: ParsedUserId, query: UserActivityQueryDto): Promise<UserActivityArrayDto> {
+    const activityTypes = query.events && query?.events.length > 0 ? query.events : Object.values(ActivityType);
+
+    const events = activityTypes.map((item) => activityTypeToEventType[item]);
+
+    let userEventsQuery = this.firebaseService.firestore
+      .collection(firestoreConstants.FEED_COLL)
+      .where('type', 'in', events)
+      .where('usersInvolved', 'array-contains', user.userAddress);
+
+    const cursor = this.paginationService.decodeCursorToNumber(query.cursor);
+    const orderDirection = OrderDirection.Descending;
+
+    userEventsQuery = userEventsQuery.orderBy('timestamp', orderDirection).limit(query.limit + 1);
+
+    if (!Number.isNaN(cursor)) {
+      userEventsQuery = userEventsQuery.startAfter(cursor);
+    }
+    const snapshot = await userEventsQuery.get();
+
+    const data = snapshot.docs.map((item) => item.data() as UserActivity);
+
+    const hasNextPage = data.length > query.limit;
+    if (hasNextPage) {
+      data.pop();
+    }
+    const lastItem = data?.[data?.length - 1];
+    const nextCursor = this.paginationService.encodeCursor(lastItem?.timestamp ?? '');
+
+    return {
+      data: data,
+      hasNextPage,
+      cursor: nextCursor
+    };
   }
 }

@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 import { ParsedCollectionId } from 'collections/collection-id.pipe';
 import CollectionsService from 'collections/collections.service';
 import { FirebaseService } from 'firebase/firebase.service';
-import { NftActivityFilters } from './dto/nft-activity-filters';
+import { NftActivityFiltersDto } from './dto/nft-activity-filters.dto';
 import { NftActivity } from './dto/nft-activity.dto';
 import { NftQueryDto } from './dto/nft-query.dto';
 import { NftDto } from './dto/nft.dto';
@@ -114,7 +114,7 @@ export class NftsService {
     };
   }
 
-  async getNftActivity(nftQuery: NftQueryDto, filter: NftActivityFilters) {
+  async getNftActivity(nftQuery: NftQueryDto, filter: NftActivityFiltersDto) {
     const eventTypes = typeof filter.eventType === 'string' ? [filter.eventType] : filter.eventType;
     const events = eventTypes?.map((item) => activityTypeToEventType[item]).filter((item) => !!item);
     let activityQuery = this.firebaseService.firestore
