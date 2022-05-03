@@ -1,8 +1,4 @@
-import {
-  DEFAULT_MAX_ETH,
-  DEFAULT_MIN_ETH,
-  DEFAULT_PRICE_SORT_DIRECTION
-} from '../../../constants';
+import { DEFAULT_MAX_ETH, DEFAULT_MIN_ETH, DEFAULT_PRICE_SORT_DIRECTION } from '../../../constants';
 import { OrderDirection, StatusCode } from '@infinityxyz/lib/types/core';
 import { getFilteredUserOffersMade } from 'services/infinity/users/offers/getUserOffersRef';
 import { DEFAULT_ITEMS_PER_PAGE, error, trimLowerCase } from '@infinityxyz/lib/utils';

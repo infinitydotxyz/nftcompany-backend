@@ -52,8 +52,8 @@ export class SignedOBOrderDto {
   @ApiProperty({
     description: 'Order nonce'
   })
-  @IsString()
-  nonce: string;
+  @IsNumber()
+  nonce: number;
 
   @ApiProperty({
     description: 'Execution params like txn currency and type of order'

@@ -39,7 +39,7 @@ function getOrderHashParamsFromSignedOrder(signedOrder: SignedOBOrderDto, makerA
     extraParams: signedOrder.extraParams,
     minBpsToSeller: signedOrder.minBpsToSeller,
     numItems: signedOrder.numItems,
-    nonce: signedOrder.nonce,
+    nonce: signedOrder.nonce.toString(),
     isSellOrder: signedOrder.signedOrder.isSellOrder,
     makerAddress: trimLowerCase(makerAddress),
     nfts: signedOrder.signedOrder.nfts.map((item) => {
