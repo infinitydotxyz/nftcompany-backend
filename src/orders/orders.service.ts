@@ -8,6 +8,7 @@ import {
   OBOrderItem,
   OBOrderStatus,
   OBTokenInfo,
+  OrderDirection,
   SignedOBOrder,
   Token
 } from '@infinityxyz/lib/types/core';
@@ -39,6 +40,9 @@ import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
 import { EthereumService } from 'ethereum/ethereum.service';
 import { InvalidTokenError } from 'common/errors/invalid-token-error';
+import { OrderItemsOrderBy, OrderItemsQueryDto } from './dto/order-items-query.dto';
+import { CursorService } from '../pagination/cursor.service';
+import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -58,7 +62,8 @@ export default class OrdersService {
     private collectionService: CollectionsService,
     private nftsService: NftsService,
     private userParser: UserParserService,
-    private ethereumService: EthereumService
+    private ethereumService: EthereumService,
+    private cursorService: CursorService
   ) {}
 
   public async createOrder(maker: ParsedUserId, orders: SignedOBOrderDto[]): Promise<void> {
@@ -147,6 +152,89 @@ export default class OrdersService {
       console.error('Failed to create order(s)', err);
       throw err;
     }
+  }
+
+  public async getSignedOBOrders(reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
+      this.firebaseService.firestore.collectionGroup(firestoreConstants.ORDER_ITEMS_SUB_COLL);
+    let requiresOrderByPrice = false;
+    if (reqQuery.orderStatus) {
+      firestoreQuery = firestoreQuery.where('orderStatus', '==', reqQuery.orderStatus);
+    } else {
+      firestoreQuery = firestoreQuery.where('orderStatus', '==', OBOrderStatus.ValidActive);
+    }
+    // other filters
+    // if (reqQuery.chainId) {
+    //   firestoreQuery = firestoreQuery.where('chainId', '==', reqQuery.chainId);
+    // }
+    if (reqQuery.isSellOrder !== undefined) {
+      firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
+    }
+
+    if (reqQuery.minPrice !== undefined) {
+      firestoreQuery = firestoreQuery.where('startPriceEth', '>=', reqQuery.minPrice);
+      requiresOrderByPrice = true;
+    }
+
+    if (reqQuery.maxPrice !== undefined) {
+      firestoreQuery = firestoreQuery.where('startPriceEth', '<=', reqQuery.maxPrice);
+      requiresOrderByPrice = true;
+    }
+
+    if (reqQuery.numItems !== undefined) {
+      firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
+    }
+
+    if (reqQuery.collections && reqQuery.collections.length > 0) {
+      firestoreQuery = firestoreQuery.where('collectionAddress', 'in', reqQuery.collections);
+    }
+
+    // ordering
+    let orderedBy = reqQuery.orderBy;
+    if (requiresOrderByPrice) {
+      const orderDirection = reqQuery.orderByDirection ?? OrderDirection.Ascending;
+      firestoreQuery = firestoreQuery.orderBy(OrderItemsOrderBy.Price, orderDirection);
+      orderedBy = OrderItemsOrderBy.Price;
+    } else if (reqQuery.orderBy) {
+      firestoreQuery = firestoreQuery.orderBy(reqQuery.orderBy, reqQuery.orderByDirection);
+      orderedBy = reqQuery.orderBy;
+    } else {
+      // default order by startTimeMs desc
+      firestoreQuery = firestoreQuery.orderBy(OrderItemsOrderBy.StartTime, OrderDirection.Descending);
+      orderedBy = OrderItemsOrderBy.StartTime;
+    }
+
+    // pagination
+    type Cursor = Record<OrderItemsOrderBy, number>;
+    const cursor = this.cursorService.decodeCursorToObject<Cursor>(reqQuery.cursor);
+    const cursorField = cursor[orderedBy];
+    if (!Number.isNaN(cursorField) && cursorField != null) {
+      firestoreQuery = firestoreQuery.startAfter(cursorField);
+    }
+    // limit
+    firestoreQuery = firestoreQuery.limit(reqQuery.limit + 1); // +1 to check if there are more results
+
+    // query firestore
+    const data = await this.getOrders(firestoreQuery);
+
+    let hasNextPage = false;
+    if (data.length > reqQuery.limit) {
+      hasNextPage = true;
+      data.pop();
+    }
+
+    const lastItem = data[data.length - 1] ?? {};
+    const cursorObj: Cursor = {} as Cursor;
+    for (const orderBy of Object.values(OrderItemsOrderBy)) {
+      cursorObj[orderBy] = lastItem[orderBy];
+    }
+    const nextCursor = this.cursorService.encodeCursor(cursorObj);
+
+    return {
+      data,
+      cursor: nextCursor,
+      hasNextPage
+    };
   }
 
   private async getOrderMetadata(orders: SignedOBOrderDto[]): Promise<OrderMetadata> {
@@ -239,11 +327,11 @@ export default class OrdersService {
 
   public async getOrders(
     firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>
-  ): Promise<SignedOBOrder[]> {
+  ): Promise<SignedOBOrderDto[]> {
     // fetch query snapshot
     const firestoreOrderItems = await firestoreQuery.get();
     const obOrderItemMap: { [key: string]: { [key: string]: OBOrderItem } } = {};
-    const results: SignedOBOrder[] = [];
+    const results: SignedOBOrderDto[] = [];
     for (const orderItemDoc of firestoreOrderItems.docs) {
       const orderItemData = orderItemDoc.data() as FirestoreOrderItem;
       const orderDoc = orderItemDoc.ref.parent.parent;
@@ -282,7 +370,7 @@ export default class OrdersService {
         };
         obOrderItemMap[orderItemData.id] = { [orderItemData.collectionAddress]: obOrderItem };
       }
-      const signedOBOrder: SignedOBOrder = {
+      const signedOBOrder: SignedOBOrderDto = {
         id: orderItemData.id,
         chainId: orderItemData.chainId,
         isSellOrder: orderItemData.isSellOrder,
@@ -292,7 +380,7 @@ export default class OrdersService {
         startTimeMs: orderItemData.startTimeMs,
         endTimeMs: orderItemData.endTimeMs,
         minBpsToSeller: orderDocData.minBpsToSeller,
-        nonce: orderDocData.nonce,
+        nonce: parseInt(orderDocData.nonce, 10),
         makerAddress: orderItemData.makerAddress,
         makerUsername: orderItemData.makerUsername,
         nfts: Object.values(obOrderItemMap[orderItemData.id]),
@@ -301,7 +389,7 @@ export default class OrdersService {
           complicationAddress: orderDocData.complicationAddress,
           currencyAddress: orderDocData.currencyAddress
         },
-        extraParams: {}
+        extraParams: {} as any
       };
       results.push(signedOBOrder);
     }

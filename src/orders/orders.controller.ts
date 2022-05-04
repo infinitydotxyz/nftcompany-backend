@@ -19,8 +19,10 @@ import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { OrderItemsQueryDto } from './dto/order-items-query.dto';
 import { OrdersDto } from './dto/orders.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
+import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
 import OrdersService from './orders.service';
 
 @Controller('orders')
@@ -68,69 +70,17 @@ export class OrdersController {
     return result;
   }
 
-  // todo: uncomment
   @Get('get')
-  // @ApiOperation({
-  //   description: 'Get orders',
-  //   tags: [ApiTag.Orders]
-  // })
-  @ApiOkResponse({ description: ResponseDescription.Success })
+  @ApiOperation({
+    description: 'Get orders',
+    tags: [ApiTag.Orders]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  public async getOrders(@Query() reqQuery: GetOrderItemsQuery): Promise<SignedOBOrder[]> {
-    const orderItemsCollectionRef = this.firebaseService.firestore.collectionGroup(
-      firestoreConstants.ORDER_ITEMS_SUB_COLL
-    );
-    // default fetch valid active orders
-    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
-    if (reqQuery.orderStatus) {
-      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', reqQuery.orderStatus);
-    } else {
-      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', OBOrderStatus.ValidActive);
-    }
-    // other filters
-    if (reqQuery.chainId) {
-      firestoreQuery = orderItemsCollectionRef.where('chainId', '==', reqQuery.chainId);
-    }
-    if (reqQuery.isSellOrder !== undefined) {
-      const isSellOrder = String(reqQuery.isSellOrder) === 'true';
-      firestoreQuery = firestoreQuery.where('isSellOrder', '==', isSellOrder);
-    }
-    if (reqQuery.minPrice !== undefined) {
-      const minPrice = parseFloat(String(reqQuery.minPrice));
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', minPrice);
-    }
-    if (reqQuery.maxPrice !== undefined) {
-      const maxPrice = parseFloat(String(reqQuery.maxPrice));
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', maxPrice);
-    }
-    if (reqQuery.numItems !== undefined) {
-      const numItems = parseInt(String(reqQuery.numItems));
-      firestoreQuery = firestoreQuery.where('numItems', '==', numItems);
-    }
-    if (reqQuery.collections && reqQuery.collections.length > 0) {
-      firestoreQuery = orderItemsCollectionRef.where('collectionAddress', 'in', reqQuery.collections);
-    }
-
-    // ordering
-    if (reqQuery.orderBy) {
-      firestoreQuery = firestoreQuery.orderBy(reqQuery.orderBy, reqQuery.orderByDirection);
-    } else {
-      // default order by startTimeMs desc
-      firestoreQuery = firestoreQuery.orderBy('startTimeMs', OrderDirection.Descending);
-    }
-
-    // pagination
-    if (reqQuery.cursor) {
-      firestoreQuery = orderItemsCollectionRef.startAfter(reqQuery.cursor);
-    }
-    // limit
-    const limit = parseInt(String(reqQuery.limit));
-    firestoreQuery = firestoreQuery.limit(limit || DEFAULT_ITEMS_PER_PAGE);
-
-    // query firestore
-    const data = await this.ordersService.getOrders(firestoreQuery);
-    return data;
+  public async getOrders(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    const results = await this.ordersService.getSignedOBOrders(reqQuery);
+    return results;
   }
 
   // todo: uncomment
