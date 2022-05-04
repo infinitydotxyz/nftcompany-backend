@@ -193,9 +193,7 @@ export default class OrdersService {
       firestoreQuery = firestoreQuery.where('numItems', '==', reqQuery.numItems);
     }
 
-    if (reqQuery.collections && typeof reqQuery.collections === 'string') {
-      firestoreQuery = firestoreQuery.where('collectionAddress', '==', reqQuery.collections);
-    } else if (reqQuery.collections && reqQuery.collections.length > 0) {
+    if (reqQuery.collections && reqQuery.collections.length > 0) {
       firestoreQuery = firestoreQuery.where('collectionAddress', 'in', reqQuery.collections);
     }
 

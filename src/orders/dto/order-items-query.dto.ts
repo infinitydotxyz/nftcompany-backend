@@ -2,6 +2,7 @@ import { GetOrderItemsQuery, OBOrderStatus, OrderDirection } from '@infinityxyz/
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsEnum, IsEthereumAddress, IsNumber, IsOptional, IsString } from 'class-validator';
+import { arrayTransformer } from 'common/transformers/array-query.transformer';
 import {
   normalizeAddressArrayTransformer,
   normalizeAddressTransformer
@@ -87,6 +88,7 @@ export class OrderItemsQueryDto implements Omit<GetOrderItemsQuery, 'chainId'> {
     type: [String]
   })
   @IsOptional()
+  @Transform(arrayTransformer)
   @Transform(normalizeAddressArrayTransformer)
   @IsArray()
   @IsEthereumAddress({ each: true })
