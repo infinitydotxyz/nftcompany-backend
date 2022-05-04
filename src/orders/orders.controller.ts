@@ -22,7 +22,7 @@ import OrdersService from './orders.service';
 export class OrdersController {
   constructor(private ordersService: OrdersService, private firebaseService: FirebaseService) {}
 
-  @Post(':userId/create')
+  @Post(':userId')
   @ApiOperation({
     description: 'Post orders',
     tags: [ApiTag.Orders]
@@ -35,6 +35,34 @@ export class OrdersController {
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
     @Body() body: OrdersDto
   ): Promise<void> {
+    try {
+      const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+      await this.ordersService.createOrder(maker, orders);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      } else if (err instanceof InvalidTokenError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
+  }
+
+  @Post(':userId/create')
+  @ApiOperation({
+    description: 'Post orders',
+    tags: [ApiTag.Orders],
+    deprecated: true
+  })
+  @UserAuth('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: String })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async postOrdersDeprecated(
+    @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
+    @Body() body: OrdersDto
+  ): Promise<void> {
+    // TODO delete once FE is changed. this endpoint is deprecated prefer to use POST /orders/:userId
     try {
       const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
       await this.ordersService.createOrder(maker, orders);
@@ -63,7 +91,7 @@ export class OrdersController {
     return result;
   }
 
-  @Get('get')
+  @Get()
   @ApiOperation({
     description: 'Get orders',
     tags: [ApiTag.Orders]
@@ -72,6 +100,21 @@ export class OrdersController {
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
   public async getOrders(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    const results = await this.ordersService.getSignedOBOrders(reqQuery);
+    return results;
+  }
+
+  @Get('get')
+  @ApiOperation({
+    description: 'Get orders',
+    tags: [ApiTag.Orders],
+    deprecated: true
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async getOrdersDeprecated(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    // TODO delete once FE is changed. this endpoint is deprecated prefer to use GET /orders
     const results = await this.ordersService.getSignedOBOrders(reqQuery);
     return results;
   }
