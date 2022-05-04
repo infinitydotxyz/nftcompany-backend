@@ -174,7 +174,7 @@ export class UserController {
 
   @Get('/:userId/nfts')
   @ApiOperation({
-    description: "Get a user's NFTs",
+    description: "Get a user's NFTs. Optionally, filter by a user's nfts with orders",
     tags: [ApiTag.User, ApiTag.Nft]
   })
   @ApiParamUserId('userId')
@@ -186,8 +186,17 @@ export class UserController {
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() filters: UserNftsQueryDto
   ): Promise<NftArrayDto> {
-    const response = await this.userService.getNfts(user, filters);
+    if (
+      filters.orderType !== undefined ||
+      filters.maxPrice !== undefined ||
+      filters.minPrice !== undefined ||
+      filters.orderBy !== undefined
+    ) {
+      const response = await this.userService.getUserNftsWithOrders(user, filters);
+      return response;
+    }
 
+    const response = await this.userService.getNfts(user, filters);
     return response;
   }
 

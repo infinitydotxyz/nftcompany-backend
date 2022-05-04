@@ -24,10 +24,11 @@ import { UserFollowingCollectionPostPayload } from './dto/user-following-collect
 import { UserFollowingUserDeletePayload } from './dto/user-following-user-delete-payload.dto';
 import { UserFollowingUserPostPayload } from './dto/user-following-user-post-payload.dto';
 import { UserFollowingUser } from './dto/user-following-user.dto';
-import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
+import { UserNftsOrderType, UserNftsQueryDto } from './dto/user-nfts-query.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 import { MnemonicService } from 'mnemonic/mnemonic.service';
+import { BadQueryError } from 'common/errors/bad-query.error';
 
 export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
 
@@ -185,7 +186,77 @@ export class UserService {
     return {};
   }
 
-  async getNfts(user: ParsedUserId, query: UserNftsQueryDto): Promise<NftArrayDto> {
+  async getUserNftsWithOrders(user: ParsedUserId, nftsQuery: UserNftsQueryDto): Promise<NftArrayDto> {
+    let query: FirebaseFirestore.Query<NftDto> = this.firebaseService.firestore.collectionGroup(
+      firestoreConstants.COLLECTION_NFTS_COLL
+    ) as any as FirebaseFirestore.Query<NftDto>;
+    let orderSnippetItem = '';
+
+    switch (nftsQuery.orderType) {
+      case UserNftsOrderType.Listings:
+        orderSnippetItem = 'ordersSnippet.listing.orderItem';
+        query = query.where(`${orderSnippetItem}.makerAddress`, '==', user.userAddress);
+        break;
+      case UserNftsOrderType.OffersMade:
+        orderSnippetItem = 'ordersSnippet.offer.orderItem';
+        query = query.where(`${orderSnippetItem}.makerAddress`, '==', user.userAddress);
+        break;
+      case UserNftsOrderType.OffersReceived:
+        orderSnippetItem = 'ordersSnippet.offer.orderItem';
+        query = query.where(`${orderSnippetItem}.takerAddress`, '==', user.userAddress);
+        break;
+      default:
+        throw new BadQueryError('orderType is invalid');
+    }
+
+    if (nftsQuery.collectionAddresses && nftsQuery.collectionAddresses.length > 0) {
+      query = query.where(`${orderSnippetItem}.collectionAddress`, 'in', nftsQuery.collectionAddresses);
+    }
+
+    const minPrice = nftsQuery.minPrice ?? 0;
+    const maxPrice = nftsQuery.maxPrice ?? Number.MAX_SAFE_INTEGER;
+    query = query.where(`${orderSnippetItem}.startPriceEth`, '>=', minPrice);
+    query = query.where(`${orderSnippetItem}.startPriceEth`, '<=', maxPrice);
+
+    const orderDirection = nftsQuery.orderDirection ?? OrderDirection.Descending;
+    query = query.orderBy(`${orderSnippetItem}.startPriceEth`, orderDirection);
+
+    type Cursor = { startPriceEth?: number };
+    const cursor = this.paginationService.decodeCursorToObject<Cursor>(nftsQuery.cursor);
+    if (cursor.startPriceEth != null) {
+      query = query.startAfter(cursor.startPriceEth);
+    }
+
+    const nftsSnapshot = await query.limit(nftsQuery.limit + 1).get();
+
+    const nfts: NftDto[] = nftsSnapshot.docs.map((doc) => {
+      const docData = doc.data();
+      return docData;
+    });
+
+    let hasNextPage = false;
+    if (nfts.length > nftsQuery.limit) {
+      hasNextPage = true;
+      nfts.pop();
+    }
+
+    const lastItem = nfts[nfts.length - 1];
+    const orderField = nftsQuery.orderType === UserNftsOrderType.Listings ? 'listing' : 'offer';
+    const price = lastItem?.ordersSnippet?.[orderField]?.orderItem?.startPriceEth;
+    const cursorObj: Cursor = { startPriceEth: price };
+    const updatedCursor = this.paginationService.encodeCursor(cursorObj);
+
+    return {
+      cursor: updatedCursor,
+      hasNextPage,
+      data: nfts
+    };
+  }
+
+  async getNfts(
+    user: ParsedUserId,
+    query: Pick<UserNftsQueryDto, 'collectionAddresses' | 'cursor' | 'limit'>
+  ): Promise<NftArrayDto> {
     const chainId = ChainId.Mainnet;
     type Cursor = { pageKey?: string; startAtToken?: string };
     const cursor = this.paginationService.decodeCursorToObject<Cursor>(query.cursor);
