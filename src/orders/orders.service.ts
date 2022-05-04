@@ -166,8 +166,17 @@ export default class OrdersService {
     // if (reqQuery.chainId) {
     //   firestoreQuery = firestoreQuery.where('chainId', '==', reqQuery.chainId);
     // }
+
     if (reqQuery.isSellOrder !== undefined) {
       firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
+    }
+
+    if (reqQuery.makerAddress) {
+      firestoreQuery = firestoreQuery.where('makerAddress', '==', reqQuery.makerAddress);
+    }
+
+    if (reqQuery.takerAddress) {
+      firestoreQuery = firestoreQuery.where('takerAddress', '==', reqQuery.takerAddress);
     }
 
     if (reqQuery.minPrice !== undefined) {
