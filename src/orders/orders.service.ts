@@ -18,7 +18,7 @@ import {
   getInfinityLink,
   trimLowerCase
 } from '@infinityxyz/lib/utils';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from '../databases/FirestoreBatchHandler';
 import { BigNumber, ethers } from 'ethers';
 import { getProvider } from '../utils/ethers';
@@ -44,7 +44,6 @@ import { CursorService } from '../pagination/cursor.service';
 import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
 import { UserOrderItemsQueryDto } from './dto/user-order-items-query.dto';
 import { BadQueryError } from 'common/errors/bad-query.error';
-import { doc } from 'prettier';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
