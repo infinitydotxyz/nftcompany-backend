@@ -9,7 +9,6 @@ import {
   OBOrderStatus,
   OBTokenInfo,
   OrderDirection,
-  SignedOBOrder,
   Token
 } from '@infinityxyz/lib/types/core';
 import {

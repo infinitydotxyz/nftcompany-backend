@@ -1,11 +1,4 @@
-import {
-  GetMinBpsQuery,
-  GetOrderItemsQuery,
-  OBOrderStatus,
-  OrderDirection,
-  SignedOBOrder
-} from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
+import { GetMinBpsQuery } from '@infinityxyz/lib/types/core';
 import { BadRequestException, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
