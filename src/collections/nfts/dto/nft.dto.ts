@@ -102,4 +102,9 @@ export class NftDto {
     description: 'Best active orders for the nft (if any)'
   })
   ordersSnippet?: OrdersSnippetDto;
+
+  @ApiPropertyOptional({
+    description: 'NFT Owner'
+  })
+  owner?: string;
 }

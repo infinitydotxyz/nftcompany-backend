@@ -13,6 +13,7 @@ import { NftArrayDto } from './dto/nft-array.dto';
 import { NftsOrderBy, NftsQueryDto, OrderType } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
 import { CursorService } from 'pagination/cursor.service';
+import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
 
 @Injectable()
 export class NftsService {
@@ -40,6 +41,16 @@ export class NftsService {
       ]);
 
       const nft = nfts?.[0];
+
+      // TODO: Adi, or Joe, this was added, along with the owner field in the dto.  change if wrong
+      if (nft) {
+        const owner = await getERC721Owner(nftQuery.address, nftQuery.tokenId, nftQuery.chainId);
+        if (owner) {
+          nft.owner = owner;
+
+          // save this back to firebase?
+        }
+      }
 
       return nft;
     }
