@@ -18,7 +18,7 @@ import {
   getInfinityLink,
   trimLowerCase
 } from '@infinityxyz/lib/utils';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import FirestoreBatchHandler from '../databases/FirestoreBatchHandler';
 import { BigNumber, ethers } from 'ethers';
 import { getProvider } from '../utils/ethers';
@@ -39,9 +39,12 @@ import { UserParserService } from '../user/parser/parser.service';
 import { FeedEventType, NftListingEvent, NftOfferEvent } from '@infinityxyz/lib/types/core/feed';
 import { EthereumService } from 'ethereum/ethereum.service';
 import { InvalidTokenError } from 'common/errors/invalid-token-error';
-import { OrderItemsOrderBy, OrderItemsQueryDto } from './dto/order-items-query.dto';
+import { OrderItemsOrderBy } from './dto/order-items-query.dto';
 import { CursorService } from '../pagination/cursor.service';
 import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
+import { UserOrderItemsQueryDto } from './dto/user-order-items-query.dto';
+import { BadQueryError } from 'common/errors/bad-query.error';
+import { doc } from 'prettier';
 
 // todo: remove this with the below commented code
 // export interface ExpiredCacheItem {
@@ -153,7 +156,10 @@ export default class OrdersService {
     }
   }
 
-  public async getSignedOBOrders(reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+  public async getSignedOBOrders(
+    reqQuery: UserOrderItemsQueryDto,
+    user?: ParsedUserId
+  ): Promise<SignedOBOrderArrayDto> {
     let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> =
       this.firebaseService.firestore.collectionGroup(firestoreConstants.ORDER_ITEMS_SUB_COLL);
     let requiresOrderByPrice = false;
@@ -162,19 +168,21 @@ export default class OrdersService {
     } else {
       firestoreQuery = firestoreQuery.where('orderStatus', '==', OBOrderStatus.ValidActive);
     }
-    // other filters
-    // if (reqQuery.chainId) {
-    //   firestoreQuery = firestoreQuery.where('chainId', '==', reqQuery.chainId);
-    // }
 
     if (reqQuery.isSellOrder !== undefined) {
       firestoreQuery = firestoreQuery.where('isSellOrder', '==', reqQuery.isSellOrder);
     }
 
+    if (reqQuery.makerAddress && reqQuery.makerAddress !== user?.userAddress) {
+      throw new BadQueryError('Maker address must match user address');
+    }
     if (reqQuery.makerAddress) {
       firestoreQuery = firestoreQuery.where('makerAddress', '==', reqQuery.makerAddress);
     }
 
+    if (reqQuery.takerAddress && reqQuery.takerAddress !== user?.userAddress) {
+      throw new BadQueryError('Taker address must match user address');
+    }
     if (reqQuery.takerAddress) {
       firestoreQuery = firestoreQuery.where('takerAddress', '==', reqQuery.takerAddress);
     }
@@ -408,7 +416,11 @@ export default class OrdersService {
       };
     });
 
-    const orderDocs = await this.firebaseService.firestore.getAll(...Object.values(orderDocsToGet));
+    const docRefs = Object.values(orderDocsToGet);
+    if (docRefs.length === 0) {
+      return [];
+    }
+    const orderDocs = await this.firebaseService.firestore.getAll(...docRefs);
     const orderDocsById: { [key: string]: FirestoreOrder } = {};
     for (const doc of orderDocs) {
       orderDocsById[doc.id] = doc.data() as FirestoreOrder;

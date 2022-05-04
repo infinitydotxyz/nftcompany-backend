@@ -17,6 +17,7 @@ import { OrdersDto } from './dto/orders.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
 import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
 import OrdersService from './orders.service';
+import { UserOrderItemsQueryDto } from './dto/user-order-items-query.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -116,6 +117,23 @@ export class OrdersController {
   public async getOrdersDeprecated(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
     // TODO delete once FE is changed. this endpoint is deprecated prefer to use GET /orders
     const results = await this.ordersService.getSignedOBOrders(reqQuery);
+    return results;
+  }
+
+  @Get(':userId')
+  @ApiOperation({
+    description: 'Get orders for a user',
+    tags: [ApiTag.Orders, ApiTag.User]
+  })
+  @UserAuth('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async getUserOrders(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() reqQuery: UserOrderItemsQueryDto
+  ): Promise<SignedOBOrderArrayDto> {
+    const results = await this.ordersService.getSignedOBOrders(reqQuery, user);
     return results;
   }
 

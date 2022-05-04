@@ -27,7 +27,6 @@ import { UserFollowingUser } from './dto/user-following-user.dto';
 import { UserNftsOrderType, UserNftsQueryDto } from './dto/user-nfts-query.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
-import { MnemonicService } from 'mnemonic/mnemonic.service';
 import { BadQueryError } from 'common/errors/bad-query.error';
 
 export type UserActivity = NftSaleEvent | NftListingEvent | NftOfferEvent;
@@ -38,7 +37,6 @@ export class UserService {
     private firebaseService: FirebaseService,
     private alchemyService: AlchemyService,
     private alchemyNftToInfinityNft: AlchemyNftToInfinityNft,
-    private mnemonicSErvice: MnemonicService,
     private paginationService: CursorService,
     @Optional() private statsService: StatsService
   ) {}

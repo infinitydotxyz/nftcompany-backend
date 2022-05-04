@@ -3,10 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsArray, IsBoolean, IsEnum, IsEthereumAddress, IsNumber, IsOptional, IsString } from 'class-validator';
 import { arrayTransformer } from 'common/transformers/array-query.transformer';
-import {
-  normalizeAddressArrayTransformer,
-  normalizeAddressTransformer
-} from 'common/transformers/normalize-address.transformer';
+import { normalizeAddressArrayTransformer } from 'common/transformers/normalize-address.transformer';
 import { parseBoolTransformer } from 'common/transformers/parse-bool.transformer';
 import { parseIntTransformer } from 'common/transformers/parse-int.transformer';
 import { roundNumberTransformer } from 'common/transformers/round-number.transformer';
@@ -31,22 +28,6 @@ export class OrderItemsQueryDto implements Omit<GetOrderItemsQuery, 'chainId'> {
   @Transform(parseBoolTransformer({ optional: true }))
   @IsBoolean()
   isSellOrder?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Maker address to filter orders by'
-  })
-  @IsOptional()
-  @Transform(normalizeAddressTransformer)
-  @IsEthereumAddress()
-  makerAddress?: string;
-
-  @ApiPropertyOptional({
-    description: 'Taker address to filter orders by'
-  })
-  @IsOptional()
-  @Transform(normalizeAddressTransformer)
-  @IsEthereumAddress()
-  takerAddress?: string;
 
   @ApiPropertyOptional({
     description: 'Order status to filter by',
