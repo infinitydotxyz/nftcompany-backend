@@ -14,6 +14,7 @@ import { NftsOrderBy, NftsQueryDto, OrderType } from './dto/nfts-query.dto';
 import { ActivityType, activityTypeToEventType } from './nft-activity.types';
 import { CursorService } from 'pagination/cursor.service';
 import { getERC721Owner } from 'services/ethereum/checkOwnershipChange';
+import { ExternalNftDto } from './dto/external-nft.dto';
 
 @Injectable()
 export class NftsService {
@@ -54,6 +55,24 @@ export class NftsService {
 
       return nft;
     }
+  }
+
+  async isSupported(nfts: NftDto[]) {
+    const { getCollection } = await this.collectionsService.getCollectionsByAddress(
+      nfts.map((nft) => ({ address: nft.address, chainId: nft.chainId }))
+    );
+
+    const externalNfts: ExternalNftDto[] = nfts.map((nft) => {
+      const collection = getCollection({ address: nft.address, chainId: nft.chainId });
+      const isSupported = collection?.state?.create?.step === CreationFlow.Complete;
+      const externalNft: ExternalNftDto = {
+        ...nft,
+        isSupported
+      };
+      return externalNft;
+    });
+
+    return externalNfts;
   }
 
   async getNfts(nfts: { address: string; chainId: ChainId; tokenId: string }[]) {

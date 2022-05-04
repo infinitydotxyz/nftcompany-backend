@@ -80,6 +80,8 @@ import { NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto
 import { ParsedUserId } from './parser/parsed-user-id';
 import { UserCollectionPermissions } from './dto/user-collection-permissions';
 import { UserActivityArrayDto } from './dto/user-activity-array.dto';
+import { ExternalNftArrayDto } from 'collections/nfts/dto/external-nft-array.dto';
+import { NftsService } from 'collections/nfts/nfts.service';
 
 @Controller('user')
 export class UserController {
@@ -91,7 +93,8 @@ export class UserController {
     private collectionsService: CollectionsService,
     private storageService: StorageService,
     private statsService: StatsService,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private nftsService: NftsService
   ) {}
 
   @Get('/:userId/checkUsername')
@@ -185,19 +188,25 @@ export class UserController {
   async getNfts(
     @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
     @Query() filters: UserNftsQueryDto
-  ): Promise<NftArrayDto> {
+  ): Promise<ExternalNftArrayDto> {
+    let nfts: NftArrayDto;
     if (
       filters.orderType !== undefined ||
       filters.maxPrice !== undefined ||
       filters.minPrice !== undefined ||
       filters.orderBy !== undefined
     ) {
-      const response = await this.userService.getUserNftsWithOrders(user, filters);
-      return response;
+      nfts = await this.userService.getUserNftsWithOrders(user, filters);
+    } else {
+      nfts = await this.userService.getNfts(user, filters);
     }
 
-    const response = await this.userService.getNfts(user, filters);
-    return response;
+    const externalNfts = await this.nftsService.isSupported(nfts.data);
+
+    return {
+      ...nfts,
+      data: externalNfts
+    };
   }
 
   @Put('/:userId')

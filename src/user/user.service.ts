@@ -231,6 +231,7 @@ export class UserService {
 
     const nfts: NftDto[] = nftsSnapshot.docs.map((doc) => {
       const docData = doc.data();
+
       return docData;
     });
 
