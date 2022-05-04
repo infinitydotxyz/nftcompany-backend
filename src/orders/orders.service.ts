@@ -331,14 +331,8 @@ export default class OrdersService {
     const firestoreOrderItems = await firestoreQuery.get();
     const obOrderItemMap: { [key: string]: { [key: string]: OBOrderItem } } = {};
     const results: SignedOBOrderDto[] = [];
-    for (const orderItemDoc of firestoreOrderItems.docs) {
-      const orderItemData = orderItemDoc.data() as FirestoreOrderItem;
-      const orderDoc = orderItemDoc.ref.parent.parent;
-      const orderDocData = (await orderDoc?.get())?.data() as FirestoreOrder;
-      if (!orderDocData) {
-        console.error('Cannot fetch order data from firestore for order item', orderItemData.id);
-        continue;
-      }
+
+    const getSignedOBOrder = (orderItemData: FirestoreOrderItem, orderDocData: FirestoreOrder) => {
       const token: OBTokenInfo = {
         tokenId: orderItemData.tokenId,
         numTokens: orderItemData.numTokens,
@@ -390,8 +384,43 @@ export default class OrdersService {
         },
         extraParams: {} as any
       };
+      return signedOBOrder;
+    };
+
+    const orderDocsToGet: { [docId: string]: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData> } = {};
+    const orderItems = firestoreOrderItems.docs.map((item) => {
+      const orderDocId = item.ref.parent.parent?.id;
+      if (orderDocId) {
+        orderDocsToGet[orderDocId] = item.ref.parent.parent;
+      }
+      return {
+        orderItem: item.data() as FirestoreOrderItem,
+        orderDocId: item.ref.parent.parent?.id
+      };
+    });
+
+    const orderDocs = await this.firebaseService.firestore.getAll(...Object.values(orderDocsToGet));
+    const orderDocsById: { [key: string]: FirestoreOrder } = {};
+    for (const doc of orderDocs) {
+      orderDocsById[doc.id] = doc.data() as FirestoreOrder;
+    }
+
+    for (const { orderDocId, orderItem } of orderItems) {
+      if (!orderDocId) {
+        console.error('Cannot fetch order data from firestore for order item', orderItem.id);
+        continue;
+      }
+
+      const orderDocData = orderDocsById[orderDocId];
+      if (!orderDocData) {
+        console.error('Cannot fetch order data from firestore for order item', orderItem.id);
+        continue;
+      }
+
+      const signedOBOrder = getSignedOBOrder(orderItem, orderDocData);
       results.push(signedOBOrder);
     }
+
     return results;
   }
 
