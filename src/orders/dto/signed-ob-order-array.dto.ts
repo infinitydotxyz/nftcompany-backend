@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { NftDto } from './nft.dto';
+import { SignedOBOrderDto } from './signed-ob-order.dto';
 
-export class NftArrayDto {
-  @ApiProperty({ description: 'Array of nfts', type: [NftDto] })
-  data: NftDto[];
+export class SignedOBOrderArrayDto {
+  @ApiProperty({ description: 'Array of signed orders', type: [SignedOBOrderDto] })
+  data: SignedOBOrderDto[];
 
   @ApiProperty({ description: 'Cursor that can be used to get the next page' })
   cursor: string;

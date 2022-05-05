@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested, IsArray } from 'class-validator';
-import { SignedOBOrderDto } from './signed-ob-order.dto';
+import { CreateOrderDto, SignedOBOrderDto } from './signed-ob-order.dto';
 
 export class OrdersDto {
   @ApiProperty({
@@ -9,7 +9,7 @@ export class OrdersDto {
     type: [SignedOBOrderDto]
   })
   @ValidateNested({ each: true, message: 'Invalid signed order' })
-  @Type(() => SignedOBOrderDto)
+  @Type(() => CreateOrderDto)
   @IsArray()
-  orders: SignedOBOrderDto[];
+  orders: CreateOrderDto[];
 }

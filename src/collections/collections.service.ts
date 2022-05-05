@@ -162,6 +162,48 @@ export default class CollectionsService {
     return result;
   }
 
+  async getCollectionsByAddress(collections: { address: string; chainId: string }[]) {
+    const docIds = [
+      ...new Set(
+        collections.map((collection) => {
+          try {
+            return getCollectionDocId({ collectionAddress: collection.address, chainId: collection.chainId });
+          } catch (err) {
+            return null;
+          }
+        })
+      )
+    ].filter((item) => item !== null) as string[];
+
+    const collectionRefs = docIds.map((docId) =>
+      this.firebaseService.firestore.collection(firestoreConstants.COLLECTIONS_COLL).doc(docId)
+    );
+
+    const getCollection = (coll: { address: string; chainId: string }) => {
+      try {
+        const collection =
+          collectionMap[getCollectionDocId({ collectionAddress: coll.address, chainId: coll.chainId })] ?? {};
+        return collection;
+      } catch (err) {
+        return {};
+      }
+    };
+
+    if (collectionRefs.length === 0) {
+      return { getCollection };
+    }
+
+    const collectionsSnap = await this.firebaseService.firestore.getAll(...collectionRefs);
+
+    const collectionMap: { [id: string]: Partial<Collection> } = {};
+    collectionsSnap.forEach((item, index) => {
+      const docId = docIds[index];
+      collectionMap[docId] = (item.data() ?? {}) as Partial<Collection>;
+    });
+
+    return { getCollection };
+  }
+
   async setCollectionMetadata(collection: ParsedCollectionId, metadata: CollectionMetadata) {
     await collection.ref.set({ metadata }, { merge: true });
   }

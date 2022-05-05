@@ -12,13 +12,13 @@ import {
   UploadedFile,
   UseInterceptors,
   HttpStatus,
-  Headers,
   Delete,
   BadRequestException,
   UploadedFiles
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import {
+  ApiBadRequestResponse,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -66,14 +66,22 @@ import { ProfileService } from './profile/profile.service';
 import { InvalidProfileError } from './errors/invalid-profile.error';
 import { QueryUsername } from './profile/query-username.decorator';
 import { UsernameType } from './profile/profile.types';
+import { NftArrayDto } from 'collections/nfts/dto/nft-array.dto';
+import { ErrorResponseDto } from 'common/dto/error-response.dto';
 import { UserAuth } from 'auth/user-auth.decorator';
 import {
   DeleteUserProfileImagesDto,
   UpdateUserProfileImagesDto,
   UserProfileImagesDto
 } from './dto/update-user-profile-images.dto';
+import { UserNftsQueryDto } from './dto/user-nfts-query.dto';
+import { UserActivityQueryDto } from './dto/user-activity-query.dto';
+import { NftActivityArrayDto } from 'collections/nfts/dto/nft-activity-array.dto';
 import { ParsedUserId } from './parser/parsed-user-id';
 import { UserCollectionPermissions } from './dto/user-collection-permissions';
+import { UserActivityArrayDto } from './dto/user-activity-array.dto';
+import { ExternalNftArrayDto } from 'collections/nfts/dto/external-nft-array.dto';
+import { NftsService } from 'collections/nfts/nfts.service';
 
 @Controller('user')
 export class UserController {
@@ -85,7 +93,8 @@ export class UserController {
     private collectionsService: CollectionsService,
     private storageService: StorageService,
     private statsService: StatsService,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private nftsService: NftsService
   ) {}
 
   @Get('/:userId/checkUsername')
@@ -164,6 +173,40 @@ export class UserController {
     }
 
     return userProfile;
+  }
+
+  @Get('/:userId/nfts')
+  @ApiOperation({
+    description: "Get a user's NFTs. Optionally, filter by a user's nfts with orders",
+    tags: [ApiTag.User, ApiTag.Nft]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getNfts(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() filters: UserNftsQueryDto
+  ): Promise<ExternalNftArrayDto> {
+    let nfts: NftArrayDto;
+    if (
+      filters.orderType !== undefined ||
+      filters.maxPrice !== undefined ||
+      filters.minPrice !== undefined ||
+      filters.orderBy !== undefined
+    ) {
+      nfts = await this.userService.getUserNftsWithOrders(user, filters);
+    } else {
+      nfts = await this.userService.getNfts(user, filters);
+    }
+
+    const externalNfts = await this.nftsService.isSupported(nfts.data);
+
+    return {
+      ...nfts,
+      data: externalNfts
+    };
   }
 
   @Put('/:userId')
@@ -561,5 +604,23 @@ export class UserController {
       throw err;
     }
     return '';
+  }
+
+  @Get(':userId/activity')
+  @ApiOperation({
+    description: 'Get the activity of a user',
+    tags: [ApiTag.User]
+  })
+  @ApiParamUserId('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
+  @ApiNotFoundResponse({ description: ResponseDescription.NotFound })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  @UseInterceptors(new CacheControlInterceptor())
+  async getActivity(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() query: UserActivityQueryDto
+  ): Promise<UserActivityArrayDto> {
+    const activity = await this.userService.getActivity(user, query);
+    return activity;
   }
 }

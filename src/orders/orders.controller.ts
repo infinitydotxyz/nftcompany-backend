@@ -1,11 +1,4 @@
-import {
-  GetMinBpsQuery,
-  GetOrderItemsQuery,
-  OBOrderStatus,
-  OrderDirection,
-  SignedOBOrder
-} from '@infinityxyz/lib/types/core';
-import { DEFAULT_ITEMS_PER_PAGE, firestoreConstants } from '@infinityxyz/lib/utils';
+import { GetMinBpsQuery } from '@infinityxyz/lib/types/core';
 import { BadRequestException, Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { ParamUserId } from 'auth/param-user-id.decorator';
@@ -19,15 +12,18 @@ import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
 import { ParseUserIdPipe } from 'user/parser/parse-user-id.pipe';
 import { ParsedUserId } from 'user/parser/parsed-user-id';
+import { OrderItemsQueryDto } from './dto/order-items-query.dto';
 import { OrdersDto } from './dto/orders.dto';
 import { SignedOBOrderDto } from './dto/signed-ob-order.dto';
+import { SignedOBOrderArrayDto } from './dto/signed-ob-order-array.dto';
 import OrdersService from './orders.service';
+import { UserOrderItemsQueryDto } from './dto/user-order-items-query.dto';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private ordersService: OrdersService, private firebaseService: FirebaseService) {}
 
-  @Post(':userId/create')
+  @Post(':userId')
   @ApiOperation({
     description: 'Post orders',
     tags: [ApiTag.Orders]
@@ -40,6 +36,34 @@ export class OrdersController {
     @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
     @Body() body: OrdersDto
   ): Promise<void> {
+    try {
+      const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
+      await this.ordersService.createOrder(maker, orders);
+    } catch (err) {
+      if (err instanceof InvalidCollectionError) {
+        throw new BadRequestException(err.message);
+      } else if (err instanceof InvalidTokenError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
+  }
+
+  @Post(':userId/create')
+  @ApiOperation({
+    description: 'Post orders',
+    tags: [ApiTag.Orders],
+    deprecated: true
+  })
+  @UserAuth('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: String })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async postOrdersDeprecated(
+    @ParamUserId('userId', ParseUserIdPipe) maker: ParsedUserId,
+    @Body() body: OrdersDto
+  ): Promise<void> {
+    // TODO delete once FE is changed. this endpoint is deprecated prefer to use POST /orders/:userId
     try {
       const orders = (body.orders ?? []).map((item) => instanceToPlain(item)) as SignedOBOrderDto[];
       await this.ordersService.createOrder(maker, orders);
@@ -68,69 +92,49 @@ export class OrdersController {
     return result;
   }
 
-  // todo: uncomment
-  @Get('get')
-  // @ApiOperation({
-  //   description: 'Get orders',
-  //   tags: [ApiTag.Orders]
-  // })
-  @ApiOkResponse({ description: ResponseDescription.Success })
+  @Get()
+  @ApiOperation({
+    description: 'Get orders',
+    tags: [ApiTag.Orders]
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
-  public async getOrders(@Query() reqQuery: GetOrderItemsQuery): Promise<SignedOBOrder[]> {
-    const orderItemsCollectionRef = this.firebaseService.firestore.collectionGroup(
-      firestoreConstants.ORDER_ITEMS_SUB_COLL
-    );
-    // default fetch valid active orders
-    let firestoreQuery: FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
-    if (reqQuery.orderStatus) {
-      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', reqQuery.orderStatus);
-    } else {
-      firestoreQuery = orderItemsCollectionRef.where('orderStatus', '==', OBOrderStatus.ValidActive);
-    }
-    // other filters
-    if (reqQuery.chainId) {
-      firestoreQuery = orderItemsCollectionRef.where('chainId', '==', reqQuery.chainId);
-    }
-    if (reqQuery.isSellOrder !== undefined) {
-      const isSellOrder = String(reqQuery.isSellOrder) === 'true';
-      firestoreQuery = firestoreQuery.where('isSellOrder', '==', isSellOrder);
-    }
-    if (reqQuery.minPrice !== undefined) {
-      const minPrice = parseFloat(String(reqQuery.minPrice));
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '>=', minPrice);
-    }
-    if (reqQuery.maxPrice !== undefined) {
-      const maxPrice = parseFloat(String(reqQuery.maxPrice));
-      firestoreQuery = orderItemsCollectionRef.where('startPriceEth', '<=', maxPrice);
-    }
-    if (reqQuery.numItems !== undefined) {
-      const numItems = parseInt(String(reqQuery.numItems));
-      firestoreQuery = firestoreQuery.where('numItems', '==', numItems);
-    }
-    if (reqQuery.collections && reqQuery.collections.length > 0) {
-      firestoreQuery = orderItemsCollectionRef.where('collectionAddress', 'in', reqQuery.collections);
-    }
+  public async getOrders(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    const results = await this.ordersService.getSignedOBOrders(reqQuery);
+    return results;
+  }
 
-    // ordering
-    if (reqQuery.orderBy) {
-      firestoreQuery = firestoreQuery.orderBy(reqQuery.orderBy, reqQuery.orderByDirection);
-    } else {
-      // default order by startTimeMs desc
-      firestoreQuery = firestoreQuery.orderBy('startTimeMs', OrderDirection.Descending);
-    }
+  @Get('get')
+  @ApiOperation({
+    description: 'Get orders',
+    tags: [ApiTag.Orders],
+    deprecated: true
+  })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async getOrdersDeprecated(@Query() reqQuery: OrderItemsQueryDto): Promise<SignedOBOrderArrayDto> {
+    // TODO delete once FE is changed. this endpoint is deprecated prefer to use GET /orders
+    const results = await this.ordersService.getSignedOBOrders(reqQuery);
+    return results;
+  }
 
-    // pagination
-    if (reqQuery.cursor) {
-      firestoreQuery = orderItemsCollectionRef.startAfter(reqQuery.cursor);
-    }
-    // limit
-    const limit = parseInt(String(reqQuery.limit));
-    firestoreQuery = firestoreQuery.limit(limit || DEFAULT_ITEMS_PER_PAGE);
-
-    // query firestore
-    const data = await this.ordersService.getOrders(firestoreQuery);
-    return data;
+  @Get(':userId')
+  @ApiOperation({
+    description: 'Get orders for a user',
+    tags: [ApiTag.Orders, ApiTag.User]
+  })
+  @UserAuth('userId')
+  @ApiOkResponse({ description: ResponseDescription.Success, type: SignedOBOrderArrayDto })
+  @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError })
+  public async getUserOrders(
+    @ParamUserId('userId', ParseUserIdPipe) user: ParsedUserId,
+    @Query() reqQuery: UserOrderItemsQueryDto
+  ): Promise<SignedOBOrderArrayDto> {
+    const results = await this.ordersService.getSignedOBOrders(reqQuery, user);
+    return results;
   }
 
   // todo: uncomment

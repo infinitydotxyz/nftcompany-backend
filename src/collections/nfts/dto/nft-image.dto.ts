@@ -4,13 +4,15 @@ export class NftImageDto {
   @ApiProperty({
     description: 'The image url hosted on a CDN'
   })
-  url!: string;
+  url: string;
 
-  @ApiPropertyOptional({})
-  originalUrl!: "The original url of the image (from the nft's metadata)";
+  @ApiPropertyOptional({
+    description: "The original url of the image (from the nft's metadata)"
+  })
+  originalUrl: string;
 
   @ApiProperty({
     description: 'Epoch timestamp (ms) that the image was last updated at'
   })
-  updatedAt!: number;
+  updatedAt: number;
 }

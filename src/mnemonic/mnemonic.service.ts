@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { plainToClass } from 'class-transformer';
 import { getSortDirection } from './mnemonic.constants';
-import { TopOwnersResponseBody } from './mnemonic.types';
+import { MnemonicTokenType, TopOwnersResponseBody, UserNftsResponseBody } from './mnemonic.types';
 
 @Injectable()
 export class MnemonicService {
@@ -45,6 +45,38 @@ export class MnemonicService {
       const response = await this.client.get(url.toString());
       if (response.status === 200) {
         return plainToClass(TopOwnersResponseBody, response.data);
+      }
+      throw new Error(`Unexpected response status: ${response.status}`);
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  async getUserNfts(
+    userAddress: string,
+    options?: {
+      limit?: number;
+      offset?: number;
+      contractAddress?: string;
+      tokenTypes?: MnemonicTokenType[];
+    }
+  ) {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    const url = new URL(`https://canary-ethereum.rest.mnemonichq.com/tokens/v1beta1/by_owner/${userAddress}`);
+    url.searchParams.append('limit', limit.toString());
+    url.searchParams.append('offset', offset.toString());
+    if (options?.contractAddress) {
+      url.searchParams.append('contractAddress', options.contractAddress);
+    }
+    if (options?.tokenTypes?.length) {
+      url.searchParams.append('tokenTypes', options.tokenTypes.join(','));
+    }
+    try {
+      const response = await this.client.get(url.toString());
+      if (response.status === 200) {
+        return plainToClass(UserNftsResponseBody, response.data);
       }
       throw new Error(`Unexpected response status: ${response.status}`);
     } catch (err) {

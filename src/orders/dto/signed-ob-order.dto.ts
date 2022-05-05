@@ -1,11 +1,37 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { OBOrderItem, SignedOBOrder } from '@infinityxyz/lib/types/core';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested, IsString, IsNumber, IsNotEmpty } from 'class-validator';
 import { ChainOBOrderDto } from './chain-ob-order.dto';
 import { ExecParamsDto } from './exec-params.dto';
 import { ExtraParamsDto } from './extra-params.dto';
 
-export class SignedOBOrderDto {
+export class SignedOBOrderDto implements Omit<SignedOBOrder, 'nonce'> {
+  @ApiProperty({
+    description: 'id of the order'
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'Whether the order is a sell order or not'
+  })
+  isSellOrder: boolean;
+
+  @ApiProperty({
+    description: 'The username of the maker of the order'
+  })
+  makerUsername: string;
+
+  @ApiProperty({
+    description: 'The maker of the order'
+  })
+  makerAddress: string;
+
+  @ApiProperty({
+    description: 'Order item in this order'
+  })
+  nfts: OBOrderItem[];
+
   @ApiProperty({
     description: 'Chain id'
   })
@@ -76,3 +102,17 @@ export class SignedOBOrderDto {
   @Type(() => ChainOBOrderDto)
   signedOrder: ChainOBOrderDto;
 }
+
+export class CreateOrderDto extends PickType(SignedOBOrderDto, [
+  'chainId',
+  'numItems',
+  'startPriceEth',
+  'endPriceEth',
+  'startTimeMs',
+  'endTimeMs',
+  'minBpsToSeller',
+  'nonce',
+  'execParams',
+  'extraParams',
+  'signedOrder'
+] as const) {}

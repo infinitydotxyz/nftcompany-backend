@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Get, NotFoundException, Query, UseInterceptors } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
@@ -11,11 +11,12 @@ import { ApiTag } from 'common/api-tags';
 import { ApiParamCollectionId, ParamCollectionId } from 'common/decorators/param-collection-id.decorator';
 import { ApiParamTokenId, ParamTokenId } from 'common/decorators/param-token-id.decorator';
 import { ErrorResponseDto } from 'common/dto/error-response.dto';
+import { BadQueryError } from 'common/errors/bad-query.error';
 import { CacheControlInterceptor } from 'common/interceptors/cache-control.interceptor';
 import { ResponseDescription } from 'common/response-description';
 import { FirebaseService } from 'firebase/firebase.service';
-import { NftActivityArray } from './dto/nft-activity-array';
-import { NftActivityFilters } from './dto/nft-activity-filters';
+import { NftActivityArrayDto } from './dto/nft-activity-array.dto';
+import { NftActivityFiltersDto } from './dto/nft-activity-filters.dto';
 import { NftArrayDto } from './dto/nft-array.dto';
 import { NftDto } from './dto/nft.dto';
 import { NftsQueryDto } from './dto/nfts-query.dto';
@@ -30,6 +31,7 @@ export class NftsController {
     description: 'Get a list of nfts for a collection',
     tags: [ApiTag.Collection, ApiTag.Nft]
   })
+  @ApiParamCollectionId('id')
   @ApiOkResponse({ description: ResponseDescription.Success, type: NftArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiNotFoundResponse({ description: ResponseDescription.NotFound, type: ErrorResponseDto })
@@ -39,9 +41,16 @@ export class NftsController {
     @ParamCollectionId('id', ParseCollectionIdPipe) collection: ParsedCollectionId,
     @Query() query: NftsQueryDto
   ) {
-    const nfts = await this.nftService.getCollectionNfts(collection, query);
+    try {
+      const nfts = await this.nftService.getCollectionNfts(collection, query);
 
-    return nfts;
+      return nfts;
+    } catch (err) {
+      if (err instanceof BadQueryError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
   }
 
   @Get(':id/nfts/:tokenId')
@@ -77,14 +86,14 @@ export class NftsController {
   })
   @ApiParamCollectionId('id')
   @ApiParamTokenId('tokenId')
-  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArray })
+  @ApiOkResponse({ description: ResponseDescription.Success, type: NftActivityArrayDto })
   @ApiBadRequestResponse({ description: ResponseDescription.BadRequest, type: ErrorResponseDto })
   @ApiInternalServerErrorResponse({ description: ResponseDescription.InternalServerError, type: ErrorResponseDto })
   @UseInterceptors(new CacheControlInterceptor())
   async getNftActivity(
     @ParamCollectionId('id', ParseCollectionIdPipe) { address, chainId }: ParsedCollectionId,
     @ParamTokenId('tokenId') tokenId: string,
-    @Query() filters: NftActivityFilters
+    @Query() filters: NftActivityFiltersDto
   ) {
     const { data, cursor, hasNextPage } = await this.nftService.getNftActivity({ address, chainId, tokenId }, filters);
 
