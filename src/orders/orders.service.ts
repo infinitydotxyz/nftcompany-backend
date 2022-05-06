@@ -95,7 +95,7 @@ export default class OrdersService {
               tokenName: '',
               tokenSlug: ''
             };
-            const collection: Collection = {} as Collection;
+            const collection = metadata.collections[nft.collection]?.collection ?? ({} as Partial<Collection>);
             const orderItemData = await this.getFirestoreOrderItemFromSignedOBOrder(
               order,
               nft,
